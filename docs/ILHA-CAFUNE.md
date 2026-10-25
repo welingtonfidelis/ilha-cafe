@@ -344,7 +344,7 @@ godot -e --path .
 | `grenade.gd` | granada Brigadeiro: arco, quique, explosão em área |
 | `ammo_pickup.gd` | caixa de munição (fixa com retorno ou caída de esqueleto) |
 
-`tools/weapon_axes.gd` calcula a rotação do blaster a partir da pose de mira (resultado: 90° em Y, posição `(0.12, 0.1, 0)`), e `tools/inspect.gd` imprime a hierarquia importada.
+`tools/weapon_axes.gd` mostra para onde aponta o osso da mão na pose de mira (o eixo X dele é a frente). No Blaster Kit o cano fica na ponta −Z de todos os modelos (`tools/foto_blasters_pontas.gd` mostra as pontas), então a rotação no osso é (0, −90, 0); `tools/foto_blasters.gd` mostra cada blaster de lado com a boca (amarelo) e o cabo (azul). `tools/inspect.gd` imprime a hierarquia importada.
 
 **Som:** todos os sons são gerados por `tools/gerar_sons.py` (só biblioteca padrão do Python, 2,5 s para gerar tudo): `python3 tools/gerar_sons.py` reescreve `assets/audio/sfx/*.wav` e `assets/audio/musica/tema.wav`, e a Godot reimporta sozinha. São sons de desenho animado, sem estampido realista:
 
