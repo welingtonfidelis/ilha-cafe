@@ -39,25 +39,42 @@ var arena := false
 var island: Node3D
 var _splashing := false
 
-const HINT_KEYBOARD := "WASD andar · Espaço pular · Botão direito mirar · Botão esquerdo atirar · R recarregar · G granada\n1 a 4 ou rodinha trocar de blaster · Q/E trocar de aventureiro · Tab escolher aventureiro · F3 regiões de impacto · Esc soltar o mouse"
-const HINT_GAMEPAD := "Analógico esquerdo andar · Analógico direito olhar · A pular · LT mirar · RT atirar · X recarregar · RB granada\nY trocar de blaster · Direcional ←/→ trocar de aventureiro · Start escolher aventureiro · Back regiões de impacto"
+## Comandos mostrados no menu de pausa (não ficam mais na tela durante o jogo).
+const CONTROLS_KEYBOARD := [
+	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
+	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"],
+	["Trocar de blaster", "1 a 4 ou rodinha"], ["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
+]
+const CONTROLS_GAMEPAD := [
+	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
+	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Trocar de blaster", "Y ou direcional ←/→"],
+	["Pausa", "Start"], ["Regiões de impacto", "Back"],
+]
 const MENU_KEYBOARD := "Clique, ou use as setas e Enter"
 const MENU_GAMEPAD := "Direcional para escolher, A para confirmar"
 
 var player: Player
 var enemies: Array[SkeletonEnemy] = []
 var crosshair: Crosshair
+## Menus: "escolha" (personagem; na abertura e pela pausa), "pausa" e "comandos". Com menu aberto o
+## jogo fica pausado; a interface e a música continuam rodando.
+var ui_layer: CanvasLayer
 var select_panel: Control
-var character_label: Label
-var hint: Label
-var menu_hint: Label
+var pause_panel: Control
+var controls_panel: Control
+var controls_label: Label
+var menu_dim: ColorRect
+var menu_state := ""
+var _menu_hints: Array[Label] = []
 var _buttons: Array[Button] = []
+var _pause_buttons: Array[Button] = []
+var _controls_back: Button
 var _show_regions := false
 var _game_started := false
 var checkpoints: Array[Checkpoint] = []
 var current_checkpoint: Checkpoint
 var hearts_bar: HeartsBar
-var ammo_hud: AmmoHud
+var ammo_hud: WeaponHud
 var message_label: Label
 var _message_tween: Tween
 ## Chance de um esqueleto desmontado deixar cair uma caixa de munição (sempre cai se a munição estiver no fim).
@@ -93,7 +110,7 @@ class HeartsBar:
 		queue_redraw()
 
 	func _process(delta: float) -> void:
-		position = Vector2(get_viewport_rect().size.x - max_hearts * 46.0 - 12.0, 74.0)
+		position = Vector2(get_viewport_rect().size.x - max_hearts * 46.0 - 12.0, 14.0)
 		if _pulse > 0.0:
 			_pulse = maxf(0.0, _pulse - delta * 3.0)
 			queue_redraw()
@@ -112,58 +129,6 @@ class HeartsBar:
 			outline.append(pts[0])
 			draw_colored_polygon(pts, Color("#ff4d6d") if i < hearts else Color(1, 1, 1, 0.22))
 			draw_polyline(outline, Color(0, 0, 0, 0.55), 3.0, true)
-
-
-## Munição no canto de baixo à direita: nome do blaster, pente / estoque (∞ na pistola)
-## e as granadas Brigadeiro como bolinhas. O número fica amarelo acabando e vermelho zerado.
-class AmmoHud:
-	extends Control
-	var weapon_name := ""
-	var mag := 0
-	var mag_max := 1
-	var reserve := 0
-	var grenades := 0
-	var grenades_max := 3
-
-	func _ready() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _process(_delta: float) -> void:
-		var size_px := get_viewport_rect().size
-		position = Vector2(size_px.x - 250.0, size_px.y - 120.0)
-
-	func set_values(p_name: String, p_mag: int, p_mag_max: int, p_reserve: int, p_grenades: int, p_grenades_max: int) -> void:
-		weapon_name = p_name
-		mag = p_mag
-		mag_max = p_mag_max
-		reserve = p_reserve
-		grenades = p_grenades
-		grenades_max = p_grenades_max
-		queue_redraw()
-
-	func _draw() -> void:
-		var font := ThemeDB.fallback_font
-		draw_rect(Rect2(0, 0, 234, 104), Color(0, 0, 0, 0.35), true)
-		draw_string_outline(font, Vector2(14, 28), weapon_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, 6, Color(0, 0, 0, 0.7))
-		draw_string(font, Vector2(14, 28), weapon_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
-		var mag_color := Color.WHITE
-		if mag == 0:
-			mag_color = Color("#ff5d5d")
-		elif mag <= int(ceil(mag_max * 0.25)):
-			mag_color = Color("#ffd23f")
-		var mag_text := "%d" % mag
-		var reserve_text := " / ∞" if reserve < 0 else " / %d" % reserve
-		draw_string_outline(font, Vector2(14, 68), mag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, 8, Color(0, 0, 0, 0.7))
-		draw_string(font, Vector2(14, 68), mag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, mag_color)
-		var mag_width := font.get_string_size(mag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 38).x
-		draw_string_outline(font, Vector2(14 + mag_width, 68), reserve_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, 6, Color(0, 0, 0, 0.7))
-		draw_string(font, Vector2(14 + mag_width, 68), reserve_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(1, 1, 1, 0.85))
-		for i in grenades_max:
-			var c := Vector2(24 + i * 26, 88)
-			draw_circle(c, 9.0, Color(0, 0, 0, 0.5))
-			draw_circle(c, 7.0, Color("#7a4a2a") if i < grenades else Color(1, 1, 1, 0.18))
-			if i < grenades:
-				draw_circle(c + Vector2(-2, -2), 2.0, Color("#ff9ed2"))
 
 
 ## Mira no centro da tela. Recarregando, ganha um anel que vai se completando;
@@ -221,6 +186,7 @@ func _ready() -> void:
 	_setup_input()
 	Sfx.setup_buses()
 	music = Sfx.music(self, "tema")
+	music.process_mode = Node.PROCESS_MODE_ALWAYS
 	var args := OS.get_cmdline_user_args()
 	arena = TEST_MODES.any(func(m: String) -> bool: return m in args)
 	_build_environment()
@@ -231,13 +197,11 @@ func _ready() -> void:
 	player.global_position = world.start
 	player.set_yaw(world.start_yaw)
 	player.hit_confirmed.connect(_on_hit_confirmed)
-	player.character_changed.connect(_on_character_changed)
 	player.input_device_changed.connect(_on_input_device_changed)
 	player.health_changed.connect(func(h: int, m: int) -> void: hearts_bar.set_hearts(h, m))
 	player.damaged.connect(_on_player_damaged)
 	player.dizzy_started.connect(_on_player_dizzy)
 	player.ammo_changed.connect(_update_ammo_hud)
-	player.weapon_changed.connect(func(_i: int) -> void: show_message(player.current_weapon().nome, player.current_weapon().cor, 0.9))
 	player.out_of_ammo.connect(func() -> void: show_message("Sem munição! Procure uma caixa ou troque de blaster", Color("#ff9d9d"), 1.6))
 	for spawn in world.enemies:
 		var e := SkeletonEnemy.new()
@@ -266,7 +230,6 @@ func _ready() -> void:
 	_build_ui()
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
-	_on_character_changed(player.character_name)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
 
 	if "--capture" in args:
@@ -279,14 +242,14 @@ func _ready() -> void:
 		_run_smoke()
 	elif "--controle" in args:
 		player.god_mode = true
-		_open_menu()
+		open_menu("escolha")
 		_run_gamepad_test()
 	elif "--combate" in args:
 		select_panel.hide()
 		_run_combat_test()
 	elif "--som" in args:
 		Sfx.logging = true
-		_open_menu()
+		open_menu("escolha")
 		_run_sound_test()
 	elif "--armas" in args:
 		select_panel.hide()
@@ -298,7 +261,7 @@ func _ready() -> void:
 		select_panel.hide()
 		_run_island_capture()
 	else:
-		_open_menu()
+		open_menu("escolha")
 
 
 ## Arena plana dos testes automáticos (o mapa antigo da fatia técnica).
@@ -362,7 +325,9 @@ func _setup_input() -> void:
 	_bind_button("granada", JOY_BUTTON_RIGHT_SHOULDER)
 	_bind_mouse("arma_proxima", MOUSE_BUTTON_WHEEL_UP)
 	_bind_button("arma_proxima", JOY_BUTTON_Y)
+	_bind_button("arma_proxima", JOY_BUTTON_DPAD_RIGHT)
 	_bind_mouse("arma_anterior", MOUSE_BUTTON_WHEEL_DOWN)
+	_bind_button("arma_anterior", JOY_BUTTON_DPAD_LEFT)
 	for i in Weapons.count():
 		_bind_key("arma_%d" % (i + 1), [KEY_1 + i])
 	_bind_mouse("mirar", MOUSE_BUTTON_RIGHT)
@@ -373,12 +338,8 @@ func _setup_input() -> void:
 
 	_bind_key("regioes", [KEY_F3])
 	_bind_button("regioes", JOY_BUTTON_BACK)
-	_bind_key("menu", [KEY_TAB])
+	_bind_key("menu", [KEY_TAB, KEY_ESCAPE])
 	_bind_button("menu", JOY_BUTTON_START)
-	_bind_key("personagem_anterior", [KEY_Q])
-	_bind_button("personagem_anterior", JOY_BUTTON_DPAD_LEFT)
-	_bind_key("personagem_proximo", [KEY_E])
-	_bind_button("personagem_proximo", JOY_BUTTON_DPAD_RIGHT)
 	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
 	_bind_button("ui_accept", JOY_BUTTON_A)
 	_bind_button("ui_cancel", JOY_BUTTON_B)
@@ -421,54 +382,77 @@ func _bind_axis(action: String, axis: JoyAxis, direction: float) -> void:
 	InputMap.action_add_event(action, ev)
 
 
-## O menu é tratado em _input porque, com o painel aberto, a interface consome o Tab.
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("menu"):
-		if select_panel.visible and _game_started:
-			_close_menu()
-		else:
-			_open_menu()
-		get_viewport().set_input_as_handled()
+## Recebe a entrada dos menus mesmo com o jogo pausado (o resto do jogo para).
+class MenuInput:
+	extends Node
+	var handler: Callable
+
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _input(event: InputEvent) -> void:
+		handler.call(event)
+
+
+func _menu_input(event: InputEvent) -> void:
+	if get_tree().paused:
+		player.detect_device(event)
+	var back := event.is_action_pressed("menu") or (menu_state != "" and event.is_action_pressed("ui_cancel"))
+	if not back:
+		return
+	get_viewport().set_input_as_handled()
+	match menu_state:
+		"":
+			if event.is_action_pressed("menu") and not player.dizzy:
+				open_menu("pausa")
+		"pausa":
+			close_menus()
+		"comandos":
+			open_menu("pausa")
+		"escolha":
+			# Na abertura do jogo é preciso escolher; vindo da pausa, voltar leva à pausa.
+			if _game_started:
+				open_menu("pausa")
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if select_panel.visible:
-		if event.is_action_pressed("ui_cancel") and _game_started:
-			_close_menu()
+	if menu_state != "":
 		return
-	if event.is_action_pressed("ui_cancel"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif event is InputEventMouseButton and event.pressed \
+	if event is InputEventMouseButton and event.pressed \
 			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("regioes"):
 		_toggle_regions()
-	elif player.dizzy:
-		return
-	elif event.is_action_pressed("personagem_proximo"):
-		_cycle_character(1)
-	elif event.is_action_pressed("personagem_anterior"):
-		_cycle_character(-1)
 
 
-func _cycle_character(step: int) -> void:
-	var i := CHARACTER_ORDER.find(player.character_name)
-	player.set_character(CHARACTER_ORDER[wrapi(i + step, 0, CHARACTER_ORDER.size())])
-	Sfx.play(self, "ui_ok", 0.0, 0.0)
-
-
-func _open_menu() -> void:
-	select_panel.show()
+func open_menu(state: String) -> void:
+	menu_state = state
+	select_panel.visible = state == "escolha"
+	pause_panel.visible = state == "pausa"
+	controls_panel.visible = state == "comandos"
+	menu_dim.visible = true
 	crosshair.hide()
 	player.input_enabled = false
+	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
-	_buttons[i].grab_focus.call_deferred()
+	match state:
+		"escolha":
+			var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
+			_buttons[i].grab_focus.call_deferred()
+		"pausa":
+			_pause_buttons[0].grab_focus.call_deferred()
+		"comandos":
+			_controls_back.grab_focus.call_deferred()
 
 
-func _close_menu() -> void:
+func close_menus() -> void:
+	menu_state = ""
 	select_panel.hide()
+	pause_panel.hide()
+	controls_panel.hide()
+	menu_dim.hide()
 	crosshair.show()
+	get_tree().paused = false
 	_game_started = true
 	if not player.using_gamepad:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -639,7 +623,12 @@ func _build_forest() -> void:
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new()
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(layer)
+	ui_layer = layer
+	var menu_input := MenuInput.new()
+	menu_input.handler = _menu_input
+	add_child(menu_input)
 	crosshair = Crosshair.new()
 	layer.add_child(crosshair)
 
@@ -660,7 +649,7 @@ func _build_ui() -> void:
 
 	hearts_bar = HeartsBar.new()
 	layer.add_child(hearts_bar)
-	ammo_hud = AmmoHud.new()
+	ammo_hud = WeaponHud.new()
 	layer.add_child(ammo_hud)
 	message_label = Label.new()
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -676,35 +665,12 @@ func _build_ui() -> void:
 	message_label.offset_left = -400
 	message_label.offset_right = 400
 
-	hint = Label.new()
-	hint.text = HINT_KEYBOARD
-	hint.position = Vector2(16, 12)
-	hint.add_theme_font_size_override("font_size", 16)
-	hint.add_theme_constant_override("outline_size", 6)
-	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
-	layer.add_child(hint)
+	menu_dim = _overlay(layer, Color(0.03, 0.04, 0.08))
+	menu_dim.modulate.a = 0.45
+	menu_dim.hide()
 
-	character_label = Label.new()
-	character_label.add_theme_font_size_override("font_size", 24)
-	character_label.add_theme_constant_override("outline_size", 8)
-	character_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.7))
-	layer.add_child(character_label)
-	character_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 16)
-
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(center)
-	select_panel = center
-	var panel := PanelContainer.new()
-	center.add_child(panel)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 16)
-	panel.add_child(box)
-	var title := Label.new()
-	title.text = "Escolha seu aventureiro"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
-	box.add_child(title)
+	var box := _menu_box(layer, "Escolha quem vai jogar")
+	select_panel = box.get_parent().get_parent()
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 12)
@@ -725,14 +691,74 @@ func _build_ui() -> void:
 		button.add_theme_font_size_override("font_size", 20)
 		button.add_theme_stylebox_override("focus", focus_style)
 		button.pressed.connect(_choose_character.bind(key))
-		button.focus_entered.connect(func() -> void: Sfx.play(self, "ui_mover", 0.0, 0.0))
+		button.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
 		grid.add_child(button)
 		_buttons.append(button)
-	menu_hint = Label.new()
-	menu_hint.text = MENU_KEYBOARD
-	menu_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	menu_hint.add_theme_font_size_override("font_size", 16)
-	box.add_child(menu_hint)
+	_add_menu_hint(box)
+
+	# Pausa: continuar, trocar de personagem, ver os comandos ou sair.
+	var pbox := _menu_box(layer, "Pausa")
+	pause_panel = pbox.get_parent().get_parent()
+	for spec in [["Continuar", close_menus], ["Trocar de personagem", open_menu.bind("escolha")],
+			["Comandos", open_menu.bind("comandos")], ["Sair do jogo", get_tree().quit]]:
+		var b := _menu_button(spec[0], focus_style)
+		b.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			spec[1].call())
+		pbox.add_child(b)
+		_pause_buttons.append(b)
+	_add_menu_hint(pbox)
+
+	# Comandos: a lista do aparelho em uso (teclado e mouse ou controle).
+	var cbox := _menu_box(layer, "Comandos")
+	controls_panel = cbox.get_parent().get_parent()
+	controls_label = Label.new()
+	controls_label.add_theme_font_size_override("font_size", 19)
+	cbox.add_child(controls_label)
+	_controls_back = _menu_button("Voltar", focus_style)
+	_controls_back.pressed.connect(func() -> void:
+		Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+		open_menu("pausa"))
+	cbox.add_child(_controls_back)
+	for panel_root in [select_panel, pause_panel, controls_panel]:
+		panel_root.hide()
+
+
+## Caixa de menu centralizada: CenterContainer > PanelContainer > VBox com título. Devolve a VBox.
+func _menu_box(layer: CanvasLayer, title_text: String) -> VBoxContainer:
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	panel.add_child(box)
+	var title := Label.new()
+	title.text = title_text
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	box.add_child(title)
+	return box
+
+
+func _menu_button(text: String, focus_style: StyleBox) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(320, 52)
+	b.add_theme_font_size_override("font_size", 20)
+	b.add_theme_stylebox_override("focus", focus_style)
+	b.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
+	return b
+
+
+func _add_menu_hint(box: VBoxContainer) -> void:
+	var label := Label.new()
+	label.text = MENU_KEYBOARD
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 16)
+	box.add_child(label)
+	_menu_hints.append(label)
 
 
 ## Retângulo de tela cheia transparente, para clarão e escurecer.
@@ -801,8 +827,8 @@ func _spawn_crate(pos: Vector3, respawn: float) -> AmmoPickup:
 
 
 func _update_ammo_hud() -> void:
-	var def := player.current_weapon()
-	ammo_hud.set_values(def.nome, player.mag(), def.pente, player.reserve(), player.grenades, Weapons.GRENADE.max)
+	if ammo_hud:
+		ammo_hud.refresh(player)
 
 
 ## Mensagem rápida no meio de baixo da tela (troca de blaster, munição acabou).
@@ -821,24 +847,23 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(player) and crosshair:
 		crosshair.reload_progress = player.reload_progress()
 		crosshair.scoped = player.is_zoomed()
+		ammo_hud.refresh(player)
 
 
 func _choose_character(key: String) -> void:
 	player.set_character(key)
-	Sfx.play(self, "ui_ok", 0.0, 0.0)
-	_close_menu()
+	Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+	close_menus()
 
 
 func _on_input_device_changed(gamepad: bool) -> void:
-	if hint:
-		hint.text = HINT_GAMEPAD if gamepad else HINT_KEYBOARD
-	if menu_hint:
-		menu_hint.text = MENU_GAMEPAD if gamepad else MENU_KEYBOARD
-
-
-func _on_character_changed(char_name: String) -> void:
-	if character_label:
-		character_label.text = CHARACTER_LABELS.get(char_name, char_name)
+	for label in _menu_hints:
+		label.text = MENU_GAMEPAD if gamepad else MENU_KEYBOARD
+	if controls_label:
+		var lines := PackedStringArray()
+		for row in (CONTROLS_GAMEPAD if gamepad else CONTROLS_KEYBOARD):
+			lines.append("%s:  %s" % row)
+		controls_label.text = "\n".join(lines)
 
 
 func _on_hit_confirmed(region: String, _damage: float) -> void:
@@ -922,9 +947,18 @@ func _run_capture() -> void:
 	player.camera.current = true
 	for e in enemies:
 		e.visible = true
-	while minion.state != SkeletonEnemy.State.DESMONTADO:
+	# Se o esqueleto chegou colado, a mira não aponta tão para baixo: o personagem recua antes.
+	var away := player.global_position - minion.global_position
+	away.y = 0.0
+	if away.length() < 5.0:
+		player.global_position = minion.global_position + away.normalized() * 7.0 + Vector3.UP * 0.2
+	var tries := 0
+	while minion.state != SkeletonEnemy.State.DESMONTADO and tries < 40:
 		await _aim_for(minion, 1.0, 0.25)
 		player.fire()
+		tries += 1
+	if minion.state != SkeletonEnemy.State.DESMONTADO:
+		minion.take_hit(99.0, minion.global_position + Vector3.UP * 2.0, minion.hurtboxes[0])
 	await _wait(0.9)
 	await _shot("04_desmontado.png")
 	_toggle_regions()
@@ -1011,10 +1045,16 @@ func _run_capture() -> void:
 	_joy_axis(JOY_AXIS_LEFT_X, 0.0)
 	await _wait(0.3)
 	await _shot("08_hud_controle.png")
-	_open_menu()
+	open_menu("escolha")
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
 	await _wait(0.2)
 	await _shot("09_menu_controle.png")
+	open_menu("pausa")
+	await _wait(0.2)
+	await _shot("09b_pausa.png")
+	open_menu("comandos")
+	await _wait(0.2)
+	await _shot("09c_comandos.png")
 	get_tree().quit()
 
 
@@ -1059,7 +1099,7 @@ func _run_gamepad_test() -> void:
 	await _wait(0.3)
 	all_ok = _check("A escolhe o aventureiro e fecha o menu", not select_panel.visible,
 			"(agora: %s)" % player.character_name) and all_ok
-	all_ok = _check("jogo detectou o controle", player.using_gamepad, "(dica: %s...)" % hint.text.left(30)) and all_ok
+	all_ok = _check("jogo detectou o controle", player.using_gamepad, "(dica do menu: %s)" % _menu_hints[0].text) and all_ok
 
 	# Analógico direito gira a câmera.
 	var yaw0 := player.get_yaw()
@@ -1129,12 +1169,16 @@ func _run_gamepad_test() -> void:
 	all_ok = _check("RT atira e acerta", target.health < shots_before or target.state == SkeletonEnemy.State.DESMONTADO,
 			"(vida %.0f -> %.0f, %s)" % [shots_before, target.health, SkeletonEnemy.State.keys()[target.state]]) and all_ok
 
-	# Direcional troca de aventureiro.
+	# Direcional troca de blaster (o personagem só muda pelo menu de pausa).
+	var w0 := player.weapon_index
 	var c0 := player.character_name
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
-	var c1 := player.character_name
+	var w1 := player.weapon_index
+	await _wait(0.35)
 	await _joy_button(JOY_BUTTON_DPAD_LEFT)
-	all_ok = _check("direcional troca de aventureiro", c1 != c0 and player.character_name == c0, "(%s -> %s -> %s)" % [c0, c1, player.character_name]) and all_ok
+	all_ok = _check("direcional troca de blaster, não de personagem", w1 != w0 and player.weapon_index == w0 and player.character_name == c0,
+			"(%d -> %d -> %d)" % [w0, w1, player.weapon_index]) and all_ok
+	await _wait(0.35)
 
 	# X recarrega, Y troca de blaster, RB joga granada.
 	player.fire()
@@ -1156,10 +1200,27 @@ func _run_gamepad_test() -> void:
 	all_ok = _check("Back mostra as regiões de impacto", _show_regions) and all_ok
 	await _joy_button(JOY_BUTTON_BACK)
 	await _joy_button(JOY_BUTTON_START)
-	all_ok = _check("Start abre o menu e trava o boneco", select_panel.visible and not player.input_enabled) and all_ok
+	all_ok = _check("Start abre a pausa e pausa o jogo", pause_panel.visible and get_tree().paused and not player.input_enabled
+			and get_viewport().gui_get_focus_owner() == _pause_buttons[0]) and all_ok
+	# Pausa > Trocar de personagem > o outro personagem.
+	var before := player.character_name
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	await _joy_button(JOY_BUTTON_A)
+	all_ok = _check("pausa leva à escolha de personagem", select_panel.visible and get_tree().paused) and all_ok
+	await _joy_button(JOY_BUTTON_DPAD_RIGHT if before == CHARACTER_ORDER[0] else JOY_BUTTON_DPAD_LEFT)
+	await _joy_button(JOY_BUTTON_A)
+	await _wait(0.3)
+	all_ok = _check("troca de personagem pela pausa e volta ao jogo", player.character_name != before and not get_tree().paused
+			and player.input_enabled, "(%s -> %s)" % [before, player.character_name]) and all_ok
+	# Start abre, B volta ao jogo; Start abre, Start fecha.
+	await _joy_button(JOY_BUTTON_START)
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B fecha a pausa", menu_state == "" and not get_tree().paused) and all_ok
+	await _joy_button(JOY_BUTTON_START)
 	await _joy_button(JOY_BUTTON_START)
 	await _wait(0.3)
-	all_ok = _check("Start fecha o menu e solta o boneco", not select_panel.visible and player.input_enabled) and all_ok
+	all_ok = _check("Start fecha a pausa e solta o boneco", menu_state == "" and not get_tree().paused and player.input_enabled) and all_ok
 
 	print("CONTROLE OK" if all_ok else "CONTROLE COM FALHAS")
 	get_tree().quit()

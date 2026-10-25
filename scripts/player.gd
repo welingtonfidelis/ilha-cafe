@@ -350,9 +350,13 @@ func _apply_weapon_animations() -> void:
 	_node_run.animation = &"mov2/Running_HoldingRifle" if hands == "2H" else &"mov/Running_A"
 
 
-## Descobre se o jogador está no controle ou no teclado/mouse, para as dicas na tela,
-## o auxílio de mira e a vibração.
 func _input(event: InputEvent) -> void:
+	detect_device(event)
+
+
+## Descobre se o jogador está no controle ou no teclado/mouse, para as dicas dos menus,
+## o auxílio de mira e a vibração. Com o jogo pausado, quem chama é o menu (main.gd).
+func detect_device(event: InputEvent) -> void:
 	var gamepad := using_gamepad
 	if event is InputEventJoypadButton:
 		gamepad = true

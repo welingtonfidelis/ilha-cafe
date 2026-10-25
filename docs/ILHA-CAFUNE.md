@@ -176,7 +176,7 @@ Coletáveis: bilhetes dos esqueletos (12), potes de vaga-lume, estrelas escondid
 
 - **Pacote:** KayKit Mystery Monthly Series 5, **pago** (US$ 19,99; US$ 13,39 na promoção de Halloween de 2026), 42 MB, licença CC0. Traz 14 personagens; só usamos os dois Protagonists. O autor diz que são "tecnicamente idênticos" aos Adventurers, então devem usar o mesmo `Rig_Medium`: as animações, o encaixe do blaster e as regiões de impacto continuam valendo. Confirmar quando o pacote chegar.
 - **Enquanto o pacote não chega:** o Ranger e a Rogue do Adventurers (grátis) seguram o lugar, sem capa, capuz e aljava (`HIDDEN_MESH_HINTS` no `player.gd`). Para trocar, basta mudar os caminhos em `CHARACTERS`, no `player.gd`.
-- **Trocar:** menu (Tab / Start), Q/E ou direcional. Na primeira versão a diferença é só visual.
+- **Escolher e trocar:** o jogo abre na tela "Escolha quem vai jogar". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário). Na primeira versão a diferença é só visual.
 - **Nomes:** ainda por decidir.
 
 **Moradores:** o pacote grátis não tem moradores comuns. Dá para criar alguns trocando as cores dos aventureiros (troca da textura de gradiente) e tirando as armas. Na história, os moradores estão escondidos de medo e só aparecem na festa do epílogo, o que pede poucos modelos.
@@ -224,7 +224,7 @@ O KayKit não tem armas de fogo nem blasters em nenhum pacote (conferido em 2026
 | G / RB | Brigadeiro (granada) | `grenade-a` | — | — | começa com 2, máximo 3 | — | arremesso em arco, explode em confete depois de 1,4 s, raio de 5 m, até 3 de dano, o escudo não segura, estoura bolhas |
 
 **Regras de munição (decisão do usuário: estoque limitado):**
-- O contador fica no canto de baixo à direita: nome do blaster, "pente / estoque" e as granadas como bolinhas. O número do pente fica amarelo no último quarto e vermelho zerado.
+- **Painel de armas** (`scripts/weapon_hud.gd`, inspirado numa referência de HUD de jogo de tiro enviada pelo usuário): no canto de baixo à direita, painéis escuros translúcidos inclinados. O grande mostra a arma na mão: ícone de balas, número do encaixe, pente grande em laranja sobre o estoque em cinza (∞ na Paçoca) e a silhueta branca da arma. Em cima, um menor e mais apagado com a próxima arma (a que vem com Y ou a rodinha). À esquerda, as granadas com o número. O pente fica amarelo no último quarto e vermelho zerado; ao trocar de arma o conteúdo desliza e acende; ao atirar o número dá um pulinho; recarregando, a silhueta apaga, aparece "RECARREGANDO" e uma barra azul enche embaixo. As silhuetas são geradas por `tools/gerar_icones.gd` em `assets/ui/icones/`.
 - Pente vazio recarrega sozinho (com a animação de recarga de uma ou duas mãos do KayKit e um anel azul na mira). Dá para recarregar antes de zerar com R ou X. Durante a recarga não atira; trocar de blaster cancela a recarga.
 - Sem estoque, o gatilho faz "tic" e aparece "Sem munição! Procure uma caixa ou troque de blaster".
 - **A Paçoca tem estoque infinito de propósito**, como rede de segurança: a criança nunca fica sem ter com o que atirar.
@@ -294,7 +294,7 @@ godot -e --path .
 
 **Testes automáticos:**
 - `godot --headless --path . -- --smoke` atira num esqueleto sem abrir janela e imprime os estados.
-- `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 14 comandos (menu, analógicos, pulo, mira, auxílio de mira, tiro, troca de aventureiro, Back e Start); termina com "CONTROLE OK".
+- `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 20 pontos (escolha inicial, analógicos, pulo, mira, auxílio de mira, tiro, direcional e Y trocando de blaster, X, RB, Back, pausa com Start, trocar de personagem pela pausa, B e Start fechando a pausa); termina com "CONTROLE OK".
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
@@ -305,7 +305,7 @@ godot -e --path .
 - Para rodar os testes, use um limite de tempo (`perl -e 'alarm 200; exec @ARGV' godot ...`): se um script tiver erro de digitação, a Godot fica parada em vez de sair.
 - `godot --path . -- --capture` abre a janela, roda uma sequência e salva capturas em `tools/capturas/` (fora do git).
 
-**Controles** (as dicas na tela trocam sozinhas conforme o aparelho em uso):
+**Controles.** A tela de jogo não mostra mais a lista de comandos nem o nome do personagem (pedido do usuário): os comandos ficam em Pausa > Comandos, e trocam sozinhos conforme o aparelho em uso. Com um menu aberto o jogo fica pausado.
 
 | Ação | Teclado e mouse | Controle (Xbox / PlayStation) |
 |---|---|---|
@@ -316,12 +316,10 @@ godot -e --path .
 | Atirar | botão esquerdo | RT / R2 |
 | Recarregar | R | X / quadrado |
 | Granada | G | RB / R1 |
-| Trocar de blaster | 1 a 4 ou rodinha do mouse | Y / triângulo |
-| Trocar de aventureiro | Q e E | direcional ← e → |
-| Menu de aventureiros | Tab | Start / Options |
+| Trocar de blaster | 1 a 4 ou rodinha do mouse | Y / triângulo, ou direcional ← e → |
+| Pausa (continuar, trocar de personagem, comandos, sair) | Esc ou Tab | Start / Options |
 | Confirmar e voltar no menu | Enter e Esc | A e B / X e círculo |
 | Regiões de impacto | F3 | Back / Share |
-| Soltar o mouse | Esc | — |
 
 **Auxílio de mira (só no controle e mirando):** um alvo a até 7° do centro da mira freia o giro do analógico pela metade e puxa a mira de leve para o corpo do esqueleto. Logo que aperta o gatilho de mira o puxão é mais forte por 0,25 s. A cabeça (dano em dobro) fica por conta de quem mira. Os valores ficam no grupo "Controle" do `player.gd` (`aim_assist_angle_deg`, `aim_assist_pull`, `aim_assist_snap`, `stick_speed`). A vibração é curta no tiro e mais forte no acerto.
 
@@ -341,6 +339,7 @@ godot -e --path .
 | `sfx.gd` | toca efeitos (2D para o aventureiro e a interface, 3D com posição para esqueletos, flechas e bolhas) e a música em loop; cria os canais de áudio "Musica" (−9 dB) e "Efeitos" |
 | `anim_util.gd` | carrega as bibliotecas de animação do KayKit e marca as que repetem |
 | `fx.gd` | confete, poeira, rastro do tiro, clarão, onda da granada e texto flutuante |
+| `weapon_hud.gd` | painel de armas inclinado (arma atual, próxima arma, granadas, recarga) |
 | `weapons.gd` | os 4 blasters e a granada (pente, estoque, recarga, dano, espalhamento, luneta, modelo e encaixe) e o que a caixa de munição devolve |
 | `grenade.gd` | granada Brigadeiro: arco, quique, explosão em área |
 | `ammo_pickup.gd` | caixa de munição (fixa com retorno ou caída de esqueleto) |
