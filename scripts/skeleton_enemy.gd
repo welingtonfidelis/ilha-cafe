@@ -7,7 +7,7 @@ extends CharacterBody3D
 
 signal defeated(enemy: SkeletonEnemy)
 
-enum State { PERSEGUINDO, PREPARANDO, ATACANDO, ESPERANDO, ATINGIDO, DESMONTADO, REMONTANDO, COMEMORANDO }
+enum State { PERSEGUINDO, PREPARANDO, ATACANDO, ESPERANDO, ATINGIDO, DESMONTADO, REMONTANDO, COMEMORANDO, DORMINDO, VOLTANDO }
 
 const SKELETONS := "res://assets/characters/skeletons/%s.glb"
 const WEAPONS := "res://assets/weapons/skeleton/%s.gltf"
@@ -36,6 +36,12 @@ const TYPES := {
 
 @export var type_name := "Skeleton_Minion"
 @export var down_time := 3.5
+## Na ilha, o esqueleto começa dormindo (pilha de ossos) e se monta quando o aventureiro chega
+## a aggro_radius metros. Se ele se afastar mais que leash_radius da casa, volta e deita de novo.
+## Na arena dos testes, start_awake liga e os raios ficam enormes (comportamento antigo).
+@export var start_awake := false
+@export var aggro_radius := -1.0  # -1: 16 m para golpe de perto, 22 m para quem atira
+@export var leash_radius := 45.0
 
 var target: Player
 var health := 3.0
@@ -90,16 +96,30 @@ func _ready() -> void:
 	_warning.visible = false
 	add_child(_warning)
 	_spawn_point = global_position
-	_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+	if aggro_radius < 0.0:
+		aggro_radius = 16.0 if config.kind == "melee" else 22.0
+	if start_awake:
+		_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+	else:
+		_enter(State.DORMINDO, "especial/Skeletons_Inactive_Floor_Pose")
 
 
-## Volta para o lugar de origem e acorda de novo (usado quando o aventureiro reaparece).
+## Volta para o lugar de origem (usado quando o aventureiro reaparece na bandeira):
+## na ilha deita de novo; na arena acorda na hora.
 func reset_to_spawn() -> void:
 	global_position = _spawn_point
 	velocity = Vector3.ZERO
 	health = config.health
 	_cooldown = 1.5
-	_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+	if start_awake:
+		_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+	else:
+		_enter(State.DORMINDO, "especial/Skeletons_Inactive_Floor_Pose")
+
+
+func _too_far(dist: float) -> bool:
+	var from_home := Vector2(global_position.x - _spawn_point.x, global_position.z - _spawn_point.z).length()
+	return from_home > leash_radius or dist > leash_radius + 15.0
 
 
 ## As armas do KayKit foram feitas para o osso handslot: encaixam sem ajuste.
@@ -180,7 +200,25 @@ func _physics_process(delta: float) -> void:
 	if target_down and state in [State.PERSEGUINDO, State.PREPARANDO, State.ATACANDO, State.ESPERANDO]:
 		_enter(State.COMEMORANDO, "festa/Cheering")
 
+	if state in [State.PERSEGUINDO, State.ESPERANDO] and _too_far(dist):
+		_enter(State.VOLTANDO, "especial/Skeletons_Walking")
+
 	match state:
+		State.DORMINDO:
+			_move(Vector3.ZERO)
+			if dist < aggro_radius and not target_down:
+				_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+		State.VOLTANDO:
+			var home := _spawn_point - global_position
+			home.y = 0.0
+			if dist < aggro_radius * 0.6 and not target_down:
+				_enter(State.PERSEGUINDO, "especial/Skeletons_Walking")
+			elif home.length() < 1.2:
+				_move(Vector3.ZERO)
+				_enter(State.DORMINDO, "especial/Skeletons_Death")
+			else:
+				_move(home.normalized() * config.speed)
+				_face(home.normalized(), delta)
 		State.PERSEGUINDO:
 			if dist <= config.range and _cooldown <= 0.0 and _can_see_target():
 				_start_attack()
@@ -220,7 +258,12 @@ func _physics_process(delta: float) -> void:
 		State.DESMONTADO:
 			_move(Vector3.ZERO)
 			if _state_time > down_time:
-				_enter(State.REMONTANDO, "especial/Skeletons_Death_Resurrect")
+				if dist > aggro_radius:
+					# Ninguém por perto: fica dormindo ali mesmo, já é uma pilha de ossos.
+					state = State.DORMINDO
+					_state_time = 0.0
+				else:
+					_enter(State.REMONTANDO, "especial/Skeletons_Death_Resurrect")
 		State.REMONTANDO:
 			_move(Vector3.ZERO)
 			if _state_time > _rise_length:
@@ -231,7 +274,7 @@ func _physics_process(delta: float) -> void:
 			_move(Vector3.ZERO)
 			if not target_down:
 				_cooldown = 1.0
-				_enter(State.PERSEGUINDO, "especial/Skeletons_Walking")
+				_enter(State.PERSEGUINDO if dist <= aggro_radius else State.VOLTANDO, "especial/Skeletons_Walking")
 	move_and_slide()
 
 
@@ -292,7 +335,7 @@ func _enter(new_state: State, anim_name: String) -> void:
 		_set_hittable(false)
 		if is_inside_tree():
 			Sfx.play_at(get_parent(), "remontar", global_position + Vector3.UP, -3.0)
-	elif new_state == State.DESMONTADO:
+	elif new_state == State.DESMONTADO or new_state == State.DORMINDO:
 		_set_hittable(false)
 
 

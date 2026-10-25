@@ -34,6 +34,14 @@ const CHECKPOINTS := [Vector3(-5, 0, 3), Vector3(14, 0, -32), Vector3(-18, 0, -2
 ## Chance de um esqueleto desmontado deixar cair um coração (sempre cai se restarem 2 ou menos).
 const HEART_DROP_CHANCE := 0.4
 
+const ISLAND_SCENE := "res://scenes/ilha.tscn"
+## Mar da ilha (igual ao SEA_LEVEL de tools/gerar_ilha.gd). Abaixo disso, "tchibum": volta na bandeira.
+const SEA_LEVEL := -0.6
+
+var arena := false
+var island: Node3D
+var _splashing := false
+
 const HINT_KEYBOARD := "WASD andar · Espaço pular · Botão direito mirar · Botão esquerdo atirar\nQ/E ou 1 a 6 trocar de aventureiro · Tab escolher aventureiro · F3 regiões de impacto · Esc soltar o mouse"
 const HINT_GAMEPAD := "Analógico esquerdo andar · Analógico direito olhar · A pular · LT mirar · RT atirar\nDirecional ←/→ trocar de aventureiro · Start escolher aventureiro · Back regiões de impacto"
 const MENU_KEYBOARD := "Clique, ou use as setas e Enter"
@@ -132,35 +140,46 @@ class Crosshair:
 var music: AudioStreamPlayer
 
 
+## Os testes automáticos rodam na arena plana (previsível); o jogo de verdade, na ilha.
+const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som"]
+
+
 func _ready() -> void:
 	_setup_input()
 	Sfx.setup_buses()
 	music = Sfx.music(self, "tema")
+	var args := OS.get_cmdline_user_args()
+	arena = TEST_MODES.any(func(m: String) -> bool: return m in args)
 	_build_environment()
-	_build_ground()
-	_build_city()
-	_build_forest()
+	var world := _build_arena() if arena else _load_island()
 	player = Player.new()
 	player.name = "Player"
 	add_child(player)
+	player.global_position = world.start
+	player.set_yaw(world.start_yaw)
 	player.hit_confirmed.connect(_on_hit_confirmed)
 	player.character_changed.connect(_on_character_changed)
 	player.input_device_changed.connect(_on_input_device_changed)
 	player.health_changed.connect(func(h: int, m: int) -> void: hearts_bar.set_hearts(h, m))
 	player.damaged.connect(_on_player_damaged)
 	player.dizzy_started.connect(_on_player_dizzy)
-	for spawn in ENEMY_SPAWNS:
+	for spawn in world.enemies:
 		var e := SkeletonEnemy.new()
 		e.type_name = spawn[0]
-		e.name = spawn[0]
+		e.name = spawn[2]
 		e.position = spawn[1]
 		e.target = player
+		if arena:
+			e.start_awake = true
+			e.aggro_radius = 999.0
+			e.leash_radius = 999.0
 		e.defeated.connect(_on_enemy_defeated)
 		add_child(e)
 		enemies.append(e)
-	for pos in CHECKPOINTS:
+	for cp_spec in world.checkpoints:
 		var cp := Checkpoint.new()
-		cp.position = pos
+		cp.name = cp_spec[1]
+		cp.position = cp_spec[0]
 		cp.activated.connect(_on_checkpoint_activated)
 		add_child(cp)
 		checkpoints.append(cp)
@@ -171,7 +190,6 @@ func _ready() -> void:
 	_on_character_changed(player.character_name)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
 
-	var args := OS.get_cmdline_user_args()
 	if "--capture" in args:
 		select_panel.hide()
 		player.god_mode = true
@@ -191,8 +209,43 @@ func _ready() -> void:
 		Sfx.logging = true
 		_open_menu()
 		_run_sound_test()
+	elif "--ilha" in args:
+		select_panel.hide()
+		_run_island_test()
+	elif "--ilha-captura" in args:
+		select_panel.hide()
+		_run_island_capture()
 	else:
 		_open_menu()
+
+
+## Arena plana dos testes automáticos (o mapa antigo da fatia técnica).
+func _build_arena() -> Dictionary:
+	_build_ground()
+	_build_city()
+	_build_forest()
+	var spawns := []
+	for spawn in ENEMY_SPAWNS:
+		spawns.append([spawn[0], spawn[1], spawn[0]])
+	var cps := []
+	for k in CHECKPOINTS.size():
+		cps.append([CHECKPOINTS[k], "Bandeira%d" % (k + 1)])
+	return {"start": Vector3.ZERO, "start_yaw": 0.0, "enemies": spawns, "checkpoints": cps}
+
+
+## A ilha de verdade (scenes/ilha.tscn). Início, bandeiras e esqueletos vêm dos marcadores,
+## que dá para mover no editor da Godot.
+func _load_island() -> Dictionary:
+	island = load(ISLAND_SCENE).instantiate()
+	add_child(island)
+	var start: Marker3D = island.get_node("Marcadores/Inicio")
+	var spawns := []
+	for m in island.get_node("Marcadores/Esqueletos").get_children():
+		spawns.append([m.get_meta("tipo", "Skeleton_Minion"), m.global_position, m.name])
+	var cps := []
+	for m in island.get_node("Marcadores/PontosDeRetorno").get_children():
+		cps.append([m.global_position, m.name])
+	return {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps}
 
 
 # --- entrada -----------------------------------------------------------------
@@ -358,6 +411,13 @@ func _build_environment() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.1
+	if not arena:
+		# Na ilha: horizonte de mar e uma névoa leve que dá profundidade ao que está longe.
+		sky_mat.ground_bottom_color = Color("#3f9fd8")
+		env.fog_enabled = true
+		env.fog_light_color = Color("#cfe8ff")
+		env.fog_density = 0.0016
+		env.fog_sky_affect = 0.0
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
 	add_child(world_env)
@@ -366,8 +426,35 @@ func _build_environment() -> void:
 	sun.light_color = Color("#fff4e0")
 	sun.light_energy = 1.2
 	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 70.0
+	sun.directional_shadow_max_distance = 70.0 if arena else 110.0
 	add_child(sun)
+
+
+## Caiu no mar ou no rio: "tchibum", sem perder coração, e volta na última bandeira.
+func _physics_process(_delta: float) -> void:
+	if _splashing or not is_instance_valid(player) or player.dizzy:
+		return
+	if player.global_position.y < SEA_LEVEL - 0.9:
+		_splash()
+
+
+func _splash() -> void:
+	_splashing = true
+	Fx.bubble_pop(self, player.global_position + Vector3.UP * 0.8)
+	Fx.confetti(self, player.global_position + Vector3.UP * 0.8, 20, 4.0)
+	Sfx.play(self, "splash", 0.0, 0.0)
+	Fx.popup_text(self, player.global_position + Vector3.UP * 2.0, "Tchibum!", Color("#9fdcff"))
+	var tw := fade.create_tween()
+	tw.tween_property(fade, "modulate:a", 1.0, 0.3)
+	await tw.finished
+	var hearts_before := player.hearts
+	player.respawn(current_checkpoint.spawn_position())
+	player.hearts = hearts_before
+	player.health_changed.emit(player.hearts, player.max_hearts)
+	tw = fade.create_tween()
+	tw.tween_property(fade, "modulate:a", 0.0, 0.4)
+	await tw.finished
+	_splashing = false
 
 
 func _build_ground() -> void:
@@ -1055,6 +1142,142 @@ func _run_sound_test() -> void:
 	all_ok = _check("pulo", Sfx.played.count("pulo") > jumped_before) and all_ok
 
 	print("SOM OK" if all_ok else "SOM COM FALHAS")
+	get_tree().quit()
+
+
+func _enemy(name_prefix: String) -> SkeletonEnemy:
+	for e in enemies:
+		if e.name.begins_with(name_prefix):
+			return e
+	return null
+
+
+## Anda segurando "frente" com a câmera virada para um ponto, por alguns segundos.
+func _walk_toward(target: Vector3, seconds: float) -> void:
+	var d := target - player.global_position
+	player.set_yaw(atan2(-d.x, -d.z))
+	Input.action_press("frente")
+	await _wait(seconds)
+	Input.action_release("frente")
+
+
+## Confere a ilha de verdade: chão, esqueletos dormindo e acordando, voltar para casa,
+## subir o Morro, atravessar a ponte, cair no rio e bandeiras. Uso: godot --headless --path . -- --ilha
+func _run_island_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	await _wait(1.0)
+	var start: Vector3 = island.get_node("Marcadores/Inicio").global_position
+	all_ok = _check("aventureiro de pé no chão da praça", player.is_on_floor() and absf(player.global_position.y - start.y) < 1.0,
+			"(y %.2f, marcador %.2f)" % [player.global_position.y, start.y]) and all_ok
+	var markers := island.get_node("Marcadores/Esqueletos").get_child_count()
+	var sleeping := enemies.filter(func(e: SkeletonEnemy) -> bool: return e.state == SkeletonEnemy.State.DORMINDO).size()
+	all_ok = _check("esqueletos dos marcadores, todos dormindo", enemies.size() == markers and sleeping == markers,
+			"(%d marcadores, %d dormindo)" % [markers, sleeping]) and all_ok
+	all_ok = _check("bandeiras dos marcadores", checkpoints.size() == island.get_node("Marcadores/PontosDeRetorno").get_child_count(),
+			"(%d)" % checkpoints.size()) and all_ok
+
+	# Chegar perto acorda só quem está perto.
+	var minion := _enemy("Minion_01")
+	player.global_position = minion.global_position + Vector3(0, 0.5, 9)
+	await _wait(0.6)
+	var others_asleep := enemies.filter(func(e: SkeletonEnemy) -> bool: return e != minion and e.global_position.distance_to(minion.global_position) > 30.0).all(
+			func(e: SkeletonEnemy) -> bool: return e.state == SkeletonEnemy.State.DORMINDO)
+	all_ok = _check("chegar perto acorda o esqueleto", minion.state != SkeletonEnemy.State.DORMINDO, "(%s)" % SkeletonEnemy.State.keys()[minion.state]) and all_ok
+	all_ok = _check("quem está longe continua dormindo", others_asleep) and all_ok
+	await _wait(3.0)
+
+	# Ir para longe: ele volta para casa e deita de novo.
+	var home := minion._spawn_point
+	player.global_position = checkpoints[0].spawn_position()
+	await _wait_until(func() -> bool: return minion.state == SkeletonEnemy.State.DORMINDO, 40.0)
+	all_ok = _check("longe demais, volta para casa e dorme", minion.state == SkeletonEnemy.State.DORMINDO and minion.global_position.distance_to(home) < 2.5,
+			"(a %.1f m de casa)" % minion.global_position.distance_to(home)) and all_ok
+
+	# Subir a encosta do Morro andando.
+	var slope := Vector3(0, 0, 0)
+	for t in 36:
+		var a := TAU * t / 36.0
+		var p := Vector3(cos(a) * 62.0, 0, sin(a) * 62.0)
+		if p.z < 60.0:
+			slope = p
+			break
+	player.global_position = slope + Vector3(0, 30, 0)
+	await _wait(1.5)
+	var y0 := player.global_position.y
+	await _walk_toward(Vector3(0, 26, 0), 3.0)
+	all_ok = _check("dá para subir a encosta do Morro andando", player.global_position.y > y0 + 3.0,
+			"(subiu %.1f m em 3 s)" % (player.global_position.y - y0)) and all_ok
+
+	# Atravessar a ponte para a mata.
+	var bridge: Node3D = island.get_node("Ponte")
+	var south := Vector3(0, 2, -92)
+	player.global_position = south
+	await _wait(1.0)
+	await _walk_toward(Vector3(0, 0, -140), 7.0)
+	all_ok = _check("atravessa a ponte até a mata", player.global_position.z < -128.0 and player.global_position.y > SEA_LEVEL and not _splashing,
+			"(z %.1f, y %.2f)" % [player.global_position.z, player.global_position.y]) and all_ok
+	await _wait(0.5)
+
+	# Cair no rio: tchibum e volta na bandeira, sem perder coração.
+	var hearts_before := player.hearts
+	player.global_position = Vector3(45, 1.0, -112.0 + 9.0 * sin(45.0 / 38.0))
+	await _wait_until(func() -> bool: return _splashing, 4.0)
+	await _wait_until(func() -> bool: return not _splashing, 4.0)
+	all_ok = _check("caiu no rio, tchibum e volta na bandeira", player.global_position.distance_to(current_checkpoint.spawn_position()) < 2.0 and player.hearts == hearts_before,
+			"(bandeira %s)" % current_checkpoint.name) and all_ok
+
+	# Bandeira do topo do Morro.
+	var top: Checkpoint = checkpoints.filter(func(c: Checkpoint) -> bool: return c.name == "TopoDoMorro")[0]
+	player.global_position = top.global_position + Vector3(0, 0.5, 1.0)
+	await _wait(0.6)
+	all_ok = _check("bandeira do topo do Morro vira ponto de retorno", current_checkpoint == top) and all_ok
+
+	print("ILHA OK" if all_ok else "ILHA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos jogando na ilha (precisa de janela). Uso: godot --path . -- --ilha-captura
+func _run_island_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(1.0)
+	await _shot("ilha_jogo_01_praca.png")
+	# Minion_04 fica na rua norte (z = 110), que corre de leste a oeste: a câmera vem pela rua.
+	var minion := _enemy("Minion_04")
+	player.global_position = minion.global_position + Vector3(20, 0.5, 0)
+	await _aim_for(minion, 0.3, 0.3)
+	await _shot("ilha_jogo_02_esqueleto_dormindo.png")
+	player.global_position = minion.global_position + Vector3(10, 0.5, 0)
+	await _wait(1.6)
+	await _aim_for(minion, 1.2, 0.3)
+	await _shot("ilha_jogo_03_esqueleto_acorda.png")
+	var spiral: Vector3 = (island.get_node("Marcadores/Esqueletos/Rogue_01") as Node3D).global_position
+	player.global_position = spiral + Vector3(0, 1.0, 12)
+	await _wait(1.2)
+	player.aim_at(Vector3(0, 30, 0))
+	await _wait(0.3)
+	await _shot("ilha_jogo_04_trilha_do_morro.png")
+	var top: Checkpoint = checkpoints.filter(func(c: Checkpoint) -> bool: return c.name == "TopoDoMorro")[0]
+	player.global_position = top.global_position + Vector3(4, 0.5, 6)
+	await _wait(1.0)
+	player.aim_at(Vector3(0, 28, 0))
+	await _wait(0.4)
+	await _shot("ilha_jogo_05_castelinho.png")
+	player.global_position = Vector3(3, 2, -94)
+	await _wait(1.0)
+	player.set_yaw(0.0)
+	await _wait(0.4)
+	await _shot("ilha_jogo_06_ponte.png")
+	player.global_position = Vector3(30, 2, -162)
+	await _wait(1.0)
+	player.aim_at(Vector3(40, 8, -180))
+	await _wait(0.4)
+	await _shot("ilha_jogo_07_clareira.png")
+	player.global_position = Vector3(45, 1.0, -112.0 + 9.0 * sin(45.0 / 38.0))
+	await _wait(0.55)
+	await _shot("ilha_jogo_08_tchibum.png")
+	await _wait(1.5)
 	get_tree().quit()
 
 

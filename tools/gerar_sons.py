@@ -221,6 +221,12 @@ def make_sfx():
     shimmer = mix(0.7, *[(envelope(osc(midi(m), midi(m), 0.3, "sine"), 0.01, 0.1), i * 0.08, 0.5) for i, m in enumerate([72, 79, 84, 88, 91])])
     sfx("reaparecer", shimmer, -6)
 
+    # Tchibum (caiu na água): chuá de ruído grave, um "blop" descendo e gotinhas.
+    splash = envelope(lowpass(noise(0.6), 1800), 0.01, 0.18)
+    blop = envelope(osc(500, 140, 0.25, "sine"), 0.003, 0.08)
+    drops = [(envelope(osc(f, f * 1.3, 0.05, "sine"), 0.001, 0.015), t, 0.35) for f, t in [(1400, 0.25), (1800, 0.33), (1200, 0.42), (2000, 0.5)]]
+    sfx("splash", mix(0.7, (splash, 0, 0.9), (blop, 0.02, 0.8), *drops), -4)
+
     # Interface: mover o foco e confirmar.
     sfx("ui_mover", envelope(osc(900, 900, 0.04, "tri"), 0.001, 0.012), -12)
     sfx("ui_ok", mix(0.16, (envelope(osc(880, 880, 0.08, "tri"), 0.001, 0.03), 0, 0.8), (envelope(osc(1320, 1320, 0.1, "tri"), 0.001, 0.04), 0.05, 0.8)), -8)

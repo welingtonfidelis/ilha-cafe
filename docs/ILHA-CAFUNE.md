@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: fatia técnica com ciclo de combate e som (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). Aventureiro escolhível, câmera em terceira pessoa, blaster, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 20 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: ilha jogável (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1): cidade, Morro com castelinho, rio com ponte, mata, cais e 18 esqueletos que dormem até o aventureiro chegar perto. Aventureiro escolhível, câmera em terceira pessoa, blaster, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 21 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -67,6 +67,32 @@ Valem para história, arte, som e código.
 - **Floresta (norte):** montada com o KayKit Forest Nature Pack. Trilhas, rio, clareiras e uma clareira grande onde fica a árvore da festa.
 - **Morro (centro):** o ponto mais alto da ilha, entre a cidade e a floresta, com a casa dos esqueletos no topo. Montado com pedras e árvores da floresta; o KayKit Halloween Bits (grátis) pode dar abóboras, lápides engraçadas e um mausoléu, se quisermos.
 - **Escala:** o City Builder Bits foi feito para jogos de construir cidade vistos de cima. Os prédios podem precisar ser ampliados para combinar com os aventureiros. Isso se confirma no protótipo.
+
+### 3.1 A ilha no jogo (já feita)
+
+A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e depois editável no editor da Godot. Medidas reais (−Z é norte, 1 unidade = 1 m, mar em y = −0,6):
+
+| Lugar | Onde | Como é |
+|---|---|---|
+| Ilha | elipse de ~380 x 490 m com costa recortada | praia de areia em volta; terreno low-poly em grade de 4 m com cores por região |
+| Cidade | sul, x de −60 a 60, z de 110 a 190 | ruas do City Builder Bits em grade (4 x 3), prédios em volta dos quarteirões virados para a rua, carros, postes, lixeiras, caixa-d'água |
+| Praça da festa | quarteirão central do sul (x −20 a 20, z 150 a 190) | palco vermelho e azul, arco amarelo, 8 balões em postes, bancos e árvores; o jogo começa aqui |
+| Cais | sai da praça para o mar (z 206 a 252) | passarela de tábuas |
+| Morro | centro, raio 90 m, 26 m de altura | dá para subir andando por qualquer lado; trilha de terra em espiral (2,5 voltas) até o topo plano |
+| Castelinho | topo do Morro | 4 torres com bandeiras, muros, portão para o sul e a lanterna central roxa |
+| Rio Preguiçoso | atravessa a ilha de leste a oeste em z ≈ −112 | 14 m de largura; cair nele faz "tchibum" e volta na bandeira sem perder coração |
+| Ponte | x = 0, sobre o rio | passarela de tábuas com corrimão; é o único caminho para a mata |
+| Mata | norte do rio | ~330 árvores, pedras, arbustos, trilhas de terra |
+| Clareira da Jabuticabeira | (40, −180) | árvore gigante no meio |
+| Vila das Copas | (115, −160) | 3 plataformas de madeira sobre postes (chegar lá em cima fica para o pulo duplo) |
+| Morro dos Ventos | (−115, −185), 14 m | morrinho a noroeste |
+| Lanternas | 2 na cidade (leste e oeste), 1 no Morro dos Ventos, 1 na clareira | poste com esfera roxa e raio até o castelinho; por enquanto só visual |
+
+**Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (6 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos; a primeira começa ativa) e `Esqueletos` (18, cada um com o tipo na metadata `tipo`). Mover um marcador no editor muda o jogo, sem mexer em código.
+
+**Esqueletos na ilha:** começam dormindo como pilha de ossos e se montam quando o aventureiro chega a 16 m (golpe de perto) ou 22 m (quem atira). Se o aventureiro se afasta mais de 45 m da casa deles, voltam para casa e deitam de novo. Desmontados sem ninguém por perto, ficam dormindo ali mesmo.
+
+**Regerar a ilha** (`godot --headless --path . -s res://tools/gerar_ilha.gd`) sobrescreve `scenes/ilha.tscn` e o terreno em `assets/terrain/`. Depois de mexer na ilha pelo editor, faça commit antes de regerar. `tools/foto_ilha.gd` tira fotos da ilha de cima e de alguns pontos, para conferir sem abrir o editor.
 
 ## 4. História
 
@@ -262,6 +288,9 @@ godot -e --path .
 - `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 14 comandos (menu, analógicos, pulo, mira, auxílio de mira, tiro, troca de aventureiro, Back e Start); termina com "CONTROLE OK".
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
+- `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
+- `godot --path . -- --ilha-captura` tira 8 fotos jogando na ilha (praça, esqueleto dormindo e acordando, trilha do Morro, castelinho, ponte, clareira, tchibum).
+- Os testes `--smoke`, `--controle`, `--combate`, `--som` e `--capture` rodam na **arena plana** (o mapa antigo, previsível), com esqueletos já acordados; o jogo normal e os modos `--ilha` abrem a ilha.
 - Os modos `--smoke`, `--controle` e `--capture` ligam `god_mode` no jogador, para o tonto não travar o teste.
 - Para rodar os testes, use um limite de tempo (`perl -e 'alarm 200; exec @ARGV' godot ...`): se um script tiver erro de digitação, a Godot fica parada em vez de sair.
 - `godot --path . -- --capture` abre a janela, roda uma sequência e salva capturas em `tools/capturas/` (fora do git).
@@ -289,7 +318,7 @@ godot -e --path .
 
 | Arquivo | O que faz |
 |---|---|
-| `main.gd` | monta o mundo (chão, cidade ampliada 5x, floresta 1,8x), jogador, esqueletos, bandeiras, interface (corações, clarão de golpe, escurecer do tonto), queda de coração e os modos de teste |
+| `main.gd` | abre a ilha (lendo os marcadores) ou, nos testes, a arena plana; cria jogador, esqueletos e bandeiras; interface (corações, clarão de golpe, escurecer do tonto); tchibum na água; queda de coração e os modos de teste |
 | `player.gd` | câmera no ombro com SpringArm3D, movimento, `AnimationTree` (locomoção 2D, chão/ar, mira e tiro só no tronco, golpe recebido, normal/tonto), blaster no `handslot.r`, tiro por raio a partir do centro da tela, corações, invulnerabilidade piscando, empurrão, estrelinhas e volta na bandeira |
 | `skeleton_enemy.gd` | tipos em `TYPES` (distância, aviso, intervalo, armas); perseguir, preparar com "!", golpear ou disparar, esperar, levar golpe, desmontar, remontar e comemorar; escudo do Warrior; regiões de impacto em `BoneAttachment3D` |
 | `projectile.gd` | flecha de ventosa e bolha mágica (que também é alvo) |
@@ -315,12 +344,13 @@ godot -e --path .
 | escudo bloqueando | `escudo` ("clang") |
 | aventureiro leva golpe / fica tonto / reaparece | `bonk` / `tonto` (apito descendo e passarinhos) / `reaparecer` |
 | bandeira ativada / coração recolhido / pulo | `bandeira` (dó-mi-sol-dó) / `coracao` / `pulo` |
+| caiu na água | `splash` ("tchibum" com gotinhas) |
 | menu | `ui_mover` / `ui_ok` |
 | música | `tema`: 8 compassos em dó maior a 112 bpm, 17 s, emendando sem corte |
 
 Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC0) do Kenney servem; é só trocar os WAV mantendo os nomes.
 
-**Ainda não tem:** mapa da ilha de verdade, outros blasters, ajuste de volume pelo jogador, cenas editáveis no editor (tudo é montado por código em `main.gd`) e exportação para `.exe`. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate e o som ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
+**Ainda não tem:** história (missões, lanternas funcionando, chefes, ponte que baixa), pulo duplo e gancho, outros blasters, ajuste de volume pelo jogador, exportação para `.exe` e otimização para computador fraco (a ilha tem centenas de árvores e milhares de tufos de grama; no Mac M4 roda leve, mas não foi medido em outra máquina). O aventureiro, os esqueletos e a interface ainda são montados por código; só a ilha é cena editável. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate e o som ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
 
 ## 10. Decisões em aberto
 
