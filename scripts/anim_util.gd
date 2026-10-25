@@ -12,6 +12,7 @@ const SETS := {
 	"mov": "MovementBasic",
 	"mov2": "MovementAdvanced",
 	"tiro": "CombatRanged",
+	"luta": "CombatMelee",
 	"especial": "Special",
 	"festa": "Simulation",
 }
@@ -22,7 +23,8 @@ const LOOPING := [
 	"Jump_Idle", "Running_HoldingRifle", "Running_Strafe_Left", "Running_Strafe_Right",
 	"Walking_Backwards", "Ranged_1H_Aiming", "Ranged_2H_Aiming", "Ranged_1H_Shooting",
 	"Ranged_2H_Shooting", "Skeletons_Idle", "Skeletons_Walking", "Skeletons_Inactive_Floor_Pose",
-	"Cheering", "Waving",
+	"Cheering", "Waving", "Melee_Blocking", "Melee_Unarmed_Idle", "Melee_2H_Idle",
+	"Ranged_Magic_Spellcasting",
 ]
 
 static var _cache := {}

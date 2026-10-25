@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: fatia técnica jogável (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, com aventureiro escolhível, câmera em terceira pessoa, andar, correr, pular, mirar e atirar com blaster, e esqueletos que perseguem, levam tiro por região (cabeça vale o dobro), desmontam e se remontam. Pacotes brutos em `vendor/` (com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: fatia técnica com ciclo de combate (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). Aventureiro escolhível, câmera em terceira pessoa, blaster, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -161,13 +161,15 @@ Os nomes e gêneros dos personagens ficam para quando virmos os modelos.
 
 Os quatro esqueletos da versão grátis do KayKit Skeletons, mais variações de tamanho, cor e chapéu.
 
-| Esqueleto | Papel | Comportamento |
+| Esqueleto | Papel | Comportamento (o que já está no jogo em **negrito**) |
 |---|---|---|
-| Minion | o mais comum, vem em bando | corre e dá trombada; frágil |
-| Warrior | resistente | escudo na frente; acertar quando ele ergue o machado ou pelas costas |
-| Rogue | à distância | atira com besta (flecha de ventosa), se esconde atrás de carros e árvores |
-| Mage | apoio | lança bolhas mágicas lentas e chama minions |
-| Esqueleto dourado | raro | variação dourada de qualquer um; foge e deixa muitos diamantes |
+| Minion | o mais comum, vem em bando | **chega perto e dá um soco; 3 de vida** |
+| Warrior | resistente | **machado e escudo; tiro no corpo de frente é bloqueado ("bloqueou!"), a não ser quando ele ergue o machado; acertar a cabeça ou pelas costas; 5 de vida** |
+| Rogue | à distância | **besta; para a uns 12 m e atira flecha de ventosa reta, que dá para desviar andando de lado**; se esconder atrás de carros e árvores fica para depois |
+| Mage | apoio | **cajado; lança bolha mágica lenta que persegue de leve e estoura com um tiro ("plof!")**; chamar minions fica para depois |
+| Esqueleto dourado | raro | variação dourada de qualquer um; foge e deixa muitos diamantes (ainda não feito) |
+
+**Regras de combate que valem para todos (já no jogo):** antes de cada golpe aparece um "!" amarelo sobre a cabeça; levar tiro interrompe o ataque; cada golpe tira 1 coração; quando o aventureiro fica tonto, os esqueletos param de atacar e comemoram; quando ele volta na bandeira, todos voltam para os lugares de origem e acordam de novo, para ninguém reaparecer cercado.
 
 Chefes (todos montados com os esqueletos grátis, ampliados e com acessórios):
 
@@ -200,6 +202,8 @@ Quais modelos do Blaster Kit viram cada um se decide quando o pacote for baixado
 ### Itens
 
 Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (checkpoint): todos do KayKit Platformer Pack. Potes de vaga-lume, bilhetes e Lanternas Mágicas: montados com peças dos pacotes ou feitos com formas simples na Godot.
+
+**No jogo hoje:** o coração que cai e a bandeira de retorno são feitos com formas simples na Godot (coração gerado por código, bandeira com cilindros e caixa), até baixarmos o Platformer Pack. As armas dos esqueletos (machado, escudo, besta, cajado) vêm do próprio pacote Skeletons e encaixam no `handslot` sem ajuste.
 
 ### Pacotes
 
@@ -256,6 +260,8 @@ godot -e --path .
 **Testes automáticos:**
 - `godot --headless --path . -- --smoke` atira num esqueleto sem abrir janela e imprime os estados.
 - `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 14 comandos (menu, analógicos, pulo, mira, auxílio de mira, tiro, troca de aventureiro, Back e Start); termina com "CONTROLE OK".
+- `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
+- Os modos `--smoke`, `--controle` e `--capture` ligam `god_mode` no jogador, para o tonto não travar o teste.
 - `godot --path . -- --capture` abre a janela, roda uma sequência e salva capturas em `tools/capturas/` (fora do git).
 
 **Controles** (as dicas na tela trocam sozinhas conforme o aparelho em uso):
@@ -281,16 +287,19 @@ godot -e --path .
 
 | Arquivo | O que faz |
 |---|---|
-| `main.gd` | monta o mundo (chão, cidade ampliada 5x, floresta 1,8x), jogador, esqueletos, interface e os modos `--smoke` e `--capture` |
-| `player.gd` | câmera no ombro com SpringArm3D, movimento, `AnimationTree` (locomoção 2D, chão/ar, mira e tiro só no tronco), blaster no `handslot.r`, tiro por raio a partir do centro da tela |
-| `skeleton_enemy.gd` | perseguir, provocar, levar golpe, desmontar (`Skeletons_Death`) e remontar (`Skeletons_Death_Resurrect`); regiões de impacto em `BoneAttachment3D` |
+| `main.gd` | monta o mundo (chão, cidade ampliada 5x, floresta 1,8x), jogador, esqueletos, bandeiras, interface (corações, clarão de golpe, escurecer do tonto), queda de coração e os modos de teste |
+| `player.gd` | câmera no ombro com SpringArm3D, movimento, `AnimationTree` (locomoção 2D, chão/ar, mira e tiro só no tronco, golpe recebido, normal/tonto), blaster no `handslot.r`, tiro por raio a partir do centro da tela, corações, invulnerabilidade piscando, empurrão, estrelinhas e volta na bandeira |
+| `skeleton_enemy.gd` | tipos em `TYPES` (distância, aviso, intervalo, armas); perseguir, preparar com "!", golpear ou disparar, esperar, levar golpe, desmontar, remontar e comemorar; escudo do Warrior; regiões de impacto em `BoneAttachment3D` |
+| `projectile.gd` | flecha de ventosa e bolha mágica (que também é alvo) |
+| `checkpoint.gd` | bandeira de ponto de retorno |
+| `heart_pickup.gd` | coração que devolve vida |
 | `hurtbox.gd` | região de impacto (Area3D na camada 4) com multiplicador de dano |
 | `anim_util.gd` | carrega as bibliotecas de animação do KayKit e marca as que repetem |
 | `fx.gd` | confete, poeira, rastro do tiro, clarão e texto flutuante |
 
 `tools/weapon_axes.gd` calcula a rotação do blaster a partir da pose de mira (resultado: 90° em Y, posição `(0.12, 0.1, 0)`), e `tools/inspect.gd` imprime a hierarquia importada.
 
-**Ainda não tem:** esqueleto atacando e vida do jogador, som, mapa da ilha de verdade, outros blasters, cenas editáveis no editor (tudo é montado por código em `main.gd`) e exportação para `.exe`. O controle só foi testado com eventos simulados; falta um teste com controle físico.
+**Ainda não tem:** som, mapa da ilha de verdade, outros blasters, modelos do Platformer Pack para coração e bandeira, cenas editáveis no editor (tudo é montado por código em `main.gd`) e exportação para `.exe`. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate ainda só foi testado pelos testes automáticos e capturas.
 
 ## 10. Decisões em aberto
 

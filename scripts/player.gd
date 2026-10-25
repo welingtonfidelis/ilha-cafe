@@ -8,6 +8,10 @@ extends CharacterBody3D
 signal hit_confirmed(region: String, damage: float)
 signal character_changed(char_name: String)
 signal input_device_changed(gamepad: bool)
+signal health_changed(hearts: int, max_hearts: int)
+signal damaged
+signal dizzy_started
+signal respawned
 
 const CHARACTERS := {
 	"Knight": "res://assets/characters/adventurers/Knight.glb",
@@ -32,6 +36,12 @@ const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow"
 @export var mouse_sensitivity := 0.0025
 @export var fire_interval := 0.22
 @export var damage := 1.0
+
+@export_group("Vida")
+@export var max_hearts := 5
+## Depois de levar um golpe, fica um tempo sem levar outro (pisca enquanto isso).
+@export var invulnerable_time := 1.2
+@export var respawn_invulnerable_time := 2.5
 
 @export_group("Controle")
 ## Giro da câmera no analógico direito, em radianos por segundo (horizontal, vertical).
@@ -61,6 +71,12 @@ var input_enabled := true
 ## Usados pelo modo de captura automática para mirar e atirar sem mouse.
 var force_aim := false
 var force_fire := false
+## Nos testes automáticos, ignora golpes (para o tonto não travar o teste).
+var god_mode := false
+var hearts := 5
+var dizzy := false
+## Quem deu o último golpe (nome do esqueleto, "flecha" ou "bolha"); usado nos testes.
+var last_hit_by := ""
 
 var visual: Node3D
 var model: Node3D
@@ -80,6 +96,10 @@ var _yaw := 0.0
 var _pitch := -0.2
 var _air_state := "chao"
 var _joy_device := 0
+var _invulnerable := 0.0
+var _knockback := Vector3.ZERO
+var _head: BoneAttachment3D
+var _stars: Node3D
 
 
 func _ready() -> void:
@@ -97,8 +117,32 @@ func _ready() -> void:
 	visual.rotation.y = PI  # começa de costas para a câmera
 	add_child(visual)
 	_build_camera()
+	_build_stars()
+	hearts = max_hearts
 	if character_name == "":
 		set_character("Knight")
+
+
+## Quatro estrelinhas que giram sobre a cabeça quando o aventureiro fica tonto.
+func _build_stars() -> void:
+	_stars = Node3D.new()
+	_stars.name = "Estrelinhas"
+	_stars.top_level = true
+	_stars.visible = false
+	add_child(_stars)
+	var mesh := Fx.star_mesh(0.24, 0.1, 0.08)
+	var mat := Fx.flat_material(Color("#ffd23f"))
+	# Sempre de frente para a câmera, para nunca aparecer de perfil.
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	mat.billboard_keep_scale = true
+	for i in 4:
+		var star := MeshInstance3D.new()
+		star.mesh = mesh
+		star.material_override = mat
+		star.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var a := TAU * i / 4.0
+		star.position = Vector3(cos(a), 0, sin(a)) * 0.6
+		_stars.add_child(star)
 
 
 func _build_camera() -> void:
@@ -137,6 +181,13 @@ func set_character(char_name: String) -> void:
 	anim_tree = _build_anim_tree(model, ap)
 	_air_state = ""
 	_attach_blaster(model)
+	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
+	_head = BoneAttachment3D.new()
+	_head.name = "Cabeca"
+	_head.bone_name = "head"
+	sk.add_child(_head)
+	if dizzy:
+		anim_tree.set("parameters/estado/transition_request", "tonto")
 	character_changed.emit(char_name)
 
 
@@ -147,7 +198,8 @@ func _anim(anim_name: String) -> AnimationNodeAnimation:
 
 
 ## Árvore de animação:
-## locomoção (blend 2D) -> chão/ar -> pose de mira só no tronco -> tiro só no tronco.
+## locomoção (blend 2D) -> chão/ar -> pose de mira só no tronco -> tiro só no tronco
+## -> golpe recebido (corpo todo) -> normal/tonto.
 func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	var tree := AnimationTree.new()
 	tree.name = "AnimationTree"
@@ -197,7 +249,25 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	bt.connect_node(&"tiro", 0, &"mira")
 	bt.connect_node(&"tiro", 1, &"anim_tiro")
 
-	bt.connect_node(&"output", 0, &"tiro")
+	var hit := AnimationNodeOneShot.new()
+	hit.fadein_time = 0.05
+	hit.fadeout_time = 0.15
+	bt.add_node(&"golpe", hit, Vector2(1000, 100))
+	bt.add_node(&"anim_golpe", _anim("geral/Hit_A"), Vector2(750, 300))
+	bt.connect_node(&"golpe", 0, &"tiro")
+	bt.connect_node(&"golpe", 1, &"anim_golpe")
+
+	var dizzy_state := AnimationNodeTransition.new()
+	dizzy_state.input_count = 2
+	dizzy_state.set_input_name(0, "normal")
+	dizzy_state.set_input_name(1, "tonto")
+	dizzy_state.xfade_time = 0.2
+	bt.add_node(&"estado", dizzy_state, Vector2(1250, 100))
+	bt.add_node(&"anim_tonto", _anim("geral/Death_A"), Vector2(1000, 300))
+	bt.connect_node(&"estado", 0, &"golpe")
+	bt.connect_node(&"estado", 1, &"anim_tonto")
+
+	bt.connect_node(&"output", 0, &"estado")
 	tree.tree_root = bt
 	tree.active = true
 	return tree
@@ -242,7 +312,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not input_enabled:
+	if not _can_control():
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_yaw -= event.relative.x * mouse_sensitivity
@@ -250,8 +320,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	var control := _can_control()
 	var was_aiming := aiming
-	aiming = force_aim or (input_enabled and Input.is_action_pressed("mirar"))
+	aiming = not dizzy and (force_aim or (control and Input.is_action_pressed("mirar")))
 	if aiming and not was_aiming:
 		_snap_time = 0.25
 
@@ -264,7 +335,7 @@ func _physics_process(delta: float) -> void:
 	camera.fov = lerpf(camera.fov, 55.0 if aiming else 70.0, smooth)
 
 	var input := Vector2.ZERO
-	if input_enabled:
+	if control:
 		input = Input.get_vector("esquerda", "direita", "frente", "tras")
 	var cam_basis := camera_pivot.global_transform.basis
 	var forward := -cam_basis.z
@@ -278,18 +349,22 @@ func _physics_process(delta: float) -> void:
 		dir = dir.normalized()
 
 	var speed := aim_speed if aiming else run_speed
-	var horizontal := Vector3(velocity.x, 0, velocity.z).lerp(dir * speed, 1.0 - exp(-14.0 * delta))
-	velocity.x = horizontal.x
-	velocity.z = horizontal.z
+	var horizontal := Vector3(velocity.x, 0, velocity.z) - _knockback
+	horizontal = horizontal.lerp(dir * speed, 1.0 - exp(-14.0 * delta))
+	_knockback = _knockback.lerp(Vector3.ZERO, 1.0 - exp(-5.0 * delta))
+	velocity.x = horizontal.x + _knockback.x
+	velocity.z = horizontal.z + _knockback.z
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
-	elif input_enabled and Input.is_action_just_pressed("pular"):
+	elif control and Input.is_action_just_pressed("pular"):
 		velocity.y = jump_velocity
 	move_and_slide()
 
 	# O modelo do KayKit olha para +Z; o resto da Godot considera -Z como frente.
 	var face_dir := Vector3.ZERO
-	if aiming or _aim_hold > 0.0:
+	if dizzy:
+		pass
+	elif aiming or _aim_hold > 0.0:
 		face_dir = forward
 	elif dir.length() > 0.1:
 		face_dir = dir
@@ -298,18 +373,103 @@ func _physics_process(delta: float) -> void:
 
 	_fire_cooldown -= delta
 	_aim_hold -= delta
-	var wants_fire := force_fire or (input_enabled and Input.is_action_pressed("atirar"))
+	var wants_fire := not dizzy and (force_fire or (control and Input.is_action_pressed("atirar")))
 	if wants_fire and _fire_cooldown <= 0.0:
 		fire()
 
+	_update_invulnerability(delta)
 	_update_animation(delta)
+
+
+func _can_control() -> bool:
+	return input_enabled and not dizzy
+
+
+## Pisca enquanto está invulnerável; com o aventureiro tonto, as estrelinhas giram sobre a cabeça.
+func _update_invulnerability(delta: float) -> void:
+	_invulnerable -= delta
+	if _invulnerable > 0.0 and not dizzy:
+		visual.visible = fmod(_invulnerable, 0.16) > 0.08
+	else:
+		visual.visible = true
+	if dizzy and is_instance_valid(_head):
+		_stars.global_position = _head.global_position + Vector3.UP * 0.9
+		_stars.rotate_y(delta * 3.5)
+		for star in _stars.get_children():
+			star.rotate_y(delta * 6.0)
+
+
+func is_dizzy() -> bool:
+	return dizzy
+
+
+## Recebe um golpe de esqueleto, flecha ou bolha. Tira um coração, empurra para longe de quem
+## bateu e deixa um tempo invulnerável. Sem corações, fica tonto (nunca morre).
+func take_damage(amount: int, from: Vector3, source := "") -> void:
+	if god_mode or dizzy or _invulnerable > 0.0:
+		return
+	hearts = maxi(hearts - amount, 0)
+	last_hit_by = source
+	_invulnerable = invulnerable_time
+	var away := global_position - from
+	away.y = 0.0
+	away = away.normalized() if away.length() > 0.01 else -visual.global_basis.z
+	_knockback = away * 7.0
+	velocity.y = maxf(velocity.y, 3.5)
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/golpe/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	rumble(0.7, 0.6, 0.25)
+	health_changed.emit(hearts, max_hearts)
+	damaged.emit()
+	if hearts == 0:
+		_become_dizzy()
+
+
+func _become_dizzy() -> void:
+	dizzy = true
+	aiming = false
+	_aim_hold = 0.0
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/estado/transition_request", "tonto")
+	_stars.visible = true
+	dizzy_started.emit()
+
+
+## Volta no ponto de retorno com os corações cheios.
+func respawn(at: Vector3) -> void:
+	global_position = at
+	velocity = Vector3.ZERO
+	_knockback = Vector3.ZERO
+	hearts = max_hearts
+	dizzy = false
+	_stars.visible = false
+	_invulnerable = respawn_invulnerable_time
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/estado/transition_request", "normal")
+	health_changed.emit(hearts, max_hearts)
+	respawned.emit()
+
+
+## Devolve corações; com a vida cheia não pega (o coração fica no chão).
+func heal(amount: int) -> bool:
+	if dizzy or hearts >= max_hearts:
+		return false
+	hearts = mini(hearts + amount, max_hearts)
+	rumble(0.25, 0.0, 0.1)
+	health_changed.emit(hearts, max_hearts)
+	return true
+
+
+func rumble(weak: float, strong: float, duration: float) -> void:
+	if vibration and using_gamepad:
+		Input.start_joy_vibration(_joy_device, weak, strong, duration)
 
 
 ## Analógico direito gira a câmera, com curva suave perto do centro.
 ## Com controle e mirando, o auxílio de mira freia o giro perto de um alvo e puxa de leve.
 func _look_with_stick(delta: float) -> void:
 	var look := Vector2.ZERO
-	if input_enabled:
+	if _can_control():
 		look = Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo")
 	look *= look.length()
 	var factor := stick_aim_factor if aiming else 1.0
@@ -400,11 +560,10 @@ func fire() -> void:
 	if is_instance_valid(muzzle):
 		Fx.tracer(world, muzzle.global_position, end, Color("#fff3a0"))
 		Fx.muzzle_flash(muzzle)
-	if vibration and using_gamepad:
-		if hit_target:
-			Input.start_joy_vibration(_joy_device, 0.45, 0.25, 0.12)
-		else:
-			Input.start_joy_vibration(_joy_device, 0.2, 0.0, 0.07)
+	if hit_target:
+		rumble(0.45, 0.25, 0.12)
+	else:
+		rumble(0.2, 0.0, 0.07)
 
 
 ## Aponta a câmera para um ponto do mundo (usado pela captura automática).

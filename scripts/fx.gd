@@ -123,6 +123,83 @@ static func muzzle_flash(at: Node3D) -> void:
 	tw.tween_callback(ball.queue_free)
 
 
+## Estrela de 5 pontas com volume (estrelinhas de tonto).
+static func star_mesh(radius := 0.16, inner := 0.07, depth := 0.06) -> ArrayMesh:
+	var outline: Array[Vector2] = []
+	for i in 10:
+		var a := PI / 2.0 + i * PI / 5.0
+		outline.append(Vector2(cos(a), sin(a)) * (radius if i % 2 == 0 else inner))
+	return _pillow_mesh(outline, depth)
+
+
+## Coração com volume (vida e coração que cai dos esqueletos).
+static func heart_mesh(size := 0.35, depth := 0.16) -> ArrayMesh:
+	var outline: Array[Vector2] = []
+	for i in 40:
+		var t := TAU * i / 40.0
+		var x := 16.0 * pow(sin(t), 3)
+		var y := 13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t)
+		outline.append(Vector2(x, y) * (size / 17.0))
+	return _pillow_mesh(outline, depth)
+
+
+## Contorno 2D vira um "travesseiro": leque de triângulos com o centro estufado na frente e atrás.
+static func _pillow_mesh(outline: Array[Vector2], depth: float) -> ArrayMesh:
+	var center := Vector2.ZERO
+	for p in outline:
+		center += p
+	center /= outline.size()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for side in [1.0, -1.0]:
+		var tip := Vector3(center.x, center.y, side * depth * 0.5)
+		for i in outline.size():
+			var a := outline[i]
+			var b := outline[(i + 1) % outline.size()]
+			st.add_vertex(tip)
+			if side > 0.0:
+				st.add_vertex(Vector3(a.x, a.y, 0))
+				st.add_vertex(Vector3(b.x, b.y, 0))
+			else:
+				st.add_vertex(Vector3(b.x, b.y, 0))
+				st.add_vertex(Vector3(a.x, a.y, 0))
+	st.generate_normals()
+	return st.commit()
+
+
+static func flat_material(color: Color, unshaded := true) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if unshaded:
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return mat
+
+
+## Bolha estourando: gotinhas claras que somem rápido.
+static func bubble_pop(parent: Node, pos: Vector3) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.amount = 14
+	p.lifetime = 0.45
+	p.explosiveness = 1.0
+	p.spread = 180.0
+	p.initial_velocity_min = 2.0
+	p.initial_velocity_max = 3.5
+	p.gravity = Vector3(0, -4.0, 0)
+	p.scale_amount_min = 0.5
+	p.scale_amount_max = 1.0
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.06
+	mesh.height = 0.12
+	mesh.material = flat_material(Color("#ffd6f3"))
+	p.mesh = mesh
+	parent.add_child(p)
+	p.global_position = pos
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+
+
 static func popup_text(parent: Node, pos: Vector3, text: String, color: Color) -> void:
 	var label := Label3D.new()
 	label.text = text

@@ -8,7 +8,6 @@ extends Node3D
 
 const CITY := "res://assets/env/city/%s.gltf"
 const FOREST := "res://assets/env/forest/%s.gltf"
-const SKELETONS := "res://assets/characters/skeletons/%s.glb"
 const CITY_SCALE := 5.0
 const FOREST_SCALE := 1.8
 
@@ -29,6 +28,12 @@ const ENEMY_SPAWNS := [
 	["Skeleton_Mage", Vector3(-7, 0, -22)],
 ]
 
+## Pontos de retorno: o primeiro, no começo, já vem ativo.
+const CHECKPOINTS := [Vector3(-5, 0, 3), Vector3(14, 0, -32), Vector3(-18, 0, -28)]
+
+## Chance de um esqueleto desmontado deixar cair um coração (sempre cai se restarem 2 ou menos).
+const HEART_DROP_CHANCE := 0.4
+
 const HINT_KEYBOARD := "WASD andar · Espaço pular · Botão direito mirar · Botão esquerdo atirar\nQ/E ou 1 a 6 trocar de aventureiro · Tab escolher aventureiro · F3 regiões de impacto · Esc soltar o mouse"
 const HINT_GAMEPAD := "Analógico esquerdo andar · Analógico direito olhar · A pular · LT mirar · RT atirar\nDirecional ←/→ trocar de aventureiro · Start escolher aventureiro · Back regiões de impacto"
 const MENU_KEYBOARD := "Clique, ou use as setas e Enter"
@@ -44,6 +49,54 @@ var menu_hint: Label
 var _buttons: Array[Button] = []
 var _show_regions := false
 var _game_started := false
+var checkpoints: Array[Checkpoint] = []
+var current_checkpoint: Checkpoint
+var hearts_bar: HeartsBar
+var damage_flash: ColorRect
+var fade: ColorRect
+var dizzy_label: Label
+var heart_drop_chance := HEART_DROP_CHANCE
+
+
+## Corações de vida no canto de cima à direita; o que acabou de ser perdido dá um pulinho.
+class HeartsBar:
+	extends Control
+	var hearts := 5
+	var max_hearts := 5
+	var _pulse := 0.0
+	var _pulse_index := -1
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_hearts(h: int, m: int) -> void:
+		if h != hearts:
+			_pulse = 1.0
+			_pulse_index = mini(h, hearts)
+		hearts = h
+		max_hearts = m
+		queue_redraw()
+
+	func _process(delta: float) -> void:
+		position = Vector2(get_viewport_rect().size.x - max_hearts * 46.0 - 12.0, 74.0)
+		if _pulse > 0.0:
+			_pulse = maxf(0.0, _pulse - delta * 3.0)
+			queue_redraw()
+
+	func _draw() -> void:
+		for i in max_hearts:
+			var center := Vector2(22.0 + i * 46.0, 20.0)
+			var s := 18.0 * (1.0 + (0.35 * _pulse if i == _pulse_index else 0.0))
+			var pts := PackedVector2Array()
+			for k in 32:
+				var t := TAU * k / 32.0
+				var x := 16.0 * pow(sin(t), 3)
+				var y := -(13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t))
+				pts.append(center + Vector2(x, y) * (s / 17.0))
+			var outline := pts.duplicate()
+			outline.append(pts[0])
+			draw_colored_polygon(pts, Color("#ff4d6d") if i < hearts else Color(1, 1, 1, 0.22))
+			draw_polyline(outline, Color(0, 0, 0, 0.55), 3.0, true)
 
 
 class Crosshair:
@@ -88,31 +141,47 @@ func _ready() -> void:
 	player.hit_confirmed.connect(_on_hit_confirmed)
 	player.character_changed.connect(_on_character_changed)
 	player.input_device_changed.connect(_on_input_device_changed)
+	player.health_changed.connect(func(h: int, m: int) -> void: hearts_bar.set_hearts(h, m))
+	player.damaged.connect(_on_player_damaged)
+	player.dizzy_started.connect(_on_player_dizzy)
 	for spawn in ENEMY_SPAWNS:
 		var e := SkeletonEnemy.new()
-		e.model_path = SKELETONS % spawn[0]
+		e.type_name = spawn[0]
 		e.name = spawn[0]
 		e.position = spawn[1]
 		e.target = player
-		if spawn[0] == "Skeleton_Warrior":
-			e.max_health = 5.0
-			e.speed = 1.7
+		e.defeated.connect(_on_enemy_defeated)
 		add_child(e)
 		enemies.append(e)
+	for pos in CHECKPOINTS:
+		var cp := Checkpoint.new()
+		cp.position = pos
+		cp.activated.connect(_on_checkpoint_activated)
+		add_child(cp)
+		checkpoints.append(cp)
+	current_checkpoint = checkpoints[0]
+	current_checkpoint.set_active.call_deferred(true, true)
 	_build_ui()
+	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_character_changed(player.character_name)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
 
 	var args := OS.get_cmdline_user_args()
 	if "--capture" in args:
 		select_panel.hide()
+		player.god_mode = true
 		_run_capture()
 	elif "--smoke" in args:
 		select_panel.hide()
+		player.god_mode = true
 		_run_smoke()
 	elif "--controle" in args:
+		player.god_mode = true
 		_open_menu()
 		_run_gamepad_test()
+	elif "--combate" in args:
+		select_panel.hide()
+		_run_combat_test()
 	else:
 		_open_menu()
 
@@ -220,6 +289,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("regioes"):
 		_toggle_regions()
+	elif player.dizzy:
+		return
 	elif event.is_action_pressed("personagem_proximo"):
 		_cycle_character(1)
 	elif event.is_action_pressed("personagem_anterior"):
@@ -386,6 +457,24 @@ func _build_ui() -> void:
 	crosshair = Crosshair.new()
 	layer.add_child(crosshair)
 
+	damage_flash = _overlay(layer, Color(1.0, 0.25, 0.3))
+	fade = _overlay(layer, Color(0.05, 0.05, 0.12))
+	dizzy_label = Label.new()
+	dizzy_label.text = "Tonto! Voltando para a bandeira..."
+	dizzy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dizzy_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dizzy_label.add_theme_font_size_override("font_size", 40)
+	dizzy_label.add_theme_constant_override("outline_size", 12)
+	dizzy_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	dizzy_label.add_theme_color_override("font_color", Color("#ffd23f"))
+	dizzy_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dizzy_label.visible = false
+	layer.add_child(dizzy_label)
+	dizzy_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	hearts_bar = HeartsBar.new()
+	layer.add_child(hearts_bar)
+
 	hint = Label.new()
 	hint.text = HINT_KEYBOARD
 	hint.position = Vector2(16, 12)
@@ -442,6 +531,57 @@ func _build_ui() -> void:
 	menu_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_hint.add_theme_font_size_override("font_size", 16)
 	box.add_child(menu_hint)
+
+
+## Retângulo de tela cheia transparente, para clarão e escurecer.
+func _overlay(layer: CanvasLayer, color: Color) -> ColorRect:
+	var rect := ColorRect.new()
+	rect.color = color
+	rect.modulate.a = 0.0
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return rect
+
+
+func _on_player_damaged() -> void:
+	damage_flash.modulate.a = 0.25
+	var tw := damage_flash.create_tween()
+	tw.tween_property(damage_flash, "modulate:a", 0.0, 0.35)
+
+
+## Tonto: deita com estrelinhas, a tela escurece e o aventureiro volta na última bandeira.
+func _on_player_dizzy() -> void:
+	dizzy_label.visible = true
+	await _wait(2.4)
+	var tw := fade.create_tween()
+	tw.tween_property(fade, "modulate:a", 1.0, 0.4)
+	await tw.finished
+	player.respawn(current_checkpoint.spawn_position())
+	player.set_yaw(0.0)
+	# Os esqueletos voltam para os seus lugares e acordam de novo: ninguém reaparece cercado.
+	for e in enemies:
+		e.reset_to_spawn()
+	await _wait(0.25)
+	dizzy_label.visible = false
+	tw = fade.create_tween()
+	tw.tween_property(fade, "modulate:a", 0.0, 0.5)
+
+
+func _on_checkpoint_activated(cp: Checkpoint) -> void:
+	if cp == current_checkpoint:
+		return
+	current_checkpoint.set_active(false, true)
+	current_checkpoint = cp
+	cp.set_active(true)
+	player.rumble(0.3, 0.1, 0.15)
+
+
+func _on_enemy_defeated(e: SkeletonEnemy) -> void:
+	if player.hearts <= 2 or randf() < heart_drop_chance:
+		var heart := HeartPickup.new()
+		heart.position = Vector3(e.global_position.x, 0, e.global_position.z)
+		add_child(heart)
 
 
 func _choose_character(key: String) -> void:
@@ -534,6 +674,32 @@ func _run_capture() -> void:
 		player.set_character(key)
 		await _wait(0.6)
 		await _shot("07_%s.png" % key.to_lower())
+	# Combate: armas dos esqueletos, flecha voando, golpe recebido, tonto e volta na bandeira.
+	player.set_character("Knight")
+	var warrior := enemies[1]
+	await _aim_for(warrior, 1.4, 0.5)
+	await _shot("10_armas_esqueletos.png")
+	var rogue := enemies[2]
+	player.god_mode = false
+	var t := 0.0
+	while _projectiles(Projectile.Kind.FLECHA).is_empty() and t < 12.0:
+		player.hearts = player.max_hearts
+		player.aim_at(rogue.global_position + Vector3.UP * 1.2)
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	await _wait(0.12)
+	await _shot("11_flecha.png")
+	await _wait_until(func() -> bool: return player.hearts < player.max_hearts, 10.0)
+	await _wait(0.05)
+	await _shot("12_golpe.png")
+	player.hearts = 1
+	player._invulnerable = 0.0
+	await _wait_until(func() -> bool: return player.dizzy, 15.0)
+	await _wait(1.2)
+	await _shot("13_tonto.png")
+	await _wait_until(func() -> bool: return not player.dizzy and fade.modulate.a < 0.05, 8.0)
+	player.god_mode = true
+	await _shot("14_bandeira.png")
 	# Com controle: as dicas mudam e o menu abre com foco num botão.
 	_joy_axis(JOY_AXIS_LEFT_X, 0.6)
 	await get_tree().physics_frame
@@ -626,7 +792,7 @@ func _run_gamepad_test() -> void:
 	# LT mira; o auxílio de mira traz a mira de volta para o corpo de um esqueleto.
 	var target: SkeletonEnemy = null
 	for e in enemies:
-		if e.state == SkeletonEnemy.State.PERSEGUINDO or e.state == SkeletonEnemy.State.PROVOCANDO:
+		if e.state == SkeletonEnemy.State.PERSEGUINDO or e.state == SkeletonEnemy.State.ESPERANDO:
 			target = e
 			break
 	var body: Hurtbox = null
@@ -676,6 +842,123 @@ func _run_gamepad_test() -> void:
 	all_ok = _check("Start fecha o menu e solta o boneco", not select_panel.visible and player.input_enabled) and all_ok
 
 	print("CONTROLE OK" if all_ok else "CONTROLE COM FALHAS")
+	get_tree().quit()
+
+
+func _wait_until(cond: Callable, timeout: float) -> float:
+	var t := 0.0
+	while not cond.call() and t < timeout:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	return t
+
+
+func _projectiles(kind: Projectile.Kind) -> Array:
+	return get_children().filter(func(n: Node) -> bool: return n is Projectile and n.kind == kind)
+
+
+## Deixa os esqueletos atacarem de verdade e confere o ciclo de combate.
+## Uso: godot --headless --path . -- --combate
+func _run_combat_test() -> void:
+	var all_ok := true
+	var melee_names := ["Skeleton_Minion", "Skeleton_Warrior"]
+
+	# 1. Os três jeitos de atacar acertam o aventureiro parado. A vida é reposta a cada golpe
+	#    para ele não ficar tonto antes da hora.
+	var sources := {}
+	var t := 0.0
+	while t < 30.0 and not (sources.has("flecha") and sources.has("bolha") and sources.keys().any(func(s: String) -> bool: return s in melee_names)):
+		if player.hearts < player.max_hearts:
+			sources[player.last_hit_by] = sources.get(player.last_hit_by, 0) + 1
+			player.hearts = player.max_hearts
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	all_ok = _check("esqueleto bate de perto", sources.keys().any(func(s: String) -> bool: return s in melee_names), "(golpes: %s em %.0f s)" % [sources, t]) and all_ok
+	all_ok = _check("flecha de ventosa acerta", sources.has("flecha")) and all_ok
+	all_ok = _check("bolha mágica acerta", sources.has("bolha")) and all_ok
+
+	# 2. Invulnerável logo depois de um golpe.
+	player._invulnerable = 0.0
+	player.take_damage(1, player.global_position + Vector3.FORWARD, "teste")
+	var h := player.hearts
+	player.take_damage(1, player.global_position + Vector3.FORWARD, "teste")
+	all_ok = _check("fica invulnerável logo depois do golpe", player.hearts == h, "(%d corações)" % h) and all_ok
+
+	# 3. Um tiro estoura a bolha.
+	player.god_mode = true
+	await _wait_until(func() -> bool: return not _projectiles(Projectile.Kind.BOLHA).is_empty(), 10.0)
+	var bubbles := _projectiles(Projectile.Kind.BOLHA)
+	var popped := false
+	if not bubbles.is_empty():
+		var bubble: Projectile = bubbles[0]
+		player.force_aim = true
+		var tt := 0.0
+		while is_instance_valid(bubble) and tt < 3.0:
+			player.aim_at(bubble.global_position)
+			await get_tree().physics_frame
+			await get_tree().physics_frame
+			if is_instance_valid(bubble):
+				player.aim_at(bubble.global_position)
+				player.fire()
+			tt += 0.1
+		popped = not is_instance_valid(bubble)
+		player.force_aim = false
+	all_ok = _check("tiro estoura a bolha", popped) and all_ok
+
+	# 4. Sem corações fica tonto, os esqueletos comemoram e ele volta na bandeira com vida cheia.
+	player.god_mode = false
+	player.hearts = 1
+	player._invulnerable = 0.0
+	await _wait_until(func() -> bool: return player.dizzy, 15.0)
+	all_ok = _check("sem corações fica tonto", player.dizzy, "(golpe de %s)" % player.last_hit_by) and all_ok
+	await _wait(0.6)
+	all_ok = _check("esqueletos comemoram", enemies.any(func(e: SkeletonEnemy) -> bool: return e.state == SkeletonEnemy.State.COMEMORANDO)) and all_ok
+	await _wait_until(func() -> bool: return not player.dizzy, 6.0)
+	var spot := current_checkpoint.spawn_position()
+	all_ok = _check("volta na bandeira com vida cheia", not player.dizzy and player.hearts == player.max_hearts and player.global_position.distance_to(spot) < 1.5,
+			"(%d corações, a %.1f m do ponto)" % [player.hearts, player.global_position.distance_to(spot)]) and all_ok
+
+	# 5. Passar perto de outra bandeira troca o ponto de retorno.
+	player.god_mode = true
+	player.global_position = checkpoints[1].global_position + Vector3(0, 0.1, 0.8)
+	await _wait(0.4)
+	all_ok = _check("bandeira nova vira o ponto de retorno", current_checkpoint == checkpoints[1]) and all_ok
+	player.god_mode = false
+	player.hearts = 1
+	player._invulnerable = 0.0
+	player.take_damage(1, player.global_position + Vector3.FORWARD, "teste")
+	await _wait_until(func() -> bool: return not player.dizzy, 6.0)
+	all_ok = _check("volta na bandeira nova", player.global_position.distance_to(checkpoints[1].spawn_position()) < 1.5) and all_ok
+
+	# 6. Coração no chão: pega se faltar vida; com vida cheia ele fica lá.
+	player.god_mode = true
+	player.hearts = 3
+	var heart := HeartPickup.new()
+	heart.position = player.global_position
+	add_child(heart)
+	await _wait(0.8)
+	all_ok = _check("coração devolve vida", player.hearts == 4 and not is_instance_valid(heart), "(%d corações)" % player.hearts) and all_ok
+	player.hearts = player.max_hearts
+	var spare := HeartPickup.new()
+	spare.position = player.global_position
+	add_child(spare)
+	await _wait(0.8)
+	all_ok = _check("com vida cheia o coração fica no chão", is_instance_valid(spare)) and all_ok
+	spare.queue_free()
+
+	# 7. Com 2 corações ou menos, esqueleto desmontado sempre deixa um coração.
+	player.hearts = 2
+	var minion := enemies[0]
+	await _wait_until(func() -> bool: return minion.state != SkeletonEnemy.State.DESMONTADO and minion.state != SkeletonEnemy.State.REMONTANDO, 8.0)
+	var count_hearts := func() -> int:
+		return get_children().filter(func(n: Node) -> bool: return n is HeartPickup and not n.is_queued_for_deletion()).size()
+	var before: int = count_hearts.call()
+	minion.take_hit(99.0, minion.global_position + Vector3.UP * 2.0, minion.hurtboxes[0])
+	await get_tree().physics_frame
+	var after: int = count_hearts.call()
+	all_ok = _check("esqueleto desmontado deixa coração", after == before + 1) and all_ok
+
+	print("COMBATE OK" if all_ok else "COMBATE COM FALHAS")
 	get_tree().quit()
 
 
