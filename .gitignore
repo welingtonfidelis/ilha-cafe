@@ -1,0 +1,14 @@
+# Godot
+.godot/
+/android/
+
+# Pacotes brutos do KayKit e do Kenney (153 MB). Ficam só no disco; a lista de onde baixar
+# está na seção 8 de docs/ILHA-CAFUNE.md. O que o jogo usa de verdade está copiado em assets/.
+vendor/
+
+# Saídas de exportação e capturas de teste
+build/
+tools/capturas/
+
+# macOS
+.DS_Store
