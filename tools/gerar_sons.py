@@ -152,18 +152,12 @@ def make_sfx():
     ding = lambda f: envelope(mix(0.3, (osc(f, f, 0.3), 0, 1.0), (osc(f * 2.01, f * 2.01, 0.3), 0, 0.3)), 0.002, 0.08)
     sfx("acerto_cabeca", mix(0.4, (ding(1568), 0, 0.8), (ding(2093), 0.07, 0.8)), -5)
 
-    # Ossos desmontando: vários "toc" de madeira caindo, com um "boing" no fim.
-    clatter = []
-    t = 0.0
-    while t < 0.55:
-        f = random.uniform(700, 1500)
-        click = envelope(mix(0.05, (osc(f, f * 0.8, 0.05, "tri"), 0, 0.7), (highpass(noise(0.05), 1500), 0, 0.4)), 0.001, 0.012)
-        clatter.append((click, t, random.uniform(0.5, 1.0)))
-        t += random.uniform(0.03, 0.09)
-    boing = envelope(osc(420, 160, 0.3, "sine", vibrato=0.08, vib_rate=18), 0.004, 0.12)
-    sfx("ossos", mix(0.9, *clatter, (boing, 0.5, 0.6)), -4)
+    # Balão: borracha enchendo (chiado subindo com tremidinha) e um "tu-ru" alegre de despedida.
+    squeak = envelope(osc(260, 820, 0.4, "tri", vibrato=0.05, vib_rate=26), 0.02, 0.3, 0.4, 0.05)
+    note = lambda m, d: envelope(mix(d, (osc(midi(m), midi(m), d, "sine"), 0, 1.0), (osc(midi(m) * 2, midi(m) * 2, d), 0, 0.2)), 0.004, d * 0.6)
+    sfx("balao", mix(1.0, (squeak, 0, 0.6), (note(79, 0.22), 0.45, 0.7), (note(76, 0.32), 0.62, 0.7)), -5)
 
-    # Esqueleto se remontando: "toc-toc" acelerando e um "plim" subindo.
+    # Esqueleto acordando do chão: "toc-toc" acelerando e um "plim" subindo.
     rise = []
     t = 0.0
     step = 0.12

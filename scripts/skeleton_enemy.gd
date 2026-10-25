@@ -1,16 +1,25 @@
 class_name SkeletonEnemy
 extends CharacterBody3D
 ## Esqueleto do KayKit. Persegue o jogador e ataca do seu jeito (ver TYPES); ao levar tiros
-## suficientes, desmonta numa pilha de ossos e se remonta depois. Ninguém morre (regras de tom).
+## suficientes, aparecem balões amarrados nele e ele vai embora voando, acenando, de volta para o
+## Morro. Não volta mais. Ninguém morre (regras de tom do doc).
 ## Todo ataque tem um aviso ("!" em cima da cabeça) antes do golpe, para dar tempo de desviar.
 ## Duas regiões de impacto presas aos ossos: cabeça (dano em dobro) e corpo.
 
 signal defeated(enemy: SkeletonEnemy)
+## Saiu de vez (o balão subiu e sumiu). Logo depois o nó é liberado.
+signal gone(enemy: SkeletonEnemy)
 
-enum State { PERSEGUINDO, PREPARANDO, ATACANDO, ESPERANDO, ATINGIDO, DESMONTADO, REMONTANDO, COMEMORANDO, DORMINDO, VOLTANDO }
+enum State { PERSEGUINDO, PREPARANDO, ATACANDO, ESPERANDO, ATINGIDO, INDO_EMBORA, ACORDANDO, COMEMORANDO, DORMINDO, VOLTANDO }
 
 const SKELETONS := "res://assets/characters/skeletons/%s.glb"
 const WEAPONS := "res://assets/weapons/skeleton/%s.gltf"
+const BALLOONS := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
+const PLAT := "res://assets/props/platformer/%s.gltf"
+## Saída de balão: tempo até os balões aparecerem, até começar a subir, e até sumir.
+const BALLOON_APPEAR := 0.35
+const BALLOON_LIFT := 0.9
+const BALLOON_GONE := 7.0
 
 ## kind: "melee" (golpe de perto), "flecha" ou "bolha" (à distância).
 ## range: distância em que começa o ataque. windup: tempo do aviso até o golpe sair.
@@ -35,7 +44,6 @@ const TYPES := {
 }
 
 @export var type_name := "Skeleton_Minion"
-@export var down_time := 3.5
 ## Na ilha, o esqueleto começa dormindo (pilha de ossos) e se monta quando o aventureiro chega
 ## a aggro_radius metros. Se ele se afastar mais que leash_radius da casa, volta e deita de novo.
 ## Na arena dos testes, start_awake liga e os raios ficam enormes (comportamento antigo).
@@ -45,7 +53,7 @@ const TYPES := {
 
 var target: Player
 var health := 3.0
-var state := State.REMONTANDO
+var state := State.ACORDANDO
 var hurtboxes: Array[Hurtbox] = []
 var config: Dictionary
 
@@ -56,6 +64,9 @@ var _warning: Label3D
 var _hand_r: BoneAttachment3D
 var _state_time := 0.0
 var _rise_length := 1.0
+var _balloons: Node3D
+var _drift := Vector3.ZERO
+var _start_y := 0.0
 var _cooldown := 0.0
 var _struck := false
 var _spawn_point := Vector3.ZERO
@@ -99,20 +110,22 @@ func _ready() -> void:
 	if aggro_radius < 0.0:
 		aggro_radius = 16.0 if config.kind == "melee" else 22.0
 	if start_awake:
-		_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+		_enter(State.ACORDANDO, "especial/Skeletons_Awaken_Floor")
 	else:
 		_enter(State.DORMINDO, "especial/Skeletons_Inactive_Floor_Pose")
 
 
 ## Volta para o lugar de origem (usado quando o aventureiro reaparece na bandeira):
-## na ilha deita de novo; na arena acorda na hora.
+## na ilha deita de novo; na arena acorda na hora. Quem já está indo embora segue o balão.
 func reset_to_spawn() -> void:
+	if state == State.INDO_EMBORA:
+		return
 	global_position = _spawn_point
 	velocity = Vector3.ZERO
 	health = config.health
 	_cooldown = 1.5
 	if start_awake:
-		_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+		_enter(State.ACORDANDO, "especial/Skeletons_Awaken_Floor")
 	else:
 		_enter(State.DORMINDO, "especial/Skeletons_Inactive_Floor_Pose")
 
@@ -186,6 +199,9 @@ func _add_hurtbox(sk: Skeleton3D, bone: String, region: String, mult: float, sha
 func _physics_process(delta: float) -> void:
 	_state_time += delta
 	_cooldown -= delta
+	if state == State.INDO_EMBORA:
+		_fly_away(delta)
+		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 	var to_target := Vector3.ZERO
@@ -207,7 +223,7 @@ func _physics_process(delta: float) -> void:
 		State.DORMINDO:
 			_move(Vector3.ZERO)
 			if dist < aggro_radius and not target_down:
-				_enter(State.REMONTANDO, "especial/Skeletons_Awaken_Floor")
+				_enter(State.ACORDANDO, "especial/Skeletons_Awaken_Floor")
 		State.VOLTANDO:
 			var home := _spawn_point - global_position
 			home.y = 0.0
@@ -255,16 +271,7 @@ func _physics_process(delta: float) -> void:
 			_move(Vector3.ZERO)
 			if _state_time > 0.45:
 				_enter(State.PERSEGUINDO, "especial/Skeletons_Walking")
-		State.DESMONTADO:
-			_move(Vector3.ZERO)
-			if _state_time > down_time:
-				if dist > aggro_radius:
-					# Ninguém por perto: fica dormindo ali mesmo, já é uma pilha de ossos.
-					state = State.DORMINDO
-					_state_time = 0.0
-				else:
-					_enter(State.REMONTANDO, "especial/Skeletons_Death_Resurrect")
-		State.REMONTANDO:
+		State.ACORDANDO:
 			_move(Vector3.ZERO)
 			if _state_time > _rise_length:
 				health = config.health
@@ -330,12 +337,12 @@ func _enter(new_state: State, anim_name: String) -> void:
 		_warning.visible = false
 	if anim_name != "":
 		ap.play(StringName(anim_name), 0.15)
-	if new_state == State.REMONTANDO:
+	if new_state == State.ACORDANDO:
 		_rise_length = ap.current_animation_length
 		_set_hittable(false)
 		if is_inside_tree():
 			Sfx.play_at(get_parent(), "remontar", global_position + Vector3.UP, -3.0)
-	elif new_state == State.DESMONTADO or new_state == State.DORMINDO:
+	elif new_state == State.INDO_EMBORA or new_state == State.DORMINDO:
 		_set_hittable(false)
 
 
@@ -347,7 +354,7 @@ func _set_hittable(on: bool) -> void:
 
 
 func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
-	if state == State.DESMONTADO or state == State.REMONTANDO:
+	if state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO]:
 		return
 	# O guerreiro segura o escudo na frente: tiro no corpo de frente não passa,
 	# a não ser quando ele está erguendo o machado.
@@ -363,7 +370,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 
 ## Explosão da granada: o escudo não segura, e o dano já vem com a distância descontada.
 func take_explosion(amount: float, center: Vector3) -> void:
-	if state in [State.DESMONTADO, State.REMONTANDO, State.DORMINDO]:
+	if state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO]:
 		return
 	var away := global_position - center
 	away.y = 0.0
@@ -377,11 +384,76 @@ func _apply_damage(amount: float, point: Vector3, crit: bool) -> void:
 	Fx.popup_text(get_parent(), point + Vector3.UP * 0.3, "x2!" if crit else "-" + shown,
 			Color("#ffd23f") if crit else Color.WHITE)
 	if health <= 0.0:
-		Fx.confetti(get_parent(), global_position + Vector3.UP * 1.2, 70, 6.5)
-		Sfx.play_at(get_parent(), "ossos", global_position + Vector3.UP)
-		_enter(State.DESMONTADO, "especial/Skeletons_Death")
+		Fx.confetti(get_parent(), global_position + Vector3.UP * 1.2, 50, 5.0)
+		_start_leaving()
 		defeated.emit(self)
 	else:
 		# Levar tiro interrompe o ataque: dá chance para quem está aprendendo.
 		_cooldown = maxf(_cooldown, 0.8)
 		_enter(State.ATINGIDO, "geral/Hit_A")
+
+
+# --- indo embora de balão ----------------------------------------------------
+
+func _start_leaving() -> void:
+	_enter(State.INDO_EMBORA, "geral/Hit_B")
+	velocity = Vector3.ZERO
+	# Sem colisão: sobe atravessando telhados e copas sem enroscar.
+	collision_mask = 0
+	_start_y = global_position.y
+	# Deriva de leve na direção do Morro (centro da ilha) enquanto sobe.
+	var home := -global_position
+	home.y = 0.0
+	_drift = home.normalized() * 1.2 if home.length() > 1.0 else Vector3.ZERO
+	_build_balloons()
+
+
+## Três balões coloridos (bolas do Platformer Pack, um pouco esticadas) com cordinhas até
+## um nó acima da cabeça. Nascem pequenos e enchem com um pulinho.
+func _build_balloons() -> void:
+	_balloons = Node3D.new()
+	_balloons.name = "Baloes"
+	_balloons.position.y = 2.6
+	_balloons.scale = Vector3.ONE * 0.01
+	add_child(_balloons)
+	var colors := BALLOONS.duplicate()
+	colors.shuffle()
+	var spots := [Vector3(0, 2.2, 0), Vector3(-0.7, 1.7, 0.25), Vector3(0.7, 1.75, -0.2)]
+	var string_mat := Fx.flat_material(Color(1, 1, 1, 1), false)
+	for k in 3:
+		var ball: Node3D = load(PLAT % colors[k]).instantiate()
+		ball.scale = Vector3(0.42, 0.5, 0.42)
+		ball.position = spots[k]
+		_balloons.add_child(ball)
+		var bottom: Vector3 = spots[k] - Vector3(0, 0.5, 0)
+		var cord := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.015
+		cyl.bottom_radius = 0.015
+		cyl.height = bottom.length()
+		cyl.material = string_mat
+		cord.mesh = cyl
+		cord.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		cord.transform = Transform3D(Basis(Quaternion(Vector3.UP, bottom.normalized())), bottom * 0.5)
+		_balloons.add_child(cord)
+	var tw := _balloons.create_tween()
+	tw.tween_interval(BALLOON_APPEAR)
+	tw.tween_callback(func() -> void: Sfx.play_at(get_parent(), "balao", global_position + Vector3.UP * 3.0))
+	tw.tween_property(_balloons, "scale", Vector3.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _fly_away(delta: float) -> void:
+	if _state_time < BALLOON_LIFT:
+		return
+	if ap.current_animation != "festa/Waving":
+		ap.play(&"festa/Waving", 0.3)
+		Fx.popup_text(get_parent(), global_position + Vector3.UP * 3.2, "Tchau!", Color("#ffd6f3"))
+	var t := _state_time - BALLOON_LIFT
+	var up := minf(0.6 + t * 1.4, 4.0)
+	global_position += (Vector3.UP * up + _drift) * delta
+	visual.rotation.z = sin(_state_time * 2.2) * 0.08
+	_balloons.rotation.z = sin(_state_time * 2.2 + 0.6) * 0.12
+	if _state_time > BALLOON_GONE or global_position.y - _start_y > 24.0:
+		Fx.confetti(get_parent(), global_position + Vector3.UP * 4.0, 30, 3.0)
+		gone.emit(self)
+		queue_free()

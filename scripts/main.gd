@@ -214,6 +214,7 @@ func _ready() -> void:
 			e.aggro_radius = 999.0
 			e.leash_radius = 999.0
 		e.defeated.connect(_on_enemy_defeated)
+		e.tree_exited.connect(func() -> void: enemies.erase(e))
 		add_child(e)
 		enemies.append(e)
 	for cp_spec in world.checkpoints:
@@ -953,21 +954,20 @@ func _run_capture() -> void:
 	if away.length() < 5.0:
 		player.global_position = minion.global_position + away.normalized() * 7.0 + Vector3.UP * 0.2
 	var tries := 0
-	while minion.state != SkeletonEnemy.State.DESMONTADO and tries < 40:
+	while minion.state != SkeletonEnemy.State.INDO_EMBORA and tries < 40:
 		await _aim_for(minion, 1.0, 0.25)
 		player.fire()
 		tries += 1
-	if minion.state != SkeletonEnemy.State.DESMONTADO:
+	if minion.state != SkeletonEnemy.State.INDO_EMBORA:
 		minion.take_hit(99.0, minion.global_position + Vector3.UP * 2.0, minion.hurtboxes[0])
 	await _wait(0.9)
-	await _shot("04_desmontado.png")
+	await _shot("04_balao_enchendo.png")
 	_toggle_regions()
 	await _aim_for(enemies[1], 1.0, 0.5)
 	await _shot("05_regioes.png")
 	_toggle_regions()
-	await _aim_for(minion, 0.6, minion.down_time - 0.4)
-	await _wait(1.3)
-	await _shot("06_remontando.png")
+	await _aim_for(minion, 2.5, 1.2)
+	await _shot("06_balao_subindo.png")
 	player.force_aim = false
 	for key in CHARACTER_ORDER:
 		player.set_character(key)
@@ -1166,7 +1166,7 @@ func _run_gamepad_test() -> void:
 	await _wait(0.5)
 	_joy_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
 	_joy_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
-	all_ok = _check("RT atira e acerta", target.health < shots_before or target.state == SkeletonEnemy.State.DESMONTADO,
+	all_ok = _check("RT atira e acerta", target.health < shots_before or target.state == SkeletonEnemy.State.INDO_EMBORA,
 			"(vida %.0f -> %.0f, %s)" % [shots_before, target.health, SkeletonEnemy.State.keys()[target.state]]) and all_ok
 
 	# Direcional troca de blaster (o personagem só muda pelo menu de pausa).
@@ -1330,7 +1330,7 @@ func _run_combat_test() -> void:
 	# 7. Com 2 corações ou menos, esqueleto desmontado sempre deixa um coração.
 	player.hearts = 2
 	var minion := enemies[0]
-	await _wait_until(func() -> bool: return minion.state != SkeletonEnemy.State.DESMONTADO and minion.state != SkeletonEnemy.State.REMONTANDO, 8.0)
+	await _wait_until(func() -> bool: return minion.state != SkeletonEnemy.State.ACORDANDO, 8.0)
 	var count_hearts := func() -> int:
 		return get_children().filter(func(n: Node) -> bool: return n is HeartPickup and not n.is_queued_for_deletion()).size()
 	var before: int = count_hearts.call()
@@ -1367,20 +1367,20 @@ func _run_sound_test() -> void:
 	await _wait(0.3)
 	all_ok = _check("menu: mover e confirmar", heard.call("ui_mover") and heard.call("ui_ok")) and all_ok
 
-	# Tiro, acerto na cabeça, ossos desmontando e remontando.
+	# Tiro, acerto na cabeça e esqueleto indo embora de balão.
 	player.god_mode = true
 	var minion := enemies[0]
 	await _wait_until(func() -> bool: return minion.state == SkeletonEnemy.State.PERSEGUINDO or minion.state == SkeletonEnemy.State.ESPERANDO, 6.0)
 	Sfx.played.clear()
 	player.force_aim = true
-	while minion.state != SkeletonEnemy.State.DESMONTADO and Sfx.played.count("tiro") < 15:
+	while minion.state != SkeletonEnemy.State.INDO_EMBORA and Sfx.played.count("tiro") < 15:
 		await _aim_for(minion.hurtboxes[0], 0.0, 0.25)
 		player.fire()
-	all_ok = _check("tiro, acerto e ossos", heard.call("tiro") and (heard.call("acerto_cabeca") or heard.call("acerto")) and heard.call("ossos"),
+	all_ok = _check("tiro e acerto", heard.call("tiro") and (heard.call("acerto_cabeca") or heard.call("acerto")),
 			"(%s)" % ", ".join(Sfx.played.slice(0, 6))) and all_ok
 	player.force_aim = false
-	await _wait_until(func() -> bool: return heard.call("remontar"), minion.down_time + 1.0)
-	all_ok = _check("esqueleto remontando", heard.call("remontar")) and all_ok
+	await _wait_until(func() -> bool: return heard.call("balao"), 2.0)
+	all_ok = _check("balão do esqueleto indo embora", heard.call("balao")) and all_ok
 
 	# Ataques dos esqueletos: aviso, golpe de perto, flecha, bolha e o que acontece quando batem.
 	Sfx.played.clear()
@@ -1722,7 +1722,7 @@ func _run_weapons_test() -> void:
 	await _wait(0.5)
 
 	# Granada perto de um esqueleto parado.
-	await _wait_until(func() -> bool: return minion.state != SkeletonEnemy.State.DESMONTADO and minion.state != SkeletonEnemy.State.REMONTANDO, 10.0)
+	await _wait_until(func() -> bool: return minion.state != SkeletonEnemy.State.ACORDANDO, 10.0)
 	minion.set_physics_process(false)
 	minion.global_position = player.global_position + Vector3(0, 0, -7)
 	minion.health = minion.config.health
@@ -1730,7 +1730,7 @@ func _run_weapons_test() -> void:
 	var before_grenades := player.grenades
 	player.throw_grenade()
 	await _wait(2.4)
-	all_ok = _check("granada explode e desmonta o esqueleto perto", player.grenades == before_grenades - 1 and (minion.health < minion.config.health or minion.state == SkeletonEnemy.State.DESMONTADO),
+	all_ok = _check("granada explode e desmonta o esqueleto perto", player.grenades == before_grenades - 1 and (minion.health < minion.config.health or minion.state == SkeletonEnemy.State.INDO_EMBORA),
 			"(vida %.1f, %s)" % [minion.health, SkeletonEnemy.State.keys()[minion.state]]) and all_ok
 	minion.set_physics_process(true)
 	player.grenades = 0
@@ -1794,13 +1794,17 @@ func _run_smoke() -> void:
 	await _wait(2.5)
 	player.force_aim = true
 	var shots := 0
-	while minion.state != SkeletonEnemy.State.DESMONTADO and shots < 20:
+	while minion.state != SkeletonEnemy.State.INDO_EMBORA and shots < 20:
 		await _aim_for(minion, 1.0, 0.25)
 		player.fire()
 		shots += 1
 		print("tiro ", shots, " vida ", minion.health, " estado ", SkeletonEnemy.State.keys()[minion.state])
-	await _wait(minion.down_time + 2.5)
-	print("depois de esperar: estado ", SkeletonEnemy.State.keys()[minion.state], " vida ", minion.health)
+	var leaving_y := minion.global_position.y
+	await _wait(2.5)
+	var rose := minion.global_position.y - leaving_y if is_instance_valid(minion) else 99.0
+	print("subiu de balão: %.1f m em 2,5 s" % rose)
+	await _wait(6.0)
+	print("depois de esperar: foi embora de vez = ", not is_instance_valid(minion), ", esqueletos restantes ", enemies.size())
 	for key in CHARACTER_ORDER:
 		player.set_character(key)
 		await get_tree().physics_frame

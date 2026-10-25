@@ -11,7 +11,7 @@ const BUS_SFX := &"Efeitos"
 
 ## Todos os efeitos que tools/gerar_sons.py gera.
 const ALL := [
-	"tiro", "acerto", "acerto_cabeca", "ossos", "remontar", "alerta", "golpe_ar", "escudo",
+	"tiro", "acerto", "acerto_cabeca", "balao", "remontar", "alerta", "golpe_ar", "escudo",
 	"flecha", "ventosa", "bolha", "estouro", "bonk", "tonto", "bandeira", "coracao", "pulo",
 	"reaparecer", "ui_mover", "ui_ok", "splash", "granulado", "pipoqueira", "pe_de_moleque",
 	"recarga", "sem_municao", "troca_arma", "arremesso", "granada", "municao",

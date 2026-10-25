@@ -2,13 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://yfqx7res5ah4"
-path="res://.godot/imported/ossos.wav-f29440dbdaa4e02260dfc22308db60c5.sample"
+uid="uid://v5ns64b0ybmk"
+path="res://.godot/imported/balao.wav-94440d5ffe72f4dbbc39e8dab6ae279b.sample"
 
 [deps]
 
-source_file="res://assets/audio/sfx/ossos.wav"
-dest_files=["res://.godot/imported/ossos.wav-f29440dbdaa4e02260dfc22308db60c5.sample"]
+source_file="res://assets/audio/sfx/balao.wav"
+dest_files=["res://.godot/imported/balao.wav-94440d5ffe72f4dbbc39e8dab6ae279b.sample"]
 
 [params]
 

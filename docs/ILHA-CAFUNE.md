@@ -24,10 +24,10 @@ Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os bla
 
 ## 1. Visão geral
 
-Na véspera da Festa do Cafuné, os esqueletos do Morro descem e levam tudo da festa. Duas crianças da cidade, um menino e uma menina, pegam os blasters novos e saem pela ilha recuperando o que foi roubado, desmontando esqueletos (que sempre se remontam) e apagando as quatro Lanternas Mágicas que fecham o caminho do Morro. No fim, descobre que os esqueletos só queriam ser convidados.
+Na véspera da Festa do Cafuné, o Mestre Ossinho acende quatro Lanternas Mágicas que abrem rachaduras roxas pela ilha, e delas saem esqueletos em ondas para levar a festa embora. Duas crianças da cidade, um menino e uma menina, pegam os blasters novos e defendem cada região até o guardião aparecer. Esqueleto derrotado não se machuca: ganha balões e volta voando para o Morro, acenando. Apagando as quatro lanternas, o caminho do castelinho se abre, e no fim todos descobrem que os esqueletos só queriam ser convidados.
 
 - **Público:** crianças de 6 a 12 anos, e quem joga com elas.
-- **Gênero:** tiro em terceira pessoa com plataforma leve e exploração.
+- **Gênero:** tiro em terceira pessoa com defesa em ondas por região e exploração. Depois da história, o modo "Defender a festa" (ondas sem fim na praça, com recorde).
 - **Personagem:** o jogador escolhe entre o menino e a menina, e pode trocar a qualquer hora.
 - **Controle é obrigatório:** tudo tem que funcionar no controle (menus inclusive), não só no teclado e mouse. Com controle há auxílio de mira e vibração.
 - **Mundo:** uma ilha pequena, sem fases nem telas de carregamento. Cidade ao sul, floresta ao norte, Morro no meio.
@@ -38,7 +38,7 @@ Na véspera da Festa do Cafuné, os esqueletos do Morro descem e levam tudo da f
 
 Valem para história, arte, som e código.
 
-- **Ninguém morre.** Esqueleto acertado desmonta: os ossos se espalham com um "plóc", a caveira quica resmungando e os ossos saem pulando de volta para o Morro. Eles se remontam lá; não é morte, é derrota de desenho animado.
+- **Ninguém morre.** Esqueleto derrotado fica zonzo, aparecem três balões coloridos amarrados nele e ele sobe acenando ("Tchau!") de volta para o Morro. Não volta mais naquela luta. No epílogo, todos os que foram de balão estão na festa. (Decisão do usuário em 2026-10-25: nada de desmontar e se levantar de novo.)
 - **Esqueletos são engraçados, não assustadores:** batem os dentes, tropeçam nos próprios ossos, usam chapéu de festa roubado. Nada de olhos brilhando em vermelho, gritos ou escuridão.
 - **Os aventureiros não morrem.** Sem energia, ficam tontos vendo estrelinhas e voltam no último ponto de retorno.
 - **Blasters:** disparos coloridos com faísca e confete no impacto. Só se atira em esqueletos e alvos, nunca em pessoas.
@@ -90,58 +90,74 @@ A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e 
 
 **Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (6 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos; a primeira começa ativa) e `Esqueletos` (18, cada um com o tipo na metadata `tipo`). Mover um marcador no editor muda o jogo, sem mexer em código.
 
-**Esqueletos na ilha:** começam dormindo como pilha de ossos e se montam quando o aventureiro chega a 16 m (golpe de perto) ou 22 m (quem atira). Se o aventureiro se afasta mais de 45 m da casa deles, voltam para casa e deitam de novo. Desmontados sem ninguém por perto, ficam dormindo ali mesmo.
+**Esqueletos na ilha:** começam dormindo como pilha de ossos e se montam quando o aventureiro chega a 16 m (golpe de perto) ou 22 m (quem atira). Se o aventureiro se afasta mais de 45 m da casa deles, voltam para casa e deitam de novo. Derrotados, vão embora de balão. (Provisório: com as ondas, a maioria vira esqueleto de defesa, saindo das rachaduras.)
 
 **Regerar a ilha** (`godot --headless --path . -s res://tools/gerar_ilha.gd`) sobrescreve `scenes/ilha.tscn` e o terreno em `assets/terrain/`. Depois de mexer na ilha pelo editor, faça commit antes de regerar. `tools/foto_ilha.gd` tira fotos da ilha de cima e de alguns pontos, para conferir sem abrir o editor.
 
 ## 4. História
 
+Estrutura escolhida pelo usuário em 2026-10-25 (opção C): a história é feita de **defesas em ondas por região**, com a ilha aberta entre elas; depois do final, abre o modo **"Defender a festa"**, de ondas sem fim.
+
 ### Premissa
 
-Todo ano a ilha faz a Festa do Cafuné, com balões, banda, doces e lanternas. Os esqueletos que moram no Morro ouvem a música lá de cima, mas nunca são convidados: todo mundo se assusta só de olhar para eles. Este ano o Mestre Ossinho, líder dos esqueletos, decidiu: se não podem ir à festa, a festa vai até eles. Os esqueletos descem e levam tudo para fazer a sua própria festa no Morro.
+Todo ano a ilha faz a Festa do Cafuné, com balões, banda, doces e lanternas. Os esqueletos que moram no Morro ouvem a música lá de cima, mas nunca são convidados: todo mundo se assusta só de olhar para eles. Este ano o Mestre Ossinho, líder dos esqueletos, decidiu: se não podem ir à festa, a festa vai até eles. Ele acende quatro Lanternas Mágicas, que abrem rachaduras roxas no chão, e por elas os esqueletos saem em ondas para levar a decoração para o castelinho.
 
-### Prólogo: véspera da festa (praça da cidade, tutorial)
+### Prólogo: véspera da festa (praça, tutorial)
 
-1. O jogador escolhe seu aventureiro e ajuda a Guilda a montar a festa (andar, pular, interagir).
-2. Ao anoitecer, os esqueletos descem do Morro e levam balões, instrumentos e doces. Os aventureiros tentam espadas e machados, mas os esqueletos se remontam na hora.
-3. A Guilda abre a caixa de equipamentos novos: os blasters. Um disparo desmonta o esqueleto de vez, e ele volta pulando para o Morro (tutorial de tiro).
-4. O Mestre Ossinho aparece no alto do Morro e acende quatro Lanternas Mágicas, duas na cidade e duas na floresta. Raios roxos ligam o Morro às lanternas e fecham o caminho até lá.
+1. O jogador escolhe o menino ou a menina na praça enfeitada.
+2. Rachaduras roxas se abrem na praça. **Onda 1:** 3 Minions (aprender a atirar). **Onda 2:** 4 Minions e 1 Rogue (aprender a desviar de flecha). No intervalo cai a primeira caixa de munição.
+3. O Mestre Ossinho aparece no céu sobre o Morro e acende as quatro lanternas: duas na cidade, duas na mata. Raios roxos ligam o castelinho às lanternas.
+4. A praça fica segura e vira a base: bandeira de retorno e caixa de munição que sempre volta.
 
 A ilha se abre. Objetivo: apagar as quatro lanternas.
 
-### Ato 1: Cidade
+### Como funciona uma defesa
 
-Missões em qualquer ordem:
+- **Arena:** um círculo de uns 22 m em volta da lanterna, marcado no chão por um anel roxo. Entrar nele começa a defesa ("Os esqueletos vêm aí!").
+- **Rachaduras:** 3 a 5 pontos em volta da arena; os esqueletos saem delas (animação de subir do chão).
+- **Ondas:** 3 por região, cada uma maior que a anterior. A tela mostra "Onda 2 de 3 · faltam 5".
+- **Intervalo:** uns 8 segundos entre ondas; cai uma caixa de munição e um coração no centro.
+- **Guardião:** vem na última onda, com barra de vida no topo da tela.
+- **Saiu do círculo ou ficou tonto:** a onda atual é cancelada (os esqueletos dela afundam de volta nas rachaduras) e recomeça quando você voltar. Ondas já vencidas continuam vencidas.
+- **Vitória:** a lanterna apaga, as rachaduras fecham e a região vira festa (balões e bandeirinhas aparecem). A região fica segura, ganha uma bandeira de retorno e entrega a recompensa.
+- **Entre regiões:** exploração tranquila, com poucos grupinhos de 2 ou 3 esqueletos soltos, que também vão embora de balão e não voltam.
 
-- **A banda sumiu:** recuperar os instrumentos espalhados pela cidade. A música da cidade vai ganhando instrumentos.
-- **Doces da festa:** recuperar os doces que os esqueletos esconderam.
-- **Botas de Mola:** a Guilda entrega o pulo duplo, que abre telhados e lugares altos.
-- **Ossão** (chefe): esqueleto guerreiro gigante. Apaga a Lanterna 1.
-- **Mira-Torta** (chefe, precisa do pulo duplo): esqueleta ladina gigante de besta. Apaga a Lanterna 2.
+### Ato 1: Cidade (em qualquer ordem)
 
-Fecho do ato: com as duas lanternas da cidade apagadas, a ponte para a floresta baixa.
+| Região | Onda 1 | Onda 2 | Onda 3 | Guardião | Recompensa |
+|---|---|---|---|---|---|
+| Lanterna Oeste (perto da caixa-d'água) | 5 Minions | 4 Minions, 2 Warriors | 4 Minions, 1 Warrior | Ossão | blaster Granulado |
+| Lanterna Leste | 4 Minions, 1 Rogue | 3 Minions, 3 Rogues | 3 Minions, 2 Rogues | Mira-Torta | blaster Pipoqueira |
 
-### Ato 2: Floresta
+Fecho do ato: com as duas apagadas, a barreira roxa da ponte some e a mata se abre.
 
-Os esqueletos estão levando vaga-lumes em potes para iluminar a festa deles.
+### Ato 2: Mata (em qualquer ordem)
 
-- **Potes de vaga-lume:** libertar os vaga-lumes. Cada leva liberta ilumina uma parte da floresta à noite.
-- **Gancho:** a Guilda manda o gancho, que atravessa o rio e alcança galhos altos.
-- **Torre de Ossinhos** (chefe): dezenas de esqueletos-minion empilhados numa torre que anda. Atirar na base faz a torre desabar. Apaga a Lanterna 3.
-- **Minionzão** (chefe, precisa do gancho): minion gigante que se enrola e rola como bola de boliche. Apaga a Lanterna 4.
-- **Bilhetes dos esqueletos:** 12 bilhetes espalhados pelas duas regiões mostram, aos poucos, que eles só queriam ser convidados.
+| Região | Onda 1 | Onda 2 | Onda 3 | Guardião | Recompensa |
+|---|---|---|---|---|---|
+| Clareira da Jabuticabeira | 4 Minions, 1 Mage | 3 Minions, 2 Mages, 1 Rogue | 2 Mages | Torre de Ossinhos | +1 coração máximo |
+| Morro dos Ventos | 5 Minions, 1 Warrior | 2 Warriors, 2 Rogues, 1 Mage | 3 Minions | Minionzão | blaster Pé-de-Moleque |
 
-Fecho do ato: as quatro lanternas apagam e o caminho do Morro se abre. Um dos aventureiros, lendo um bilhete: "Gente... e se eles só estiverem sozinhos?"
+Fecho do ato: com as quatro apagadas, a cúpula roxa do castelinho cai. Num bilhete deixado na última lanterna, um dos esqueletos escreveu que só queria dançar na festa.
 
-### Ato 3: O Morro
+### Ato 3: O castelinho
 
-- **Subida do Morro**, usando pulo duplo e gancho, com os esqueletos tentando atrapalhar pela última vez.
-- **Chefe final: Mestre Ossinho**, esqueleto mago de coroa. Três fases: chama ondas de minions, se protege com um escudo de ossos, e por fim monta uma criatura gigante com os ossos de todos (desmonta ao fim da luta).
-- **Desfecho:** o Mestre Ossinho cai sentado numa pilha de ossos e balões e confessa que só queria ir à festa. A Guilda entrega o convite.
+- Subida do Morro pela trilha em espiral.
+- **Defesa final no castelinho:** 3 ondas com todos os tipos de esqueleto.
+- **Chefe final: Mestre Ossinho**, esqueleto mago de coroa. Três fases: chama minions pelas rachaduras, se protege com bolhas mágicas que precisam ser estouradas, e por fim lança bolhas gigantes que se dividem.
+- **Desfecho:** o Mestre Ossinho não vai de balão: senta no chão, tira a coroa e confessa que só queria ir à festa. As crianças entregam o convite.
 
 ### Epílogo: a Festa do Cafuné
 
-A festa acontece na praça com os esqueletos de convidados: tocam na banda (xilofone de costela), dançam e servem doces. Os créditos passam como um álbum de fotos da festa.
+Todos os esqueletos que foram de balão voltam descendo de balão na praça, agora como convidados: tocam na banda (xilofone de costela), dançam e servem doces. Os créditos passam como um álbum de fotos da festa. Ao fim, abre o modo "Defender a festa".
+
+### Modo "Defender a festa" (depois da história)
+
+- Na praça, com o palco e a decoração. Rachaduras em volta.
+- Ondas sem fim, cada vez maiores; a cada 5 ondas vem um guardião (revezando os quatro).
+- Todos os blasters liberados; caixas de munição e corações entre as ondas.
+- Contador de ondas e recorde salvo no computador.
+- Como a partida termina: decisão em aberto (seção 10).
 
 ### Mensagem
 
@@ -151,19 +167,15 @@ Não se julga ninguém pela aparência. Às vezes falta só um convite.
 
 O jogo não tem fases. O progresso aparece no próprio mundo:
 
-- **Raios das lanternas:** quatro raios roxos saem do Morro e apontam os chefes. Apagam um a um.
-- **Habilidades que abrem caminho:**
+- **Raios das lanternas:** quatro raios roxos saem do castelinho e apontam as regiões que faltam. Apagam um a um.
+- **Barreiras:** a barreira da ponte (some depois das duas lanternas da cidade) e a cúpula do castelinho (some depois das quatro).
+- **Regiões em festa:** cada região vencida ganha balões e bandeirinhas e fica sem esqueletos.
+- **Blasters ganhos aos poucos:** Paçoca desde o começo; Granulado (Oeste), Pipoqueira (Leste) e Pé-de-Moleque (Morro dos Ventos). Granadas desde o prólogo.
+- **Corações:** 5 no começo, +1 na Clareira.
+- **Marcador na tela:** um losango roxo aponta o objetivo atual, com a distância em metros; o texto do objetivo aparece numa faixa quando muda e fica no menu de pausa.
+- **Pontos de retorno:** bandeiras em cada região e no caminho.
 
-  | Habilidade | Quando | O que abre |
-  |---|---|---|
-  | Botas de Mola (pulo duplo) | Ato 1 | telhados e lugares altos da cidade, chefe Mira-Torta |
-  | Gancho | Ato 2 | rio, galhos altos, chefe Minionzão, subida do Morro |
-
-- **A ilha volta a ficar em festa:** cada missão concluída devolve algo visível (banda, balões, luzes, vaga-lumes).
-- **Moeda e melhorias:** os esqueletos derrotados deixam cair diamantes (KayKit Platformer Pack), que compram melhorias de blaster na base da Guilda.
-- **Pontos de retorno:** bandeiras de checkpoint (também do Platformer Pack).
-
-Coletáveis: bilhetes dos esqueletos (12), potes de vaga-lume, estrelas escondidas e esqueletos dourados (raros, fogem e deixam muitos diamantes).
+Ideias para depois: coletáveis (estrelas escondidas, bilhetes dos esqueletos), esqueleto dourado (raro, foge, deixa prêmio), diamantes para melhorar blasters.
 
 ## 6. Personagens jogáveis
 
@@ -193,17 +205,17 @@ Os quatro esqueletos da versão grátis do KayKit Skeletons, mais variações de
 | Mage | apoio | **cajado; lança bolha mágica lenta que persegue de leve e estoura com um tiro ("plof!")**; chamar minions fica para depois |
 | Esqueleto dourado | raro | variação dourada de qualquer um; foge e deixa muitos diamantes (ainda não feito) |
 
-**Regras de combate que valem para todos (já no jogo):** antes de cada golpe aparece um "!" amarelo sobre a cabeça; levar tiro interrompe o ataque; cada golpe tira 1 coração; quando o aventureiro fica tonto, os esqueletos param de atacar e comemoram; quando ele volta na bandeira, todos voltam para os lugares de origem e acordam de novo, para ninguém reaparecer cercado.
+**Regras de combate que valem para todos (já no jogo):** antes de cada golpe aparece um "!" amarelo sobre a cabeça; levar tiro interrompe o ataque; cada golpe tira 1 coração; quando o aventureiro fica tonto, os esqueletos param de atacar e comemoram; quando ele volta na bandeira, os que estavam acordados voltam para os lugares de origem, para ninguém reaparecer cercado; derrotado, o esqueleto vai embora de balão e não volta.
 
-Chefes (todos montados com os esqueletos grátis, ampliados e com acessórios):
+Guardiões (todos montados com os esqueletos grátis, ampliados e com acessórios). Cada um aparece na última onda da sua região e vai embora de balão quando derrotado (um balão gigante):
 
-| Chefe | Onde | Base | Como é a luta |
+| Guardião | Região | Base | Como é a luta |
 |---|---|---|---|
-| Ossão | cidade | Warrior 3x maior | bate o escudo no chão (onda que se pula); ponto fraco nas costas |
-| Mira-Torta | cidade, no alto | Rogue 2,5x maior | atira flechas de ventosa de cima dos prédios; chegar perto com o pulo duplo |
-| Torre de Ossinhos | floresta | dezenas de Minions empilhados | a torre anda; acertar os da base derruba a torre |
-| Minionzão | floresta | Minion 4x maior | enrola e rola como bola de boliche; desviar e acertar quando fica tonto |
-| Mestre Ossinho | Morro | Mage com coroa | três fases (minions, escudo de ossos, criatura gigante de ossos) |
+| Ossão | Lanterna Oeste | Warrior 2,6x maior, escudo grande | salta e bate no chão, soltando uma onda que se pula; machadada de perto; o escudo bloqueia tiro no corpo pela frente (cabeça e costas valem); na metade da vida chama 2 Minions |
+| Mira-Torta | Lanterna Leste | Rogue 2,3x maior | pula de um lado para outro da arena; leque de 5 flechas; chuva de flechas com círculos de aviso no chão (sair do círculo antes de cair) |
+| Torre de Ossinhos | Clareira | 5 Minions empilhados | a torre anda e o de cima joga bolhas que estouram com tiro; cada Minion acertado o bastante sai de balão e os de cima descem; com 2 ou menos, a torre pula e solta uma onda |
+| Minionzão | Morro dos Ventos | Minion 3x maior | investida em linha reta (uma faixa vermelha no chão avisa o caminho); depois fica tonto uns segundos e leva dano em dobro; soco de perto |
+| Mestre Ossinho | castelinho | Mage com coroa | três fases (minions pelas rachaduras, escudo de bolhas, bolhas gigantes que se dividem) |
 
 **Opção paga barata:** a versão Extra do Skeletons traz o Skeleton Golem e o Necromancer, que dariam um chefe e um Mestre Ossinho com visual próprio. A página mostra dois preços (US$ 3,97 e US$ 7,95).
 
@@ -220,7 +232,7 @@ O KayKit não tem armas de fogo nem blasters em nenhum pacote (conferido em 2026
 | 1 | Paçoca (pistola) | `blaster-a` | 1 | 12 | infinito | 1,0 s | tiro único e preciso, 1 de dano |
 | 2 | Granulado (rajada) | `blaster-j` | 2 | 30 | 60 / 150 | 1,6 s | segura o gatilho, 11 tiros por segundo, 0,5 de dano, pouco espalhado |
 | 3 | Pipoqueira (escopeta) | `blaster-l` | 2 | 6 | 12 / 36 | 1,8 s | 7 projéteis de 0,6 num leque de 5,5°, alcance de 28 m |
-| 4 | Pé-de-Moleque (precisão) | `blaster-e` | 2 | 5 | 10 / 25 | 2,0 s | luneta ao mirar (aproxima e diminui a sensibilidade), 3 de dano, um tiro na cabeça desmonta qualquer esqueleto |
+| 4 | Pé-de-Moleque (precisão) | `blaster-e` | 2 | 5 | 10 / 25 | 2,0 s | luneta ao mirar (aproxima e diminui a sensibilidade), 3 de dano, um tiro na cabeça derrota qualquer esqueleto |
 | G / RB | Brigadeiro (granada) | `grenade-a` | — | — | começa com 2, máximo 3 | — | arremesso em arco, explode em confete depois de 1,4 s, raio de 5 m, até 3 de dano, o escudo não segura, estoura bolhas |
 
 **Regras de munição (decisão do usuário: estoque limitado):**
@@ -230,7 +242,7 @@ O KayKit não tem armas de fogo nem blasters em nenhum pacote (conferido em 2026
 - **A Paçoca tem estoque infinito de propósito**, como rede de segurança: a criança nunca fica sem ter com o que atirar.
 - **Caixa de munição** (caixote do Blaster Kit com um pente em cima): devolve 30 do Granulado, 6 da Pipoqueira, 5 do Pé-de-Moleque e 1 granada, até o máximo. Com tudo cheio, fica no chão.
   - Na ilha há 10 caixas fixas (marcadores `Marcadores/Municao`), que voltam 45 s depois de pegas.
-  - Esqueleto desmontado deixa cair uma caixa em 50% das vezes, e sempre que a munição limitada está abaixo de 25%; essa some depois de 30 s.
+  - Esqueleto derrotado deixa cair uma caixa em 50% das vezes, e sempre que a munição limitada está abaixo de 25%; essa some depois de 30 s.
 
 ### Itens
 
@@ -257,7 +269,7 @@ Todos são CC0: uso comercial livre, sem atribuição obrigatória. O KayKit ped
 ## 9. Notas técnicas na Godot
 
 - **Esqueleto compartilhado (conferido nos arquivos):** aventureiros e esqueletos usam o mesmo esqueleto, `Rig_Medium`, com os mesmos nomes de ossos (`root`, `hips`, `spine`, `chest`, `head`, `upperarm.l/r`, `lowerarm.l/r`, `wrist.l/r`, `hand.l/r`, `handslot.l/r`, pernas e pés). Trocar de aventureiro é só trocar o modelo; animações, encaixe de arma e regiões de impacto continuam valendo.
-- **Modelos em peças:** cada personagem vem dividido em malhas separadas (cabeça, corpo, braços, pernas, capa, elmo). Isso facilita esqueleto desmontando e trocar acessórios.
+- **Modelos em peças:** cada personagem vem dividido em malhas separadas (cabeça, corpo, braços, pernas, capa, elmo). Isso facilita trocar acessórios.
 - **Animações:** os modelos não trazem animação embutida; elas vêm em arquivos `.glb` separados por categoria, em `vendor/kaykit-character-animations/.../Animations/gltf/Rig_Medium/`. As que importam para o jogo:
 
   | Arquivo | Animações úteis |
@@ -266,7 +278,7 @@ Todos são CC0: uso comercial livre, sem atribuição obrigatória. O KayKit ped
   | `Rig_Medium_MovementBasic` | `Walking_A/B/C`, `Running_A/B`, `Jump_Start`, `Jump_Idle`, `Jump_Land` |
   | `Rig_Medium_MovementAdvanced` | `Running_HoldingRifle`, `Running_Strafe_Left/Right`, `Walking_Backwards`, `Dodge_Forward/Backward/Left/Right` (esquiva) |
   | `Rig_Medium_General` | `Idle_A/B`, `Hit_A/B` (levar golpe), `Death_A/B` (ficar tonto), `Interact`, `PickUp`, `Throw` (granada Brigadeiro) |
-  | `Rig_Medium_Special` | `Skeletons_Awaken_Floor` (esqueleto se montando do chão), `Skeletons_Death_Resurrect` (desmonta e se remonta), `Skeletons_Idle`, `Skeletons_Walking`, `Skeletons_Taunt`, `Skeletons_Spawn_Ground` |
+  | `Rig_Medium_Special` | `Skeletons_Awaken_Floor` (esqueleto se montando do chão), `Skeletons_Idle`, `Skeletons_Walking`, `Skeletons_Taunt`, `Skeletons_Spawn_Ground` |
   | `Rig_Medium_Simulation` | `Cheering`, `Waving`, `Sit_Chair_*` (festa do epílogo) |
 
   Não há andar de lado lento nem correr de costas; a mira fica numa camada só do tronco, por cima da locomoção.
@@ -274,7 +286,7 @@ Todos são CC0: uso comercial livre, sem atribuição obrigatória. O KayKit ped
 - **Mira:** pose de mira parada só no tronco no `AnimationTree`, para correr e atirar ao mesmo tempo. As animações de mira do KayKit (`Ranged_1H_Aiming`, `Ranged_2H_Aiming`) levantam o braço, seguram e abaixam no fim; repetidas, o braço sobe e desce sem parar. Por isso o jogo congela um instante delas (`AnimUtil.add_pose`: 0,6 s na de uma mão, 0,8 s na de duas).
 - **Tiro:** sem animação de corpo (a do KayKit também levanta e abaixa o braço e reiniciava a cada disparo, fazendo cabeça e mãos repetirem o mesmo movimento). O coice é procedural, num nó `Coice` entre o osso da mão e o blaster: a boca sobe e a arma recua e volta, com força por arma (`coice` em `weapons.gd`). O teste `--armas` mede que cabeça e mão ficam firmes mirando e atirando.
 - **Regiões de impacto:** cabeça e tronco dos esqueletos, mais pontos fracos dos chefes (costas do Ossão, base da Torre de Ossinhos).
-- **Esqueleto desmontando:** na derrota, o modelo é trocado pelas partes soltas com física. Os esqueletos KayKit vêm em peças (cabeça, mandíbula, olhos, corpo, braços, pernas, capa), conferido nos arquivos.
+- **Esqueleto indo embora de balão:** na derrota, três bolas do Platformer Pack (esticadas) com cordinhas aparecem sobre a cabeça e enchem; o esqueleto toca `Waving`, mostra "Tchau!" e sobe sem colisão, derivando para o Morro, até sumir em confete (uns 7 s). Sinal `gone` quando sai.
 - **Escala:** 1 unidade = 1 metro; ampliar prédios da cidade se ficarem pequenos perto dos personagens.
 - **Exportação:** a Godot gera `.exe` para Windows a partir do Mac. Para isso precisa baixar os modelos de exportação (export templates) da mesma versão da Godot, um pacote grande, na ordem de 1 GB. Também gera o app para macOS.
 
@@ -331,7 +343,7 @@ godot -e --path .
 |---|---|
 | `main.gd` | abre a ilha (lendo os marcadores) ou, nos testes, a arena plana; cria jogador, esqueletos e bandeiras; interface (corações, clarão de golpe, escurecer do tonto); tchibum na água; queda de coração e os modos de teste |
 | `player.gd` | câmera no ombro com SpringArm3D, movimento, `AnimationTree` (locomoção 2D, chão/ar, mira e tiro só no tronco, golpe recebido, normal/tonto), blaster no `handslot.r`, tiro por raio a partir do centro da tela, corações, invulnerabilidade piscando, empurrão, estrelinhas e volta na bandeira |
-| `skeleton_enemy.gd` | tipos em `TYPES` (distância, aviso, intervalo, armas); perseguir, preparar com "!", golpear ou disparar, esperar, levar golpe, desmontar, remontar e comemorar; escudo do Warrior; regiões de impacto em `BoneAttachment3D` |
+| `skeleton_enemy.gd` | tipos em `TYPES` (distância, aviso, intervalo, armas); perseguir, preparar com "!", golpear ou disparar, esperar, levar golpe, ir embora de balão e comemorar; escudo do Warrior; regiões de impacto em `BoneAttachment3D` |
 | `projectile.gd` | flecha de ventosa e bolha mágica (que também é alvo) |
 | `checkpoint.gd` | bandeira de ponto de retorno |
 | `heart_pickup.gd` | coração que devolve vida |
@@ -352,7 +364,7 @@ godot -e --path .
 |---|---|
 | tiro do blaster | `tiro` ("piu" descendo) |
 | acerto no corpo / na cabeça | `acerto` ("tic") / `acerto_cabeca` ("dim-dim") |
-| esqueleto desmonta / se remonta | `ossos` (toc-toc de madeira e "boing") / `remontar` (toc-toc acelerando e "plim") |
+| esqueleto vai embora de balão / acorda do chão | `balao` (borracha enchendo e "tu-ru" de despedida) / `remontar` (toc-toc acelerando e "plim") |
 | aviso "!" antes do golpe | `alerta` (baixinho, porque toca muito) |
 | golpe de perto / flecha / bolha | `golpe_ar` ("fuuu") / `flecha` ("fiu") / `bolha` ("blub") |
 | flecha batendo / bolha estourando | `ventosa` ("ploc") / `estouro` ("pop") |
@@ -374,6 +386,7 @@ Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC
 
 - **Título:** "Ilha Cafuné" é provisório.
 - **Nomes do menino e da menina:** ainda por decidir.
+- **Fim de uma partida no "Defender a festa":** (a) os esqueletos tentam levar 5 enfeites do palco; derrubar o ladrão devolve o enfeite; perdeu os 5, acabou; ou (b) acaba quando o aventureiro fica tonto 3 vezes.
 - **Habilidades por classe:** na primeira versão a escolha é só visual.
 - **Skeletons Extra (pago):** Golem e Necromancer melhorariam os chefes e o Mestre Ossinho.
 - **Animação de tiro:** resolvida no papel, pelo KayKit Character Animations; falta baixar e conferir na Godot.
