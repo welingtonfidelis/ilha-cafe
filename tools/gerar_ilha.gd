@@ -37,6 +37,10 @@ const CITY := "res://assets/env/city/%s.gltf"
 const FOREST := "res://assets/env/forest/%s.gltf"
 const PLAT := "res://assets/props/platformer/%s.gltf"
 const CITY_SCALE := 5.0
+## Topo das ruas (a peça fica em y = 0,01 e tem 0,1 de altura).
+const ROAD_TOP := 0.11
+## Os carros do City Builder Bits têm as rodas 7,2 cm abaixo da origem (36 cm na escala 5).
+const CAR_LIFT := 0.072 * CITY_SCALE
 const FOREST_SCALE := 1.8
 const ROAD_XS := [-60, -20, 20, 60]
 const ROAD_ZS := [110, 150, 190]
@@ -458,9 +462,9 @@ func _city() -> void:
 		var pos := Vector3.ZERO
 		var rot := 0.0
 		if on_x:
-			pos = Vector3(ROAD_XS[rng.randi() % ROAD_XS.size()] + 2.5, 0, ROAD_ZS[0] + 5 + rng.randi_range(0, 7) * 10)
+			pos = Vector3(ROAD_XS[rng.randi() % ROAD_XS.size()] + 2.5, ROAD_TOP + CAR_LIFT, ROAD_ZS[0] + 5 + rng.randi_range(0, 7) * 10)
 		else:
-			pos = Vector3(ROAD_XS[0] + 5 + rng.randi_range(0, 11) * 10, 0, ROAD_ZS[rng.randi() % ROAD_ZS.size()] + 2.5)
+			pos = Vector3(ROAD_XS[0] + 5 + rng.randi_range(0, 11) * 10, ROAD_TOP + CAR_LIFT, ROAD_ZS[rng.randi() % ROAD_ZS.size()] + 2.5)
 			rot = 90.0
 		_prop(props, CITY % cars[rng.randi() % cars.size()], pos, rot + (180.0 if rng.randf() < 0.5 else 0.0), CITY_SCALE, "caixa")
 	for k in 14:

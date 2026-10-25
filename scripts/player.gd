@@ -28,6 +28,10 @@ const CHARACTERS := {
 const CAMERA_LENGTH := 5.5
 const CAMERA_LENGTH_AIM := 3.4
 const CAMERA_LENGTH_SCOPE := 2.6
+## Instante das animações de mira do KayKit em que o braço está estendido (medido amostrando a mão):
+## na de uma mão o braço fica erguido de 0,36 a 0,98 s; na de duas, de 0,27 a 1,47 s.
+const AIM_POSE_1H := 0.6
+const AIM_POSE_2H := 0.8
 const PITCH_MIN := -1.1345  # -65°
 const PITCH_MAX := 0.6981  # 40°
 
@@ -111,7 +115,8 @@ var _auto_reload_delay := 0.0
 var _switch_left := 0.0
 var _throw_cooldown := 0.0
 var _node_aim: AnimationNodeAnimation
-var _node_shoot: AnimationNodeAnimation
+var _recoil: Node3D
+var _kick := 0.0
 var _node_reload: AnimationNodeAnimation
 var _node_run: AnimationNodeAnimation
 
@@ -194,6 +199,8 @@ func set_character(char_name: String) -> void:
 		for hint in HIDDEN_MESH_HINTS:
 			if hint in mi.name:
 				mi.visible = false
+	AnimUtil.add_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_1H")
+	AnimUtil.add_pose("tiro", "Ranged_2H_Aiming", AIM_POSE_2H, "Pose_2H")
 	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro"])
 	anim_tree = _build_anim_tree(model, ap)
 	_air_state = ""
@@ -231,9 +238,11 @@ func _upper_body_oneshot(fade_in: float, fade_out: float) -> AnimationNodeOneSho
 
 
 ## Árvore de animação:
-## locomoção (blend 2D) -> chão/ar -> pose de mira só no tronco -> tiro, recarga e arremesso
+## locomoção (blend 2D) -> chão/ar -> pose de mira parada só no tronco -> recarga e arremesso
 ## só no tronco -> golpe recebido (corpo todo) -> normal/tonto.
-## As animações de mira, tiro, recarga e corrida trocam conforme o blaster (uma ou duas mãos).
+## O tiro não tem animação de corpo: o coice é feito no próprio blaster (_update_recoil), para a
+## cabeça e os braços não repetirem o mesmo movimento a cada disparo.
+## A pose de mira, a recarga e a corrida trocam conforme o blaster (uma ou duas mãos).
 func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	var tree := AnimationTree.new()
 	tree.name = "AnimationTree"
@@ -269,21 +278,15 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	for path in AnimUtil.upper_body_paths():
 		aim_blend.set_filter_path(path, true)
 	bt.add_node(&"mira", aim_blend, Vector2(500, 100))
-	_node_aim = _anim("tiro/Ranged_1H_Aiming")
+	_node_aim = _anim("tiro/Pose_1H")
 	bt.add_node(&"pose_mira", _node_aim, Vector2(250, 300))
 	bt.connect_node(&"mira", 0, &"chao_ar")
 	bt.connect_node(&"mira", 1, &"pose_mira")
 
-	bt.add_node(&"tiro", _upper_body_oneshot(0.03, 0.12), Vector2(750, 100))
-	_node_shoot = _anim("tiro/Ranged_1H_Shoot")
-	bt.add_node(&"anim_tiro", _node_shoot, Vector2(500, 300))
-	bt.connect_node(&"tiro", 0, &"mira")
-	bt.connect_node(&"tiro", 1, &"anim_tiro")
-
 	bt.add_node(&"recarga", _upper_body_oneshot(0.08, 0.15), Vector2(1000, 100))
 	_node_reload = _anim("tiro/Ranged_1H_Reload")
 	bt.add_node(&"anim_recarga", _node_reload, Vector2(750, 300))
-	bt.connect_node(&"recarga", 0, &"tiro")
+	bt.connect_node(&"recarga", 0, &"mira")
 	bt.connect_node(&"recarga", 1, &"anim_recarga")
 
 	bt.add_node(&"arremesso", _upper_body_oneshot(0.05, 0.15), Vector2(1250, 100))
@@ -323,12 +326,16 @@ func _equip_model() -> void:
 		_hand.remove_child(c)  # sai já, para o novo poder se chamar "Blaster"
 		c.queue_free()
 	var def := current_weapon()
+	# O coice gira e recua este nó; o blaster fica dentro dele com o encaixe fixo.
+	_recoil = Node3D.new()
+	_recoil.name = "Coice"
+	_hand.add_child(_recoil)
 	var holder := Node3D.new()
 	holder.name = "Blaster"
 	holder.position = def.pos
 	holder.rotation_degrees = Weapons.ROTATION
 	holder.scale = Vector3.ONE * def.escala
-	_hand.add_child(holder)
+	_recoil.add_child(holder)
 	holder.add_child(load(Weapons.MODEL_DIR % def.modelo).instantiate())
 	muzzle = Marker3D.new()
 	muzzle.name = "BocaDoCano"
@@ -338,8 +345,7 @@ func _equip_model() -> void:
 
 func _apply_weapon_animations() -> void:
 	var hands := "2H" if current_weapon().maos == 2 else "1H"
-	_node_aim.animation = StringName("tiro/Ranged_%s_Aiming" % hands)
-	_node_shoot.animation = StringName("tiro/Ranged_%s_Shoot" % hands)
+	_node_aim.animation = StringName("tiro/Pose_%s" % hands)
 	_node_reload.animation = StringName("tiro/Ranged_%s_Reload" % hands)
 	_node_run.animation = &"mov2/Running_HoldingRifle" if hands == "2H" else &"mov/Running_A"
 
@@ -451,6 +457,17 @@ func _physics_process(delta: float) -> void:
 
 	_update_invulnerability(delta)
 	_update_animation(delta)
+	_update_recoil(delta)
+
+
+## Coice no blaster: a boca sobe e a arma recua um pouco, voltando rápido. No osso da mão,
+## X é a frente e Y é para cima, então girar em Z levanta o cano.
+func _update_recoil(delta: float) -> void:
+	_kick = move_toward(_kick, 0.0, delta * 9.0)
+	if is_instance_valid(_recoil):
+		var k := ease(minf(_kick, 1.0), 0.6)
+		_recoil.position = Vector3(-0.09, 0.02, 0.0) * k
+		_recoil.rotation = Vector3(0.0, 0.0, 0.32 * k)
 
 
 func _can_control() -> bool:
@@ -525,8 +542,9 @@ func fire() -> bool:
 	a.mag -= 1
 	_fire_cooldown = def.intervalo
 	_aim_hold = 0.6
-	if is_instance_valid(anim_tree):
-		anim_tree.set("parameters/tiro/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	_kick = minf(_kick + def.coice, 1.5)
+	# Um pouquinho de subida na câmera nos tiros fortes, para dar peso sem atrapalhar a mira.
+	_pitch = clampf(_pitch + 0.004 * def.coice, PITCH_MIN, PITCH_MAX)
 	var hit_target := false
 	for k in def.tiros:
 		hit_target = _shoot_ray(_spread_dir(def.espalha), def) or hit_target

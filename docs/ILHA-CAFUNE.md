@@ -271,7 +271,8 @@ Todos são CC0: uso comercial livre, sem atribuição obrigatória. O KayKit ped
 
   Não há andar de lado lento nem correr de costas; a mira fica numa camada só do tronco, por cima da locomoção.
 - **Blaster na mão:** os ossos `handslot.r` e `handslot.l` existem justamente para segurar objetos; o blaster vai num `BoneAttachment3D` no `handslot.r`, com marcador de boca do cano.
-- **Mira:** camada de tiro só no tronco no `AnimationTree`, para correr e atirar ao mesmo tempo.
+- **Mira:** pose de mira parada só no tronco no `AnimationTree`, para correr e atirar ao mesmo tempo. As animações de mira do KayKit (`Ranged_1H_Aiming`, `Ranged_2H_Aiming`) levantam o braço, seguram e abaixam no fim; repetidas, o braço sobe e desce sem parar. Por isso o jogo congela um instante delas (`AnimUtil.add_pose`: 0,6 s na de uma mão, 0,8 s na de duas).
+- **Tiro:** sem animação de corpo (a do KayKit também levanta e abaixa o braço e reiniciava a cada disparo, fazendo cabeça e mãos repetirem o mesmo movimento). O coice é procedural, num nó `Coice` entre o osso da mão e o blaster: a boca sobe e a arma recua e volta, com força por arma (`coice` em `weapons.gd`). O teste `--armas` mede que cabeça e mão ficam firmes mirando e atirando.
 - **Regiões de impacto:** cabeça e tronco dos esqueletos, mais pontos fracos dos chefes (costas do Ossão, base da Torre de Ossinhos).
 - **Esqueleto desmontando:** na derrota, o modelo é trocado pelas partes soltas com física. Os esqueletos KayKit vêm em peças (cabeça, mandíbula, olhos, corpo, braços, pernas, capa), conferido nos arquivos.
 - **Escala:** 1 unidade = 1 metro; ampliar prédios da cidade se ficarem pequenos perto dos personagens.

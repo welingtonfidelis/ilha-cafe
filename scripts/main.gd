@@ -597,8 +597,9 @@ func _build_city() -> void:
 		_prop(CITY % buildings[i], Vector3(38, 0, -45.0 + i * 10.0), -90.0, CITY_SCALE, true)
 	for i in 4:
 		_prop(CITY % "streetlight", Vector3(20.5, 0, -40.0 + i * 15.0), 0.0, CITY_SCALE, true)
-	_prop(CITY % "car_taxi", Vector3(24, 0, -20), 0.0, CITY_SCALE, true)
-	_prop(CITY % "car_police", Vector3(28, 0, 0), 180.0, CITY_SCALE, true)
+	# Os carros têm as rodas 7,2 cm abaixo da origem do modelo: sobem 0,36 m na escala 5.
+	_prop(CITY % "car_taxi", Vector3(24, 0.36, -20), 0.0, CITY_SCALE, true)
+	_prop(CITY % "car_police", Vector3(28, 0.36, 0), 180.0, CITY_SCALE, true)
 	_prop(CITY % "bench", Vector3(9, 0, -6), 90.0, CITY_SCALE, true)
 	_prop(CITY % "firehydrant", Vector3(10, 0, -24), 0.0, CITY_SCALE, true)
 	_prop(CITY % "trash_A", Vector3(9.5, 0, -30), 0.0, CITY_SCALE, true)
@@ -900,6 +901,27 @@ func _run_capture() -> void:
 	player.fire()
 	await _wait(0.04)
 	await _shot("03_tiro.png")
+	# Sequência do coice, de lado: antes, no pico e voltando (esqueletos escondidos para não taparem).
+	for e in enemies:
+		e.visible = false
+	var side := Camera3D.new()
+	add_child(side)
+	var hand_node: Node3D = player.model.find_child("MaoDireita", true, false)
+	side.global_position = hand_node.global_position + player.visual.global_basis * Vector3(-2.2, 0.3, 0.6)
+	side.look_at(hand_node.global_position + player.visual.global_basis.z * 0.4)
+	side.current = true
+	await _wait(0.5)
+	await _shot("03a_coice_antes.png")
+	player.fire()
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await _shot("03b_coice_pico.png")
+	await _wait(0.12)
+	await _shot("03c_coice_voltando.png")
+	side.queue_free()
+	player.camera.current = true
+	for e in enemies:
+		e.visible = true
 	while minion.state != SkeletonEnemy.State.DESMONTADO:
 		await _aim_for(minion, 1.0, 0.25)
 		player.fire()
@@ -1510,6 +1532,37 @@ func _press_key(key: Key) -> void:
 		await get_tree().physics_frame
 
 
+## Quanto cada osso se afasta da posição média dele (no espaço do corpo) durante alguns segundos
+## mirando, atirando sem parar ou não. Devolve {osso: maior distância em metros}.
+func _bone_wobble(seconds: float, firing: bool, bones := ["head", "handslot.r"]) -> Dictionary:
+	var sk: Skeleton3D = player.model.find_child("Skeleton3D", true, false)
+	var samples := {}
+	for b in bones:
+		samples[b] = []
+	player.force_aim = true
+	player.force_fire = firing
+	var t := 0.0
+	while t < seconds:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		if t > 0.3:
+			for b in bones:
+				samples[b].append(sk.get_bone_global_pose(sk.find_bone(b)).origin)
+	player.force_fire = false
+	player.force_aim = false
+	var result := {}
+	for b in bones:
+		var mean := Vector3.ZERO
+		for v in samples[b]:
+			mean += v
+		mean /= samples[b].size()
+		var worst := 0.0
+		for v in samples[b]:
+			worst = maxf(worst, v.distance_to(mean))
+		result[b] = worst
+	return result
+
+
 func _hand_model() -> String:
 	var holder: Node = player.model.find_child("Blaster", true, false)
 	if holder == null:
@@ -1635,6 +1688,37 @@ func _run_weapons_test() -> void:
 	target.take_hit(99.0, target.global_position + Vector3.UP * 2.0, target.hurtboxes[0])
 	await get_tree().physics_frame
 	all_ok = _check("munição no fim: esqueleto deixa caixa", count_drops.call() == drops_before + 1) and all_ok
+
+	# Cabeça firme ao atirar sem parar: mede quanto a cabeça se mexe (em relação ao corpo)
+	# durante 1,5 s de rajada, com a pistola e com o Granulado.
+	player.god_mode = true
+	for id in ["pacoca", "granulado"]:
+		player.switch_weapon(Weapons.index_of(id))
+		player.ammo[id].mag = 200
+		await _wait(0.6)
+		var still := await _bone_wobble(1.5, false)
+		var shooting := await _bone_wobble(1.5, true)
+		var nome: String = Weapons.get_def(Weapons.index_of(id)).nome
+		all_ok = _check("mira parada firme com %s" % nome, still["head"] < 0.01 and still["handslot.r"] < 0.02,
+				"(cabeça %.3f m, mão %.3f m)" % [still["head"], still["handslot.r"]]) and all_ok
+		all_ok = _check("cabeça e mão firmes atirando com %s" % nome, shooting["head"] < 0.01 and shooting["handslot.r"] < 0.02,
+				"(cabeça %.3f m, mão %.3f m)" % [shooting["head"], shooting["handslot.r"]]) and all_ok
+
+	# Coice: logo depois do tiro a boca do cano sobe em relação à mão, e volta.
+	player.switch_weapon(Weapons.index_of("pacoca"))
+	player.force_aim = true
+	await _wait(0.6)
+	var hand: Node3D = player.model.find_child("MaoDireita", true, false)
+	var rest_y := player.muzzle.global_position.y - hand.global_position.y
+	player.fire()
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var kick_y := player.muzzle.global_position.y - hand.global_position.y
+	await _wait(0.5)
+	var back_y := player.muzzle.global_position.y - hand.global_position.y
+	player.force_aim = false
+	all_ok = _check("coice levanta o cano e volta", kick_y > rest_y + 0.03 and absf(back_y - rest_y) < 0.01,
+			"(boca %.3f -> %.3f -> %.3f m acima da mão)" % [rest_y, kick_y, back_y]) and all_ok
 
 	print("ARMAS OK" if all_ok else "ARMAS COM FALHAS")
 	get_tree().quit()

@@ -21,7 +21,7 @@ const SETS := {
 const LOOPING := [
 	"Idle_A", "Idle_B", "Walking_A", "Walking_B", "Walking_C", "Running_A", "Running_B",
 	"Jump_Idle", "Running_HoldingRifle", "Running_Strafe_Left", "Running_Strafe_Right",
-	"Walking_Backwards", "Ranged_1H_Aiming", "Ranged_2H_Aiming", "Ranged_1H_Shooting",
+	"Walking_Backwards", "Ranged_1H_Shooting",
 	"Ranged_2H_Shooting", "Skeletons_Idle", "Skeletons_Walking", "Skeletons_Inactive_Floor_Pose",
 	"Cheering", "Waving", "Melee_Blocking", "Melee_Unarmed_Idle", "Melee_2H_Idle",
 	"Ranged_Magic_Spellcasting",
@@ -42,6 +42,33 @@ static func library(short_name: String) -> AnimationLibrary:
 	scene.free()
 	_cache[short_name] = lib
 	return lib
+
+
+## Cria uma pose parada (animação de um quadro só) a partir de um instante de outra animação.
+## As "miras" do KayKit levantam o braço, seguram e abaixam de novo no fim; repetidas, o braço
+## sobe e desce sem parar. A pose congela o braço estendido.
+static func add_pose(short_name: String, anim_name: String, time: float, pose_name: String) -> void:
+	var lib := library(short_name)
+	if lib.has_animation(pose_name):
+		return
+	var src := lib.get_animation(anim_name)
+	var pose := Animation.new()
+	pose.length = 0.5
+	pose.loop_mode = Animation.LOOP_LINEAR
+	for i in src.get_track_count():
+		var type := src.track_get_type(i)
+		if type not in [Animation.TYPE_POSITION_3D, Animation.TYPE_ROTATION_3D, Animation.TYPE_SCALE_3D]:
+			continue
+		var t := pose.add_track(type)
+		pose.track_set_path(t, src.track_get_path(i))
+		match type:
+			Animation.TYPE_POSITION_3D:
+				pose.position_track_insert_key(t, 0.0, src.position_track_interpolate(i, time))
+			Animation.TYPE_ROTATION_3D:
+				pose.rotation_track_insert_key(t, 0.0, src.rotation_track_interpolate(i, time))
+			Animation.TYPE_SCALE_3D:
+				pose.scale_track_insert_key(t, 0.0, src.scale_track_interpolate(i, time))
+	lib.add_animation(pose_name, pose)
 
 
 ## Cria um AnimationPlayer como filho de `model_root` (a raiz do .glb instanciado),
