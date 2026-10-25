@@ -1,9 +1,10 @@
 class_name Player
 extends CharacterBody3D
-## Aventureiro jogável: câmera em terceira pessoa, movimento, mira e tiro com blaster.
+## Aventureiro jogável: câmera em terceira pessoa, movimento, mira, blasters e granada.
 ## Joga com teclado e mouse ou com controle; com controle há auxílio de mira e vibração.
 ## O modelo vem do KayKit Adventurers; todos usam o mesmo esqueleto (Rig_Medium),
 ## então trocar de personagem reaproveita animações, encaixe do blaster e tudo mais.
+## Os blasters e a granada ficam em Weapons (scripts/weapons.gd).
 
 signal hit_confirmed(region: String, damage: float)
 signal character_changed(char_name: String)
@@ -12,6 +13,10 @@ signal health_changed(hearts: int, max_hearts: int)
 signal damaged
 signal dizzy_started
 signal respawned
+signal ammo_changed
+signal weapon_changed(index: int)
+signal reload_started(duration: float)
+signal out_of_ammo
 
 const CHARACTERS := {
 	"Knight": "res://assets/characters/adventurers/Knight.glb",
@@ -21,9 +26,9 @@ const CHARACTERS := {
 	"Rogue": "res://assets/characters/adventurers/Rogue.glb",
 	"Rogue_Hooded": "res://assets/characters/adventurers/Rogue_Hooded.glb",
 }
-const BLASTER_SCENE := "res://assets/weapons/blaster-a.glb"
 const CAMERA_LENGTH := 5.5
 const CAMERA_LENGTH_AIM := 3.4
+const CAMERA_LENGTH_SCOPE := 2.6
 const PITCH_MIN := -1.1345  # -65°
 const PITCH_MAX := 0.6981  # 40°
 
@@ -34,8 +39,6 @@ const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow"
 @export var aim_speed := 3.5
 @export var jump_velocity := 9.0
 @export var mouse_sensitivity := 0.0025
-@export var fire_interval := 0.22
-@export var damage := 1.0
 
 @export_group("Vida")
 @export var max_hearts := 5
@@ -56,13 +59,6 @@ const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow"
 @export var aim_assist_snap := 9.0
 @export var vibration := true
 
-@export_group("Blaster")
-## Ajuste do blaster no osso handslot.r. Calculado por tools/weapon_axes.gd: na pose de mira
-## o eixo X do osso aponta para a frente, então o cano (+Z do blaster) gira 90° em Y.
-@export var weapon_position := Vector3(0.12, 0.1, 0.0)
-@export var weapon_rotation_deg := Vector3(0, 90, 0)
-@export var weapon_scale := 1.0
-
 var character_name := ""
 var aiming := false
 var using_gamepad := false
@@ -77,6 +73,14 @@ var hearts := 5
 var dizzy := false
 ## Quem deu o último golpe (nome do esqueleto, "flecha" ou "bolha"); usado nos testes.
 var last_hit_by := ""
+
+## Blaster na mão (índice em Weapons.DEFS) e munição de cada um: id -> {mag, reserve}.
+## reserve = -1 é estoque infinito.
+var weapon_index := 0
+var ammo := {}
+var grenades := 0
+var reloading := false
+var reload_total := 0.0
 
 var visual: Node3D
 var model: Node3D
@@ -99,7 +103,16 @@ var _joy_device := 0
 var _invulnerable := 0.0
 var _knockback := Vector3.ZERO
 var _head: BoneAttachment3D
+var _hand: BoneAttachment3D
 var _stars: Node3D
+var _reload_left := 0.0
+var _auto_reload_delay := 0.0
+var _switch_left := 0.0
+var _throw_cooldown := 0.0
+var _node_aim: AnimationNodeAnimation
+var _node_shoot: AnimationNodeAnimation
+var _node_reload: AnimationNodeAnimation
+var _node_run: AnimationNodeAnimation
 
 
 func _ready() -> void:
@@ -119,6 +132,9 @@ func _ready() -> void:
 	_build_camera()
 	_build_stars()
 	hearts = max_hearts
+	for def in Weapons.DEFS:
+		ammo[def.id] = {"mag": def.pente, "reserve": def.estoque}
+	grenades = Weapons.GRENADE.inicio
 	if character_name == "":
 		set_character("Knight")
 
@@ -180,14 +196,20 @@ func set_character(char_name: String) -> void:
 	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro"])
 	anim_tree = _build_anim_tree(model, ap)
 	_air_state = ""
-	_attach_blaster(model)
 	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
+	_hand = BoneAttachment3D.new()
+	_hand.name = "MaoDireita"
+	_hand.bone_name = "handslot.r"
+	sk.add_child(_hand)
 	_head = BoneAttachment3D.new()
 	_head.name = "Cabeca"
 	_head.bone_name = "head"
 	sk.add_child(_head)
+	_equip_model()
+	_apply_weapon_animations()
 	if dizzy:
 		anim_tree.set("parameters/estado/transition_request", "tonto")
+	reloading = false
 	character_changed.emit(char_name)
 
 
@@ -197,9 +219,20 @@ func _anim(anim_name: String) -> AnimationNodeAnimation:
 	return node
 
 
+func _upper_body_oneshot(fade_in: float, fade_out: float) -> AnimationNodeOneShot:
+	var node := AnimationNodeOneShot.new()
+	node.filter_enabled = true
+	for path in AnimUtil.upper_body_paths():
+		node.set_filter_path(path, true)
+	node.fadein_time = fade_in
+	node.fadeout_time = fade_out
+	return node
+
+
 ## Árvore de animação:
-## locomoção (blend 2D) -> chão/ar -> pose de mira só no tronco -> tiro só no tronco
-## -> golpe recebido (corpo todo) -> normal/tonto.
+## locomoção (blend 2D) -> chão/ar -> pose de mira só no tronco -> tiro, recarga e arremesso
+## só no tronco -> golpe recebido (corpo todo) -> normal/tonto.
+## As animações de mira, tiro, recarga e corrida trocam conforme o blaster (uma ou duas mãos).
 func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	var tree := AnimationTree.new()
 	tree.name = "AnimationTree"
@@ -211,9 +244,10 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	var loco := AnimationNodeBlendSpace2D.new()
 	loco.min_space = Vector2(-1, -1)
 	loco.max_space = Vector2(1, 1)
+	_node_run = _anim("mov/Running_A")
 	loco.add_blend_point(_anim("geral/Idle_A"), Vector2.ZERO, -1, &"parado")
 	loco.add_blend_point(_anim("mov/Walking_A"), Vector2(0, 0.55), -1, &"andando")
-	loco.add_blend_point(_anim("mov/Running_A"), Vector2(0, 1), -1, &"correndo")
+	loco.add_blend_point(_node_run, Vector2(0, 1), -1, &"correndo")
 	loco.add_blend_point(_anim("mov2/Walking_Backwards"), Vector2(0, -0.6), -1, &"de_costas")
 	loco.add_blend_point(_anim("mov2/Running_Strafe_Left"), Vector2(-1, 0), -1, &"lado_esquerdo")
 	loco.add_blend_point(_anim("mov2/Running_Strafe_Right"), Vector2(1, 0), -1, &"lado_direito")
@@ -234,27 +268,34 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	for path in AnimUtil.upper_body_paths():
 		aim_blend.set_filter_path(path, true)
 	bt.add_node(&"mira", aim_blend, Vector2(500, 100))
-	bt.add_node(&"pose_mira", _anim("tiro/Ranged_1H_Aiming"), Vector2(250, 300))
+	_node_aim = _anim("tiro/Ranged_1H_Aiming")
+	bt.add_node(&"pose_mira", _node_aim, Vector2(250, 300))
 	bt.connect_node(&"mira", 0, &"chao_ar")
 	bt.connect_node(&"mira", 1, &"pose_mira")
 
-	var shoot := AnimationNodeOneShot.new()
-	shoot.filter_enabled = true
-	for path in AnimUtil.upper_body_paths():
-		shoot.set_filter_path(path, true)
-	shoot.fadein_time = 0.03
-	shoot.fadeout_time = 0.12
-	bt.add_node(&"tiro", shoot, Vector2(750, 100))
-	bt.add_node(&"anim_tiro", _anim("tiro/Ranged_1H_Shoot"), Vector2(500, 300))
+	bt.add_node(&"tiro", _upper_body_oneshot(0.03, 0.12), Vector2(750, 100))
+	_node_shoot = _anim("tiro/Ranged_1H_Shoot")
+	bt.add_node(&"anim_tiro", _node_shoot, Vector2(500, 300))
 	bt.connect_node(&"tiro", 0, &"mira")
 	bt.connect_node(&"tiro", 1, &"anim_tiro")
+
+	bt.add_node(&"recarga", _upper_body_oneshot(0.08, 0.15), Vector2(1000, 100))
+	_node_reload = _anim("tiro/Ranged_1H_Reload")
+	bt.add_node(&"anim_recarga", _node_reload, Vector2(750, 300))
+	bt.connect_node(&"recarga", 0, &"tiro")
+	bt.connect_node(&"recarga", 1, &"anim_recarga")
+
+	bt.add_node(&"arremesso", _upper_body_oneshot(0.05, 0.15), Vector2(1250, 100))
+	bt.add_node(&"anim_arremesso", _anim("geral/Throw"), Vector2(1000, 300))
+	bt.connect_node(&"arremesso", 0, &"recarga")
+	bt.connect_node(&"arremesso", 1, &"anim_arremesso")
 
 	var hit := AnimationNodeOneShot.new()
 	hit.fadein_time = 0.05
 	hit.fadeout_time = 0.15
-	bt.add_node(&"golpe", hit, Vector2(1000, 100))
-	bt.add_node(&"anim_golpe", _anim("geral/Hit_A"), Vector2(750, 300))
-	bt.connect_node(&"golpe", 0, &"tiro")
+	bt.add_node(&"golpe", hit, Vector2(1500, 100))
+	bt.add_node(&"anim_golpe", _anim("geral/Hit_A"), Vector2(1250, 300))
+	bt.connect_node(&"golpe", 0, &"arremesso")
 	bt.connect_node(&"golpe", 1, &"anim_golpe")
 
 	var dizzy_state := AnimationNodeTransition.new()
@@ -262,8 +303,8 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	dizzy_state.set_input_name(0, "normal")
 	dizzy_state.set_input_name(1, "tonto")
 	dizzy_state.xfade_time = 0.2
-	bt.add_node(&"estado", dizzy_state, Vector2(1250, 100))
-	bt.add_node(&"anim_tonto", _anim("geral/Death_A"), Vector2(1000, 300))
+	bt.add_node(&"estado", dizzy_state, Vector2(1750, 100))
+	bt.add_node(&"anim_tonto", _anim("geral/Death_A"), Vector2(1500, 300))
 	bt.connect_node(&"estado", 0, &"golpe")
 	bt.connect_node(&"estado", 1, &"anim_tonto")
 
@@ -273,23 +314,33 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	return tree
 
 
-func _attach_blaster(root: Node) -> void:
-	var sk: Skeleton3D = root.find_child("Skeleton3D", true, false)
-	var attachment := BoneAttachment3D.new()
-	attachment.name = "MaoDireita"
-	attachment.bone_name = "handslot.r"
-	sk.add_child(attachment)
+## Troca o modelo na mão pelo blaster atual (encaixe vindo de Weapons.DEFS).
+func _equip_model() -> void:
+	if not is_instance_valid(_hand):
+		return
+	for c in _hand.get_children():
+		_hand.remove_child(c)  # sai já, para o novo poder se chamar "Blaster"
+		c.queue_free()
+	var def := current_weapon()
 	var holder := Node3D.new()
 	holder.name = "Blaster"
-	holder.position = weapon_position
-	holder.rotation_degrees = weapon_rotation_deg
-	holder.scale = Vector3.ONE * weapon_scale
-	attachment.add_child(holder)
-	holder.add_child(load(BLASTER_SCENE).instantiate())
+	holder.position = def.pos
+	holder.rotation_degrees = Weapons.ROTATION
+	holder.scale = Vector3.ONE * def.escala
+	_hand.add_child(holder)
+	holder.add_child(load(Weapons.MODEL_DIR % def.modelo).instantiate())
 	muzzle = Marker3D.new()
 	muzzle.name = "BocaDoCano"
-	muzzle.position = Vector3(0, 0.06, 0.45)
+	muzzle.position = def.boca
 	holder.add_child(muzzle)
+
+
+func _apply_weapon_animations() -> void:
+	var hands := "2H" if current_weapon().maos == 2 else "1H"
+	_node_aim.animation = StringName("tiro/Ranged_%s_Aiming" % hands)
+	_node_shoot.animation = StringName("tiro/Ranged_%s_Shoot" % hands)
+	_node_reload.animation = StringName("tiro/Ranged_%s_Reload" % hands)
+	_node_run.animation = &"mov2/Running_HoldingRifle" if hands == "2H" else &"mov/Running_A"
 
 
 ## Descobre se o jogador está no controle ou no teclado/mouse, para as dicas na tela,
@@ -315,8 +366,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _can_control():
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_yaw -= event.relative.x * mouse_sensitivity
-		_pitch = clampf(_pitch - event.relative.y * mouse_sensitivity, PITCH_MIN, PITCH_MAX)
+		var sens := mouse_sensitivity * _zoom_factor()
+		_yaw -= event.relative.x * sens
+		_pitch = clampf(_pitch - event.relative.y * sens, PITCH_MIN, PITCH_MAX)
+	elif event.is_action_pressed("recarregar"):
+		reload()
+	elif event.is_action_pressed("granada"):
+		throw_grenade()
+	elif event.is_action_pressed("arma_proxima"):
+		switch_weapon(weapon_index + 1)
+	elif event.is_action_pressed("arma_anterior"):
+		switch_weapon(weapon_index - 1)
+	else:
+		for i in Weapons.count():
+			if event.is_action_pressed("arma_%d" % (i + 1)):
+				switch_weapon(i)
 
 
 func _physics_process(delta: float) -> void:
@@ -331,8 +395,11 @@ func _physics_process(delta: float) -> void:
 	camera_pitch.rotation.x = _pitch
 
 	var smooth := 1.0 - exp(-12.0 * delta)
-	spring_arm.spring_length = lerpf(spring_arm.spring_length, CAMERA_LENGTH_AIM if aiming else CAMERA_LENGTH, smooth)
-	camera.fov = lerpf(camera.fov, 55.0 if aiming else 70.0, smooth)
+	var zoomed := is_zoomed()
+	var target_len := CAMERA_LENGTH_SCOPE if zoomed else (CAMERA_LENGTH_AIM if aiming else CAMERA_LENGTH)
+	var target_fov: float = current_weapon().zoom if zoomed else (55.0 if aiming else 70.0)
+	spring_arm.spring_length = lerpf(spring_arm.spring_length, target_len, smooth)
+	camera.fov = lerpf(camera.fov, target_fov, smooth)
 
 	var input := Vector2.ZERO
 	if control:
@@ -374,6 +441,9 @@ func _physics_process(delta: float) -> void:
 
 	_fire_cooldown -= delta
 	_aim_hold -= delta
+	_switch_left -= delta
+	_throw_cooldown -= delta
+	_update_reload(delta)
 	var wants_fire := not dizzy and (force_fire or (control and Input.is_action_pressed("atirar")))
 	if wants_fire and _fire_cooldown <= 0.0:
 		fire()
@@ -385,6 +455,232 @@ func _physics_process(delta: float) -> void:
 func _can_control() -> bool:
 	return input_enabled and not dizzy
 
+
+# --- blasters ----------------------------------------------------------------
+
+func current_weapon() -> Dictionary:
+	return Weapons.get_def(weapon_index)
+
+
+func mag() -> int:
+	return ammo[current_weapon().id].mag
+
+
+## Estoque do blaster atual (-1 = infinito).
+func reserve() -> int:
+	return ammo[current_weapon().id].reserve
+
+
+## Mirando com o Pé-de-Moleque: aproxima a câmera e diminui a sensibilidade.
+func is_zoomed() -> bool:
+	return aiming and current_weapon().zoom > 0.0
+
+
+func _zoom_factor() -> float:
+	return current_weapon().zoom / 55.0 if is_zoomed() else 1.0
+
+
+## Quanto resta de munição limitada (pente + estoque de todos), de 0 a 1. Usado na queda de caixas.
+func limited_ammo_fraction() -> float:
+	var have := 0.0
+	var cap := 0.0
+	for def in Weapons.DEFS:
+		if Weapons.infinite(def):
+			continue
+		have += ammo[def.id].mag + ammo[def.id].reserve
+		cap += def.pente + def.estoque_max
+	return have / cap if cap > 0.0 else 1.0
+
+
+func switch_weapon(index: int) -> void:
+	index = wrapi(index, 0, Weapons.count())
+	if index == weapon_index or dizzy:
+		return
+	_cancel_reload()
+	weapon_index = index
+	_switch_left = 0.3
+	_fire_cooldown = maxf(_fire_cooldown, 0.3)
+	_equip_model()
+	_apply_weapon_animations()
+	Sfx.play(get_parent(), "troca_arma", 0.0, 0.0)
+	weapon_changed.emit(index)
+	ammo_changed.emit()
+
+
+## Dispara o blaster atual. Sem bala no pente, recarrega (ou avisa que acabou a munição).
+func fire() -> bool:
+	if dizzy or reloading or _switch_left > 0.0:
+		return false
+	var def := current_weapon()
+	var a: Dictionary = ammo[def.id]
+	if a.mag <= 0:
+		_fire_cooldown = 0.35
+		if a.reserve != 0:
+			reload()
+		else:
+			Sfx.play(get_parent(), "sem_municao", 0.0, 0.0)
+			out_of_ammo.emit()
+		return false
+	a.mag -= 1
+	_fire_cooldown = def.intervalo
+	_aim_hold = 0.6
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/tiro/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	var hit_target := false
+	for k in def.tiros:
+		hit_target = _shoot_ray(_spread_dir(def.espalha), def) or hit_target
+	if is_instance_valid(muzzle):
+		Fx.muzzle_flash(muzzle)
+	Sfx.play(get_parent(), def.som, -3.0)
+	if hit_target:
+		rumble(0.45, 0.25, 0.12)
+	else:
+		rumble(0.2 if def.tiros == 1 else 0.4, 0.0 if def.tiros == 1 else 0.3, 0.07)
+	ammo_changed.emit()
+	if a.mag == 0 and a.reserve != 0:
+		_auto_reload_delay = 0.25
+	return true
+
+
+## Direção do tiro: o centro da tela, com um sorteio dentro de um cone para escopeta e rajada.
+func _spread_dir(degrees: float) -> Vector3:
+	var forward := -camera.global_basis.z
+	if degrees <= 0.0:
+		return forward
+	var r := sqrt(randf()) * tan(deg_to_rad(degrees))
+	var a := randf() * TAU
+	return (camera.global_basis * Vector3(cos(a) * r, sin(a) * r, -1.0)).normalized()
+
+
+## O tiro sai do centro da tela (a mira), não do cano: assim a mira nunca mente.
+func _shoot_ray(dir: Vector3, def: Dictionary) -> bool:
+	var from := camera.global_position
+	var reach: float = def.alcance
+	var to := from + dir * reach
+	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | Hurtbox.LAYER)
+	query.collide_with_areas = true
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	var world := get_parent()
+	var end := to
+	var hit_target := false
+	if hit:
+		end = hit.position
+		var collider: Object = hit.collider
+		if collider is Hurtbox:
+			var hb := collider as Hurtbox
+			hb.receive_hit(def.dano, end)
+			hit_confirmed.emit(hb.region, def.dano * hb.multiplier)
+			Fx.confetti(world, end, (30 if hb.multiplier > 1.0 else 16) / def.tiros + 4, 5.0)
+			hit_target = true
+		else:
+			Fx.dust(world, end)
+	if is_instance_valid(muzzle):
+		Fx.tracer(world, muzzle.global_position, end, def.cor)
+	return hit_target
+
+
+## Recarrega antes de zerar (R ou X) ou sozinho quando o pente acaba.
+func reload() -> bool:
+	if dizzy or reloading or _switch_left > 0.0:
+		return false
+	var def := current_weapon()
+	var a: Dictionary = ammo[def.id]
+	if a.mag >= def.pente or a.reserve == 0:
+		return false
+	reloading = true
+	reload_total = def.recarga
+	_reload_left = def.recarga
+	_auto_reload_delay = 0.0
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/recarga/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	Sfx.play(get_parent(), "recarga", 0.0, 0.0)
+	reload_started.emit(def.recarga)
+	return true
+
+
+## De 0 a 1 enquanto recarrega; -1 fora da recarga (para a barrinha na mira).
+func reload_progress() -> float:
+	return 1.0 - _reload_left / reload_total if reloading else -1.0
+
+
+func _update_reload(delta: float) -> void:
+	if _auto_reload_delay > 0.0:
+		_auto_reload_delay -= delta
+		if _auto_reload_delay <= 0.0:
+			reload()
+	if not reloading:
+		return
+	_reload_left -= delta
+	if _reload_left > 0.0:
+		return
+	reloading = false
+	var def := current_weapon()
+	var a: Dictionary = ammo[def.id]
+	var need: int = def.pente - a.mag
+	var take: int = need if a.reserve < 0 else mini(need, a.reserve)
+	a.mag += take
+	if a.reserve >= 0:
+		a.reserve -= take
+	ammo_changed.emit()
+
+
+func _cancel_reload() -> void:
+	if reloading and is_instance_valid(anim_tree):
+		anim_tree.set("parameters/recarga/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	reloading = false
+	_auto_reload_delay = 0.0
+
+
+## Joga um Brigadeiro (G ou RB) em arco na direção da mira.
+func throw_grenade() -> bool:
+	if dizzy or grenades <= 0 or _throw_cooldown > 0.0 or reloading:
+		return false
+	grenades -= 1
+	_throw_cooldown = 1.0
+	_aim_hold = 0.9
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/arremesso/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	Sfx.play(get_parent(), "arremesso", 0.0, 0.0)
+	ammo_changed.emit()
+	# A granada sai da mão no meio da animação de arremesso.
+	get_tree().create_timer(0.45).timeout.connect(_release_grenade)
+	return true
+
+
+func _release_grenade() -> void:
+	if not is_inside_tree():
+		return
+	var from := global_position + Vector3.UP * 2.0 + visual.global_basis.z * 0.6
+	if is_instance_valid(_hand):
+		from = _hand.global_position + Vector3.UP * 0.3
+	var dir := -camera.global_basis.z
+	var launch: Vector3 = dir * Weapons.GRENADE.forca + Vector3.UP * 5.5
+	get_parent().add_child(Grenade.create(from, launch, self))
+
+
+## Caixa de munição: um pente de cada blaster de estoque limitado e uma granada.
+## Devolve false se não coube nada (aí a caixa fica no chão).
+func add_ammo_crate() -> bool:
+	var changed := false
+	for id in Weapons.CRATE_AMMO:
+		if id == "granadas":
+			continue
+		var def := Weapons.get_def(Weapons.index_of(id))
+		var a: Dictionary = ammo[id]
+		var before: int = a.reserve
+		a.reserve = mini(a.reserve + Weapons.CRATE_AMMO[id], def.estoque_max)
+		changed = changed or a.reserve != before
+	if grenades < Weapons.GRENADE.max:
+		grenades = mini(grenades + Weapons.CRATE_AMMO.granadas, Weapons.GRENADE.max)
+		changed = true
+	if changed:
+		rumble(0.25, 0.0, 0.1)
+		ammo_changed.emit()
+	return changed
+
+
+# --- vida --------------------------------------------------------------------
 
 ## Pisca enquanto está invulnerável; com o aventureiro tonto, as estrelinhas giram sobre a cabeça.
 func _update_invulnerability(delta: float) -> void:
@@ -431,6 +727,7 @@ func _become_dizzy() -> void:
 	dizzy = true
 	aiming = false
 	_aim_hold = 0.0
+	_cancel_reload()
 	if is_instance_valid(anim_tree):
 		anim_tree.set("parameters/estado/transition_request", "tonto")
 	_stars.visible = true
@@ -469,6 +766,8 @@ func rumble(weak: float, strong: float, duration: float) -> void:
 		Input.start_joy_vibration(_joy_device, weak, strong, duration)
 
 
+# --- câmera e animação -------------------------------------------------------
+
 ## Analógico direito gira a câmera, com curva suave perto do centro.
 ## Com controle e mirando, o auxílio de mira freia o giro perto de um alvo e puxa de leve.
 func _look_with_stick(delta: float) -> void:
@@ -476,7 +775,7 @@ func _look_with_stick(delta: float) -> void:
 	if _can_control():
 		look = Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo")
 	look *= look.length()
-	var factor := stick_aim_factor if aiming else 1.0
+	var factor := (stick_aim_factor if aiming else 1.0) * _zoom_factor()
 	var target := _aim_assist_target() if (aiming and using_gamepad) else Vector3.INF
 	if target != Vector3.INF:
 		factor *= 0.5
@@ -533,42 +832,6 @@ func _update_animation(delta: float) -> void:
 	var want := 1.0 if (aiming or _aim_hold > 0.0) else 0.0
 	_aim_amount = move_toward(_aim_amount, want, delta * 8.0)
 	anim_tree.set("parameters/mira/blend_amount", _aim_amount)
-
-
-func fire() -> void:
-	_fire_cooldown = fire_interval
-	_aim_hold = 0.6
-	if is_instance_valid(anim_tree):
-		anim_tree.set("parameters/tiro/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-	# O tiro sai do centro da tela (a mira), não do cano: assim a mira nunca mente.
-	var from := camera.global_position
-	var to := from - camera.global_basis.z * 120.0
-	var query := PhysicsRayQueryParameters3D.create(from, to, 1 | Hurtbox.LAYER)
-	query.collide_with_areas = true
-	query.exclude = [get_rid()]
-	var hit := get_world_3d().direct_space_state.intersect_ray(query)
-	var world := get_parent()
-	var end := to
-	var hit_target := false
-	if hit:
-		end = hit.position
-		var collider: Object = hit.collider
-		if collider is Hurtbox:
-			var hb := collider as Hurtbox
-			hb.receive_hit(damage, end)
-			hit_confirmed.emit(hb.region, damage * hb.multiplier)
-			Fx.confetti(world, end, 30 if hb.multiplier > 1.0 else 16, 5.0)
-			hit_target = true
-		else:
-			Fx.dust(world, end)
-	if is_instance_valid(muzzle):
-		Fx.tracer(world, muzzle.global_position, end, Color("#fff3a0"))
-		Fx.muzzle_flash(muzzle)
-	Sfx.play(world, "tiro", -3.0)
-	if hit_target:
-		rumble(0.45, 0.25, 0.12)
-	else:
-		rumble(0.2, 0.0, 0.07)
 
 
 ## Aponta a câmera para um ponto do mundo (usado pela captura automática).

@@ -176,6 +176,30 @@ static func flat_material(color: Color, unshaded := true) -> StandardMaterial3D:
 	return mat
 
 
+## Onda da explosão da granada: uma bolha cor-de-rosa que cresce até o raio e some.
+static func shockwave(parent: Node, pos: Vector3, radius: float) -> void:
+	var mi := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 1.0
+	mesh.height = 2.0
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1.0, 0.7, 0.85, 0.45)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mesh.material = mat
+	mi.mesh = mesh
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(mi)
+	mi.global_position = pos
+	mi.scale = Vector3.ONE * 0.2
+	var tw := mi.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(mi, "scale", Vector3.ONE * radius, 0.35).set_ease(Tween.EASE_OUT)
+	tw.tween_property(mat, "albedo_color:a", 0.0, 0.45)
+	tw.chain().tween_callback(mi.queue_free)
+
+
 ## Bolha estourando: gotinhas claras que somem rápido.
 static func bubble_pop(parent: Node, pos: Vector3) -> void:
 	var p := CPUParticles3D.new()

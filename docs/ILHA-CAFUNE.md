@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: ilha jogável (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1): cidade, Morro com castelinho, rio com ponte, mata, cais e 18 esqueletos que dormem até o aventureiro chegar perto. Aventureiro escolhível, câmera em terceira pessoa, blaster, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 21 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: ilha jogável com 4 blasters e granada (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1): cidade, Morro com castelinho, rio com ponte, mata, cais e 18 esqueletos que dormem até o aventureiro chegar perto. Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -215,15 +215,24 @@ Chefes (todos montados com os esqueletos grátis, ampliados e com acessórios):
 
 O KayKit não tem armas de fogo nem blasters em nenhum pacote (conferido em 2026-10-25). Os blasters vêm do **Kenney Blaster Kit** (CC0, grátis), que tem estilo low-poly parecido. Os nomes de doces continuam:
 
-| Blaster | Tipo | No jogo |
-|---|---|---|
-| Paçoca | pistola, inicial | tiro único preciso; munição infinita |
-| Pipoqueira | escopeta | espalha a curta distância |
-| Granulado | rajada | tiro rápido, dano baixo |
-| Pé-de-Moleque | precisão | tiro carregado de longe; acerta pontos fracos |
-| Brigadeiro | granada | explode em confete, em área |
+**No jogo hoje** (todos liberados desde o começo; ganhar um por vez fica para a história). Os números ficam em `scripts/weapons.gd`, um bloco por arma:
 
-Quais modelos do Blaster Kit viram cada um se decide quando o pacote for baixado.
+| Tecla | Blaster | Modelo | Mãos | Pente | Estoque inicial / máximo | Recarga | Jeito |
+|---|---|---|---|---|---|---|---|
+| 1 | Paçoca (pistola) | `blaster-a` | 1 | 12 | infinito | 1,0 s | tiro único e preciso, 1 de dano |
+| 2 | Granulado (rajada) | `blaster-j` | 2 | 30 | 60 / 150 | 1,6 s | segura o gatilho, 11 tiros por segundo, 0,5 de dano, pouco espalhado |
+| 3 | Pipoqueira (escopeta) | `blaster-l` | 2 | 6 | 12 / 36 | 1,8 s | 7 projéteis de 0,6 num leque de 5,5°, alcance de 28 m |
+| 4 | Pé-de-Moleque (precisão) | `blaster-e` | 2 | 5 | 10 / 25 | 2,0 s | luneta ao mirar (aproxima e diminui a sensibilidade), 3 de dano, um tiro na cabeça desmonta qualquer esqueleto |
+| G / RB | Brigadeiro (granada) | `grenade-a` | — | — | começa com 2, máximo 3 | — | arremesso em arco, explode em confete depois de 1,4 s, raio de 5 m, até 3 de dano, o escudo não segura, estoura bolhas |
+
+**Regras de munição (decisão do usuário: estoque limitado):**
+- O contador fica no canto de baixo à direita: nome do blaster, "pente / estoque" e as granadas como bolinhas. O número do pente fica amarelo no último quarto e vermelho zerado.
+- Pente vazio recarrega sozinho (com a animação de recarga de uma ou duas mãos do KayKit e um anel azul na mira). Dá para recarregar antes de zerar com R ou X. Durante a recarga não atira; trocar de blaster cancela a recarga.
+- Sem estoque, o gatilho faz "tic" e aparece "Sem munição! Procure uma caixa ou troque de blaster".
+- **A Paçoca tem estoque infinito de propósito**, como rede de segurança: a criança nunca fica sem ter com o que atirar.
+- **Caixa de munição** (caixote do Blaster Kit com um pente em cima): devolve 30 do Granulado, 6 da Pipoqueira, 5 do Pé-de-Moleque e 1 granada, até o máximo. Com tudo cheio, fica no chão.
+  - Na ilha há 10 caixas fixas (marcadores `Marcadores/Municao`), que voltam 45 s depois de pegas.
+  - Esqueleto desmontado deixa cair uma caixa em 50% das vezes, e sempre que a munição limitada está abaixo de 25%; essa some depois de 30 s.
 
 ### Itens
 
@@ -290,7 +299,8 @@ godot -e --path .
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
 - `godot --path . -- --ilha-captura` tira 8 fotos jogando na ilha (praça, esqueleto dormindo e acordando, trilha do Morro, castelinho, ponte, clareira, tchibum).
-- Os testes `--smoke`, `--controle`, `--combate`, `--som` e `--capture` rodam na **arena plana** (o mapa antigo, previsível), com esqueletos já acordados; o jogo normal e os modos `--ilha` abrem a ilha.
+- `godot --headless --path . -- --armas` confere 17 pontos dos blasters: pente, recarga automática e com R, não atirar recarregando, troca com modelo novo na mão, estoque, sem munição, caixa (e caixa que fica no chão), escopeta, luneta, granada e caixa que cai com munição no fim; termina com "ARMAS OK". O teste de controle também confere X (recarregar), Y (trocar de blaster) e RB (granada), e o da ilha confere as 10 caixas.
+- Os testes `--smoke`, `--controle`, `--combate`, `--som`, `--armas` e `--capture` rodam na **arena plana** (o mapa antigo, previsível), com esqueletos já acordados; o jogo normal e os modos `--ilha` abrem a ilha.
 - Os modos `--smoke`, `--controle` e `--capture` ligam `god_mode` no jogador, para o tonto não travar o teste.
 - Para rodar os testes, use um limite de tempo (`perl -e 'alarm 200; exec @ARGV' godot ...`): se um script tiver erro de digitação, a Godot fica parada em vez de sair.
 - `godot --path . -- --capture` abre a janela, roda uma sequência e salva capturas em `tools/capturas/` (fora do git).
@@ -303,8 +313,11 @@ godot -e --path .
 | Olhar | mouse | analógico direito |
 | Pular | espaço | A / X |
 | Mirar | botão direito | LT ou LB / L2 ou L1 |
-| Atirar | botão esquerdo | RT ou RB / R2 ou R1 |
-| Trocar de aventureiro | Q e E, ou 1 a 6 | direcional ← e → |
+| Atirar | botão esquerdo | RT / R2 |
+| Recarregar | R | X / quadrado |
+| Granada | G | RB / R1 |
+| Trocar de blaster | 1 a 4 ou rodinha do mouse | Y / triângulo |
+| Trocar de aventureiro | Q e E | direcional ← e → |
 | Menu de aventureiros | Tab | Start / Options |
 | Confirmar e voltar no menu | Enter e Esc | A e B / X e círculo |
 | Regiões de impacto | F3 | Back / Share |
@@ -327,7 +340,10 @@ godot -e --path .
 | `hurtbox.gd` | região de impacto (Area3D na camada 4) com multiplicador de dano |
 | `sfx.gd` | toca efeitos (2D para o aventureiro e a interface, 3D com posição para esqueletos, flechas e bolhas) e a música em loop; cria os canais de áudio "Musica" (−9 dB) e "Efeitos" |
 | `anim_util.gd` | carrega as bibliotecas de animação do KayKit e marca as que repetem |
-| `fx.gd` | confete, poeira, rastro do tiro, clarão e texto flutuante |
+| `fx.gd` | confete, poeira, rastro do tiro, clarão, onda da granada e texto flutuante |
+| `weapons.gd` | os 4 blasters e a granada (pente, estoque, recarga, dano, espalhamento, luneta, modelo e encaixe) e o que a caixa de munição devolve |
+| `grenade.gd` | granada Brigadeiro: arco, quique, explosão em área |
+| `ammo_pickup.gd` | caixa de munição (fixa com retorno ou caída de esqueleto) |
 
 `tools/weapon_axes.gd` calcula a rotação do blaster a partir da pose de mira (resultado: 90° em Y, posição `(0.12, 0.1, 0)`), e `tools/inspect.gd` imprime a hierarquia importada.
 
@@ -345,12 +361,15 @@ godot -e --path .
 | aventureiro leva golpe / fica tonto / reaparece | `bonk` / `tonto` (apito descendo e passarinhos) / `reaparecer` |
 | bandeira ativada / coração recolhido / pulo | `bandeira` (dó-mi-sol-dó) / `coracao` / `pulo` |
 | caiu na água | `splash` ("tchibum" com gotinhas) |
+| Granulado / Pipoqueira / Pé-de-Moleque | `granulado` ("pi" curto) / `pipoqueira` (pipoca estourando) / `pe_de_moleque` ("vuuum" grave) |
+| recarga / sem munição / troca de blaster | `recarga` ("clic-clac") / `sem_municao` ("tic") / `troca_arma` |
+| arremesso / granada explodindo / caixa de munição | `arremesso` / `granada` ("pof" com brilho de confete) / `municao` (tilintar) |
 | menu | `ui_mover` / `ui_ok` |
 | música | `tema`: 8 compassos em dó maior a 112 bpm, 17 s, emendando sem corte |
 
 Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC0) do Kenney servem; é só trocar os WAV mantendo os nomes.
 
-**Ainda não tem:** história (missões, lanternas funcionando, chefes, ponte que baixa), pulo duplo e gancho, outros blasters, ajuste de volume pelo jogador, exportação para `.exe` e otimização para computador fraco (a ilha tem centenas de árvores e milhares de tufos de grama; no Mac M4 roda leve, mas não foi medido em outra máquina). O aventureiro, os esqueletos e a interface ainda são montados por código; só a ilha é cena editável. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate e o som ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
+**Ainda não tem:** história (missões, lanternas funcionando, chefes, ponte que baixa), pulo duplo e gancho, ganhar os blasters aos poucos, ajuste de volume pelo jogador, exportação para `.exe` e otimização para computador fraco (a ilha tem centenas de árvores e milhares de tufos de grama; no Mac M4 roda leve, mas não foi medido em outra máquina). O aventureiro, os esqueletos e a interface ainda são montados por código; só a ilha é cena editável. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate, o som e os blasters ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
 
 ## 10. Decisões em aberto
 

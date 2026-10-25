@@ -358,9 +358,23 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 			Fx.popup_text(get_parent(), point + Vector3.UP * 0.3, "bloqueou!", Color("#c9d1dc"))
 			Sfx.play_at(get_parent(), "escudo", point)
 			return
+	_apply_damage(amount, point, hb.multiplier > 1.0)
+
+
+## Explosão da granada: o escudo não segura, e o dano já vem com a distância descontada.
+func take_explosion(amount: float, center: Vector3) -> void:
+	if state in [State.DESMONTADO, State.REMONTANDO, State.DORMINDO]:
+		return
+	var away := global_position - center
+	away.y = 0.0
+	velocity += away.normalized() * 4.0 + Vector3.UP * 3.0
+	_apply_damage(amount, global_position + Vector3.UP * 1.8, false)
+
+
+func _apply_damage(amount: float, point: Vector3, crit: bool) -> void:
 	health -= amount
-	var crit := hb.multiplier > 1.0
-	Fx.popup_text(get_parent(), point + Vector3.UP * 0.3, "x2!" if crit else "-%d" % int(amount),
+	var shown := "%.1f" % amount if fmod(amount, 1.0) > 0.01 else "%d" % int(amount)
+	Fx.popup_text(get_parent(), point + Vector3.UP * 0.3, "x2!" if crit else "-" + shown,
 			Color("#ffd23f") if crit else Color.WHITE)
 	if health <= 0.0:
 		Fx.confetti(get_parent(), global_position + Vector3.UP * 1.2, 70, 6.5)

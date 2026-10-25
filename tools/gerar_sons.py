@@ -221,6 +221,35 @@ def make_sfx():
     shimmer = mix(0.7, *[(envelope(osc(midi(m), midi(m), 0.3, "sine"), 0.01, 0.1), i * 0.08, 0.5) for i, m in enumerate([72, 79, 84, 88, 91])])
     sfx("reaparecer", shimmer, -6)
 
+    # Blasters: Granulado (rajada, "pi" curtinho e agudo), Pipoqueira (pipoca estourando em leque)
+    # e Pé-de-Moleque (tiro de precisão, "vuuum" grave com cauda).
+    sfx("granulado", envelope(osc(1900, 900, 0.07, "square"), 0.001, 0.025), -7)
+    pops = [(envelope(mix(0.06, (osc(f, f * 0.6, 0.06, "tri"), 0, 0.8), (highpass(noise(0.03), 2000), 0, 0.5)), 0.001, 0.015), t, random.uniform(0.6, 1.0))
+            for f, t in [(900, 0.0), (1200, 0.015), (750, 0.03), (1050, 0.045), (1350, 0.06), (850, 0.08)]]
+    thump = envelope(osc(160, 70, 0.12, "sine"), 0.001, 0.05)
+    sfx("pipoqueira", mix(0.22, (thump, 0, 0.9), *pops), -3)
+    zap = envelope(osc(700, 140, 0.45, "saw"), 0.002, 0.12)
+    sfx("pe_de_moleque", lowpass(mix(0.5, (zap, 0, 0.7), (envelope(osc(2400, 600, 0.12, "sine"), 0.001, 0.04), 0, 0.5)), 5000), -3)
+
+    # Recarga: "clic-clac" (tira o pente, põe o pente). Sem munição: "tic" seco.
+    click = lambda f: envelope(mix(0.05, (osc(f, f * 0.7, 0.05, "square"), 0, 0.6), (highpass(noise(0.03), 3000), 0, 0.6)), 0.001, 0.01)
+    sfx("recarga", mix(0.6, (click(1400), 0.0, 0.9), (click(900), 0.38, 1.0), (click(1600), 0.46, 0.7)), -6)
+    sfx("sem_municao", click(2200), -12)
+
+    # Troca de blaster: deslizar metálico rápido. Arremesso: "fuu" curtinho.
+    sfx("troca_arma", mix(0.2, (envelope(lowpass(highpass(noise(0.12), 2500), 7000), 0.02, 0.04), 0, 0.6), (click(1200), 0.11, 0.8)), -8)
+    sfx("arremesso", envelope(lowpass(highpass(noise(0.2), 700), 3000), 0.06, 0.05), -8)
+
+    # Granada Brigadeiro: "pof" grave de desenho com brilho de confete por cima.
+    boom = envelope(lowpass(noise(0.8), 900), 0.004, 0.22)
+    bass = envelope(osc(120, 40, 0.5, "sine"), 0.002, 0.18)
+    glitter = [(envelope(osc(f, f, 0.12, "sine"), 0.002, 0.04), t, 0.25) for f, t in [(2637, 0.1), (3136, 0.16), (3520, 0.22), (2794, 0.3), (3951, 0.36)]]
+    sfx("granada", mix(0.9, (boom, 0, 0.9), (bass, 0, 0.9), *glitter), -2)
+
+    # Caixa de munição recolhida: tilintar metálico subindo.
+    ting = lambda f: envelope(mix(0.25, (osc(f, f, 0.25), 0, 1.0), (osc(f * 2.76, f * 2.76, 0.25), 0, 0.3)), 0.002, 0.07)
+    sfx("municao", mix(0.45, (ting(1046), 0, 0.7), (ting(1318), 0.06, 0.7), (ting(1568), 0.12, 0.7)), -6)
+
     # Tchibum (caiu na água): chuá de ruído grave, um "blop" descendo e gotinhas.
     splash = envelope(lowpass(noise(0.6), 1800), 0.01, 0.18)
     blop = envelope(osc(500, 140, 0.25, "sine"), 0.003, 0.08)

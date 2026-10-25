@@ -42,8 +42,8 @@ var arena := false
 var island: Node3D
 var _splashing := false
 
-const HINT_KEYBOARD := "WASD andar · Espaço pular · Botão direito mirar · Botão esquerdo atirar\nQ/E ou 1 a 6 trocar de aventureiro · Tab escolher aventureiro · F3 regiões de impacto · Esc soltar o mouse"
-const HINT_GAMEPAD := "Analógico esquerdo andar · Analógico direito olhar · A pular · LT mirar · RT atirar\nDirecional ←/→ trocar de aventureiro · Start escolher aventureiro · Back regiões de impacto"
+const HINT_KEYBOARD := "WASD andar · Espaço pular · Botão direito mirar · Botão esquerdo atirar · R recarregar · G granada\n1 a 4 ou rodinha trocar de blaster · Q/E trocar de aventureiro · Tab escolher aventureiro · F3 regiões de impacto · Esc soltar o mouse"
+const HINT_GAMEPAD := "Analógico esquerdo andar · Analógico direito olhar · A pular · LT mirar · RT atirar · X recarregar · RB granada\nY trocar de blaster · Direcional ←/→ trocar de aventureiro · Start escolher aventureiro · Back regiões de impacto"
 const MENU_KEYBOARD := "Clique, ou use as setas e Enter"
 const MENU_GAMEPAD := "Direcional para escolher, A para confirmar"
 
@@ -60,6 +60,16 @@ var _game_started := false
 var checkpoints: Array[Checkpoint] = []
 var current_checkpoint: Checkpoint
 var hearts_bar: HeartsBar
+var ammo_hud: AmmoHud
+var message_label: Label
+var _message_tween: Tween
+## Chance de um esqueleto desmontado deixar cair uma caixa de munição (sempre cai se a munição estiver no fim).
+const AMMO_DROP_CHANCE := 0.5
+## Pontos fixos de caixa na arena dos testes.
+const ARENA_CRATES := [Vector3(4, 0, 4), Vector3(-6, 0, -2)]
+## Segundos para a caixa da ilha voltar depois de pega.
+const CRATE_RESPAWN := 45.0
+var crates: Array[AmmoPickup] = []
 var damage_flash: ColorRect
 var fade: ColorRect
 var dizzy_label: Label
@@ -107,9 +117,65 @@ class HeartsBar:
 			draw_polyline(outline, Color(0, 0, 0, 0.55), 3.0, true)
 
 
+## Munição no canto de baixo à direita: nome do blaster, pente / estoque (∞ na pistola)
+## e as granadas Brigadeiro como bolinhas. O número fica amarelo acabando e vermelho zerado.
+class AmmoHud:
+	extends Control
+	var weapon_name := ""
+	var mag := 0
+	var mag_max := 1
+	var reserve := 0
+	var grenades := 0
+	var grenades_max := 3
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(_delta: float) -> void:
+		var size_px := get_viewport_rect().size
+		position = Vector2(size_px.x - 250.0, size_px.y - 120.0)
+
+	func set_values(p_name: String, p_mag: int, p_mag_max: int, p_reserve: int, p_grenades: int, p_grenades_max: int) -> void:
+		weapon_name = p_name
+		mag = p_mag
+		mag_max = p_mag_max
+		reserve = p_reserve
+		grenades = p_grenades
+		grenades_max = p_grenades_max
+		queue_redraw()
+
+	func _draw() -> void:
+		var font := ThemeDB.fallback_font
+		draw_rect(Rect2(0, 0, 234, 104), Color(0, 0, 0, 0.35), true)
+		draw_string_outline(font, Vector2(14, 28), weapon_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, 6, Color(0, 0, 0, 0.7))
+		draw_string(font, Vector2(14, 28), weapon_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
+		var mag_color := Color.WHITE
+		if mag == 0:
+			mag_color = Color("#ff5d5d")
+		elif mag <= int(ceil(mag_max * 0.25)):
+			mag_color = Color("#ffd23f")
+		var mag_text := "%d" % mag
+		var reserve_text := " / ∞" if reserve < 0 else " / %d" % reserve
+		draw_string_outline(font, Vector2(14, 68), mag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, 8, Color(0, 0, 0, 0.7))
+		draw_string(font, Vector2(14, 68), mag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, mag_color)
+		var mag_width := font.get_string_size(mag_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 38).x
+		draw_string_outline(font, Vector2(14 + mag_width, 68), reserve_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, 6, Color(0, 0, 0, 0.7))
+		draw_string(font, Vector2(14 + mag_width, 68), reserve_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, Color(1, 1, 1, 0.85))
+		for i in grenades_max:
+			var c := Vector2(24 + i * 26, 88)
+			draw_circle(c, 9.0, Color(0, 0, 0, 0.5))
+			draw_circle(c, 7.0, Color("#7a4a2a") if i < grenades else Color(1, 1, 1, 0.18))
+			if i < grenades:
+				draw_circle(c + Vector2(-2, -2), 2.0, Color("#ff9ed2"))
+
+
+## Mira no centro da tela. Recarregando, ganha um anel que vai se completando;
+## com a luneta do Pé-de-Moleque, vira um círculo fino com cruz.
 class Crosshair:
 	extends Control
 	var color := Color.WHITE
+	var reload_progress := -1.0
+	var scoped := false
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -117,15 +183,25 @@ class Crosshair:
 	func _process(_delta: float) -> void:
 		# Filho direto de CanvasLayer: posiciona pelo tamanho da tela em vez de âncoras.
 		position = get_viewport_rect().size * 0.5
+		queue_redraw()
 
 	func _draw() -> void:
 		var shadow := Color(0, 0, 0, 0.6)
-		for c in [[shadow, 2.0], [color, 0.0]]:
-			var col: Color = c[0]
-			var w: float = 4.0 + c[1]
+		if scoped:
+			draw_arc(Vector2.ZERO, 60.0, 0.0, TAU, 64, shadow, 5.0, true)
+			draw_arc(Vector2.ZERO, 60.0, 0.0, TAU, 64, color, 2.0, true)
 			for d in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
-				draw_line(d * 6.0, d * 16.0, col, w)
-			draw_circle(Vector2.ZERO, 2.0 + c[1] * 0.5, col)
+				draw_line(d * 10.0, d * 60.0, color, 1.5)
+		else:
+			for c in [[shadow, 2.0], [color, 0.0]]:
+				var col: Color = c[0]
+				var w: float = 4.0 + c[1]
+				for d in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
+					draw_line(d * 6.0, d * 16.0, col, w)
+				draw_circle(Vector2.ZERO, 2.0 + c[1] * 0.5, col)
+		if reload_progress >= 0.0:
+			draw_arc(Vector2.ZERO, 28.0, 0.0, TAU, 48, Color(0, 0, 0, 0.45), 7.0, true)
+			draw_arc(Vector2.ZERO, 28.0, -PI / 2.0, -PI / 2.0 + TAU * reload_progress, 48, Color("#9fdcff"), 5.0, true)
 
 	func flash(c: Color) -> void:
 		color = c
@@ -141,7 +217,7 @@ var music: AudioStreamPlayer
 
 
 ## Os testes automáticos rodam na arena plana (previsível); o jogo de verdade, na ilha.
-const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som"]
+const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som", "--armas"]
 
 
 func _ready() -> void:
@@ -163,6 +239,9 @@ func _ready() -> void:
 	player.health_changed.connect(func(h: int, m: int) -> void: hearts_bar.set_hearts(h, m))
 	player.damaged.connect(_on_player_damaged)
 	player.dizzy_started.connect(_on_player_dizzy)
+	player.ammo_changed.connect(_update_ammo_hud)
+	player.weapon_changed.connect(func(_i: int) -> void: show_message(player.current_weapon().nome, player.current_weapon().cor, 0.9))
+	player.out_of_ammo.connect(func() -> void: show_message("Sem munição! Procure uma caixa ou troque de blaster", Color("#ff9d9d"), 1.6))
 	for spawn in world.enemies:
 		var e := SkeletonEnemy.new()
 		e.type_name = spawn[0]
@@ -185,7 +264,10 @@ func _ready() -> void:
 		checkpoints.append(cp)
 	current_checkpoint = checkpoints[0]
 	current_checkpoint.set_active.call_deferred(true, true)
+	for pos in world.crates:
+		_spawn_crate(pos, CRATE_RESPAWN)
 	_build_ui()
+	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_character_changed(player.character_name)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -209,6 +291,9 @@ func _ready() -> void:
 		Sfx.logging = true
 		_open_menu()
 		_run_sound_test()
+	elif "--armas" in args:
+		select_panel.hide()
+		_run_weapons_test()
 	elif "--ilha" in args:
 		select_panel.hide()
 		_run_island_test()
@@ -230,7 +315,7 @@ func _build_arena() -> Dictionary:
 	var cps := []
 	for k in CHECKPOINTS.size():
 		cps.append([CHECKPOINTS[k], "Bandeira%d" % (k + 1)])
-	return {"start": Vector3.ZERO, "start_yaw": 0.0, "enemies": spawns, "checkpoints": cps}
+	return {"start": Vector3.ZERO, "start_yaw": 0.0, "enemies": spawns, "checkpoints": cps, "crates": ARENA_CRATES}
 
 
 ## A ilha de verdade (scenes/ilha.tscn). Início, bandeiras e esqueletos vêm dos marcadores,
@@ -245,7 +330,11 @@ func _load_island() -> Dictionary:
 	var cps := []
 	for m in island.get_node("Marcadores/PontosDeRetorno").get_children():
 		cps.append([m.global_position, m.name])
-	return {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps}
+	var crate_spots := []
+	if island.has_node("Marcadores/Municao"):
+		for m in island.get_node("Marcadores/Municao").get_children():
+			crate_spots.append(m.global_position)
+	return {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps, "crates": crate_spots}
 
 
 # --- entrada -----------------------------------------------------------------
@@ -270,7 +359,15 @@ func _setup_input() -> void:
 	_bind_button("pular", JOY_BUTTON_A)
 	_bind_mouse("atirar", MOUSE_BUTTON_LEFT)
 	_bind_axis("atirar", JOY_AXIS_TRIGGER_RIGHT, 1.0)
-	_bind_button("atirar", JOY_BUTTON_RIGHT_SHOULDER)
+	_bind_key("recarregar", [KEY_R])
+	_bind_button("recarregar", JOY_BUTTON_X)
+	_bind_key("granada", [KEY_G])
+	_bind_button("granada", JOY_BUTTON_RIGHT_SHOULDER)
+	_bind_mouse("arma_proxima", MOUSE_BUTTON_WHEEL_UP)
+	_bind_button("arma_proxima", JOY_BUTTON_Y)
+	_bind_mouse("arma_anterior", MOUSE_BUTTON_WHEEL_DOWN)
+	for i in Weapons.count():
+		_bind_key("arma_%d" % (i + 1), [KEY_1 + i])
 	_bind_mouse("mirar", MOUSE_BUTTON_RIGHT)
 	_bind_axis("mirar", JOY_AXIS_TRIGGER_LEFT, 1.0)
 	_bind_button("mirar", JOY_BUTTON_LEFT_SHOULDER)
@@ -285,8 +382,6 @@ func _setup_input() -> void:
 	_bind_button("personagem_anterior", JOY_BUTTON_DPAD_LEFT)
 	_bind_key("personagem_proximo", [KEY_E])
 	_bind_button("personagem_proximo", JOY_BUTTON_DPAD_RIGHT)
-	for i in CHARACTER_ORDER.size():
-		_bind_key("personagem_%d" % (i + 1), [KEY_1 + i])
 	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
 	_bind_button("ui_accept", JOY_BUTTON_A)
 	_bind_button("ui_cancel", JOY_BUTTON_B)
@@ -357,10 +452,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cycle_character(1)
 	elif event.is_action_pressed("personagem_anterior"):
 		_cycle_character(-1)
-	else:
-		for i in CHARACTER_ORDER.size():
-			if event.is_action_pressed("personagem_%d" % (i + 1)):
-				player.set_character(CHARACTER_ORDER[i])
 
 
 func _cycle_character(step: int) -> void:
@@ -571,6 +662,21 @@ func _build_ui() -> void:
 
 	hearts_bar = HeartsBar.new()
 	layer.add_child(hearts_bar)
+	ammo_hud = AmmoHud.new()
+	layer.add_child(ammo_hud)
+	message_label = Label.new()
+	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_label.add_theme_font_size_override("font_size", 30)
+	message_label.add_theme_constant_override("outline_size", 10)
+	message_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	message_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	message_label.modulate.a = 0.0
+	layer.add_child(message_label)
+	message_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	message_label.offset_top = -190
+	message_label.offset_bottom = -150
+	message_label.offset_left = -400
+	message_label.offset_right = 400
 
 	hint = Label.new()
 	hint.text = HINT_KEYBOARD
@@ -616,7 +722,7 @@ func _build_ui() -> void:
 	for i in CHARACTER_ORDER.size():
 		var key: String = CHARACTER_ORDER[i]
 		var button := Button.new()
-		button.text = "%d · %s" % [i + 1, CHARACTER_LABELS[key]]
+		button.text = CHARACTER_LABELS[key]
 		button.custom_minimum_size = Vector2(220, 56)
 		button.add_theme_font_size_override("font_size", 20)
 		button.add_theme_stylebox_override("focus", focus_style)
@@ -678,8 +784,45 @@ func _on_checkpoint_activated(cp: Checkpoint) -> void:
 func _on_enemy_defeated(e: SkeletonEnemy) -> void:
 	if player.hearts <= 2 or randf() < heart_drop_chance:
 		var heart := HeartPickup.new()
-		heart.position = Vector3(e.global_position.x, 0, e.global_position.z)
+		heart.position = e.global_position
 		add_child(heart)
+	if player.limited_ammo_fraction() < 0.25 or randf() < AMMO_DROP_CHANCE:
+		var crate := AmmoPickup.new()
+		crate.dropped = true
+		crate.position = e.global_position + e.visual.global_basis.x * 1.4
+		add_child(crate)
+
+
+func _spawn_crate(pos: Vector3, respawn: float) -> AmmoPickup:
+	var crate := AmmoPickup.new()
+	crate.position = pos
+	crate.respawn = respawn
+	add_child(crate)
+	crates.append(crate)
+	return crate
+
+
+func _update_ammo_hud() -> void:
+	var def := player.current_weapon()
+	ammo_hud.set_values(def.nome, player.mag(), def.pente, player.reserve(), player.grenades, Weapons.GRENADE.max)
+
+
+## Mensagem rápida no meio de baixo da tela (troca de blaster, munição acabou).
+func show_message(text: String, color := Color.WHITE, seconds := 1.2) -> void:
+	message_label.text = text
+	message_label.add_theme_color_override("font_color", color)
+	if _message_tween:
+		_message_tween.kill()
+	message_label.modulate.a = 1.0
+	_message_tween = message_label.create_tween()
+	_message_tween.tween_interval(seconds)
+	_message_tween.tween_property(message_label, "modulate:a", 0.0, 0.4)
+
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(player) and crosshair:
+		crosshair.reload_progress = player.reload_progress()
+		crosshair.scoped = player.is_zoomed()
 
 
 func _choose_character(key: String) -> void:
@@ -735,15 +878,18 @@ func _run_capture() -> void:
 	for e in enemies:
 		e.visible = false
 	player.force_aim = true
-	await _wait(0.8)
-	var hand: Node3D = player.model.find_child("MaoDireita", true, false)
 	var close := Camera3D.new()
 	add_child(close)
-	close.global_position = hand.global_position + player.visual.global_basis * Vector3(-1.6, 0.5, 1.2)
-	close.look_at(hand.global_position)
-	close.current = true
-	await _shot("00_blaster_close.png")
+	for i in Weapons.count():
+		player.switch_weapon(i)
+		await _wait(0.8)
+		var hand: Node3D = player.model.find_child("MaoDireita", true, false)
+		close.global_position = hand.global_position + player.visual.global_basis * Vector3(-1.8, 0.5, 1.0)
+		close.look_at(hand.global_position + player.visual.global_basis.z * 0.3)
+		close.current = true
+		await _shot("00_blaster_close_%d_%s.png" % [i + 1, Weapons.get_def(i).id])
 	close.queue_free()
+	player.switch_weapon(0)
 	player.camera.current = true
 	player.force_aim = false
 	for e in enemies:
@@ -800,6 +946,46 @@ func _run_capture() -> void:
 	await _wait_until(func() -> bool: return not player.dizzy and fade.modulate.a < 0.05, 8.0)
 	player.god_mode = true
 	await _shot("14_bandeira.png")
+	# Armas: blaster de duas mãos, recarga, luneta, granada e caixa de munição.
+	# Longe da bandeira inicial, para o poste não ficar entre a câmera e o aventureiro.
+	player.god_mode = true
+	player.global_position = Vector3(3, 0.2, -2)
+	player.force_aim = true
+	var target := enemies[1]
+	player.switch_weapon(1)
+	await _wait(0.5)
+	await _aim_for(target, 1.2, 0.4)
+	player.fire()
+	await _wait(0.05)
+	await _shot("15_granulado.png")
+	player.reload()
+	await _wait(0.6)
+	await _shot("16_recarga.png")
+	await _wait(1.2)
+	player.switch_weapon(3)
+	await _wait(0.9)
+	await _aim_for(target, 1.4, 0.3)
+	await _shot("17_luneta.png")
+	player.switch_weapon(2)
+	await _wait(0.5)
+	await _aim_for(target, 1.0, 0.3)
+	player.fire()
+	await _wait(0.05)
+	await _shot("18_pipoqueira.png")
+	player.force_aim = false
+	player.switch_weapon(0)
+	await _wait(0.4)
+	await _aim_for(target, -1.0, 0.3)
+	player.throw_grenade()
+	await _wait(1.88)
+	await _shot("19_granada.png")
+	await _wait(0.5)
+	var crate := AmmoPickup.new()
+	crate.dropped = true
+	crate.position = player.global_position + (-player.camera.global_basis.z * Vector3(1, 0, 1)).normalized() * 4.0
+	add_child(crate)
+	await _wait(0.6)
+	await _shot("20_caixa.png")
 	# Com controle: as dicas mudam e o menu abre com foco num botão.
 	_joy_axis(JOY_AXIS_LEFT_X, 0.6)
 	await get_tree().physics_frame
@@ -930,6 +1116,21 @@ func _run_gamepad_test() -> void:
 	var c1 := player.character_name
 	await _joy_button(JOY_BUTTON_DPAD_LEFT)
 	all_ok = _check("direcional troca de aventureiro", c1 != c0 and player.character_name == c0, "(%s -> %s -> %s)" % [c0, c1, player.character_name]) and all_ok
+
+	# X recarrega, Y troca de blaster, RB joga granada.
+	player.fire()
+	player.fire()
+	await _joy_button(JOY_BUTTON_X)
+	all_ok = _check("X recarrega", player.reloading, "(pente %d)" % player.mag()) and all_ok
+	await _wait_until(func() -> bool: return not player.reloading, 3.0)
+	var weapon_before := player.weapon_index
+	await _joy_button(JOY_BUTTON_Y)
+	all_ok = _check("Y troca de blaster", player.weapon_index != weapon_before, "(%s)" % player.current_weapon().nome) and all_ok
+	await _wait(0.4)
+	var grenades_before := player.grenades
+	await _joy_button(JOY_BUTTON_RIGHT_SHOULDER)
+	all_ok = _check("RB joga granada", player.grenades == grenades_before - 1) and all_ok
+	await _wait(1.0)
 
 	# Back mostra as regiões; Start abre e fecha o menu.
 	await _joy_button(JOY_BUTTON_BACK)
@@ -1141,6 +1342,25 @@ func _run_sound_test() -> void:
 	Input.parse_input_event(ev)
 	all_ok = _check("pulo", Sfx.played.count("pulo") > jumped_before) and all_ok
 
+	# Armas: recarga, troca, granada, caixa e munição acabada.
+	Sfx.played.clear()
+	player.fire()
+	player.reload()
+	await _wait(1.3)
+	player.switch_weapon(1)
+	await _wait(0.4)
+	player.throw_grenade()
+	await _wait(2.2)
+	player.ammo.granulado.mag = 0
+	player.ammo.granulado.reserve = 0
+	player.fire()
+	var crate := AmmoPickup.new()
+	crate.position = player.global_position
+	add_child(crate)
+	await _wait(0.6)
+	all_ok = _check("recarga, troca, granada, caixa e sem munição", heard.call("recarga") and heard.call("troca_arma") and heard.call("arremesso")
+			and heard.call("granada") and heard.call("sem_municao") and heard.call("municao"), "(%s)" % ", ".join(Sfx.played)) and all_ok
+
 	print("SOM OK" if all_ok else "SOM COM FALHAS")
 	get_tree().quit()
 
@@ -1176,6 +1396,8 @@ func _run_island_test() -> void:
 			"(%d marcadores, %d dormindo)" % [markers, sleeping]) and all_ok
 	all_ok = _check("bandeiras dos marcadores", checkpoints.size() == island.get_node("Marcadores/PontosDeRetorno").get_child_count(),
 			"(%d)" % checkpoints.size()) and all_ok
+	all_ok = _check("caixas de munição dos marcadores", crates.size() == island.get_node("Marcadores/Municao").get_child_count() and crates.size() > 0,
+			"(%d)" % crates.size()) and all_ok
 
 	# Chegar perto acorda só quem está perto.
 	var minion := _enemy("Minion_01")
@@ -1278,6 +1500,146 @@ func _run_island_capture() -> void:
 	await _wait(0.55)
 	await _shot("ilha_jogo_08_tchibum.png")
 	await _wait(1.5)
+	get_tree().quit()
+
+
+func _press_key(key: Key) -> void:
+	for pressed in [true, false]:
+		var ev := InputEventKey.new()
+		ev.physical_keycode = key
+		ev.pressed = pressed
+		Input.parse_input_event(ev)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+
+
+func _hand_model() -> String:
+	var holder: Node = player.model.find_child("Blaster", true, false)
+	if holder == null:
+		return ""
+	for c in holder.get_children():
+		if c.scene_file_path != "":
+			return c.scene_file_path.get_file()
+	return ""
+
+
+## Pente, estoque, recarga, troca de blaster, escopeta, luneta, granada e caixas.
+## Uso: godot --headless --path . -- --armas
+func _run_weapons_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	all_ok = _check("começa com a Paçoca 12 / infinito e 2 granadas", player.current_weapon().id == "pacoca" and player.mag() == 12
+			and player.reserve() == -1 and player.grenades == 2) and all_ok
+	player.fire()
+	all_ok = _check("atirar gasta uma bala", player.mag() == 11, "(%d)" % player.mag()) and all_ok
+	while player.mag() > 0:
+		player.fire()
+		await get_tree().physics_frame
+	await _wait(0.4)
+	all_ok = _check("pente vazio recarrega sozinho", player.reloading) and all_ok
+	await _wait_until(func() -> bool: return not player.reloading, 3.0)
+	all_ok = _check("recarga enche o pente; estoque da Paçoca é infinito", player.mag() == 12 and player.reserve() == -1) and all_ok
+	var fired_during_reload := false
+	player.fire()
+	player.fire()
+	await _press_key(KEY_R)
+	all_ok = _check("R recarrega antes de zerar", player.reloading, "(pente %d)" % player.mag()) and all_ok
+	fired_during_reload = player.fire()
+	all_ok = _check("não atira durante a recarga", not fired_during_reload) and all_ok
+	await _wait_until(func() -> bool: return not player.reloading, 3.0)
+	all_ok = _check("pente cheio depois da recarga manual", player.mag() == 12) and all_ok
+
+	await _press_key(KEY_2)
+	await _wait(0.4)
+	all_ok = _check("tecla 2 pega o Granulado (modelo novo na mão)", player.current_weapon().id == "granulado" and _hand_model() == "blaster-j.glb",
+			"(%s, %s)" % [player.current_weapon().nome, _hand_model()]) and all_ok
+	for k in 5:
+		player.fire()
+	player.reload()
+	await _wait_until(func() -> bool: return not player.reloading, 3.0)
+	all_ok = _check("recarga do Granulado gasta o estoque", player.mag() == 30 and player.reserve() == 55, "(%d / %d)" % [player.mag(), player.reserve()]) and all_ok
+
+	player.ammo.granulado.mag = 0
+	player.ammo.granulado.reserve = 0
+	var warned := [false]
+	player.out_of_ammo.connect(func() -> void: warned[0] = true, CONNECT_ONE_SHOT)
+	Sfx.played.clear()
+	var shot := player.fire()
+	all_ok = _check("sem munição: não atira, não recarrega e avisa", not shot and not player.reloading and warned[0] and "sem_municao" in Sfx.played) and all_ok
+
+	var crate := AmmoPickup.new()
+	crate.position = player.global_position
+	add_child(crate)
+	await _wait(0.6)
+	all_ok = _check("caixa de munição devolve estoque e granada", player.reserve() == 30 and player.grenades == 3 and not is_instance_valid(crate),
+			"(estoque %d, granadas %d)" % [player.reserve(), player.grenades]) and all_ok
+	for def in Weapons.DEFS:
+		if not Weapons.infinite(def):
+			player.ammo[def.id].reserve = def.estoque_max
+	var spare := AmmoPickup.new()
+	spare.position = player.global_position
+	add_child(spare)
+	await _wait(0.6)
+	all_ok = _check("com tudo cheio a caixa fica no chão", is_instance_valid(spare)) and all_ok
+	spare.queue_free()
+
+	# Escopeta: vários projéteis no mesmo disparo acertam o mesmo esqueleto.
+	var minion := enemies[0]
+	await _wait_until(func() -> bool: return minion.hurtboxes[1].is_active(), 8.0)
+	minion.set_physics_process(false)
+	minion.global_position = player.global_position + Vector3(0, 0, -5)
+	minion.health = 99.0  # vida sobrando: todos os projéteis contam, ninguém desmonta no meio
+	await _press_key(KEY_3)
+	await _wait(0.4)
+	player.force_aim = true
+	await _aim_for(minion.hurtboxes[1], 0.0, 0.5)
+	var hits := [0]
+	var count_hit := func(_r: String, _d: float) -> void: hits[0] += 1
+	player.hit_confirmed.connect(count_hit)
+	player.fire()
+	player.hit_confirmed.disconnect(count_hit)
+	all_ok = _check("Pipoqueira solta vários projéteis de uma vez", player.current_weapon().id == "pipoqueira" and hits[0] >= 2, "(%d acertos de 7)" % hits[0]) and all_ok
+	minion.health = minion.config.health
+
+	# Luneta.
+	await _press_key(KEY_4)
+	await _wait(0.8)
+	all_ok = _check("Pé-de-Moleque aproxima a mira", player.is_zoomed() and player.camera.fov < 35.0, "(campo de visão %.0f)" % player.camera.fov) and all_ok
+	player.force_aim = false
+	await _wait(0.5)
+
+	# Granada perto de um esqueleto parado.
+	await _wait_until(func() -> bool: return minion.state != SkeletonEnemy.State.DESMONTADO and minion.state != SkeletonEnemy.State.REMONTANDO, 10.0)
+	minion.set_physics_process(false)
+	minion.global_position = player.global_position + Vector3(0, 0, -7)
+	minion.health = minion.config.health
+	await _aim_for(minion, -1.5, 0.4)
+	var before_grenades := player.grenades
+	player.throw_grenade()
+	await _wait(2.4)
+	all_ok = _check("granada explode e desmonta o esqueleto perto", player.grenades == before_grenades - 1 and (minion.health < minion.config.health or minion.state == SkeletonEnemy.State.DESMONTADO),
+			"(vida %.1f, %s)" % [minion.health, SkeletonEnemy.State.keys()[minion.state]]) and all_ok
+	minion.set_physics_process(true)
+	player.grenades = 0
+	all_ok = _check("sem granadas, não joga", not player.throw_grenade()) and all_ok
+
+	# Munição no fim: esqueleto desmontado sempre deixa caixa.
+	for def in Weapons.DEFS:
+		if not Weapons.infinite(def):
+			player.ammo[def.id].mag = 0
+			player.ammo[def.id].reserve = 0
+	var target := enemies[2]
+	await _wait_until(func() -> bool: return target.hurtboxes[1].is_active(), 8.0)
+	var count_drops := func() -> int:
+		return get_children().filter(func(n: Node) -> bool: return n is AmmoPickup and n.dropped and not n.is_queued_for_deletion()).size()
+	var drops_before: int = count_drops.call()
+	target.take_hit(99.0, target.global_position + Vector3.UP * 2.0, target.hurtboxes[0])
+	await get_tree().physics_frame
+	all_ok = _check("munição no fim: esqueleto deixa caixa", count_drops.call() == drops_before + 1) and all_ok
+
+	print("ARMAS OK" if all_ok else "ARMAS COM FALHAS")
 	get_tree().quit()
 
 

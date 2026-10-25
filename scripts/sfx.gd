@@ -13,7 +13,8 @@ const BUS_SFX := &"Efeitos"
 const ALL := [
 	"tiro", "acerto", "acerto_cabeca", "ossos", "remontar", "alerta", "golpe_ar", "escudo",
 	"flecha", "ventosa", "bolha", "estouro", "bonk", "tonto", "bandeira", "coracao", "pulo",
-	"reaparecer", "ui_mover", "ui_ok", "splash",
+	"reaparecer", "ui_mover", "ui_ok", "splash", "granulado", "pipoqueira", "pe_de_moleque",
+	"recarga", "sem_municao", "troca_arma", "arremesso", "granada", "municao",
 ]
 
 ## Nos testes, anota o nome de cada som tocado (não dá para ouvir num teste sem tela).

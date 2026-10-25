@@ -713,6 +713,17 @@ func _markers() -> void:
 		var p: Vector2 = spawn[1]
 		_marker(enemies, "%s_%02d" % [kind.trim_prefix("Skeleton_"), counts[kind]], p.x, p.y, {"tipo": kind})
 
+	# Caixas de munição: voltam um tempo depois de pegas (o jogo cuida disso).
+	var crates := _group(markers, "Municao")
+	var crate_spots := [
+		["Praca", Vector2(-9, 164)], ["CidadeOeste", Vector2(-50, 150)], ["CidadeLeste", Vector2(50, 150)],
+		["PeDoMorro", Vector2(-8, 96)], ["TrilhaDoMorro", _spiral_point(0.45) + Vector2(2, 2)],
+		["Castelinho", Vector2(-3, 3)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
+		["VilaDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-100, -172)],
+	]
+	for spot in crate_spots:
+		_marker(crates, spot[0], spot[1].x, spot[1].y)
+
 	# Lanternas mágicas: por enquanto só o visual (poste, esfera e raio até o castelinho).
 	var lanterns := _group(markers, "Lanternas")
 	var visuals := _group(ilha, "LanternasVisuais")
