@@ -238,6 +238,7 @@ func _physics_process(delta: float) -> void:
 func _start_attack() -> void:
 	_struck = false
 	_warning.visible = true
+	Sfx.play_at(get_parent(), "alerta", global_position + Vector3.UP * 3.0)
 	# Golpe de perto: a animação já começa no aviso e o dano sai no meio dela.
 	_enter(State.PREPARANDO, config.attack if config.kind == "melee" else config.aim)
 
@@ -247,6 +248,7 @@ func _strike(dist: float, to_target: Vector3) -> void:
 		return
 	match config.kind:
 		"melee":
+			Sfx.play_at(get_parent(), "golpe_ar", global_position + Vector3.UP * 1.2)
 			var forward := visual.global_basis.z
 			if dist <= config.range + 0.8 and forward.dot(to_target.normalized()) > 0.3:
 				target.take_damage(1, global_position, name)
@@ -254,6 +256,7 @@ func _strike(dist: float, to_target: Vector3) -> void:
 			var from := _hand_r.global_position + Vector3.UP * 0.2 + visual.global_basis.z * 0.5
 			var kind := Projectile.Kind.FLECHA if config.kind == "flecha" else Projectile.Kind.BOLHA
 			get_parent().add_child(Projectile.create(kind, from, target))
+			Sfx.play_at(get_parent(), config.kind, from)
 
 
 func _can_see_target() -> bool:
@@ -287,6 +290,8 @@ func _enter(new_state: State, anim_name: String) -> void:
 	if new_state == State.REMONTANDO:
 		_rise_length = ap.current_animation_length
 		_set_hittable(false)
+		if is_inside_tree():
+			Sfx.play_at(get_parent(), "remontar", global_position + Vector3.UP, -3.0)
 	elif new_state == State.DESMONTADO:
 		_set_hittable(false)
 
@@ -308,6 +313,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 		if from_front:
 			Fx.dust(get_parent(), point)
 			Fx.popup_text(get_parent(), point + Vector3.UP * 0.3, "bloqueou!", Color("#c9d1dc"))
+			Sfx.play_at(get_parent(), "escudo", point)
 			return
 	health -= amount
 	var crit := hb.multiplier > 1.0
@@ -315,6 +321,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 			Color("#ffd23f") if crit else Color.WHITE)
 	if health <= 0.0:
 		Fx.confetti(get_parent(), global_position + Vector3.UP * 1.2, 70, 6.5)
+		Sfx.play_at(get_parent(), "ossos", global_position + Vector3.UP)
 		_enter(State.DESMONTADO, "especial/Skeletons_Death")
 		defeated.emit(self)
 	else:

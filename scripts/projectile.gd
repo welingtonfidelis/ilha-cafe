@@ -144,6 +144,8 @@ func pop() -> void:
 	_popped = true
 	if kind == Kind.BOLHA:
 		Fx.bubble_pop(get_parent(), global_position)
+		Sfx.play_at(get_parent(), "estouro", global_position)
 	else:
 		Fx.dust(get_parent(), global_position)
+		Sfx.play_at(get_parent(), "ventosa", global_position)
 	queue_free()

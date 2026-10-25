@@ -1,12 +1,13 @@
 class_name HeartPickup
 extends Area3D
-## Coração que às vezes cai de um esqueleto desmontado. Devolve um coração de vida;
-## com a vida cheia ele fica esperando no chão. Some depois de um tempo, piscando no fim.
+## Coração (KayKit Platformer Pack) que às vezes cai de um esqueleto desmontado. Devolve um
+## coração de vida; com a vida cheia ele fica esperando no chão. Some depois de um tempo, piscando no fim.
 
 const LIFETIME := 25.0
+const HEART_MODEL := "res://assets/props/platformer/red/heart_red.gltf"
 
 var _time := 0.0
-var _visual: MeshInstance3D
+var _visual: Node3D
 
 
 func _ready() -> void:
@@ -19,15 +20,8 @@ func _ready() -> void:
 	shape.shape = sphere
 	shape.position.y = 0.9
 	add_child(shape)
-	_visual = MeshInstance3D.new()
-	_visual.mesh = Fx.heart_mesh()
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("#ff4d6d")
-	mat.emission_enabled = true
-	mat.emission = Color("#ff4d6d")
-	mat.emission_energy_multiplier = 0.35
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_visual.material_override = mat
+	_visual = load(HEART_MODEL).instantiate()
+	_visual.scale = Vector3.ONE * 0.75
 	_visual.position.y = 0.9
 	add_child(_visual)
 	# Pulinho ao cair.
@@ -46,6 +40,7 @@ func _physics_process(delta: float) -> void:
 		return
 	for body in get_overlapping_bodies():
 		if body is Player and (body as Player).heal(1):
+			Sfx.play(get_parent(), "coracao")
 			Fx.confetti(get_parent(), global_position + Vector3.UP, 20, 3.5)
 			Fx.popup_text(get_parent(), global_position + Vector3.UP * 1.8, "+1", Color("#ff4d6d"))
 			queue_free()

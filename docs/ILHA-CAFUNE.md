@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: fatia técnica com ciclo de combate (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). Aventureiro escolhível, câmera em terceira pessoa, blaster, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: fatia técnica com ciclo de combate e som (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). Aventureiro escolhível, câmera em terceira pessoa, blaster, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 20 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -203,7 +203,7 @@ Quais modelos do Blaster Kit viram cada um se decide quando o pacote for baixado
 
 Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (checkpoint): todos do KayKit Platformer Pack. Potes de vaga-lume, bilhetes e Lanternas Mágicas: montados com peças dos pacotes ou feitos com formas simples na Godot.
 
-**No jogo hoje:** o coração que cai e a bandeira de retorno são feitos com formas simples na Godot (coração gerado por código, bandeira com cilindros e caixa), até baixarmos o Platformer Pack. As armas dos esqueletos (machado, escudo, besta, cajado) vêm do próprio pacote Skeletons e encaixam no `handslot` sem ajuste.
+**No jogo hoje:** o coração que cai é o `heart_red` do Platformer Pack, e a bandeira de retorno é a `flag_A`, azul quando inativa e amarela quando ativa (copiadas para `assets/props/platformer/<cor>/`; o pacote guarda cada cor numa pasta, todas com a mesma textura). A `star_red` e a `star_yellow` também foram copiadas, para coletáveis futuros. Os corações da tela são desenhados por código, e as estrelinhas de tonto são geradas por código (sempre de frente para a câmera). As armas dos esqueletos (machado, escudo, besta, cajado) vêm do próprio pacote Skeletons e encaixam no `handslot` sem ajuste.
 
 ### Pacotes
 
@@ -215,7 +215,7 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 | Forest Nature Pack | KayKit | grátis 1.0 | 6,1 MB | floresta e Morro (baixado) |
 | Blaster Kit | Kenney | 2.1 | 1,7 MB | blasters: 18 modelos (`blaster-a` a `blaster-r`), granadas, miras, alvos e projéteis de espuma (baixado) |
 | Character Animations | KayKit | grátis 1.1 | 14 MB | 161 animações para o `Rig_Medium` e o `Rig_Large`, incluindo tiro, mira e recarga de uma e duas mãos, e animações próprias de esqueleto (baixado) |
-| Platformer Pack | KayKit | grátis | 22 MB | moeda, corações, checkpoints (depois) |
+| Platformer Pack | KayKit | grátis 1.0 | 22 MB | coração, bandeiras de retorno, estrelas; depois diamantes (baixado) |
 | Halloween Bits | KayKit | grátis | 5,3 MB | enfeites do Morro (opcional) |
 
 Todos são CC0: uso comercial livre, sem atribuição obrigatória. O KayKit pede só para não revender os modelos sem alteração.
@@ -261,7 +261,9 @@ godot -e --path .
 - `godot --headless --path . -- --smoke` atira num esqueleto sem abrir janela e imprime os estados.
 - `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 14 comandos (menu, analógicos, pulo, mira, auxílio de mira, tiro, troca de aventureiro, Back e Start); termina com "CONTROLE OK".
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
+- `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - Os modos `--smoke`, `--controle` e `--capture` ligam `god_mode` no jogador, para o tonto não travar o teste.
+- Para rodar os testes, use um limite de tempo (`perl -e 'alarm 200; exec @ARGV' godot ...`): se um script tiver erro de digitação, a Godot fica parada em vez de sair.
 - `godot --path . -- --capture` abre a janela, roda uma sequência e salva capturas em `tools/capturas/` (fora do git).
 
 **Controles** (as dicas na tela trocam sozinhas conforme o aparelho em uso):
@@ -294,12 +296,31 @@ godot -e --path .
 | `checkpoint.gd` | bandeira de ponto de retorno |
 | `heart_pickup.gd` | coração que devolve vida |
 | `hurtbox.gd` | região de impacto (Area3D na camada 4) com multiplicador de dano |
+| `sfx.gd` | toca efeitos (2D para o aventureiro e a interface, 3D com posição para esqueletos, flechas e bolhas) e a música em loop; cria os canais de áudio "Musica" (−9 dB) e "Efeitos" |
 | `anim_util.gd` | carrega as bibliotecas de animação do KayKit e marca as que repetem |
 | `fx.gd` | confete, poeira, rastro do tiro, clarão e texto flutuante |
 
 `tools/weapon_axes.gd` calcula a rotação do blaster a partir da pose de mira (resultado: 90° em Y, posição `(0.12, 0.1, 0)`), e `tools/inspect.gd` imprime a hierarquia importada.
 
-**Ainda não tem:** som, mapa da ilha de verdade, outros blasters, modelos do Platformer Pack para coração e bandeira, cenas editáveis no editor (tudo é montado por código em `main.gd`) e exportação para `.exe`. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate ainda só foi testado pelos testes automáticos e capturas.
+**Som:** todos os sons são gerados por `tools/gerar_sons.py` (só biblioteca padrão do Python, 2,5 s para gerar tudo): `python3 tools/gerar_sons.py` reescreve `assets/audio/sfx/*.wav` e `assets/audio/musica/tema.wav`, e a Godot reimporta sozinha. São sons de desenho animado, sem estampido realista:
+
+| Evento | Som |
+|---|---|
+| tiro do blaster | `tiro` ("piu" descendo) |
+| acerto no corpo / na cabeça | `acerto` ("tic") / `acerto_cabeca` ("dim-dim") |
+| esqueleto desmonta / se remonta | `ossos` (toc-toc de madeira e "boing") / `remontar` (toc-toc acelerando e "plim") |
+| aviso "!" antes do golpe | `alerta` (baixinho, porque toca muito) |
+| golpe de perto / flecha / bolha | `golpe_ar` ("fuuu") / `flecha` ("fiu") / `bolha` ("blub") |
+| flecha batendo / bolha estourando | `ventosa` ("ploc") / `estouro` ("pop") |
+| escudo bloqueando | `escudo` ("clang") |
+| aventureiro leva golpe / fica tonto / reaparece | `bonk` / `tonto` (apito descendo e passarinhos) / `reaparecer` |
+| bandeira ativada / coração recolhido / pulo | `bandeira` (dó-mi-sol-dó) / `coracao` / `pulo` |
+| menu | `ui_mover` / `ui_ok` |
+| música | `tema`: 8 compassos em dó maior a 112 bpm, 17 s, emendando sem corte |
+
+Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC0) do Kenney servem; é só trocar os WAV mantendo os nomes.
+
+**Ainda não tem:** mapa da ilha de verdade, outros blasters, ajuste de volume pelo jogador, cenas editáveis no editor (tudo é montado por código em `main.gd`) e exportação para `.exe`. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate e o som ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
 
 ## 10. Decisões em aberto
 

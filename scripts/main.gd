@@ -129,8 +129,13 @@ class Crosshair:
 			queue_redraw())
 
 
+var music: AudioStreamPlayer
+
+
 func _ready() -> void:
 	_setup_input()
+	Sfx.setup_buses()
+	music = Sfx.music(self, "tema")
 	_build_environment()
 	_build_ground()
 	_build_city()
@@ -182,6 +187,10 @@ func _ready() -> void:
 	elif "--combate" in args:
 		select_panel.hide()
 		_run_combat_test()
+	elif "--som" in args:
+		Sfx.logging = true
+		_open_menu()
+		_run_sound_test()
 	else:
 		_open_menu()
 
@@ -304,6 +313,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _cycle_character(step: int) -> void:
 	var i := CHARACTER_ORDER.find(player.character_name)
 	player.set_character(CHARACTER_ORDER[wrapi(i + step, 0, CHARACTER_ORDER.size())])
+	Sfx.play(self, "ui_ok", 0.0, 0.0)
 
 
 func _open_menu() -> void:
@@ -524,6 +534,7 @@ func _build_ui() -> void:
 		button.add_theme_font_size_override("font_size", 20)
 		button.add_theme_stylebox_override("focus", focus_style)
 		button.pressed.connect(_choose_character.bind(key))
+		button.focus_entered.connect(func() -> void: Sfx.play(self, "ui_mover", 0.0, 0.0))
 		grid.add_child(button)
 		_buttons.append(button)
 	menu_hint = Label.new()
@@ -586,6 +597,7 @@ func _on_enemy_defeated(e: SkeletonEnemy) -> void:
 
 func _choose_character(key: String) -> void:
 	player.set_character(key)
+	Sfx.play(self, "ui_ok", 0.0, 0.0)
 	_close_menu()
 
 
@@ -603,6 +615,7 @@ func _on_character_changed(char_name: String) -> void:
 
 func _on_hit_confirmed(region: String, _damage: float) -> void:
 	crosshair.flash(Color("#ffd23f") if region == "cabeça" else Color("#ff5d5d"))
+	Sfx.play(self, "acerto_cabeca" if region == "cabeça" else "acerto")
 
 
 # --- modos automáticos -------------------------------------------------------
@@ -959,6 +972,89 @@ func _run_combat_test() -> void:
 	all_ok = _check("esqueleto desmontado deixa coração", after == before + 1) and all_ok
 
 	print("COMBATE OK" if all_ok else "COMBATE COM FALHAS")
+	get_tree().quit()
+
+
+## Confere que os arquivos de som carregam, a música repete e cada evento dispara o som certo.
+## Uso: godot --headless --path . -- --som
+func _run_sound_test() -> void:
+	var all_ok := true
+	var missing: Array[String] = []
+	for sfx_name in Sfx.ALL:
+		var s := Sfx.stream(sfx_name)
+		if s == null or s.get_length() <= 0.0:
+			missing.append(sfx_name)
+	all_ok = _check("os %d efeitos carregam" % Sfx.ALL.size(), missing.is_empty(), "(faltando: %s)" % ", ".join(missing) if missing else "") and all_ok
+	all_ok = _check("canais Musica e Efeitos existem", AudioServer.get_bus_index(Sfx.BUS_MUSIC) != -1 and AudioServer.get_bus_index(Sfx.BUS_SFX) != -1) and all_ok
+	var wav := music.stream as AudioStreamWAV
+	all_ok = _check("música tocando em loop", music.playing and wav.loop_mode == AudioStreamWAV.LOOP_FORWARD and wav.loop_end > 0,
+			"(%.1f s)" % wav.get_length()) and all_ok
+
+	var heard := func(sfx_name: String) -> bool: return sfx_name in Sfx.played
+	# Menu: mover o foco e confirmar.
+	await _wait(0.3)
+	Sfx.played.clear()
+	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
+	await _joy_button(JOY_BUTTON_A)
+	await _wait(0.3)
+	all_ok = _check("menu: mover e confirmar", heard.call("ui_mover") and heard.call("ui_ok")) and all_ok
+
+	# Tiro, acerto na cabeça, ossos desmontando e remontando.
+	player.god_mode = true
+	var minion := enemies[0]
+	await _wait_until(func() -> bool: return minion.state == SkeletonEnemy.State.PERSEGUINDO or minion.state == SkeletonEnemy.State.ESPERANDO, 6.0)
+	Sfx.played.clear()
+	player.force_aim = true
+	while minion.state != SkeletonEnemy.State.DESMONTADO and Sfx.played.count("tiro") < 15:
+		await _aim_for(minion.hurtboxes[0], 0.0, 0.25)
+		player.fire()
+	all_ok = _check("tiro, acerto e ossos", heard.call("tiro") and (heard.call("acerto_cabeca") or heard.call("acerto")) and heard.call("ossos"),
+			"(%s)" % ", ".join(Sfx.played.slice(0, 6))) and all_ok
+	player.force_aim = false
+	await _wait_until(func() -> bool: return heard.call("remontar"), minion.down_time + 1.0)
+	all_ok = _check("esqueleto remontando", heard.call("remontar")) and all_ok
+
+	# Ataques dos esqueletos: aviso, golpe de perto, flecha, bolha e o que acontece quando batem.
+	Sfx.played.clear()
+	player.god_mode = false
+	var t := 0.0
+	while t < 30.0 and not (heard.call("golpe_ar") and heard.call("flecha") and heard.call("bolha") and heard.call("bonk")):
+		player.hearts = player.max_hearts
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	all_ok = _check("aviso e ataques dos esqueletos", heard.call("alerta") and heard.call("golpe_ar") and heard.call("flecha") and heard.call("bolha"),
+			"(%.0f s)" % t) and all_ok
+	all_ok = _check("golpe no aventureiro e flecha ou bolha batendo", heard.call("bonk") and (heard.call("ventosa") or heard.call("estouro"))) and all_ok
+
+	# Tonto, reaparecer, bandeira e coração.
+	Sfx.played.clear()
+	player.hearts = 1
+	player._invulnerable = 0.0
+	await _wait_until(func() -> bool: return player.dizzy, 15.0)
+	await _wait_until(func() -> bool: return not player.dizzy, 6.0)
+	all_ok = _check("tonto e reaparecer", heard.call("tonto") and heard.call("reaparecer")) and all_ok
+	player.god_mode = true
+	player.global_position = checkpoints[2].global_position + Vector3(0, 0.1, 0.8)
+	await _wait(0.4)
+	player.hearts = 3
+	var heart := HeartPickup.new()
+	heart.position = player.global_position
+	add_child(heart)
+	await _wait(0.8)
+	all_ok = _check("bandeira e coração", heard.call("bandeira") and heard.call("coracao")) and all_ok
+	var jumped_before := Sfx.played.count("pulo")
+	var ev := InputEventJoypadButton.new()
+	ev.device = 0
+	ev.button_index = JOY_BUTTON_A
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	await _wait(0.2)
+	ev = ev.duplicate()
+	ev.pressed = false
+	Input.parse_input_event(ev)
+	all_ok = _check("pulo", Sfx.played.count("pulo") > jumped_before) and all_ok
+
+	print("SOM OK" if all_ok else "SOM COM FALHAS")
 	get_tree().quit()
 
 

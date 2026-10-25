@@ -358,6 +358,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= _gravity * delta
 	elif control and Input.is_action_just_pressed("pular"):
 		velocity.y = jump_velocity
+		Sfx.play(get_parent(), "pulo")
 	move_and_slide()
 
 	# O modelo do KayKit olha para +Z; o resto da Godot considera -Z como frente.
@@ -419,6 +420,7 @@ func take_damage(amount: int, from: Vector3, source := "") -> void:
 	if is_instance_valid(anim_tree):
 		anim_tree.set("parameters/golpe/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	rumble(0.7, 0.6, 0.25)
+	Sfx.play(get_parent(), "bonk")
 	health_changed.emit(hearts, max_hearts)
 	damaged.emit()
 	if hearts == 0:
@@ -432,6 +434,7 @@ func _become_dizzy() -> void:
 	if is_instance_valid(anim_tree):
 		anim_tree.set("parameters/estado/transition_request", "tonto")
 	_stars.visible = true
+	Sfx.play(get_parent(), "tonto", 0.0, 0.0)
 	dizzy_started.emit()
 
 
@@ -446,6 +449,7 @@ func respawn(at: Vector3) -> void:
 	_invulnerable = respawn_invulnerable_time
 	if is_instance_valid(anim_tree):
 		anim_tree.set("parameters/estado/transition_request", "normal")
+	Sfx.play(get_parent(), "reaparecer", 0.0, 0.0)
 	health_changed.emit(hearts, max_hearts)
 	respawned.emit()
 
@@ -560,6 +564,7 @@ func fire() -> void:
 	if is_instance_valid(muzzle):
 		Fx.tracer(world, muzzle.global_position, end, Color("#fff3a0"))
 		Fx.muzzle_flash(muzzle)
+	Sfx.play(world, "tiro", -3.0)
 	if hit_target:
 		rumble(0.45, 0.25, 0.12)
 	else:
