@@ -18,13 +18,12 @@ signal weapon_changed(index: int)
 signal reload_started(duration: float)
 signal out_of_ammo
 
+## Os dois personagens jogáveis: o menino de boné amarelo e a menina de boné branco do pacote
+## "The Protagonists" (KayKit Mystery Monthly Series 5, pago). Até o pacote chegar, o Ranger e o
+## Rogue do Adventurers (grátis) seguram o lugar, sem capa, capuz e aljava. Para trocar, mude só o caminho.
 const CHARACTERS := {
-	"Knight": "res://assets/characters/adventurers/Knight.glb",
-	"Barbarian": "res://assets/characters/adventurers/Barbarian.glb",
-	"Mage": "res://assets/characters/adventurers/Mage.glb",
-	"Ranger": "res://assets/characters/adventurers/Ranger.glb",
-	"Rogue": "res://assets/characters/adventurers/Rogue.glb",
-	"Rogue_Hooded": "res://assets/characters/adventurers/Rogue_Hooded.glb",
+	"menino": "res://assets/characters/adventurers/Ranger.glb",
+	"menina": "res://assets/characters/adventurers/Rogue.glb",
 }
 const CAMERA_LENGTH := 5.5
 const CAMERA_LENGTH_AIM := 3.4
@@ -32,8 +31,10 @@ const CAMERA_LENGTH_SCOPE := 2.6
 const PITCH_MIN := -1.1345  # -65°
 const PITCH_MAX := 0.6981  # 40°
 
-## Malhas que são arma ou escudo original do pacote; somem porque todos usam blaster.
-const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow", "Dagger", "Mug", "Book"]
+## Malhas que somem: armas e escudos originais (todos usam blaster) e acessórios de fantasia
+## (capacete, capa, chapéu, aljava, máscara), que destoam da cidade.
+const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow", "Dagger", "Mug", "Book",
+		"Helmet", "Visor", "Cape", "Hat", "Quiver", "Mask"]
 
 @export var run_speed := 6.0
 @export var aim_speed := 3.5
@@ -136,7 +137,7 @@ func _ready() -> void:
 		ammo[def.id] = {"mag": def.pente, "reserve": def.estoque}
 	grenades = Weapons.GRENADE.inicio
 	if character_name == "":
-		set_character("Knight")
+		set_character("menino")
 
 
 ## Quatro estrelinhas que giram sobre a cabeça quando o aventureiro fica tonto.

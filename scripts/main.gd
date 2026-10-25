@@ -11,15 +11,12 @@ const FOREST := "res://assets/env/forest/%s.gltf"
 const CITY_SCALE := 5.0
 const FOREST_SCALE := 1.8
 
+## Nomes provisórios até os personagens ganharem nome.
 const CHARACTER_LABELS := {
-	"Knight": "Cavaleiro",
-	"Barbarian": "Bárbaro",
-	"Mage": "Mago",
-	"Ranger": "Patrulheiro",
-	"Rogue": "Ladino",
-	"Rogue_Hooded": "Ladino de capuz",
+	"menino": "Menino",
+	"menina": "Menina",
 }
-const CHARACTER_ORDER := ["Knight", "Barbarian", "Mage", "Ranger", "Rogue", "Rogue_Hooded"]
+const CHARACTER_ORDER := ["menino", "menina"]
 
 const ENEMY_SPAWNS := [
 	["Skeleton_Minion", Vector3(3, 0, -10)],
@@ -708,7 +705,7 @@ func _build_ui() -> void:
 	title.add_theme_font_size_override("font_size", 32)
 	box.add_child(title)
 	var grid := GridContainer.new()
-	grid.columns = 3
+	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 12)
 	box.add_child(grid)
@@ -916,12 +913,12 @@ func _run_capture() -> void:
 	await _wait(1.3)
 	await _shot("06_remontando.png")
 	player.force_aim = false
-	for key in ["Mage", "Barbarian", "Ranger"]:
+	for key in CHARACTER_ORDER:
 		player.set_character(key)
 		await _wait(0.6)
-		await _shot("07_%s.png" % key.to_lower())
+		await _shot("07_%s.png" % key)
 	# Combate: armas dos esqueletos, flecha voando, golpe recebido, tonto e volta na bandeira.
-	player.set_character("Knight")
+	player.set_character("menino")
 	var warrior := enemies[1]
 	await _aim_for(warrior, 1.4, 0.5)
 	await _shot("10_armas_esqueletos.png")

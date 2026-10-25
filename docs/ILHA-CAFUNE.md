@@ -24,11 +24,11 @@ Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os bla
 
 ## 1. Visão geral
 
-Na véspera da Festa do Cafuné, os esqueletos do Morro descem e levam tudo da festa. A Guilda dos Aventureiros pega os blasters novos e sai pela ilha recuperando o que foi roubado, desmontando esqueletos (que sempre se remontam) e apagando as quatro Lanternas Mágicas que fecham o caminho do Morro. No fim, descobre que os esqueletos só queriam ser convidados.
+Na véspera da Festa do Cafuné, os esqueletos do Morro descem e levam tudo da festa. Duas crianças da cidade, um menino e uma menina, pegam os blasters novos e saem pela ilha recuperando o que foi roubado, desmontando esqueletos (que sempre se remontam) e apagando as quatro Lanternas Mágicas que fecham o caminho do Morro. No fim, descobre que os esqueletos só queriam ser convidados.
 
 - **Público:** crianças de 6 a 12 anos, e quem joga com elas.
 - **Gênero:** tiro em terceira pessoa com plataforma leve e exploração.
-- **Personagem:** o jogador escolhe um dos cinco aventureiros e pode trocar na base da Guilda.
+- **Personagem:** o jogador escolhe entre o menino e a menina, e pode trocar a qualquer hora.
 - **Controle é obrigatório:** tudo tem que funcionar no controle (menus inclusive), não só no teclado e mouse. Com controle há auxílio de mira e vibração.
 - **Mundo:** uma ilha pequena, sem fases nem telas de carregamento. Cidade ao sul, floresta ao norte, Morro no meio.
 - **Duração alvo:** 3 a 5 horas de história, mais coletáveis.
@@ -167,19 +167,17 @@ Coletáveis: bilhetes dos esqueletos (12), potes de vaga-lume, estrelas escondid
 
 ## 6. Personagens jogáveis
 
-Os cinco aventureiros da versão grátis do KayKit Adventurers. O jogador escolhe um no começo e pode trocar na base da Guilda. Na primeira versão a diferença é só visual; habilidade especial por classe fica para depois.
+**Decisão do usuário (2026-10-25):** armadura medieval destoa da cidade. Os jogáveis são só **dois**: o **menino de boné amarelo** e a **menina de boné branco**, do pacote **"The Protagonists"** da KayKit Mystery Monthly Series 5. Os esqueletos continuam como estão.
 
-Todos usam blasters. A arma original de cada um vai pendurada nas costas, como enfeite.
+| Personagem | Visual (do pacote) | Nome no jogo |
+|---|---|---|
+| Menino | boné amarelo, colete, mochila, roupa colorida de hoje | provisório: "Menino" |
+| Menina | boné branco, óculos, mochila | provisório: "Menina" |
 
-| Personagem | Pacote | Arma original (vai nas costas) | Personalidade sugerida |
-|---|---|---|---|
-| Knight (Cavaleiro) | Adventurers, grátis | espada e escudo; elmo com viseira | certinho, protetor, fala como herói de livro |
-| Barbarian (Bárbaro) | Adventurers, grátis | machado; chapéu de urso | grandalhão de coração mole, adora doce |
-| Rogue (Ladino) | Adventurers, grátis; variante com capuz | — | rápido, brincalhão, faz piada de tudo |
-| Mage (Mago) | Adventurers, grátis | cajado e livro | estudioso, explica tudo, um pouco medroso |
-| Ranger (Patrulheiro) | Adventurers, grátis | arco, flechas e aljava | calmo, conhece a floresta como ninguém |
-
-Os nomes e gêneros dos personagens ficam para quando virmos os modelos.
+- **Pacote:** KayKit Mystery Monthly Series 5, **pago** (US$ 19,99; US$ 13,39 na promoção de Halloween de 2026), 42 MB, licença CC0. Traz 14 personagens; só usamos os dois Protagonists. O autor diz que são "tecnicamente idênticos" aos Adventurers, então devem usar o mesmo `Rig_Medium`: as animações, o encaixe do blaster e as regiões de impacto continuam valendo. Confirmar quando o pacote chegar.
+- **Enquanto o pacote não chega:** o Ranger e a Rogue do Adventurers (grátis) seguram o lugar, sem capa, capuz e aljava (`HIDDEN_MESH_HINTS` no `player.gd`). Para trocar, basta mudar os caminhos em `CHARACTERS`, no `player.gd`.
+- **Trocar:** menu (Tab / Start), Q/E ou direcional. Na primeira versão a diferença é só visual.
+- **Nomes:** ainda por decidir.
 
 **Moradores:** o pacote grátis não tem moradores comuns. Dá para criar alguns trocando as cores dos aventureiros (troca da textura de gradiente) e tirando as armas. Na história, os moradores estão escondidos de medo e só aparecem na festa do epílogo, o que pede poucos modelos.
 
@@ -244,7 +242,8 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 
 | Pacote | Autor | Versão | Tamanho | Uso |
 |---|---|---|---|---|
-| Adventurers | KayKit | grátis 2.0 | 12 MB | personagens jogáveis (baixado) |
+| Adventurers | KayKit | grátis 2.0 | 12 MB | substitutos provisórios dos jogáveis (baixado) |
+| Mystery Monthly Series 5 | KayKit | pago, US$ 13,39 na promoção | 42 MB | os dois jogáveis ("The Protagonists"); **falta o usuário comprar** |
 | Skeletons | KayKit | grátis 1.1 | 7,7 MB | inimigos e chefes (baixado) |
 | City Builder Bits | KayKit | grátis 1.0 | 4,6 MB | cidade (baixado) |
 | Forest Nature Pack | KayKit | grátis 1.0 | 6,1 MB | floresta e Morro (baixado) |
@@ -374,7 +373,7 @@ Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC
 ## 10. Decisões em aberto
 
 - **Título:** "Ilha Cafuné" é provisório.
-- **Nomes e gêneros dos aventureiros:** decidir depois de ver os modelos.
+- **Nomes do menino e da menina:** ainda por decidir.
 - **Habilidades por classe:** na primeira versão a escolha é só visual.
 - **Skeletons Extra (pago):** Golem e Necromancer melhorariam os chefes e o Mestre Ossinho.
 - **Animação de tiro:** resolvida no papel, pelo KayKit Character Animations; falta baixar e conferir na Godot.
