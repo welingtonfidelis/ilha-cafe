@@ -189,8 +189,8 @@ Ideias para depois: coletáveis (estrelas escondidas, bilhetes dos esqueletos), 
 | Menino | boné amarelo, colete, mochila, roupa colorida de hoje | provisório: "Menino" |
 | Menina | boné branco, óculos, mochila | provisório: "Menina" |
 
-- **Pacote:** KayKit Mystery Monthly Series 5, **pago** (US$ 19,99; US$ 13,39 na promoção de Halloween de 2026), 42 MB, licença CC0. Traz 14 personagens; só usamos os dois Protagonists. O autor diz que são "tecnicamente idênticos" aos Adventurers, então devem usar o mesmo `Rig_Medium`: as animações, o encaixe do blaster e as regiões de impacto continuam valendo. Confirmar quando o pacote chegar.
-- **Enquanto o pacote não chega:** o Ranger e a Rogue do Adventurers (grátis) seguram o lugar, sem capa, capuz e aljava (`HIDDEN_MESH_HINTS` no `player.gd`). Para trocar, basta mudar os caminhos em `CHARACTERS`, no `player.gd`.
+- **Pacote:** KayKit Mystery Monthly Series 5 (vendido no itch.io; licença CC0, como todo o KayKit). Traz 14 personagens; só usamos os dois Protagonists. Em 2026-10-25 o usuário trouxe a Coleção Completa do KayKit v6.1 (clone em `Projects/others/kaykit-complete-v6-1-assets`, com os arquivos no Git LFS; só os pacotes usados foram baixados com `git lfs pull --include`).
+- **No jogo (desde 2026-10-25):** `assets/characters/protagonists/Protagonist_B.glb` é o menino e `Protagonist_A.glb` é a menina (a de óculos). Usam o mesmo `Rig_Medium` dos esqueletos, com os mesmos 23 ossos (só a ordem muda, e as animações acham os ossos pelo nome), então animações, encaixe do blaster e regiões de impacto valeram sem mudança. Antes, o Ranger e a Rogue do Adventurers grátis seguravam o lugar; eles saíram da build (`exclude_filter` do `export_presets.cfg`) e só ficam para as ferramentas de inspeção.
 - **Escolher e trocar:** o jogo abre na tela "Escolha quem vai jogar". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário). Na primeira versão a diferença é só visual.
 - **Nomes:** ainda por decidir.
 
@@ -257,8 +257,9 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 
 | Pacote | Autor | Versão | Tamanho | Uso |
 |---|---|---|---|---|
-| Adventurers | KayKit | grátis 2.0 | 12 MB | substitutos provisórios dos jogáveis (baixado) |
-| Mystery Monthly Series 5 | KayKit | pago, US$ 13,39 na promoção | 42 MB | os dois jogáveis ("The Protagonists"); **falta o usuário comprar** |
+| Adventurers | KayKit | grátis 2.0 | 12 MB | substitutos dos jogáveis até 2026-10-25; hoje só nas ferramentas (baixado) |
+| Mystery Monthly Series 5 | KayKit | 1.1, da Coleção Completa v6.1 | 1,7 MB (só os Protagonists) | os dois jogáveis ("The Protagonists") (baixado) |
+| Skeletons, Holiday Bits, Restaurant Bits | KayKit | completos, da Coleção Completa v6.1 | 13 + 8 + 5 MB | Necromancer (Mestre Ossinho) e Golem; enfeites e comida da festa. Baixados na pasta da coleção, ainda não copiados para `assets/` |
 | Skeletons | KayKit | grátis 1.1 | 7,7 MB | inimigos e chefes (baixado) |
 | City Builder Bits | KayKit | grátis 1.0 | 4,6 MB | cidade (baixado) |
 | Forest Nature Pack | KayKit | grátis 1.0 | 6,1 MB | floresta e Morro (baixado) |
@@ -409,5 +410,5 @@ Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC
 - **Nomes do menino e da menina:** ainda por decidir.
 - **Fim de uma partida no "Defender a festa":** (a) os esqueletos tentam levar 5 enfeites do palco; derrubar o ladrão devolve o enfeite; perdeu os 5, acabou; ou (b) acaba quando o aventureiro fica tonto 3 vezes.
 - **Habilidades por classe:** na primeira versão a escolha é só visual.
-- **Skeletons Extra (pago):** Golem e Necromancer melhorariam os chefes e o Mestre Ossinho.
+- **Mestre Ossinho:** o Necromancer da Coleção Completa (mesmo `Rig_Medium`, já com coroa) serve direto; o Skeleton_Golem pode virar um guardião grande.
 - **Animação de tiro:** resolvida no papel, pelo KayKit Character Animations; falta baixar e conferir na Godot.

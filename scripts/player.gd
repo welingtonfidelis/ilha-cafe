@@ -20,12 +20,12 @@ signal out_of_ammo
 ## Apertou a tecla ou seta de um blaster que ainda não ganhou.
 signal weapon_locked(id: String)
 
-## Os dois personagens jogáveis: o menino de boné amarelo e a menina de boné branco do pacote
-## "The Protagonists" (KayKit Mystery Monthly Series 5, pago). Até o pacote chegar, o Ranger e o
-## Rogue do Adventurers (grátis) seguram o lugar, sem capa, capuz e aljava. Para trocar, mude só o caminho.
+## Os dois personagens jogáveis: o menino de boné amarelo (Protagonist_B) e a menina de boné branco e óculos
+## (Protagonist_A) do pacote "The Protagonists" (KayKit Mystery Monthly Series 5). Usam o mesmo Rig_Medium dos
+## esqueletos e das animações do KayKit.
 const CHARACTERS := {
-	"menino": "res://assets/characters/adventurers/Ranger.glb",
-	"menina": "res://assets/characters/adventurers/Rogue.glb",
+	"menino": "res://assets/characters/protagonists/Protagonist_B.glb",
+	"menina": "res://assets/characters/protagonists/Protagonist_A.glb",
 }
 const CAMERA_LENGTH := 5.5
 const CAMERA_LENGTH_AIM := 3.4
