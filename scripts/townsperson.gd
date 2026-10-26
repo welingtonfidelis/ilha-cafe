@@ -21,6 +21,15 @@ const STANDING := ["parado", "torcendo", "trabalhando", "andando", "tocando", "c
 ## Passos da dança (não há dança no KayKit): torcida, provocação dos esqueletos, pulinho e aceno, com um
 ## giro de vez em quando.
 const DANCE_MOVES := [&"festa/Cheering", &"especial/Skeletons_Taunt", &"mov/Jump_Full_Short", &"festa/Waving"]
+## Instrumentos da banda (atividade "tocando"): pose de base, osso onde o instrumento fica e o jeito de
+## tocar (MusicianMotion). O trompete fica na boca, preso à cabeça, com as mãos na pose de mira de duas
+## mãos; o violão cruza a barriga, preso ao peito, com o braço indo para a mão esquerda: "violao" é o
+## ponto do instrumento e a direção do braço dele, no espaço do modelo.
+const INSTRUMENTS := {
+	"moradores/ToySoldier_Trumpet": {"pose": &"tiro/Pose_2H", "osso": "head", "pos": Vector3(0, 0.05, 0.32), "jeito": "sopro"},
+	"moradores/urso/Guitar": {"pose": &"ferramentas/Holding_C", "osso": "chest", "jeito": "cordas",
+		"violao": [Vector3(0.25, 0.92, 0.25), Vector3(0.85, 0.45, -0.1)]},
+}
 
 @export var model_name := "Farmer_A"
 ## Caminho completo do modelo (res://...glb); quando vazio, usa model_name na pasta dos moradores.
@@ -97,8 +106,11 @@ func _ready() -> void:
 		model.rotation.y = PI / 2.0
 	if variant != "":
 		_apply_variant(model, load(VARIANTS % variant))
-	ap = AnimUtil.make_player(model, ["geral", "mov", "festa", "ferramentas", "especial"])
-	if item != "":
+	AnimUtil.add_pose("tiro", "Ranged_2H_Aiming", 0.8, "Pose_2H")
+	ap = AnimUtil.make_player(model, ["geral", "mov", "festa", "ferramentas", "especial", "tiro"])
+	if activity == "tocando" and INSTRUMENTS.has(item):
+		_hold_instrument(model)
+	elif item != "":
 		var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
 		var hand := BoneAttachment3D.new()
 		hand.bone_name = "handslot.r"
@@ -129,6 +141,35 @@ func _ready() -> void:
 	ap.seek(randf() * 1.5, true)
 
 
+## Prende o instrumento na posição de tocar e liga o movimento (MusicianMotion) no esqueleto.
+func _hold_instrument(model: Node3D) -> void:
+	var spec: Dictionary = INSTRUMENTS[item]
+	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
+	var bone := BoneAttachment3D.new()
+	bone.bone_name = spec.osso
+	sk.add_child(bone)
+	var held: Node3D = load(ITEMS % item).instantiate()
+	held.rotation_degrees = item_rotation
+	held.scale = Vector3.ONE * item_scale
+	if spec.has("violao"):
+		# Pose de base aplicada para medir o peito e calcular o encaixe no espaço do modelo.
+		ap.play(spec.pose)
+		ap.seek(0.5, true)
+		var at: Vector3 = spec.violao[0]
+		var neck: Vector3 = (spec.violao[1] as Vector3).normalized()
+		var side := neck.cross(Vector3.BACK).normalized()
+		var want := Transform3D(Basis(side, neck, side.cross(neck)), at)
+		held.transform = sk.get_bone_global_pose(sk.find_bone(spec.osso)).affine_inverse() * want
+		held.scale = Vector3.ONE * item_scale
+	else:
+		held.position = spec.pos
+	bone.add_child(held)
+	var motion := MusicianMotion.new()
+	motion.style = spec.jeito
+	motion.phase = randf() * 4.0
+	sk.add_child(motion)
+
+
 ## Troca a textura de todas as malhas pela variante (o modelo usa um material só).
 func _apply_variant(model: Node, tex: Texture2D) -> void:
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
@@ -142,6 +183,9 @@ func _apply_variant(model: Node, tex: Texture2D) -> void:
 
 
 func _base_anim() -> StringName:
+	# A banda não para de tocar nem para comemorar.
+	if activity == "tocando":
+		return INSTRUMENTS[item].pose if INSTRUMENTS.has(item) else &"ferramentas/Holding_A"
 	if _party > 0.0 and activity in STANDING:
 		return &"festa/Cheering"
 	if crowd and activity in ["parado", "torcendo", "andando"]:
@@ -156,7 +200,7 @@ func _base_anim() -> StringName:
 		"trabalhando":
 			return &"ferramentas/Working_A"
 		"tocando":
-			return &"ferramentas/Holding_A"
+			return INSTRUMENTS[item].pose if INSTRUMENTS.has(item) else &"ferramentas/Holding_A"
 		"dancando":
 			return DANCE_MOVES[_dance_step % DANCE_MOVES.size()]
 		"cortando":

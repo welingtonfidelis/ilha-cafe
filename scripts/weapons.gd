@@ -52,7 +52,14 @@ const DEFS := [
 ## Granada Brigadeiro: botão próprio (G ou RB), sem trocar de arma.
 const GRENADE := {
 	"nome": "Brigadeiro", "modelo": "grenade-a", "inicio": 2, "max": 3,
-	"dano": 3.0, "raio": 5.0, "pavio": 1.4, "forca": 13.0,
+	"dano": 6.0, "dano_borda": 2.0, "dano_chefe": 7.0, "raio": 5.5, "pavio": 1.4, "forca": 13.0,
+}
+
+## Pirulitão: golpe corpo a corpo (F no teclado, R3 no controle). Acerta quem está na frente num raio
+## curto (o escudo do guerreiro segura pela frente, como no tiro) e estoura bolhas mágicas.
+const MELEE := {
+	"nome": "Pirulitão", "modelo": "res://assets/props/cemiterio/lollipop_pink.gltf", "escala": 1.7,
+	"dano": 3.0, "alcance": 1.5, "raio": 1.3, "impacto": 0.22, "duracao": 0.55, "intervalo": 0.6,
 }
 
 ## No controle, cada blaster tem uma seta do direcional (na ordem de DEFS): ↑ Paçoca, → Granulado,

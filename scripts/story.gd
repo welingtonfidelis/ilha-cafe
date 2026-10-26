@@ -62,7 +62,11 @@ const PARTY_GUESTS := {
 }
 const PARTY_LINES := ["Obrigado! Agora é festa aqui também!", "Viva! A lanterna apagou!", "Vem dançar com a gente!"]
 const CEMETERY := Vector3(0, 26, 2)
-const BRIDGE_SOUTH_Z := -97.0
+## Rio que separa a cidade da mata (igual a RIVER_Z, RIVER_HALF e _river_z de tools/gerar_ilha.gd) e o fim
+## da ponte do lado da mata, para onde a seta aponta enquanto o aventureiro está do lado da cidade.
+const RIVER_Z := -112.0
+const RIVER_HALF := 7.0
+const BRIDGE_NORTH := Vector3(0, 1.5, -133.0)
 
 var game: Node
 var island: Node3D
@@ -497,9 +501,9 @@ func _refresh_objective() -> void:
 				target = _nearest(left)
 			"mata":
 				var left := FOREST.filter(func(id: String) -> bool: return defenses[id].state != Defense.State.VENCIDA)
-				if player.global_position.z > BRIDGE_SOUTH_Z:
+				if south_of_river(player.global_position):
 					text = "Atravesse a ponte para a mata"
-					target = Vector3(0, 1.0, BRIDGE_SOUTH_Z)
+					target = BRIDGE_NORTH
 				else:
 					text = "Apague as lanternas da mata (%d de 2)" % (2 - left.size())
 					target = _nearest(left)
@@ -623,6 +627,11 @@ func restore(data: Dictionary) -> void:
 	elif stage == "fim":
 		game.ending.post_game(false)
 	_refresh_objective()
+
+
+## Do lado da cidade (sul) do rio, que faz curva: perto da ponte vale até o meio da água.
+func south_of_river(p: Vector3) -> bool:
+	return p.z > RIVER_Z + 9.0 * sin(p.x / 38.0) + RIVER_HALF
 
 
 func _nearest(ids: Array) -> Vector3:

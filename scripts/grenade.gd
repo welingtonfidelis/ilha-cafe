@@ -1,7 +1,8 @@
 class_name Grenade
 extends RigidBody3D
 ## Granada Brigadeiro: sai da mão em arco, quica e explode em confete depois do pavio.
-## Desmonta esqueletos perto (mais dano no centro) e estoura bolhas mágicas. O escudo não segura.
+## Desmonta esqueletos perto (mais dano no centro), tira um bom pedaço da vida dos chefes e estoura bolhas
+## mágicas. O escudo não segura.
 
 var thrower: Node3D
 var _time := 0.0
@@ -57,7 +58,14 @@ func explode() -> void:
 			var e := node as SkeletonEnemy
 			var dist := e.global_position.distance_to(center)
 			if dist <= radius:
-				e.take_explosion(lerpf(Weapons.GRENADE.dano, 1.0, dist / radius), center)
+				e.take_explosion(lerpf(Weapons.GRENADE.dano, Weapons.GRENADE.dano_borda, dist / radius), center)
+		elif node is Boss:
+			# Chefe é grande: conta a distância até a borda do corpo, não até o centro.
+			var b := node as Boss
+			var flat := Vector2(b.global_position.x - center.x, b.global_position.z - center.z).length()
+			var dist := maxf(flat - 0.5 * b.body_scale, 0.0)
+			if dist <= radius and absf(b.global_position.y - center.y) < 3.0 * b.body_scale:
+				b.take_explosion(lerpf(Weapons.GRENADE.dano_chefe, Weapons.GRENADE.dano_borda, dist / radius), center)
 		elif node is Projectile and node.kind == Projectile.Kind.BOLHA:
 			if node.global_position.distance_to(center) <= radius:
 				node.pop()

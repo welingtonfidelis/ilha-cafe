@@ -123,6 +123,10 @@ var _reload_left := 0.0
 var _auto_reload_delay := 0.0
 var _switch_left := 0.0
 var _throw_cooldown := 0.0
+var _melee_cooldown := 0.0
+## Pirulitão na mão (só aparece durante o golpe; o blaster some nesse instante).
+var _lollipop: Node3D
+var _node_melee_speed: AnimationNodeTimeScale
 var _node_aim: AnimationNodeAnimation
 var _shake := 0.0
 var _recoil: Node3D
@@ -212,7 +216,7 @@ func set_character(char_name: String) -> void:
 				mi.visible = false
 	AnimUtil.add_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_1H")
 	AnimUtil.add_pose("tiro", "Ranged_2H_Aiming", AIM_POSE_2H, "Pose_2H")
-	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro"])
+	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro", "luta"])
 	anim_tree = _build_anim_tree(model, ap)
 	_air_state = ""
 	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
@@ -225,6 +229,14 @@ func set_character(char_name: String) -> void:
 	_head.bone_name = "head"
 	sk.add_child(_head)
 	_equip_model()
+	_lollipop = load(Weapons.MELEE.modelo).instantiate()
+	_lollipop.name = "Pirulitao"
+	_lollipop.scale = Vector3.ONE * Weapons.MELEE.escala
+	_lollipop.visible = false
+	var melee_hand := BoneAttachment3D.new()
+	melee_hand.bone_name = "handslot.r"
+	sk.add_child(melee_hand)
+	melee_hand.add_child(_lollipop)
 	_apply_weapon_animations()
 	if dizzy:
 		anim_tree.set("parameters/estado/transition_request", "tonto")
@@ -308,12 +320,21 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	bt.connect_node(&"arremesso", 0, &"recarga")
 	bt.connect_node(&"arremesso", 1, &"anim_arremesso")
 
+	# Pirulitão: golpe de lado só no tronco, um pouco mais rápido que a animação original.
+	bt.add_node(&"pancada", _upper_body_oneshot(0.04, 0.15), Vector2(1375, 100))
+	bt.add_node(&"anim_pancada", _anim("luta/Melee_1H_Attack_Slice_Horizontal"), Vector2(1125, 450))
+	_node_melee_speed = AnimationNodeTimeScale.new()
+	bt.add_node(&"ritmo_pancada", _node_melee_speed, Vector2(1250, 450))
+	bt.connect_node(&"ritmo_pancada", 0, &"anim_pancada")
+	bt.connect_node(&"pancada", 0, &"arremesso")
+	bt.connect_node(&"pancada", 1, &"ritmo_pancada")
+
 	var hit := AnimationNodeOneShot.new()
 	hit.fadein_time = 0.05
 	hit.fadeout_time = 0.15
 	bt.add_node(&"golpe", hit, Vector2(1500, 100))
 	bt.add_node(&"anim_golpe", _anim("geral/Hit_A"), Vector2(1250, 300))
-	bt.connect_node(&"golpe", 0, &"arremesso")
+	bt.connect_node(&"golpe", 0, &"pancada")
 	bt.connect_node(&"golpe", 1, &"anim_golpe")
 
 	var dizzy_state := AnimationNodeTransition.new()
@@ -398,6 +419,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		reload()
 	elif event.is_action_pressed("granada"):
 		throw_grenade()
+	elif event.is_action_pressed("corpo_a_corpo"):
+		melee()
 	elif event.is_action_pressed("arma_proxima"):
 		switch_weapon(next_weapon_index(1))
 	elif event.is_action_pressed("arma_anterior"):
@@ -477,6 +500,7 @@ func _physics_process(delta: float) -> void:
 	_aim_hold -= delta
 	_switch_left -= delta
 	_throw_cooldown -= delta
+	_melee_cooldown -= delta
 	_update_reload(delta)
 	var wants_fire := not dizzy and (force_fire or (control and Input.is_action_pressed("atirar")))
 	if wants_fire and _fire_cooldown <= 0.0:
@@ -758,6 +782,76 @@ func _release_grenade() -> void:
 	var dir := -camera.global_basis.z
 	var launch: Vector3 = dir * Weapons.GRENADE.forca + Vector3.UP * 5.5
 	get_parent().add_child(Grenade.create(from, launch, self))
+
+
+## Golpe com o Pirulitão (F ou R3): interrompe a recarga, vira para a mira e acerta no meio do movimento.
+func melee() -> bool:
+	if dizzy or _melee_cooldown > 0.0:
+		return false
+	_melee_cooldown = Weapons.MELEE.intervalo
+	_aim_hold = Weapons.MELEE.duracao
+	if reloading:
+		reloading = false
+		_reload_left = 0.0
+		if is_instance_valid(anim_tree):
+			anim_tree.set("parameters/recarga/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	if is_instance_valid(anim_tree):
+		anim_tree.set("parameters/ritmo_pancada/scale", 1.6)
+		anim_tree.set("parameters/pancada/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	_show_lollipop(true)
+	Sfx.play(get_parent(), "golpe_ar", -2.0)
+	get_tree().create_timer(Weapons.MELEE.impacto).timeout.connect(_melee_strike)
+	get_tree().create_timer(Weapons.MELEE.duracao).timeout.connect(_show_lollipop.bind(false))
+	return true
+
+
+func _show_lollipop(on: bool) -> void:
+	if is_instance_valid(_lollipop):
+		_lollipop.visible = on
+	if is_instance_valid(_recoil):
+		_recoil.visible = not on
+
+
+## Quem está na frente leva o golpe (uma vez cada, de preferência no corpo); bolhas perto estouram.
+## Devolve quantos foram acertados.
+func _melee_strike() -> int:
+	if not is_inside_tree() or dizzy:
+		return 0
+	var forward := -camera_pivot.global_basis.z
+	forward.y = 0.0
+	forward = forward.normalized()
+	var center := global_position + Vector3.UP * 1.1 + forward * Weapons.MELEE.alcance
+	var sphere := SphereShape3D.new()
+	sphere.radius = Weapons.MELEE.raio
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = sphere
+	query.transform = Transform3D(Basis.IDENTITY, center)
+	query.collision_mask = Hurtbox.LAYER
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var chosen := {}
+	for h in get_world_3d().direct_space_state.intersect_shape(query, 32):
+		var hb := h.collider as Hurtbox
+		if hb == null or not hb.is_active() or hb.owner_target == null:
+			continue
+		var who: Node = hb.owner_target
+		if not chosen.has(who) or (chosen[who] as Hurtbox).multiplier > hb.multiplier:
+			chosen[who] = hb
+	var world := get_parent()
+	for who in chosen:
+		var hb: Hurtbox = chosen[who]
+		var point := hb.aim_point()
+		hb.receive_hit(Weapons.MELEE.dano, point)
+		hit_confirmed.emit(hb.region, Weapons.MELEE.dano * hb.multiplier)
+		Fx.confetti(world, point, 22, 5.0)
+	for node in world.get_children():
+		if (node is Projectile and node.kind == Projectile.Kind.BOLHA) or node is BossMestre.ShieldBubble:
+			if (node as Node3D).global_position.distance_to(center) < Weapons.MELEE.raio + 0.8:
+				node.pop()
+	if not chosen.is_empty():
+		Sfx.play(world, "bonk", -2.0)
+		rumble(0.5, 0.4, 0.12)
+	return chosen.size()
 
 
 ## Caixa de munição: um pente de cada blaster de estoque limitado e uma granada.

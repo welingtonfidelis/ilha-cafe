@@ -160,6 +160,13 @@ func _blocks(_point: Vector3, _hb: Hurtbox) -> bool:
 	return not shield.is_empty()
 
 
+## Com o escudo de bolhas, a granada só estoura as bolhas (o Mestre não leva dano).
+func take_explosion(amount: float, center: Vector3) -> void:
+	if not shield.is_empty():
+		return
+	super(amount, center)
+
+
 func _damage_factor() -> float:
 	return 2.0 if _dizzy > 0.0 else 1.0
 

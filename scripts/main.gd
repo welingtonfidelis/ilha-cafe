@@ -52,12 +52,12 @@ var _splashing := false
 ## Comandos mostrados no menu de pausa (não ficam mais na tela durante o jogo).
 const CONTROLS_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
-	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"],
+	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"],
 	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
-	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"],
+	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"],
 	["Blasters", "↑ Paçoca · → Granulado · ↓ Pipoqueira · ← Pé-de-Moleque (Y passa para o próximo)"],
 	["Pausa", "Start"], ["Regiões de impacto", "Back"],
 ]
@@ -365,6 +365,12 @@ func _ready() -> void:
 	elif "--extras-captura" in args:
 		select_panel.hide()
 		_run_extras_capture()
+	elif "--pirulito-captura" in args:
+		select_panel.hide()
+		_run_lollipop_capture()
+	elif "--banda-captura" in args:
+		select_panel.hide()
+		_run_band_capture()
 	elif "--final" in args:
 		select_panel.hide()
 		_run_ending_test()
@@ -468,6 +474,9 @@ func _setup_input() -> void:
 	_bind_button("recarregar", JOY_BUTTON_X)
 	_bind_key("granada", [KEY_G])
 	_bind_button("granada", JOY_BUTTON_RIGHT_SHOULDER)
+	_bind_key("corpo_a_corpo", [KEY_F])
+	_bind_mouse("corpo_a_corpo", MOUSE_BUTTON_MIDDLE)
+	_bind_button("corpo_a_corpo", JOY_BUTTON_RIGHT_STICK)
 	_bind_mouse("arma_proxima", MOUSE_BUTTON_WHEEL_UP)
 	_bind_button("arma_proxima", JOY_BUTTON_Y)
 	_bind_mouse("arma_anterior", MOUSE_BUTTON_WHEEL_DOWN)
@@ -1625,6 +1634,9 @@ func _run_gamepad_test() -> void:
 	var grenades_before := player.grenades
 	await _joy_button(JOY_BUTTON_RIGHT_SHOULDER)
 	all_ok = _check("RB joga granada", player.grenades == grenades_before - 1) and all_ok
+	await _wait(0.4)
+	await _joy_button(JOY_BUTTON_RIGHT_STICK)
+	all_ok = _check("R3 dá o golpe do Pirulitão", player._melee_cooldown > 0.0 and player._lollipop.visible) and all_ok
 	await _wait(1.0)
 
 	# Back mostra as regiões; Start abre e fecha o menu.
@@ -2213,6 +2225,32 @@ func _run_weapons_test() -> void:
 	all_ok = _check("coice levanta o cano e volta", kick_y > rest_y + 0.03 and absf(back_y - rest_y) < 0.01,
 			"(boca %.3f -> %.3f -> %.3f m acima da mão)" % [rest_y, kick_y, back_y]) and all_ok
 
+	# Pirulitão (F / R3): acerta quem está na frente, uma vez por golpe, e estoura bolha.
+	player.switch_weapon(Weapons.index_of("pacoca"))
+	var spot := player.global_position
+	var fwd := -player.camera_pivot.global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	var dummy := spawn_wave_enemy("Skeleton_Minion", spot + fwd * 1.6)
+	await _wait_until(func() -> bool: return dummy.state != SkeletonEnemy.State.ACORDANDO, 6.0)
+	dummy.set_physics_process(false)
+	var hp := dummy.health
+	var swung := player.melee()
+	all_ok = _check("Pirulitão aparece na mão no golpe", swung and player._lollipop.visible and not player._recoil.visible) and all_ok
+	await _wait(0.4)
+	all_ok = _check("golpe do Pirulitão tira 3 de quem está na frente", is_equal_approx(hp - dummy.health, Weapons.MELEE.dano),
+			"(%.0f -> %.0f)" % [hp, dummy.health]) and all_ok
+	all_ok = _check("não dá para golpear sem parar", not player.melee()) and all_ok
+	await _wait(0.4)
+	all_ok = _check("depois do golpe o blaster volta para a mão", not player._lollipop.visible and player._recoil.visible) and all_ok
+	var bubble := Projectile.create(Projectile.Kind.BOLHA, spot + fwd * 1.5 + Vector3.UP * 1.1, player)
+	add_child(bubble)
+	bubble.set_physics_process(false)
+	bubble.global_position = spot + fwd * 1.5 + Vector3.UP * 1.1
+	player.melee()
+	await _wait(0.4)
+	all_ok = _check("Pirulitão estoura bolha mágica", not is_instance_valid(bubble) or bubble._popped) and all_ok
+
 	print("ARMAS OK" if all_ok else "ARMAS COM FALHAS")
 	get_tree().quit()
 
@@ -2521,6 +2559,17 @@ func _run_forest_test() -> void:
 	await _wait(0.3)
 	all_ok = _check("atalho: mata liberada, com Granulado e Pipoqueira", story.stage == "mata" and story.bridge_open()
 			and player.has_weapon("granulado") and player.has_weapon("pipoqueira") and not player.has_weapon("pe_de_moleque")) and all_ok
+	# A seta: do lado da cidade (mesmo onde o rio faz curva) leva até o outro lado da ponte; passando a água,
+	# aponta a luta mais perto.
+	var arrow_ok := true
+	for spec in [[Vector3(0, 0, -85), true], [Vector3(0, 0, -100), true], [Vector3(-60, 0, -104), true], [Vector3(0, 0, -112), false],
+			[Vector3(8, 0, -133), false]]:
+		await _stand(_ground_point(spec[0]))
+		await get_tree().physics_frame
+		var to_bridge: bool = spec[1]
+		arrow_ok = arrow_ok and (story.objective_target.distance_to(Story.BRIDGE_NORTH) < 1.0) == to_bridge \
+				and ("ponte" in story.objective_text) == to_bridge
+	all_ok = _check("seta da mata: atravessa a ponte e depois aponta a luta", arrow_ok, "(\"%s\")" % story.objective_text) and all_ok
 
 	# Clareira: Torre de Ossinhos.
 	var clareira: Defense = story.defenses.clareira
@@ -2724,6 +2773,56 @@ func _run_cemetery_test() -> void:
 	all_ok = _check("defesa final vencida: começa o desfecho em cena", cemiterio.state == Defense.State.VENCIDA and ending.in_cutscene,
 			"(\"%s\")" % story.objective_text) and all_ok
 	print("CEMITERIO OK" if all_ok else "CEMITERIO COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do golpe do Pirulitão num esqueleto (precisa de janela). Uso: godot --path . -- --pirulito-captura
+func _run_lollipop_capture() -> void:
+	player.god_mode = true
+	player.set_character("menino")
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	var spot := Ending.PLAZA + Vector3(0, 0, 4.0)
+	await _stand(_ground_point(spot))
+	player.set_yaw(0.0)
+	await _wait(0.5)
+	var e := spawn_wave_enemy("Skeleton_Minion", _ground_point(spot + Vector3(0, 0, -1.7)))
+	await _wait_until(func() -> bool: return e.state != SkeletonEnemy.State.ACORDANDO, 6.0)
+	e.set_physics_process(false)
+	for k in 2:
+		player.melee()
+		await _wait(0.16 + k * 0.08)
+		var p := player.global_position
+		await _art_shot("res://tools/capturas/g0%d_pirulitao.png" % (k + 1), Vector2i(1280, 720), p + Vector3(3.2, 1.8, -1.2), p + Vector3(0, 1.0, -0.8), 50.0)
+		await _wait(0.8)
+	player.melee()
+	await _wait(0.2)
+	await _shot("g03_pirulitao_jogo.png")
+	print("capturas do Pirulitão em tools/capturas/")
+	get_tree().quit()
+
+
+## Fotos da banda tocando (precisa de janela): de frente, de lado e em três instantes, com um esqueleto
+## de trompete do epílogo junto. Uso: godot --path . -- --banda-captura
+func _run_band_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	player.global_position = Ending.PLAZA + Vector3(0, 0.5, 14.0)
+	var guest := spawn_townsperson({"nome": "TrompeteTeste", "modelo_caminho": Ending.SKELETONS % "Skeleton_Warrior", "atividade": "tocando",
+		"item": "moradores/ToySoldier_Trumpet"}, _ground_point(Ending.PLAZA + Vector3(-3.1, 0, -11.2)), 0.0)
+	await _wait(1.0)
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	var stage := Ending.STAGE_TOP + Vector3(0, 1.0, 0)
+	for k in 3:
+		await _art_shot(out + "b0%d_banda_frente.png" % (k + 1), size, stage + Vector3(0.5, 1.2, 7.0), stage + Vector3(-0.5, 0.2, 0), 50.0)
+		await _wait(0.37)
+	await _art_shot(out + "b04_banda_lado.png", size, stage + Vector3(6.5, 1.0, 1.5), stage + Vector3(-0.5, 0.2, -0.2), 50.0)
+	await _art_shot(out + "b05_urso_perto.png", size, stage + Vector3(0.6, 0.6, 3.2), stage + Vector3(0, -0.1, -0.9), 45.0)
+	await _art_shot(out + "b06_trompetes_perto.png", size, stage + Vector3(-2.4, 0.9, 3.0), stage + Vector3(-1.8, 0.4, -0.6), 45.0)
+	guest.queue_free()
+	print("capturas da banda em tools/capturas/")
 	get_tree().quit()
 
 
