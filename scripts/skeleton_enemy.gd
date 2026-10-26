@@ -25,20 +25,20 @@ const BALLOON_GONE := 7.0
 ## range: distância em que começa o ataque. windup: tempo do aviso até o golpe sair.
 const TYPES := {
 	"Skeleton_Minion": {
-		"kind": "melee", "health": 3.0, "speed": 2.4, "range": 1.8, "windup": 0.5, "cooldown": 1.6,
+		"kind": "melee", "health": 5.0, "speed": 2.4, "range": 1.8, "windup": 0.5, "cooldown": 1.6,
 		"attack": "luta/Melee_Unarmed_Attack_Punch_A", "right": "", "left": "",
 	},
 	"Skeleton_Warrior": {
-		"kind": "melee", "health": 5.0, "speed": 1.7, "range": 2.1, "windup": 0.55, "cooldown": 2.2,
+		"kind": "melee", "health": 8.0, "speed": 1.7, "range": 2.1, "windup": 0.55, "cooldown": 2.2,
 		"attack": "luta/Melee_1H_Attack_Chop", "right": "Skeleton_Axe", "left": "Skeleton_Shield_Small_A",
 		"shield": true,
 	},
 	"Skeleton_Rogue": {
-		"kind": "flecha", "health": 3.0, "speed": 2.2, "range": 12.0, "windup": 0.8, "cooldown": 2.8,
+		"kind": "flecha", "health": 4.0, "speed": 2.2, "range": 12.0, "windup": 0.8, "cooldown": 2.8,
 		"aim": "tiro/Ranged_2H_Aiming", "attack": "tiro/Ranged_2H_Shoot", "right": "Skeleton_Crossbow", "left": "",
 	},
 	"Skeleton_Mage": {
-		"kind": "bolha", "health": 3.0, "speed": 1.9, "range": 13.0, "windup": 0.7, "cooldown": 3.8,
+		"kind": "bolha", "health": 4.0, "speed": 1.9, "range": 13.0, "windup": 0.7, "cooldown": 3.8,
 		"aim": "tiro/Ranged_Magic_Spellcasting", "attack": "tiro/Ranged_Magic_Shoot", "right": "Skeleton_Staff", "left": "",
 	},
 }
