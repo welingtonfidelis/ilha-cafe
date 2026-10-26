@@ -237,10 +237,6 @@ func _ready() -> void:
 		gallery.name = "TiroAoAlvo"
 		gallery.transform = world.gallery
 		add_child(gallery)
-	for pos in world.get("springs", []):
-		var spring := SpringPad.new()
-		spring.position = pos
-		add_child(spring)
 	for cp_spec in world.checkpoints:
 		var cp := Checkpoint.new()
 		cp.name = cp_spec[1]
@@ -366,12 +362,8 @@ func _load_island() -> Dictionary:
 			for key in m.get_meta_list():
 				spec[String(key)] = m.get_meta(key)
 			people.append([spec, m.global_position + Vector3.UP * (float(spec.get("altura", 0.0)) - 0.1), m.rotation.y])
-	var springs := []
-	if island.has_node("Marcadores/Molas"):
-		for m in island.get_node("Marcadores/Molas").get_children():
-			springs.append(m.global_position - Vector3.UP * 0.1)
 	var result := {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps,
-		"crates": crate_spots, "people": people, "springs": springs}
+		"crates": crate_spots, "people": people}
 	if island.has_node("Marcadores/Diversao/TiroAoAlvo"):
 		var g: Marker3D = island.get_node("Marcadores/Diversao/TiroAoAlvo")
 		result["gallery"] = Transform3D(g.global_basis, g.global_position - Vector3.UP * 0.1)
@@ -2707,7 +2699,7 @@ func _run_smoke() -> void:
 
 # --- festa e moradores ----------------------------------------------------------
 
-## Barraca de tiro, molas da Vila das Copas, moradores novos e o desafio do Guerreiro Planta.
+## Barraca de tiro, moradores novos e o desafio do Guerreiro Planta no Bosque das Copas.
 ## Uso: godot --headless --path . -- --extras
 func _run_extras_test() -> void:
 	var all_ok := true
@@ -2734,26 +2726,6 @@ func _run_extras_test() -> void:
 	var names := ["Urso", "Bruxa", "SuperHeroi", "Astronauta", "HomemDasCavernas", "Lenhador", "Pescador"]
 	var found := names.filter(func(n: String) -> bool: return get_node_or_null(n) is Townsperson)
 	all_ok = _check("moradores novos na ilha", found.size() == names.size(), "(%d de %d)" % [found.size(), names.size()]) and all_ok
-	# Mola da Vila das Copas: pisou, sobe; segurando para a frente desde o começo, cai em cima da plataforma.
-	var springs := get_children().filter(func(n: Node) -> bool: return n is SpringPad)
-	all_ok = _check("três molas na Vila das Copas", springs.size() == 3) and all_ok
-	var spring: SpringPad = springs[0]
-	var platform_dir := spring.global_position - Vector3(115, spring.global_position.y, -160)
-	platform_dir.y = 0.0
-	player.global_position = spring.global_position + Vector3.UP * 1.2
-	var peak := player.global_position.y
-	var t0 := 0.0
-	while t0 < 1.0:
-		peak = maxf(peak, player.global_position.y)
-		await get_tree().physics_frame
-		t0 += get_physics_process_delta_time()
-	all_ok = _check("a mola joga o aventureiro para o alto", peak > spring.global_position.y + 5.0, "(subiu até %.1f m acima)" % (peak - spring.global_position.y)) and all_ok
-	player.global_position = spring.global_position + Vector3.UP * 1.2
-	await get_tree().physics_frame
-	await _walk_toward(spring.global_position + platform_dir.normalized() * 5.0, 0.85)
-	await _wait(0.6)
-	all_ok = _check("da mola dá para chegar no alto da plataforma", player.global_position.y > spring.global_position.y + 4.5 and player.is_on_floor(),
-			"(%.1f m acima do chão)" % (player.global_position.y - spring.global_position.y)) and all_ok
 	# Desafio do Guerreiro Planta.
 	story.skip_to_forest()
 	await _wait(0.3)
@@ -2761,7 +2733,7 @@ func _run_extras_test() -> void:
 	await _stand(vila.center + Vector3(0, 0, 6))
 	await _wait_until(func() -> bool: return is_instance_valid(vila.boss) and vila.boss.phase == Boss.Phase.LUTANDO, 8.0)
 	var planta := vila.boss as BossPlanta
-	all_ok = _check("entrar na Vila das Copas chama o Guerreiro Planta", is_instance_valid(planta) and planta.display_name == "Guerreiro Planta" and boss_bar.visible) and all_ok
+	all_ok = _check("entrar no Bosque das Copas chama o Guerreiro Planta", is_instance_valid(planta) and planta.display_name == "Guerreiro Planta" and boss_bar.visible) and all_ok
 	if planta == null:
 		print("EXTRAS COM FALHAS")
 		get_tree().quit()
@@ -2813,11 +2785,7 @@ func _run_extras_capture() -> void:
 	var fisher: Node3D = get_node("Pescador")
 	await _art_shot(out + "x07_pescador.png", size, fisher.global_position + Vector3(5.0, 2.2, -5.0), fisher.global_position + Vector3(0.5, 1.0, 0), 55.0)
 	var vila_c := _ground_point(Vector3(115, 0, -160))
-	await _art_shot(out + "x08_vila_das_copas.png", size, vila_c + Vector3(15, 9, 15), vila_c + Vector3(0, 3, 0), 60.0)
-	var spring: SpringPad = get_children().filter(func(n: Node) -> bool: return n is SpringPad)[0]
-	player.global_position = spring.global_position + Vector3.UP * 1.2
-	await _wait(0.45)
-	await _art_shot(out + "x09_mola.png", size, spring.global_position + Vector3(7, 4, 7), spring.global_position + Vector3(0, 3.5, 0), 60.0)
+	await _art_shot(out + "x08_bosque_das_copas.png", size, vila_c + Vector3(15, 9, 15), vila_c + Vector3(0, 3, 0), 60.0)
 	story.skip_to_forest()
 	var vila: Defense = story.defenses.vila
 	await _stand(vila.center + Vector3(0, 0, 7))
@@ -2871,8 +2839,8 @@ func _run_landscape_capture() -> void:
 	var lj: Node3D = get_node("Lenhador")
 	await _wait(0.46)
 	await _art_shot(out + "p12_lenhador.png", size, lj.global_position + Vector3(-1.5, 1.8, 4.2), lj.global_position + Vector3(-0.6, 0.7, 0), 50.0)
-	var ventos := _ground_point(Vector3(-95, 0, -158))
-	await _art_shot(out + "p13_morro_dos_ventos.png", size, ventos + Vector3(40, 14, 40), ventos + Vector3(0, 0, 0), 55.0)
+	var ventos := _ground_point(Vector3(-80, 0, -162))
+	await _art_shot(out + "p13_morro_dos_ventos.png", size, ventos + Vector3(40, 20, 40), ventos + Vector3(0, 0, 0), 55.0)
 	var gate := find_child("PortaoDoCemiterio", true, false) as Node3D
 	if gate:
 		var out_dir := gate.global_position + gate.global_basis.z * 9.0 + gate.global_basis.x * 2.6
@@ -2880,6 +2848,15 @@ func _run_landscape_capture() -> void:
 		story._open_gate()
 		await _wait(2.5)
 		await _art_shot(out + "p15_portao_aberto.png", size, out_dir + Vector3.UP * 3.0, gate.global_position + gate.global_basis.x * 2.6 + Vector3.UP * 1.5, 55.0)
+	var fisher: Node3D = get_node("Pescador")
+	await _wait(0.3)
+	await _art_shot(out + "p17_pescador_linha.png", size, fisher.global_position + Vector3(4.5, 1.6, -5.5), fisher.global_position + Vector3(1.6, 0.2, 0), 55.0)
+	await _art_shot(out + "p18b_cais_reto.png", size, Vector3(0, 4.0, 203), Vector3(0, 0.4, 232), 60.0)
+	await _art_shot(out + "p18_ponta_do_cais.png", size, Vector3(9, 4.5, 244), Vector3(0, 0.6, 253), 55.0)
+	await _art_shot(out + "p19_rua_sul.png", size, Vector3(52, 2.0, 200), Vector3(30, 0.3, 188), 60.0)
+	await _art_shot(out + "p20_praca_de_cima.png", size, Vector3(0, 34, 171), Vector3(0, 0, 170.1), 62.0)
+	var bosque := _ground_point(Vector3(115, 0, -160))
+	await _art_shot(out + "p21_bosque_das_copas.png", size, bosque + Vector3(11, 5, 11), bosque + Vector3(-2, 2, -2), 65.0)
 	var pasture := _ground_point(Vector3(-104, 0, 52))
 	await _art_shot(out + "p16_pasto.png", size, pasture + Vector3(12, 6, 14), pasture + Vector3(0, 0.8, 0), 55.0)
 	print("PAISAGEM OK")

@@ -15,24 +15,24 @@
     "nodes" : [
         {
             "mesh" : 0,
-            "name" : "spring_pad_red"
+            "name" : "building_docks_blue"
         }
     ],
     "materials" : [
         {
-            "name" : "platformer",
+            "name" : "hexagons_medieval",
             "pbrMetallicRoughness" : {
                 "baseColorTexture" : {
                     "index" : 0
                 },
                 "metallicFactor" : 0,
-                "roughnessFactor" : 0.30000001192092896
+                "roughnessFactor" : 0.5
             }
         }
     ],
     "meshes" : [
         {
-            "name" : "spring_pad_red",
+            "name" : "building_docks_blue",
             "primitives" : [
                 {
                     "attributes" : {
@@ -55,69 +55,69 @@
     "images" : [
         {
             "mimeType" : "image/png",
-            "name" : "platformer_texture",
-            "uri" : "platformer_texture.png"
+            "name" : "hexagons_medieval",
+            "uri" : "hexagons_medieval.png"
         }
     ],
     "accessors" : [
         {
             "bufferView" : 0,
             "componentType" : 5126,
-            "count" : 548,
+            "count" : 1709,
             "max" : [
-                0.75,
-                0.9999999403953552,
-                0.75
+                0.9999998807907104,
+                0.44447061419487,
+                0.2499999850988388
             ],
             "min" : [
-                -0.75,
-                0,
-                -0.75
+                -1,
+                -1,
+                -0.2500000298023224
             ],
             "type" : "VEC3"
         },
         {
             "bufferView" : 1,
             "componentType" : 5126,
-            "count" : 548,
+            "count" : 1709,
             "type" : "VEC2"
         },
         {
             "bufferView" : 2,
             "componentType" : 5126,
-            "count" : 548,
+            "count" : 1709,
             "type" : "VEC3"
         },
         {
             "bufferView" : 3,
             "componentType" : 5123,
-            "count" : 2136,
+            "count" : 2874,
             "type" : "SCALAR"
         }
     ],
     "bufferViews" : [
         {
             "buffer" : 0,
-            "byteLength" : 6576,
+            "byteLength" : 20508,
             "byteOffset" : 0,
             "target" : 34962
         },
         {
             "buffer" : 0,
-            "byteLength" : 4384,
-            "byteOffset" : 6576,
+            "byteLength" : 13672,
+            "byteOffset" : 20508,
             "target" : 34962
         },
         {
             "buffer" : 0,
-            "byteLength" : 6576,
-            "byteOffset" : 10960,
+            "byteLength" : 20508,
+            "byteOffset" : 34180,
             "target" : 34962
         },
         {
             "buffer" : 0,
-            "byteLength" : 4272,
-            "byteOffset" : 17536,
+            "byteLength" : 5748,
+            "byteOffset" : 54688,
             "target" : 34963
         }
     ],
@@ -129,8 +129,8 @@
     ],
     "buffers" : [
         {
-            "byteLength" : 21808,
-            "uri" : "spring_pad_red.bin"
+            "byteLength" : 60436,
+            "uri" : "building_docks_blue.bin"
         }
     ]
 }

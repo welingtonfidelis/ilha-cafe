@@ -28,9 +28,9 @@ const REGIONS := {
 		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
 		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
-	# Desafio opcional na Vila das Copas: só o Guerreiro Planta, sem ondas. Não conta para a história.
+	# Desafio opcional no Bosque das Copas (clareira de árvores gigantes): só o Guerreiro Planta, sem ondas. Não conta para a história.
 	"vila": {
-		"nome": "Vila das Copas", "titulo": "Vila das Copas", "lanterna": "", "guardiao": "planta", "recompensa": "coracao", "bandeira": "",
+		"nome": "Bosque das Copas", "titulo": "Bosque das Copas", "lanterna": "", "guardiao": "planta", "recompensa": "coracao", "bandeira": "",
 		"ondas": [[]],
 	},
 	# Defesa final, no meio do cemitério do Morro (abre quando a cúpula cai): todos os tipos e o Mestre Ossinho.
@@ -80,7 +80,8 @@ var _crowd_check := 0.0
 var _bridge: StaticBody3D
 var _dome: StaticBody3D
 var _gate: StaticBody3D
-var _gate_closed_y := 0.0
+var _gate_left: Node3D
+var _gate_right: Node3D
 var _central_orb: MeshInstance3D
 
 
@@ -92,8 +93,8 @@ func setup(p_game: Node, p_island: Node3D) -> void:
 	_dome = island.get_node("Morro/CupulaDoCemiterio")
 	_central_orb = island.get_node("Morro/Cemiterio/LanternaCentral")
 	_gate = island.get_node_or_null("Morro/Cemiterio/PortaoDoCemiterio")
-	if _gate:
-		_gate_closed_y = _gate.rotation.y
+	_gate_left = island.get_node("Morro/Cemiterio").find_child("arch_gate_left", true, false)
+	_gate_right = island.get_node("Morro/Cemiterio").find_child("arch_gate_right", true, false)
 	for key in ["Oeste", "Leste", "Ventos", "Clareira"]:
 		lanterns[key] = {
 			"orb": island.get_node("LanternasVisuais/Esfera" + key),
@@ -157,7 +158,7 @@ func _on_defense_won(d: Defense) -> void:
 	if d.id == "vila":
 		_celebrate(d)
 		_spawn_reward(spec.recompensa, d.center + Vector3(0, 0, 3.0))
-		game.banner("Desafio vencido!", "O Guerreiro Planta deixou você subir na Vila das Copas.", Color("#c9f7a0"))
+		game.banner("Desafio vencido!", "O Guerreiro Planta reconheceu você como amigo da mata.", Color("#c9f7a0"))
 		_refresh_objective()
 		return
 	_celebrate(d)
@@ -242,6 +243,8 @@ func _celebrate(d: Defense) -> void:
 	for k in 8:
 		var a := TAU * k / 8.0
 		var pos := d.center + Vector3(cos(a), 0, sin(a)) * (d.radius - 3.0)
+		if _on_street_or_water(pos):
+			continue
 		var pole: Node3D = load(PLAT % "neutral/pillar_1x1x4").instantiate()
 		pole.scale = Vector3(0.5, 0.7, 0.5)
 		party.add_child(pole)
@@ -291,6 +294,13 @@ func _party_guests(d: Defense) -> void:
 			"atividade": guests[k][2], "falas": PackedStringArray([PARTY_LINES[k % PARTY_LINES.size()]])}
 		var t: Townsperson = game.spawn_townsperson(spec, pos, atan2(to_table.x, to_table.z))
 		t.celebrate(8.0)
+
+
+## Os postes de balão da comemoração não ficam na rua (a cidade vai de x −72 a 72 e de z 98 a 202) nem na água.
+func _on_street_or_water(pos: Vector3) -> bool:
+	if pos.x > -72.0 and pos.x < 72.0 and pos.z > 98.0 and pos.z < 202.0:
+		return true
+	return game._ground_point(pos).y < -0.4
 
 
 ## Até onde a torcida ouve a luta: a praça inteira acompanha a defesa da praia ao lado.
@@ -346,18 +356,27 @@ func _open_dome() -> void:
 	_open_gate()
 
 
-## O portão de ferro do cemitério abre girando na dobradiça (fica aberto).
-func _open_gate() -> void:
-	if not is_instance_valid(_gate):
-		return
-	var tw := _gate.create_tween()
-	tw.tween_interval(0.6)
-	tw.tween_property(_gate, "rotation:y", _gate.rotation.y - deg_to_rad(105.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	Sfx.play_at(game, "escudo", _gate.global_position)
+## O portão do cemitério (as duas folhas do arco, com a origem na dobradiça) abre para dentro e fica aberto.
+func _open_gate(instant := false) -> void:
+	if is_instance_valid(_gate):
+		_gate.collision_layer = 0
+	for spec in [[_gate_left, 1.0], [_gate_right, -1.0]]:
+		var door: Node3D = spec[0]
+		if not is_instance_valid(door):
+			continue
+		var target: float = deg_to_rad(105.0) * spec[1]
+		if instant:
+			door.rotation.y = target
+		else:
+			var tw := door.create_tween()
+			tw.tween_interval(0.6)
+			tw.tween_property(door, "rotation:y", target, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	if not instant and is_instance_valid(_gate):
+		Sfx.play_at(game, "escudo", _gate.global_position)
 
 
 func gate_open() -> bool:
-	return is_instance_valid(_gate) and absf(angle_difference(_gate.rotation.y, _gate_closed_y)) > 1.5
+	return is_instance_valid(_gate_left) and absf(_gate_left.rotation.y) > 1.5 and _gate.collision_layer == 0
 
 
 ## A barreira some: perde a colisão na hora e desaparece em confete.
@@ -407,8 +426,7 @@ func skip_to_cemetery() -> void:
 	open_bridge_now()
 	_dome.collision_layer = 0
 	_dome.visible = false
-	if _gate:
-		_gate.rotation.y = _gate_closed_y - deg_to_rad(105.0)
+	_open_gate(true)
 	stage = "cemiterio"
 	_set_fast()
 	defenses.cemiterio.activate()

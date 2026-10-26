@@ -797,12 +797,6 @@ func _update_invulnerability(delta: float) -> void:
 			star.rotate_y(delta * 6.0)
 
 
-## Mola da Vila das Copas: joga o aventureiro para cima.
-func bounce(speed: float) -> void:
-	velocity.y = speed
-	Sfx.play(get_parent(), "pulo")
-
-
 func is_dizzy() -> bool:
 	return dizzy
 

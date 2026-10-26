@@ -24,11 +24,11 @@ const RIVER_Z := -112.0
 const RIVER_HALF := 7.0
 const RIVER_BANK := 6.0
 ## Longe da costa (antes ficava na beira da praia e o terreno virava areia e mar).
-const VENTOS := Vector2(-95, -158)
+const VENTOS := Vector2(-80, -162)
 const VENTOS_R := 58.0
 const VENTOS_H := 8.0
 ## Topo plano do Morro dos Ventos: a arena (22 m) inteira fica no plano, e a encosta é suave.
-const VENTOS_TOP_R := 27.0
+const VENTOS_TOP_R := 29.0
 const CLAREIRA := Vector2(40, -180)
 const VILA := Vector2(115, -160)
 ## Pasto dos cavalos, a oeste da cidade.
@@ -44,7 +44,7 @@ const REGIONS := {
 	"oeste": Vector2(-84, 140),
 	"leste": Vector2(84, 140),
 	"clareira": Vector2(24, -166),
-	"ventos": Vector2(-95, -158),
+	"ventos": Vector2(-80, -162),
 }
 const REGION_NAMES := {"oeste": "Oeste", "leste": "Leste", "clareira": "Clareira", "ventos": "Ventos"}
 ## Raio do círculo da arena e raio sem árvores, pedras e arbustos em volta do centro.
@@ -60,6 +60,8 @@ const CEMITERIO := "res://assets/props/cemiterio/%s.gltf"
 const PONTE := "res://assets/props/ponte/%s.gltf"
 const EXTRAS := "res://assets/props/%s.gltf"
 const CAIS := "res://assets/props/cais/%s.gltf"
+## A cerca de madeira do Medieval Hexagon é a borda de um hexágono: a madeira fica 1 m para -X da origem.
+const FENCE_OFFSET := 1.0
 ## Árvores e arbustos nas outras cores do Forest Nature Pack completo (a cor 1 fica em env/forest/).
 const FOREST_COLOR := "res://assets/env/forest/cor%d/%s_Color%d.gltf"
 ## Formatos de árvore da mata (os 5, 6 e 7 só existem no pacote completo).
@@ -68,7 +70,7 @@ const TREE_SHAPES := ["Tree_1_A", "Tree_1_B", "Tree_2_A", "Tree_2_C", "Tree_3_A"
 const MORADOR_ITEM := "res://assets/props/%s.gltf"
 const CITY_SCALE := 5.0
 ## Topo das ruas (a peça fica em y = 0,01 e tem 0,1 de altura).
-const ROAD_TOP := 0.11
+const ROAD_TOP := 0.03
 ## Os carros do City Builder Bits têm as rodas 7,2 cm abaixo da origem (36 cm na escala 5).
 const CAR_LIFT := 0.072 * CITY_SCALE
 const FOREST_SCALE := 1.8
@@ -164,7 +166,10 @@ func height(x: float, z: float) -> float:
 	var d := _island_d(x, z)
 	land = lerpf(land, -0.15, smoothstep(0.86, 0.93, d))
 	land = lerpf(land, -4.0, smoothstep(0.95, 1.08, d))
-	return land
+	# A cidade fica plana até a beira, mesmo onde a costa chega perto (canto sudeste).
+	var cx := maxf(absf(x) - 70.0, 0.0)
+	var cz := maxf(maxf(100.0 - z, z - 197.0), 0.0)
+	return lerpf(land, 0.0, 1.0 - smoothstep(0.0, 10.0, Vector2(cx, cz).length())) if z > CITY_Z - 10.0 else land
 
 
 ## Altura exata da malha (interpola os triângulos do jeito que foram montados).
@@ -219,6 +224,19 @@ func _trail_dist(p: Vector2) -> float:
 func _near_region(p: Vector2, extra := 0.0) -> bool:
 	for key in REGIONS:
 		if key != "praca" and p.distance_to(REGIONS[key]) < CLEAR_R + extra:
+			return true
+	return false
+
+
+## Em cima de uma rua (as peças têm 10 x 10 m centradas nas linhas ROAD_XS e ROAD_ZS)?
+func _on_road(x: float, z: float, margin := 0.0) -> bool:
+	if x < ROAD_XS[0] - 5.0 - margin or x > ROAD_XS[-1] + 5.0 + margin or z < ROAD_ZS[0] - 5.0 - margin or z > ROAD_ZS[-1] + 5.0 + margin:
+		return false
+	for rx in ROAD_XS:
+		if absf(x - rx) < 5.0 + margin:
+			return true
+	for rz in ROAD_ZS:
+		if absf(z - rz) < 5.0 + margin:
 			return true
 	return false
 
@@ -464,8 +482,9 @@ func _city() -> void:
 	for key in cells:
 		var piece := _road_piece(cells.has(key + Vector2i(0, -10)), cells.has(key + Vector2i(0, 10)),
 				cells.has(key + Vector2i(10, 0)), cells.has(key + Vector2i(-10, 0)))
-		# Achatada (5 x 1 x 5): a rua fica rente ao chão, sem degrau para o personagem.
-		var road := _prop(roads, CITY % piece[0], Vector3(key.x, 0.01, key.y), piece[1], 1.0)
+		# Achatada (5 x 1 x 5) e um pouco afundada: o asfalto do modelo fica a 7 cm e a calçada a 10 cm;
+		# assim o asfalto fica a 2,5 cm do chão em que o personagem pisa.
+		var road := _prop(roads, CITY % piece[0], Vector3(key.x, -0.045, key.y), piece[1], 1.0)
 		road.scale = Vector3(CITY_SCALE, 1.0, CITY_SCALE)
 
 	# Prédios em volta de cada quarteirão, de frente para a rua mais próxima (a frente do modelo é o sul).
@@ -516,10 +535,10 @@ func _city() -> void:
 		var item: String = ["trash_A", "trash_B", "firehydrant", "dumpster", "box_A", "box_B"][rng.randi() % 6]
 		var item_rot := rng.randf_range(0, 360)
 		# Na areia da praça não (atrapalhava a festa e a barraca de tiro); o sorteio continua o mesmo.
-		if PLAZA.grow(-5.0).has_point(Vector2(x, z - 7.5)):
+		if PLAZA.grow(-5.0).has_point(Vector2(x, z - 7.5)) or _on_road(x, z - 7.5, 1.0):
 			continue
 		_prop(props, CITY % item, Vector3(x, 0, z - 7.5), item_rot, CITY_SCALE, "caixa")
-	_prop(props, CITY % "watertower", Vector3(-85, 0, 200), 0.0, CITY_SCALE, "caixa")
+	_prop(props, CITY % "watertower", Vector3(-85, ground(-85, 200), 200), 0.0, CITY_SCALE, "caixa")
 
 	# Praça da festa: palco, arco, balões e bancos. Aqui o jogo começa.
 	var plaza := _group(city, "Praca")
@@ -536,7 +555,7 @@ func _city() -> void:
 	for k in 4:
 		var a := TAU * k / 4.0 + PI / 4.0
 		_prop(plaza, CITY % "bench", center + Vector3(cos(a) * 7.0, 0, sin(a) * 7.0), rad_to_deg(-a), CITY_SCALE, "caixa")
-	for corner in [Vector3(-15, 0, -15), Vector3(15, 0, -15), Vector3(-15, 0, 15), Vector3(15, 0, 15)]:
+	for corner in [Vector3(-13.2, 0, -13.2), Vector3(13.2, 0, -13.2), Vector3(-13.2, 0, 13.2), Vector3(13.2, 0, 13.2)]:
 		# Cerejeiras rosas nos cantos da praça da festa.
 		_prop(plaza, _tree_path("Tree_2_A", 8), center + corner, rng.randf_range(0, 360), 1.3, "tronco")
 
@@ -563,7 +582,7 @@ func _festa() -> void:
 	for k in train.size():
 		_prop(festa, FESTA % train[k], at.call(5.2 + k * 1.5, -12.6), 90.0, 1.8)
 	# Lanternas enfeitadas nos cantos do palco e na entrada da praça.
-	for spot in [Vector2(-4.8, -9.4), Vector2(4.8, -9.4), Vector2(-3.5, 17.5), Vector2(3.5, 17.5)]:
+	for spot in [Vector2(-4.8, -9.4), Vector2(4.8, -9.4), Vector2(-3.5, 13.6), Vector2(3.5, 13.6)]:
 		_prop(festa, FESTA % "doces/lantern_decorated", at.call(spot.x, spot.y), 0.0, 0.8, "tronco")
 	# Mesas de comida a oeste e de doces a leste.
 	_table(festa, "comida/table_round_B_tablecloth_red", at.call(-11.5, -3.0), [
@@ -577,25 +596,25 @@ func _festa() -> void:
 		["doces/plate_decorated_A", Vector3(-0.4, 0, -0.3), 0.7], ["doces/plate_decorated_B", Vector3(0.45, 0, 0.3), 0.7],
 		["doces/hot_chocolate_decorated", Vector3(0.45, 0, -0.5), 0.9], ["doces/candy_A_pink", Vector3(-0.3, 0, 0.55), 1.2],
 		["doces/candy_B_blue", Vector3(-0.6, 0, 0.2), 1.2]])
-	_prop(festa, FESTA % "comida/icecream_machine", at.call(14.5, -6.5), -60.0, 0.6, "caixa")
+	_prop(festa, FESTA % "comida/icecream_machine", at.call(12.6, -6.8), -60.0, 0.6, "caixa")
 	# Barraca dos fazendeiros (sudoeste): bancada com verduras, caixotes e o carrinho de mão.
-	_table(festa, "comida/kitchentable_A_large", at.call(-15.5, 9.0), [
+	_table(festa, "comida/kitchentable_A_large", at.call(-12.6, 9.4), [
 		["moradores/carrot", Vector3(-0.4, 0, -0.5), 1.4], ["moradores/lettuce", Vector3(0.3, 0, -0.2), 1.4],
 		["moradores/carrot", Vector3(0.1, 0, 0.5), 1.4]], 90.0, 0.8, MORADOR_ITEM)
-	for spec in [["comida/crate_carrots", -13.3, 7.6], ["comida/crate_lettuce", -13.3, 9.0], ["comida/crate_tomatoes", -13.3, 10.4]]:
+	for spec in [["comida/crate_carrots", -10.6, 8.0], ["comida/crate_lettuce", -10.6, 9.4], ["comida/crate_tomatoes", -10.6, 10.8]]:
 		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 90.0, 0.45, "caixa")
-	_prop(festa, MORADOR_ITEM % "moradores/wheelbarrow", at.call(-17.0, 12.6), 20.0, 0.9, "caixa")
+	_prop(festa, MORADOR_ITEM % "moradores/wheelbarrow", at.call(-12.8, 13.0), 20.0, 0.9, "caixa")
 	# Barraca de poções da bruxa (noroeste): bancada de poções, caldeirão e cesto de cogumelos.
-	_prop(festa, EXTRAS % "moradores/bruxa/Potionstation_decorated", at.call(-15.6, -8.2), 90.0, 1.0, "caixa")
-	_prop(festa, EXTRAS % "moradores/bruxa/Cauldron", at.call(-12.9, -6.4), 0.0, 1.2, "caixa")
-	_prop(festa, EXTRAS % "moradores/bruxa/Basket_Mushrooms", at.call(-13.6, -10.0), 30.0, 1.2)
-	_prop(festa, EXTRAS % "moradores/bruxa/Broom", at.call(-17.2, -10.3), 15.0, 1.1)
+	_prop(festa, EXTRAS % "moradores/bruxa/Potionstation_decorated", at.call(-12.8, -8.4), 90.0, 1.0, "caixa")
+	_prop(festa, EXTRAS % "moradores/bruxa/Cauldron", at.call(-10.4, -6.2), 0.0, 1.2, "caixa")
+	_prop(festa, EXTRAS % "moradores/bruxa/Basket_Mushrooms", at.call(-11.0, -10.6), 30.0, 1.2)
+	_prop(festa, EXTRAS % "moradores/bruxa/Broom", at.call(-13.6, -10.9), 15.0, 1.1)
 	# Cantinho do palhaço (sudeste): pódio, arco e brinquedos no chão.
-	_prop(festa, FESTA % "circo/circus_podium", at.call(15.0, 8.0), 0.0, 0.8, "caixa")
-	_prop(festa, FESTA % "circo/circus_hoop", at.call(16.8, 10.6), -30.0, 0.8)
-	for spec in [["circo/juggling_pin_red", 13.6, 9.6], ["circo/juggling_pin_blue", 13.9, 9.9], ["circo/juggling_pin_yellow", 13.4, 10.1]]:
+	_prop(festa, FESTA % "circo/circus_podium", at.call(12.4, 7.0), 0.0, 0.8, "caixa")
+	_prop(festa, FESTA % "circo/circus_hoop", at.call(13.4, 10.6), -30.0, 0.8)
+	for spec in [["circo/juggling_pin_red", 11.0, 9.0], ["circo/juggling_pin_blue", 11.3, 9.3], ["circo/juggling_pin_yellow", 10.8, 9.5]]:
 		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 40.0, 1.3)
-	_prop(festa, FESTA % "circo/clown_ball", at.call(13.4, 6.4), 0.0, 1.0)
+	_prop(festa, FESTA % "circo/clown_ball", at.call(10.6, 5.2), 0.0, 1.0)
 
 
 ## Mesa com coisas em cima (posições relativas ao centro do tampo).
@@ -687,24 +706,19 @@ func _cemiterio(morro: Node, top: float) -> void:
 		_prop(cem, CEMITERIO % "fence_pillar", at.call(q.x, q.y), _tangent_deg(a), 1.05, "caixa")
 	var g := Vector2(cos(gate_a), sin(gate_a)) * fence_r
 	_prop(cem, CEMITERIO % "arch_gate", at.call(g.x, g.y), _tangent_deg(gate_a), 1.3)
-	# Portão de ferro embaixo do arco, com a dobradiça num dos lados: fechado até a cúpula cair (o jogo abre).
-	var tangent := Vector2(-sin(gate_a), cos(gate_a))
-	var hinge := g - tangent * 2.6
-	var gate_pivot := StaticBody3D.new()
-	gate_pivot.name = "PortaoDoCemiterio"
-	gate_pivot.position = at.call(hinge.x, hinge.y)
-	gate_pivot.rotation_degrees.y = _tangent_deg(gate_a)
-	_add(cem, gate_pivot)
-	var gate_door: Node3D = load(CEMITERIO % "fence_gate").instantiate()
-	gate_door.position = Vector3(2.6, 0, 0)
-	gate_door.scale = Vector3(1.3, 1.1, 1.0)
-	_add(gate_pivot, gate_door)
+	# O arch_gate já vem com as duas folhas do portão (arch_gate_left e arch_gate_right, com a origem na
+	# dobradiça). Fechado até a cúpula cair; o jogo gira as folhas e desliga esta colisão.
+	var gate_block := StaticBody3D.new()
+	gate_block.name = "PortaoDoCemiterio"
+	gate_block.position = at.call(g.x, g.y)
+	gate_block.rotation_degrees.y = _tangent_deg(gate_a)
+	_add(cem, gate_block)
 	var gate_cs := CollisionShape3D.new()
 	var gate_box := BoxShape3D.new()
-	gate_box.size = Vector3(5.2, 3.0, 0.4)
+	gate_box.size = Vector3(3.9, 3.9, 0.4)
 	gate_cs.shape = gate_box
-	gate_cs.position = Vector3(2.6, 1.5, 0)
-	_add(gate_pivot, gate_cs)
+	gate_cs.position = Vector3(0, 1.95, 0)
+	_add(gate_block, gate_cs)
 	# Cripta no fundo e a lanterna mágica flutuando em cima.
 	_prop(cem, CEMITERIO % "crypt", at.call(0, -17.5), 180.0, 1.3, "caixa")
 	_orb(cem, "LanternaCentral", Vector3(0, top + 13.0, -17.5), 1.0)
@@ -838,10 +852,22 @@ func _bridge_and_pier() -> void:
 	_magic_wall(ilha, "BarreiraDaPonte", Vector3(0, ground(0, z_south + 1.0) + 2.5, z_south + 1.0), Vector3(9, 5, 0.5))
 	# Cais: sai da praça para o mar, ao sul.
 	_wood_pier(Vector3(0, ground(0, 206) + 0.02, 206), Vector3(0, 0.25, 252), 7.0)
-	# Pescador no fim do cais: caixa de pesca e balde (o pescador é um morador; o jogo cria).
-	var pier_y := lerpf(ground(0, 206) + 0.02, 0.25, (247.0 - 206.0) / 46.0)
-	_prop(ilha, EXTRAS % "pesca/fishing_tacklebox", Vector3(1.0, pier_y, 246.0), 15.0, 1.1)
-	_prop(ilha, EXTRAS % "pesca/bucket_metal", Vector3(1.2, pier_y, 248.3), 0.0, 1.0)
+	# Ponta do cais: o cais do Medieval Hexagon (tábuas com estacas, corrimão, barril, caixote e bandeira),
+	# atravessado no fim, com o corrimão virado para o mar. O piso do modelo fica no y 0 (as estacas descem).
+	var dock := _prop(ilha, CAIS % "building_docks_blue", Vector3(0, 0.25, 253.0), 180.0, 4.0)
+	dock.name = "PontaDoCais"
+	var dock_body := StaticBody3D.new()
+	dock_body.name = "PisoDaPonta"
+	_add(ilha, dock_body)
+	var dock_cs := CollisionShape3D.new()
+	var dock_box := BoxShape3D.new()
+	dock_box.size = Vector3(8.0, 0.4, 2.0)
+	dock_cs.shape = dock_box
+	dock_cs.position = Vector3(0, 0.05, 253.0)
+	_add(dock_body, dock_cs)
+	# Pescador na ponta (o pescador é um morador; o jogo cria): caixa de pesca e balde do lado.
+	_prop(ilha, EXTRAS % "pesca/fishing_tacklebox", Vector3(2.0, 0.25, 252.6), 15.0, 1.1)
+	_prop(ilha, EXTRAS % "pesca/bucket_metal", Vector3(1.4, 0.25, 253.4), 0.0, 1.0)
 	# Toras do lenhador na margem sul do rio, perto da ponte.
 	var river_s := _river_z(12.0) + RIVER_HALF + RIVER_BANK + 6.0
 	var logs := _group(ilha, "Lenha")
@@ -868,7 +894,7 @@ func _pasture() -> void:
 			continue  # porteira aberta
 		var p := PASTURE + Vector2(cos(a), sin(a)) * PASTURE_R
 		var rail: Node3D = load(CAIS % "fence_wood_straight").instantiate()
-		rail.position = Vector3(p.x, ground(p.x, p.y), p.y)
+		rail.position = Vector3(p.x, ground(p.x, p.y), p.y) + Basis(Vector3.UP, -a) * Vector3(FENCE_OFFSET * 3.0, 0, 0)
 		rail.rotation.y = -a
 		rail.scale = Vector3(3.0, 2.0, 4.3)
 		_add(pasture, rail)
@@ -914,7 +940,7 @@ func _wood_pier(a: Vector3, b: Vector3, width: float) -> void:
 			var t := (i + 0.5) / rails
 			var rail: Node3D = load(CAIS % "fence_wood_straight").instantiate()
 			# A cerca do pacote já fica no eixo Z (comprimento 1,15 m): estica até emendar com a próxima.
-			rail.transform = Transform3D(basis.scaled_local(Vector3(2.5, 2.0, (length / rails) / 1.15)), a.lerp(b, t) + basis.x * (side * (width * 0.5 - 0.2)))
+			rail.transform = Transform3D(basis.scaled_local(Vector3(2.5, 2.0, (length / rails) / 1.15)), a.lerp(b, t) + basis.x * (side * (width * 0.5 - 0.2) + FENCE_OFFSET * 2.5))
 			_add(group, rail)
 	for i in int(length / 8.0) + 1:
 		var t := float(i) / int(length / 8.0)
@@ -1053,21 +1079,25 @@ func _forest() -> void:
 		_prop(forest, city_tree, Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), city_rot, city_scale, "tronco")
 	# Jabuticabeira gigante no meio da clareira.
 	_prop(forest, FOREST % "Tree_1_A_Color1", Vector3(CLAREIRA.x, ground(CLAREIRA.x, CLAREIRA.y) - 0.2, CLAREIRA.y), 30.0, FOREST_SCALE * 3.2, "tronco")
-	# Vila das Copas: plataformas de madeira entre as árvores (chegar lá em cima fica para o pulo duplo).
-	for k in 3:
-		var a := TAU * k / 3.0
-		var p := VILA + Vector2(cos(a), sin(a)) * 8.0
-		var y := ground(p.x, p.y)
-		_prop(forest, PLAT % "neutral/pillar_1x1x4", Vector3(p.x, y, p.y), 0.0, 1.0, "caixa")
-		_prop(forest, PLAT % "red/platform_4x4x1_red", Vector3(p.x, y + 4.0, p.y), rad_to_deg(a), 1.0, "caixa")
-	# Passarelas de tábuas ligando o topo das plataformas (as molas no chão levam até lá; o jogo cuida disso).
-	for k in 3:
-		var a := VILA + Vector2(cos(TAU * k / 3.0), sin(TAU * k / 3.0)) * 8.0
-		var b := VILA + Vector2(cos(TAU * (k + 1) / 3.0), sin(TAU * (k + 1) / 3.0)) * 8.0
-		var ab := (b - a).normalized()
-		var pa := a + ab * 2.1
-		var pb := b - ab * 2.1
-		_walkway(forest, "Passarela%d" % (k + 1), Vector3(pa.x, ground(a.x, a.y) + 5.0, pa.y), Vector3(pb.x, ground(b.x, b.y) + 5.0, pb.y), 1.8)
+	# Bosque das Copas: clareira redonda fechada por árvores gigantes, com pedras com musgo, arbustos floridos
+	# e um tronco caído. É a arena do desafio do Guerreiro Planta (o guardião da mata).
+	var bosque := _group(forest, "BosqueDasCopas")
+	for k in 9:
+		var a := TAU * k / 9.0 + 0.2
+		var p := VILA + Vector2(cos(a), sin(a)) * (15.5 + (k % 2) * 1.5)
+		var giant: String = ["Tree_1_A", "Tree_7_B", "Tree_2_A", "Tree_6_B"][k % 4]
+		_prop(bosque, _tree_path(giant, [3, 2, 1, 8][k % 4]), Vector3(p.x, ground(p.x, p.y) - 0.2, p.y), 40.0 * k, FOREST_SCALE * 2.2, "tronco")
+	for k in 7:
+		var a := TAU * k / 7.0 + 0.6
+		var p := VILA + Vector2(cos(a), sin(a)) * 12.8
+		_prop(bosque, _tree_path("Bush_%d_A" % (k % 4 + 1), [8, 3, 2][k % 3]), Vector3(p.x, ground(p.x, p.y) - 0.05, p.y), 50.0 * k, FOREST_SCALE * 1.3)
+	for spec in [[2.1, 13.2, "Rock_1_C"], [4.0, 13.6, "Rock_2_B"], [5.6, 12.6, "Rock_3_D"]]:
+		var p: Vector2 = VILA + Vector2(cos(spec[0]), sin(spec[0])) * spec[1]
+		_prop(bosque, FOREST % (spec[2] + "_Color1"), Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), 30.0, FOREST_SCALE * 1.3, "convexo")
+	var log_p := VILA + Vector2(-9.5, 4.0)
+	var fallen := _prop(bosque, EXTRAS % "moradores/lenhador/log_A", Vector3(log_p.x, ground(log_p.x, log_p.y) + 0.5, log_p.y), 0.0, 1.0, "caixa")
+	fallen.rotation_degrees = Vector3(90, 35, 0)
+	fallen.scale = Vector3(2.2, 5.0, 2.2)
 	# Pedras e arbustos.
 	for k in 70:
 		var p := Vector2(rng.randf_range(-185, 185), rng.randf_range(-240, 200))
@@ -1156,7 +1186,7 @@ func _markers() -> void:
 	_marker(cps, "TopoDoMorro", top_cp.x, top_cp.y)
 	_marker(cps, "EntradaDaMata", 8, -133)
 	_marker(cps, "Clareira", 54, -170)
-	_marker(cps, "MorroDosVentos", -66, -142)
+	_marker(cps, "MorroDosVentos", -57, -140)
 	_marker(cps, "CidadeOeste", -58, 152)
 	_marker(cps, "CidadeLeste", 58, 152)
 
@@ -1202,16 +1232,11 @@ func _markers() -> void:
 	# Desafio do Guerreiro Planta na Vila das Copas (opcional): só o guardião, sem rachaduras.
 	_marker(regions, "vila", VILA.x, VILA.y, {"raio": 12.0})
 
-	# Diversões: barraca de tiro ao alvo no canto sudoeste da praça (os alvos ficam ao sul do marcador) e as
-	# molas da Vila das Copas, uma ao lado de cada plataforma, do lado de dentro.
+	# Diversões: barraca de tiro ao alvo no canto sudoeste da praça (os alvos ficam ao sul do marcador).
 	var fun := _group(markers, "Diversao")
 	var pc0 := Vector2(PLAZA.position.x + 20, PLAZA.position.y + 20)
-	_marker(fun, "TiroAoAlvo", pc0.x - 6.0, pc0.y + 10.5)
+	_marker(fun, "TiroAoAlvo", pc0.x - 4.0, pc0.y + 9.4)
 	_pasture()
-	var springs := _group(markers, "Molas")
-	for k in 3:
-		var sp := VILA + Vector2(cos(TAU * k / 3.0), sin(TAU * k / 3.0)) * 3.0
-		_marker(springs, "Mola%d" % (k + 1), sp.x, sp.y)
 
 	# Caixas de munição: voltam um tempo depois de pegas (o jogo cuida disso).
 	var crates := _group(markers, "Municao")
@@ -1219,14 +1244,10 @@ func _markers() -> void:
 		["Praca", Vector2(-9, 164)], ["CidadeOeste", Vector2(-50, 150)], ["CidadeLeste", Vector2(50, 150)],
 		["PeDoMorro", Vector2(-8, 96)], ["TrilhaDoMorro", _spiral_point(0.45) + Vector2(2, 2)],
 		["Cemiterio", Vector2(9, -13)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
-		["VilaDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-86, -148)],
+		["BosqueDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-86, -148)],
 	]
 	for spot in crate_spots:
 		_marker(crates, spot[0], spot[1].x, spot[1].y)
-	# Uma caixa em cima de uma plataforma da Vila das Copas, para quem subir pelas molas.
-	var top_spot := VILA + Vector2(cos(TAU / 3.0), sin(TAU / 3.0)) * 8.0
-	var top_crate := _marker(crates, "VilaDasCopasNoAlto", top_spot.x, top_spot.y)
-	top_crate.position.y += 5.0
 
 	# Moradores (personagens das Mystery Monthly do KayKit). Metadados: modelo, atividade, variante
 	# (textura), item (na mão), falas, destino (quem anda vai e volta) e altura (em cima do palco ou
@@ -1238,17 +1259,17 @@ func _markers() -> void:
 			["Tan-tan-taraaa! A banda está ensaiando para a festa!", "Amanhã a gente toca a noite inteira!"]],
 		["Banda2", "ToySoldier", "tocando", "", "moradores/ToySoldier_Trumpet", pc + Vector2(1.5, -11.6), 0.0, 1.0,
 			["Psiu! Os esqueletos saem daquelas rachaduras roxas."]],
-		["Fazendeiro", "Farmer_A", "trabalhando", "", "", pc + Vector2(-17.0, 9.0), 90.0, 0.0,
+		["Fazendeiro", "Farmer_A", "trabalhando", "", "", pc + Vector2(-14.0, 9.4), 90.0, 0.0,
 			["Cenoura fresquinha para a festa!", "Caixa de munição pisca perto das casas. Pega que ajuda!"]],
-		["Fazendeira", "Farmer_B", "parado", "", "", pc + Vector2(-15.4, 6.0), 100.0, 0.0,
+		["Fazendeira", "Farmer_B", "parado", "", "", pc + Vector2(-9.0, 12.6), 120.0, 0.0,
 			["Meu carrinho está cheio de verdura!", "Será que os esqueletos gostam de sopa de abóbora?"]],
-		["Palhaco", "Clown", "parado", "", "festa/circo/balloon_dog_red", pc + Vector2(15.0, 8.0), -120.0, 0.8,
+		["Palhaco", "Clown", "parado", "", "festa/circo/balloon_dog_red", pc + Vector2(12.4, 7.0), -120.0, 0.8,
 			["Respeitável público! Quer um cachorrinho de balão?", "Acerte a cabeça: vale o dobro!"]],
-		["Dino1", "MonsterCostume", "sentado_chao", "", "", pc + Vector2(12.0, 10.9), 70.0, 0.0,
+		["Dino1", "MonsterCostume", "sentado_chao", "", "", pc + Vector2(9.4, 9.9), 60.0, 0.0,
 			["Eu sou um dinossauro! Rawr!", "O palhaço é muito engraçado!"]],
-		["Dino2", "MonsterCostume", "sentado_chao", "monstercostume_texture_C", "", pc + Vector2(11.2, 8.4), 95.0, 0.0,
+		["Dino2", "MonsterCostume", "sentado_chao", "monstercostume_texture_C", "", pc + Vector2(8.6, 7.4), 85.0, 0.0,
 			["Shhh, o show vai começar!"]],
-		["Magica1", "MagicalGirl", "sentado_chao", "magical_girl_texture_B", "", pc + Vector2(13.0, 12.6), 40.0, 0.0,
+		["Magica1", "MagicalGirl", "sentado_chao", "magical_girl_texture_B", "", pc + Vector2(10.6, 11.8), 30.0, 0.0,
 			["Minha varinha brilha! Mas não assusta esqueleto."]],
 		["Dino3", "MonsterCostume", "torcendo", "monstercostume_texture_B", "", pc + Vector2(-3.0, -7.4), 180.0, 0.0,
 			["Vai ter bolo na festa?", "Eu vou dançar a noite inteira!"]],
@@ -1268,13 +1289,13 @@ func _markers() -> void:
 	]
 	# Na festa: o urso da banda, a bruxa das poções e gente fantasiada. Fora dela: o lenhador na margem do
 	# rio e o pescador no fim do cais (altura do píer, não do fundo do mar).
-	var pier_z := 247.0
-	var pier_y := lerpf(ground(0, 206) + 0.02, 0.25, (pier_z - 206.0) / 46.0)
+	var pier_z := 252.7
+	var pier_y := 0.25
 	var river_s := _river_z(12.0) + RIVER_HALF + RIVER_BANK + 6.0
 	folks.append_array([
 		["Urso", "Animatronic_Normal", "tocando", "", "moradores/urso/Guitar", pc + Vector2(0.0, -12.4), 0.0, 1.0,
 			["Eu toco violão na banda! Amanhã tem show!", "Cada esqueleto que vai de balão é uma nota a menos... ops, a mais!"]],
-		["Bruxa", "Witch", "trabalhando", "", "", pc + Vector2(-17.0, -8.2), 90.0, 0.0,
+		["Bruxa", "Witch", "trabalhando", "", "", pc + Vector2(-14.2, -8.4), 90.0, 0.0,
 			["Poção de groselha! Deixa a língua azul!", "Não tenho poção contra esqueleto... só de cócegas."]],
 		["SuperHeroi", "Superhero", "torcendo", "", "", pc + Vector2(-1.2, 9.8), -110.0, 0.0,
 			["Minha fantasia é de super-herói! Acerta o alvo pra mim?", "Na cabeça do boneco vale o dobro!"]],
@@ -1284,7 +1305,7 @@ func _markers() -> void:
 			["Uga! Pizza boa!", "Fantasia de homem das cavernas. A barba é de verdade."]],
 		["Lenhador", "Werewolf_Man", "cortando", "", "moradores/lenhador/axe", Vector2(12.0, river_s), -90.0, 0.0,
 			["Lenha para a fogueira da festa!", "Do outro lado da ponte a mata está cheia de esqueletos. Cuidado!"]],
-		["Pescador", "Hiker", "pescando", "hiker_texture_b", "pesca/fishing_rod", Vector2(2.3, pier_z), 90.0, pier_y - ground(2.3, pier_z) - 0.1,
+		["Pescador", "Hiker", "pescando", "hiker_texture_b", "pesca/fishing_rod", Vector2(3.1, pier_z), 90.0, pier_y - ground(3.1, pier_z) - 0.1,
 			["Psiu! Os peixes estão quase mordendo.", "Hoje só pesquei uma bota... e um balão!"]],
 	])
 	var walk_to := {"Motorista1": Vector2(-26.0, 146.0), "Motorista2": Vector2(48.0, 146.0)}

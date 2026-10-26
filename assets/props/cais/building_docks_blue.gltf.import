@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dicpap4xdqew6"
-path="res://.godot/imported/spring_pad_red.gltf-55b6578f519eb7b42250bb6d73c2fb04.scn"
+uid="uid://bo37p0o45pq70"
+path="res://.godot/imported/building_docks_blue.gltf-98f4ac14cca622e64511d7635f1ac1f1.scn"
 
 [deps]
 
-source_file="res://assets/props/molas/vermelho/spring_pad_red.gltf"
-dest_files=["res://.godot/imported/spring_pad_red.gltf-55b6578f519eb7b42250bb6d73c2fb04.scn"]
+source_file="res://assets/props/cais/building_docks_blue.gltf"
+dest_files=["res://.godot/imported/building_docks_blue.gltf-98f4ac14cca622e64511d7635f1ac1f1.scn"]
 
 [params]
 

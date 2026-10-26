@@ -50,6 +50,10 @@ var _party := 0.0
 var crowd := false
 var _crowd_timer := 0.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
+## Vara de pescar: a linha do modelo (com a boia e o anzol como filhos) é esticada até a água.
+var _fishing_line: Node3D
+const WATER_Y := -0.6
+const LINE_LENGTH := 1.91
 
 
 func _ready() -> void:
@@ -82,6 +86,7 @@ func _ready() -> void:
 		var held: Node3D = load(ITEMS % item).instantiate()
 		held.rotation_degrees = item_rotation
 		hand.add_child(held)
+		_fishing_line = held.find_child("fishing_rod_line", true, false)
 	_bubble = Label3D.new()
 	_bubble.font_size = 44
 	_bubble.outline_size = 12
@@ -138,6 +143,28 @@ func _base_anim() -> StringName:
 		"andando":
 			return &"mov/Walking_A" if _pause <= 0.0 else &"geral/Idle_A"
 	return &"geral/Idle_A"
+
+
+func _process(_delta: float) -> void:
+	if is_instance_valid(_fishing_line):
+		_drop_line()
+
+
+## A linha sai da ponta da vara reta para baixo até a água; a boia fica na superfície balançando e o
+## anzol um pouco abaixo. Os filhos são compensados da escala da linha para não esticarem junto.
+func _drop_line() -> void:
+	var tip := _fishing_line.global_position
+	var depth := maxf(tip.y - WATER_Y, 0.3)
+	var stretch := (depth + 0.35) / LINE_LENGTH
+	_fishing_line.global_basis = Basis.from_scale(Vector3(1.0, stretch, 1.0))
+	var bob := sin(Time.get_ticks_msec() * 0.003) * 0.04
+	for child in _fishing_line.get_children():
+		var c := child as Node3D
+		if c == null:
+			continue
+		var below := depth - bob if c.name == "fishing_rod_floater" else depth + 0.3
+		c.position = Vector3(0, -below / stretch, 0)
+		c.scale = Vector3(1.0, 1.0 / stretch, 1.0)
 
 
 func _physics_process(delta: float) -> void:

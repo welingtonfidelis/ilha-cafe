@@ -1,6 +1,6 @@
 class_name BossPlanta
 extends Boss
-## Guerreiro Planta: o guardião (opcional) da Vila das Copas, do Mystery Monthly Series 6. Não é esqueleto:
+## Guerreiro Planta: o guardião (opcional) do Bosque das Copas, do Mystery Monthly Series 6. Não é esqueleto:
 ## protege a mata e desafia quem quer subir na Vila. Brota do chão e segura o escudo de folha na frente
 ## (tiro no corpo pela frente não passa; cabeça e costas valem). Alterna:
 ## - três flechas em leque, com o arco (aviso "!" antes);
@@ -38,7 +38,7 @@ var _bowed := false
 
 func _setup() -> void:
 	display_name = "Guerreiro Planta"
-	subtitle = "o guardião da Vila das Copas"
+	subtitle = "o guardião do Bosque das Copas"
 	max_health = 40.0
 	body_scale = 1.7
 	speed = 2.4
@@ -193,7 +193,7 @@ func _defeat() -> void:
 func _fly_away(_delta: float) -> void:
 	if _phase_time > 1.2 and not _bowed:
 		_bowed = true
-		Fx.popup_text(get_parent(), global_position + Vector3.UP * 2.6 * body_scale, "Você é digno! A Vila das Copas é sua!", Color("#c9f7a0"))
+		Fx.popup_text(get_parent(), global_position + Vector3.UP * 2.6 * body_scale, "Você é amigo da mata! Pode voltar quando quiser.", Color("#c9f7a0"))
 		gone.emit(self)
 	if _phase_time > 3.0 and ap.current_animation != "festa/Waving":
 		ap.play(&"festa/Waving", 0.4)
