@@ -5,7 +5,7 @@ extends Control
 
 const MARGIN := 48.0
 ## Embaixo sobra espaço para o painel de armas não ficar por baixo do losango.
-const BOTTOM := 250.0
+const BOTTOM := 205.0
 const NEAR := 8.0
 
 var _font: FontVariation

@@ -9,10 +9,12 @@ extends Control
 ## O botão é uma cruzinha do direcional com o braço daquela arma aceso (no controle) ou a tecla do
 ## número (no teclado). Blaster recém-ganho tem o botão piscando em amarelo por uns segundos.
 ## Desenhado em "unidades de projeto" (tela de 1280 x 720) e ampliado conforme a altura da janela.
+## SIZE encolhe o painel todo (pedido do usuário: estava grande demais).
 ## As silhuetas vêm de tools/gerar_icones.gd.
 
 const ICONS := "res://assets/ui/icones/%s.png"
 const MARGIN := 22.0
+const SIZE := 0.82
 const SLANT := 0.32  # inclinação dos lados: x por y
 const FILL := Color(0.05, 0.06, 0.08, 0.62)
 const EDGE := Color(1, 1, 1, 0.32)
@@ -207,7 +209,7 @@ func _reserve_text(reserve: int) -> String:
 func _draw() -> void:
 	if _state.is_empty():
 		return
-	var u := clampf(size.y / 720.0, 0.75, 2.5)
+	var u := clampf(size.y / 720.0, 0.75, 2.5) * SIZE
 	# Origem no canto de baixo à direita; desenha para a esquerda e para cima (coordenadas negativas).
 	draw_set_transform(Vector2(size.x - MARGIN * u, size.y - MARGIN * u), 0.0, Vector2(u, u))
 	_draw_main()
