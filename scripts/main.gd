@@ -292,6 +292,9 @@ func _ready() -> void:
 	elif "--mata-captura" in args:
 		select_panel.hide()
 		_run_forest_capture()
+	elif "--arte-steam" in args:
+		select_panel.hide()
+		_run_steam_art()
 	else:
 		open_menu("escolha")
 
@@ -2394,3 +2397,130 @@ func _run_smoke() -> void:
 	print("trocou por todos os aventureiros; atual ", player.character_name)
 	print("SMOKE OK")
 	get_tree().quit()
+
+
+# --- arte da Steam -------------------------------------------------------------
+
+## Arte da Steam (capas, fundo da página e ícone): monta uma cena posada na campina ao pé do Morro,
+## com o castelinho ao fundo, os dois aventureiros à direita, esqueletos descendo o Morro e outros
+## indo embora de balão, e fotografa sem a interface com câmeras próprias em alta resolução. O lado
+## esquerdo fica livre para o logo. Salva em build/arte_steam/; o logo e as capas finais saem de
+## tools/arte_steam.py. Uso: godot --path . -- --arte-steam
+func _run_steam_art() -> void:
+	player.god_mode = true
+	var dome := find_child("CupulaDoCastelinho", true, false)
+	if dome:
+		dome.visible = false
+	# Tudo é posicionado em relação à câmera do fundo da página: profundidade e deslocamento lateral.
+	var cam := _ground_point(Vector3(30, 0, 100)) + Vector3(-5, 1.6, 10)
+	var fwd := Vector3(0.12, 0, -1).normalized()
+	var right := fwd.cross(Vector3.UP)
+	var at := func(depth: float, lateral: float) -> Vector3:
+		return _ground_point(cam + fwd * depth + right * lateral)
+	var girl := Player.new()
+	girl.name = "Menina"
+	add_child(girl)
+	girl.set_character("menina")
+	girl.input_enabled = false
+	girl.god_mode = true
+	girl.force_aim = true
+	girl.switch_weapon(1)
+	player.unlock_weapon("pipoqueira")
+	player.force_aim = true
+	var boy_pos: Vector3 = at.call(8.0, 2.6)
+	var girl_pos: Vector3 = at.call(9.6, 4.4)
+	await _stand(boy_pos)
+	girl.global_position = girl_pos + Vector3.UP
+	# Esqueletos descendo o Morro (congelados no meio da corrida) e outros subindo de balão.
+	var ground := [["Minion", 13.0, -0.6], ["Warrior", 15.5, -3.2], ["Mage", 17.0, 1.8], ["Rogue", 20.0, -6.0]]
+	var sky := [["Minion", 16.0, -2.0, 6.0], ["Mage", 22.0, -7.5, 9.0], ["Rogue", 19.0, 3.5, 10.5]]
+	var walkers: Array[SkeletonEnemy] = []
+	for spec in ground:
+		walkers.append(_art_skeleton(spec[0], at.call(spec[1], spec[2])))
+	var flyers: Array[SkeletonEnemy] = []
+	for spec in sky:
+		# Nascem longe da câmera: o "Tchau!" aparece lá e não na foto.
+		flyers.append(_art_skeleton(spec[0], cam + Vector3(0, 0, 60)))
+	await _wait(0.4)
+	for f in flyers:
+		f._start_leaving()
+	# Os dois miram para a frente e à esquerda da câmera: rosto de três quartos.
+	var aim_point := cam + fwd * 2.5 + right * -7.0 + Vector3.UP * 0.6
+	for k in 70:
+		player.aim_at(aim_point)
+		girl.aim_at(aim_point + right * -2.0)
+		await get_tree().physics_frame
+	for i in walkers.size():
+		var w := walkers[i]
+		w.set_physics_process(false)
+		w.global_position = at.call(ground[i][1], ground[i][2])
+		var dir := boy_pos - w.global_position
+		w.visual.rotation.y = atan2(dir.x, dir.z)
+	await _wait(0.8)
+	for f in flyers:
+		f.set_physics_process(false)
+	player.set_physics_process(false)
+	girl.set_physics_process(false)
+	# Cada foto tem o seu lugar para os esqueletos de balão: [profundidade, lateral, altura].
+	var place := func(spots: Array) -> void:
+		for i in flyers.size():
+			flyers[i].global_position = at.call(spots[i][0], spots[i][1]) + Vector3.UP * spots[i][2]
+	var out := "res://build/arte_steam/"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out))
+	var look := cam + fwd * 20.0 + Vector3.UP * 2.6
+	place.call([[20.0, -4.0, 1.8], [27.0, -11.0, 3.2], [21.0, 9.5, 3.4]])
+	await _wait(0.1)
+	await _art_shot(out + "hero.png", Vector2i(3840, 1240), cam, look, 32.0)
+	# Na capa horizontal o logo vai no céu da direita: os três balões ficam do lado esquerdo.
+	place.call([[20.0, -3.5, 2.2], [26.0, -9.0, 3.6], [23.0, -15.0, 4.6]])
+	await _wait(0.1)
+	await _art_shot(out + "capa_horizontal.png", Vector2i(1840, 860), cam - fwd * 1.5 + right * 0.5, look + right * 0.5, 38.0)
+	var cam_v := cam + right * 1.6 + fwd * 0.5 + Vector3.UP * 0.2
+	place.call([[16.0, -1.6, 3.2], [22.0, -5.0, 4.6], [19.0, 3.6, 5.6]])
+	await _wait(0.1)
+	await _art_shot(out + "capa_vertical.png", Vector2i(1200, 1800), cam_v, cam_v + fwd * 14.0 + Vector3.UP * 3.6, 58.0)
+	# Ícone: um esqueleto de balão sozinho bem alto, acenando contra o céu.
+	place.call([[18.0, -2.0, 22.0], [60.0, -40.0, 0.0], [60.0, 40.0, 0.0]])
+	await _wait(0.1)
+	var f0 := flyers[0].global_position + Vector3.UP * 2.45
+	await _art_shot(out + "icone.png", Vector2i(1024, 1024), f0 - fwd * 7.5 + right * -2.5 + Vector3.UP * -1.2, f0, 40.0)
+	print("ARTE OK")
+	get_tree().quit()
+
+
+func _art_skeleton(type_name: String, pos: Vector3) -> SkeletonEnemy:
+	var e := SkeletonEnemy.new()
+	e.type_name = "Skeleton_" + type_name
+	e.start_awake = true
+	e.aggro_radius = 999.0
+	e.leash_radius = 999.0
+	e.target = player
+	add_child(e)
+	e.global_position = pos + Vector3.UP * 0.2
+	return e
+
+
+## Ponto no chão logo abaixo (ou acima) de `p`.
+func _ground_point(p: Vector3) -> Vector3:
+	var query := PhysicsRayQueryParameters3D.create(Vector3(p.x, 200.0, p.z), Vector3(p.x, -50.0, p.z), 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return hit.position if not hit.is_empty() else Vector3(p.x, 0.0, p.z)
+
+
+## Fotografa a cena com uma câmera própria num SubViewport do tamanho pedido (a interface não entra).
+func _art_shot(path: String, size: Vector2i, from: Vector3, to: Vector3, fov: float) -> void:
+	var vp := SubViewport.new()
+	vp.size = size
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(vp)
+	var cam := Camera3D.new()
+	cam.fov = fov
+	vp.add_child(cam)
+	cam.look_at_from_position(from, to)
+	cam.current = true
+	for k in 3:
+		await RenderingServer.frame_post_draw
+	vp.get_texture().get_image().save_png(ProjectSettings.globalize_path(path))
+	print("arte: ", path)
+	vp.queue_free()

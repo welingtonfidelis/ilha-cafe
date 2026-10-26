@@ -324,6 +324,13 @@ godot -e --path .
 - Para rodar os testes, use um limite de tempo (`perl -e 'alarm 200; exec @ARGV' godot ...`): se um script tiver erro de digitação, a Godot fica parada em vez de sair.
 - `godot --path . -- --capture` abre a janela, roda uma sequência e salva capturas em `tools/capturas/` (fora do git).
 
+**Build para Linux e a Steam do PC com Bazzite** (feito em 2026-10-25):
+
+- Os modelos de exportação da Godot 4.7.2 ficam em `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (pacote oficial `Godot_v4.7.2-stable_export_templates.tpz`, 1,28 GB, conferido pelo SHA-512 publicado). A predefinição "Linux" está em `export_presets.cfg`: x86_64, um executável só com o jogo embutido, sem `tools/` e `docs/`.
+- `godot --headless --path . --export-release "Linux" build/linux/IlhaCafune.x86_64` gera o executável (uns 85 MB). `build/` tem `.gdignore`, para a Godot não importar o que sai ali.
+- No PC (Bazzite, `bazzite.local`, usuário `usario`, SSH ligado com `ujust toggle-ssh` e a chave do Mac autorizada), o jogo fica em `~/Games/IlhaCafune/`, com `ilha-cafune.desktop` e `icone.png`. Ele entrou na Steam como jogo de fora da loja pelo `steamos-add-to-steam` do próprio Bazzite, rodando com o ambiente da sessão gráfica (`DISPLAY=:0`, `WAYLAND_DISPLAY=wayland-0`, `XDG_RUNTIME_DIR=/run/user/1000`); o nome vem do `.desktop`. Roda nativo, sem Proton. Para atualizar, basta copiar o executável novo por cima.
+- **Arte da Steam:** `godot --path . -- --arte-steam` monta uma cena posada na campina ao pé do Morro (os dois aventureiros, esqueletos descendo e outros indo de balão, castelinho sem cúpula ao fundo) e fotografa sem interface, com câmeras em SubViewport, em `build/arte_steam/`. Depois `python3 tools/arte_steam.py` faz o logo (Arial Rounded Bold, contorno roxo, três balões) e as capas em `build/arte_steam/steam/`. Na Steam, a arte de um atalho vai em `userdata/<conta>/config/grid/` com o appid do atalho: `<appid>p.png` (capa vertical 600 x 900), `<appid>.png` (horizontal 920 x 430), `<appid>_hero.png` (fundo 3840 x 1240) e `<appid>_logo.png`.
+
 **Controles.** A tela de jogo não mostra mais a lista de comandos nem o nome do personagem (pedido do usuário): os comandos ficam em Pausa > Comandos, e trocam sozinhos conforme o aparelho em uso. Com um menu aberto o jogo fica pausado.
 
 | Ação | Teclado e mouse | Controle (Xbox / PlayStation) |
