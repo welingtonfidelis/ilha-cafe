@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: história em ondas até o castelinho (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do castelinho cair. No castelinho aparece uma mensagem de "próxima versão" no lugar do Mestre Ossinho; o modo "Defender a festa" também não foi feito. Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: história em ondas até o castelinho, com festa e moradores (2026-10-26).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do castelinho cair. A praça tem a festa montada (palco com banda, mesas de comida e doces, presentes, barraca dos fazendeiros e o cantinho do palhaço) e 15 moradores que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata. No castelinho aparece uma mensagem de "próxima versão" no lugar do Mestre Ossinho; o modo "Defender a festa" também não foi feito. Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -91,7 +91,7 @@ A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e 
 | Barreira da ponte | cabeceira sul da ponte | parede roxa translúcida com colisão; some quando as duas lanternas da cidade apagam |
 | Cúpula do castelinho | topo do Morro, raio 11,5 m | some quando as quatro lanternas apagam |
 
-**Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (8 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos, CidadeOeste, CidadeLeste; a primeira começa ativa), `Esqueletos` (14 soltos entre as regiões, cada um com o tipo na metadata `tipo`), `Municao` (10 caixas) e `Regioes` (centro de cada defesa, com o raio na metadata `raio` e as 4 rachaduras como filhos). Mover um marcador no editor muda o jogo, sem mexer em código.
+**Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (8 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos, CidadeOeste, CidadeLeste; a primeira começa ativa), `Esqueletos` (14 soltos entre as regiões, cada um com o tipo na metadata `tipo`), `Municao` (10 caixas), `Regioes` (centro de cada defesa, com o raio na metadata `raio` e as 4 rachaduras como filhos) e `Moradores` (15, com `modelo`, `atividade`, `variante`, `item`, `falas`, `destino` e `altura` nos metadados; a rotação do marcador é para onde o morador olha). A festa fica em `Cidade/Praca/Festa`. Mover um marcador no editor muda o jogo, sem mexer em código.
 
 **Esqueletos na ilha:** começam dormindo como pilha de ossos e se montam quando o aventureiro chega a 16 m (golpe de perto) ou 22 m (quem atira). Se o aventureiro se afasta mais de 45 m da casa deles, voltam para casa e deitam de novo. Derrotados, vão embora de balão e não voltam. Os das ondas saem das rachaduras (animação de sair do chão, 1,6x mais rápida) e perseguem o aventureiro por toda a região; se a onda é cancelada, afundam de volta.
 
@@ -138,8 +138,8 @@ Fecho do ato: com as duas apagadas, a barreira roxa da ponte some e a mata se ab
 
 | Região | Onda 1 | Onda 2 | Onda 3 | Guardião | Recompensa |
 |---|---|---|---|---|---|
-| Clareira da Jabuticabeira | 4 Minions, 1 Mage | 3 Minions, 2 Mages, 1 Rogue | 2 Mages | Torre de Ossinhos | +1 coração máximo |
-| Morro dos Ventos | 5 Minions, 1 Warrior | 2 Warriors, 2 Rogues, 1 Mage | 3 Minions | Minionzão | blaster Pé-de-Moleque |
+| Clareira da Jabuticabeira | 4 Minions, 1 Mage | 1 Golem, 2 Minions, 2 Mages, 1 Rogue | 2 Mages | Torre de Ossinhos | +1 coração máximo |
+| Morro dos Ventos | 5 Minions, 1 Warrior | 1 Golem, 1 Warrior, 2 Rogues, 1 Mage | 3 Minions | Minionzão | blaster Pé-de-Moleque |
 
 Fecho do ato: com as quatro apagadas, a cúpula roxa do castelinho cai. Num bilhete deixado na última lanterna, um dos esqueletos escreveu que só queria dançar na festa.
 
@@ -194,7 +194,26 @@ Ideias para depois: coletáveis (estrelas escondidas, bilhetes dos esqueletos), 
 - **Escolher e trocar:** o jogo abre na tela "Escolha quem vai jogar". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário). Na primeira versão a diferença é só visual.
 - **Nomes:** ainda por decidir.
 
-**Moradores:** o pacote grátis não tem moradores comuns. Dá para criar alguns trocando as cores dos aventureiros (troca da textura de gradiente) e tirando as armas. Na história, os moradores estão escondidos de medo e só aparecem na festa do epílogo, o que pede poucos modelos.
+### Moradores (feitos em 2026-10-26)
+
+Personagens das Mystery Monthly do KayKit (Coleção Completa v6.1), todos no mesmo `Rig_Medium` do aventureiro, em `assets/characters/moradores/` (texturas alternativas em `texturas/`). Script: `scripts/townsperson.gd`. Escolha do usuário: "gente na cidade e na festa"; ficaram de fora quem tem arma de verdade (Sobrevivente, Boneco de Ação) e os duendes de Natal.
+
+| Morador | Modelo | Onde e fazendo o quê |
+|---|---|---|
+| Banda (2) | Soldadinho de Brinquedo, com trompete | no palco da praça, tocando |
+| Fazendeiro e fazendeira | Farmer_A / Farmer_B | barraca de verduras da praça (trabalhando / parada) |
+| Palhaço | Clown, com cachorrinho de balão | no pódio do cantinho do palhaço |
+| Plateia (3) | crianças de fantasia de dinossauro e garota mágica (cores diferentes) | sentadas no chão vendo o palhaço |
+| Dançarinas (2) | dinossauro e garota mágica | na frente do palco, torcendo |
+| Vovô | Lorekeeper, com cajado | sentado num banco da praça; conta do Morro e dá a dica das lanternas |
+| Garota mágica | com varinha | no outro banco |
+| Motoristas (2) | Driver (duas texturas) | andando de um lado para o outro na calçada da rua norte |
+| Trilheiro | Hiker | ao pé do Morro, falando da trilha |
+
+- **Atividades:** parado, sentado no banco, sentado no chão, torcendo, trabalhando, andando (vai e volta entre dois pontos) e tocando. Animações do KayKit Character Animations (bibliotecas `geral`, `mov`, `festa` e `ferramentas`).
+- **Perto do aventureiro:** quem está de pé vira para ele e acena, e o balão de fala mostra a próxima frase (uma a cada 16 s). As falas são curtas, com dicas e humor, e o vovô adianta o final ("Será que alguém já convidou os esqueletos?").
+- **Nas ondas:** quem está até 14 m além do círculo de uma defesa em andamento torce ("Vai!", "Mira na cabeça!"). Ao vencer, comemora com confete. Cada região vencida da cidade e da mata ganha uma mesa com comida e três convidados festejando (`PARTY_GUESTS` no `story.gd`).
+- **Colisão:** camada própria (`moradores`, a 5): o aventureiro esbarra, mas tiros, granadas, flechas, câmera e esqueletos passam direto. Ninguém atira nos moradores, e os esqueletos não ligam para eles.
 
 ## 7. Esqueletos e chefes
 
@@ -206,6 +225,7 @@ Os quatro esqueletos da versão grátis do KayKit Skeletons, mais variações de
 | Warrior | resistente | **machado e escudo; tiro no corpo de frente é bloqueado ("bloqueou!"), a não ser quando ele ergue o machado; acertar a cabeça ou pelas costas; 8 de vida** |
 | Rogue | à distância | **besta; para a uns 12 m e atira flecha de ventosa reta, que dá para desviar andando de lado**; 4 de vida; se esconder atrás de carros e árvores fica para depois |
 | Mage | apoio | **cajado; lança bolha mágica lenta que persegue de leve e estoura com um tiro ("plof!")**; 4 de vida; chamar minions fica para depois |
+| Golem de Ossos | pesado, nas ondas da mata | **o Skeleton_Golem do Skeletons completo (esqueleto grande, `Rig_Large`), 3,6 m; lento, 16 de vida; bate os punhos no chão (1,1 s depois do "!") e solta uma onda que se pula; quem está bem na frente leva o golpe; granada quase não empurra** |
 | Esqueleto dourado | raro | variação dourada de qualquer um; foge e deixa muitos diamantes (ainda não feito) |
 
 **Regras de combate que valem para todos (já no jogo):** antes de cada golpe aparece um "!" amarelo sobre a cabeça; levar tiro interrompe o ataque; cada golpe tira 1 coração; quando o aventureiro fica tonto, os esqueletos param de atacar e comemoram; quando ele volta na bandeira, os que estavam acordados voltam para os lugares de origem, para ninguém reaparecer cercado; derrotado, o esqueleto vai embora de balão e não volta.
@@ -259,7 +279,8 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 |---|---|---|---|---|
 | Adventurers | KayKit | grátis 2.0 | 12 MB | substitutos dos jogáveis até 2026-10-25; hoje só nas ferramentas (baixado) |
 | Mystery Monthly Series 5 | KayKit | 1.1, da Coleção Completa v6.1 | 1,7 MB (só os Protagonists) | os dois jogáveis ("The Protagonists") (baixado) |
-| Skeletons, Holiday Bits, Restaurant Bits | KayKit | completos, da Coleção Completa v6.1 | 13 + 8 + 5 MB | Necromancer (Mestre Ossinho) e Golem; enfeites e comida da festa. Baixados na pasta da coleção, ainda não copiados para `assets/` |
+| Skeletons, Holiday Bits, Restaurant Bits | KayKit | completos, da Coleção Completa v6.1 | 13 + 8 + 5 MB | Golem (em `assets/characters/skeletons/`) e Necromancer (para o Mestre Ossinho, ainda na pasta da coleção); enfeites e comida da festa em `assets/props/festa/` (`doces/`, `comida/`, `circo/`) |
+| Mystery Monthly Series 4, 5 e 6 | KayKit | 1.1, da Coleção Completa v6.1 | 3,3 MB (só os usados) | moradores: Palhaço, Motorista, Fantasia de Monstro (Series 4); Trilheiro (Series 5); Fazendeiros, Soldadinho, Vovô (Lorekeeper), Garota Mágica (Series 6); objetos de mão em `assets/props/moradores/` |
 | Skeletons | KayKit | grátis 1.1 | 7,7 MB | inimigos e chefes (baixado) |
 | City Builder Bits | KayKit | grátis 1.0 | 4,6 MB | cidade (baixado) |
 | Forest Nature Pack | KayKit | grátis 1.0 | 6,1 MB | floresta e Morro (baixado) |
@@ -314,10 +335,11 @@ godot -e --path .
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
-- `godot --headless --path . -- --historia` joga a história com ondas curtas e confere 28 pontos: só a Paçoca no começo; prólogo (rachaduras, intervalo com munição e coração, onda cancelada ao se afastar e recomeçada ao voltar, lanternas acesas); Lanterna Oeste (Ossão com barra, tiro na cabeça, onda de choque que acerta no chão e passa por baixo de quem pula, Minions na metade da vida, lanterna apagada, recompensa Granulado, Ossão indo de balão); Lanterna Leste (ficar tonto cancela a onda, Mira-Torta com chuva de flechas e leque de 5, barreira da ponte some, Pipoqueira); atravessar a ponte. Termina com "HISTORIA OK". Leva uns 3 minutos.
-- `godot --headless --path . -- --mata` pula direto para a mata (cidade vencida, com Granulado e Pipoqueira) e confere 15 pontos: Torre de Ossinhos com 5 andares, tiro na cabeça do andar de baixo, andar vencido indo de balão e os de cima descendo, bolha do de cima, pulo com onda quando sobram 2, coração de recompensa (vida máxima 6); Minionzão com a faixa da investida, acerto de quem fica no caminho, tonto com dano em dobro; cúpula caindo, Pé-de-Moleque e chegada ao castelinho. Termina com "MATA OK". Leva uns 2 minutos.
+- `godot --headless --path . -- --historia` joga a história com ondas curtas e confere 31 pontos: só a Paçoca no começo; prólogo (rachaduras, moradores da praça torcendo na onda e comemorando no fim, intervalo com munição e coração, onda cancelada ao se afastar e recomeçada ao voltar, lanternas acesas); Lanterna Oeste (Ossão com barra, tiro na cabeça, onda de choque que acerta no chão e passa por baixo de quem pula, Minions na metade da vida, lanterna apagada, convidados festejando, recompensa Granulado, Ossão indo de balão); Lanterna Leste (ficar tonto cancela a onda, Mira-Torta com chuva de flechas e leque de 5, barreira da ponte some, Pipoqueira); atravessar a ponte. Termina com "HISTORIA OK". Leva uns 3 minutos.
+- `godot --headless --path . -- --mata` pula direto para a mata (cidade vencida, com Granulado e Pipoqueira) e confere 17 pontos: Golem de Ossos na segunda onda da Clareira (16 de vida, a pancada solta onda); Torre de Ossinhos com 5 andares, tiro na cabeça do andar de baixo, andar vencido indo de balão e os de cima descendo, bolha do de cima, pulo com onda quando sobram 2, coração de recompensa (vida máxima 6); Minionzão com a faixa da investida, acerto de quem fica no caminho, tonto com dano em dobro; cúpula caindo, Pé-de-Moleque e chegada ao castelinho. Termina com "MATA OK". Leva uns 2 minutos.
 - `godot --path . -- --historia-captura` tira 12 fotos da história (`h01` a `h12`).
-- `godot --path . -- --mata-captura` tira 6 fotos da mata (`m01` a `m06`: Torre, andar indo de balão, faixa do Minionzão, Minionzão tonto, cúpula caindo, chegada ao castelinho).
+- `godot --path . -- --festa-captura` tira 9 fotos da festa e dos moradores sem a interface (`f01` a `f08`, mais `f03b` da plateia do palhaço): praça, palco, palhaço, barraca, mesas, vovô falando, motorista na calçada e trilheiro.
+- `godot --path . -- --mata-captura` tira 8 fotos da mata (`m00a`/`m00b`: Golem chegando e batendo no chão; `m01` a `m06`: Torre, andar indo de balão, faixa do Minionzão, Minionzão tonto, cúpula caindo, chegada ao castelinho).
 - `godot --path . -- --ilha-captura` tira 8 fotos jogando na ilha (praça, esqueleto dormindo e acordando, trilha do Morro, castelinho, ponte, clareira, tchibum).
 - `godot --headless --path . -- --armas` confere 17 pontos dos blasters: pente, recarga automática e com R, não atirar recarregando, troca com modelo novo na mão, estoque, sem munição, caixa (e caixa que fica no chão), escopeta, luneta, granada e caixa que cai com munição no fim; termina com "ARMAS OK". O teste de controle também confere X (recarregar), Y (trocar de blaster) e RB (granada), e o da ilha confere as 10 caixas.
 - Os testes `--smoke`, `--controle`, `--combate`, `--som`, `--armas` e `--capture` rodam na **arena plana** (o mapa antigo, previsível), com esqueletos já acordados; o jogo normal e os modos `--ilha` abrem a ilha.
@@ -330,6 +352,7 @@ godot -e --path .
 - Os modelos de exportação da Godot 4.7.2 ficam em `~/Library/Application Support/Godot/export_templates/4.7.2.stable/` (pacote oficial `Godot_v4.7.2-stable_export_templates.tpz`, 1,28 GB, conferido pelo SHA-512 publicado). A predefinição "Linux" está em `export_presets.cfg`: x86_64, um executável só com o jogo embutido, sem `tools/` e `docs/`.
 - `godot --headless --path . --export-release "Linux" build/linux/IlhaCafune.x86_64` gera o executável (uns 85 MB). `build/` tem `.gdignore`, para a Godot não importar o que sai ali.
 - No PC (Bazzite, `bazzite.local`, usuário `usario`, SSH ligado com `ujust toggle-ssh` e a chave do Mac autorizada), o jogo fica em `~/Games/IlhaCafune/`, com `ilha-cafune.desktop` e `icone.png`. Ele entrou na Steam como jogo de fora da loja pelo `steamos-add-to-steam` do próprio Bazzite, rodando com o ambiente da sessão gráfica (`DISPLAY=:0`, `WAYLAND_DISPLAY=wayland-0`, `XDG_RUNTIME_DIR=/run/user/1000`); o nome vem do `.desktop`. Roda nativo, sem Proton. Para atualizar, basta copiar o executável novo por cima.
+- **Regra do usuário (2026-10-26):** não refazer nem reenviar as imagens da Steam ou de apresentação (capas, fundo da página, logo, ícone e fotos de divulgação) quando o jogo mudar. Só quando ele pedir.
 - **Arte da Steam:** `godot --path . -- --arte-steam` monta uma cena posada na campina ao pé do Morro (os dois aventureiros, esqueletos descendo e outros indo de balão, castelinho sem cúpula ao fundo) e fotografa sem interface, com câmeras em SubViewport, em `build/arte_steam/`. Depois `python3 tools/arte_steam.py` faz o logo (Arial Rounded Bold, contorno roxo, três balões) e as capas em `build/arte_steam/steam/`. Na Steam, a arte de um atalho vai em `userdata/<conta>/config/grid/` com o appid do atalho: `<appid>p.png` (capa vertical 600 x 900), `<appid>.png` (horizontal 920 x 430), `<appid>_hero.png` (fundo 3840 x 1240) e `<appid>_logo.png`.
 
 **Controles.** A tela de jogo não mostra mais a lista de comandos nem o nome do personagem (pedido do usuário): os comandos ficam em Pausa > Comandos, e trocam sozinhos conforme o aparelho em uso. Com um menu aberto o jogo fica pausado.
@@ -364,7 +387,8 @@ godot -e --path .
 | `heart_pickup.gd` | coração que devolve vida |
 | `hurtbox.gd` | região de impacto (Area3D na camada 4) com multiplicador de dano |
 | `sfx.gd` | toca efeitos (2D para o aventureiro e a interface, 3D com posição para esqueletos, flechas e bolhas) e a música em loop; cria os canais de áudio "Musica" (−9 dB) e "Efeitos" |
-| `anim_util.gd` | carrega as bibliotecas de animação do KayKit e marca as que repetem |
+| `anim_util.gd` | carrega as bibliotecas de animação do KayKit (esqueleto médio e, para o Golem, o grande) e marca as que repetem |
+| `townsperson.gd` | morador: atividade, aceno, balão de fala, torcida nas ondas e comemoração |
 | `fx.gd` | confete, poeira, rastro do tiro, clarão, onda da granada, texto flutuante e saída de balão (`balloon_away`, usada pelos esqueletos e pelos andares da Torre) |
 | `weapon_hud.gd` | painel de armas inclinado (arma atual, cartões dos outros blasters ganhos com o botão do direcional ou a tecla, granadas, recarga) |
 | `story.gd` | a história: regiões e ondas (`REGIONS`), lanternas, barreira da ponte, cúpula, recompensas, região em festa, objetivo atual |

@@ -229,6 +229,8 @@ func _ready() -> void:
 		e.tree_exiting.connect(func() -> void: enemies.erase(e))
 		add_child(e)
 		enemies.append(e)
+	for person in world.get("people", []):
+		spawn_townsperson(person[0], person[1], person[2])
 	for cp_spec in world.checkpoints:
 		var cp := Checkpoint.new()
 		cp.name = cp_spec[1]
@@ -295,6 +297,9 @@ func _ready() -> void:
 	elif "--arte-steam" in args:
 		select_panel.hide()
 		_run_steam_art()
+	elif "--festa-captura" in args:
+		select_panel.hide()
+		_run_festa_capture()
 	else:
 		open_menu("escolha")
 
@@ -329,7 +334,15 @@ func _load_island() -> Dictionary:
 	if island.has_node("Marcadores/Municao"):
 		for m in island.get_node("Marcadores/Municao").get_children():
 			crate_spots.append(m.global_position)
-	return {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps, "crates": crate_spots}
+	var people := []
+	if island.has_node("Marcadores/Moradores"):
+		for m in island.get_node("Marcadores/Moradores").get_children():
+			var spec := {"nome": String(m.name)}
+			for key in m.get_meta_list():
+				spec[String(key)] = m.get_meta(key)
+			people.append([spec, m.global_position + Vector3.UP * (float(spec.get("altura", 0.0)) - 0.1), m.rotation.y])
+	return {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps,
+		"crates": crate_spots, "people": people}
 
 
 # --- entrada -----------------------------------------------------------------
@@ -859,6 +872,24 @@ func spawn_wave_enemy(type_name: String, pos: Vector3) -> SkeletonEnemy:
 	e.global_position = pos
 	enemies.append(e)
 	return e
+
+
+## Cria um morador. spec usa os nomes dos metadados do marcador: modelo, atividade, variante, item,
+## falas e destino (para quem anda).
+func spawn_townsperson(spec: Dictionary, pos: Vector3, yaw: float) -> Townsperson:
+	var t := Townsperson.new()
+	t.name = spec.get("nome", "Morador")
+	t.model_name = spec.get("modelo", "Farmer_A")
+	t.activity = spec.get("atividade", "parado")
+	t.variant = spec.get("variante", "")
+	t.item = spec.get("item", "")
+	t.lines = spec.get("falas", PackedStringArray())
+	t.walk_to = spec.get("destino", Vector3.INF)
+	t.player = player
+	t.position = pos
+	add_child(t)
+	t.visual.rotation.y = yaw
+	return t
 
 
 func add_boss(b: Boss, pos: Vector3) -> void:
@@ -1944,6 +1975,18 @@ func _run_weapons_test() -> void:
 
 # --- teste e fotos da história ------------------------------------------------
 
+func _townsfolk_near(center: Vector3, radius: float) -> Array:
+	return get_tree().get_nodes_in_group(&"moradores").filter(
+			func(t: Node3D) -> bool: return t.global_position.distance_to(center) < radius)
+
+
+func _awake_wave_enemy(type_name: String) -> SkeletonEnemy:
+	for e: SkeletonEnemy in _wave_enemies():
+		if e.type_name == type_name and e.state in [SkeletonEnemy.State.PERSEGUINDO, SkeletonEnemy.State.ESPERANDO]:
+			return e
+	return null
+
+
 func _wave_enemies() -> Array:
 	var leaving := [SkeletonEnemy.State.AFUNDANDO, SkeletonEnemy.State.INDO_EMBORA]
 	return enemies.filter(func(e: SkeletonEnemy) -> bool: return is_instance_valid(e) and e.has_meta("onda") and not (e.state in leaving))
@@ -1997,6 +2040,10 @@ func _run_story_test() -> void:
 	await _wait(0.8)
 	all_ok = _check("prólogo: a primeira onda sai das rachaduras", praca.state == Defense.State.ONDA and _wave_enemies().size() == 3,
 			"(%d esqueletos, \"%s\")" % [_wave_enemies().size(), wave_label.text]) and all_ok
+	var plaza_folks := _townsfolk_near(praca.center, 30.0)
+	all_ok = _check("moradores na praça torcem durante a onda", plaza_folks.size() >= 10
+			and plaza_folks.filter(func(t: Townsperson) -> bool: return t.crowd).size() >= 8,
+			"(%d moradores, %d torcendo)" % [plaza_folks.size(), plaza_folks.filter(func(t: Townsperson) -> bool: return t.crowd).size()]) and all_ok
 	await _clear_wave(praca)
 	await _wait_until(func() -> bool: return praca.state == Defense.State.INTERVALO, 3.0)
 	all_ok = _check("intervalo dá munição e coração no centro", _near_count(AmmoPickup, praca.center, 4.0) >= 1
@@ -2015,6 +2062,8 @@ func _run_story_test() -> void:
 	await _wait(3.0)
 	all_ok = _check("prólogo vencido acende as quatro lanternas", praca.state == Defense.State.VENCIDA and story.stage == "cidade"
 			and story.lanterns.values().all(func(l: Dictionary) -> bool: return l.lit)) and all_ok
+	all_ok = _check("moradores da praça comemoram a vitória", _townsfolk_near(praca.center, 30.0).filter(
+			func(t: Townsperson) -> bool: return t.is_celebrating()).size() >= 8) and all_ok
 	await get_tree().physics_frame
 	all_ok = _check("objetivo aponta uma lanterna da cidade", "cidade" in story.objective_text and story.objective_target != Vector3.INF
 			and objective_marker.visible, "(\"%s\")" % story.objective_text) and all_ok
@@ -2061,6 +2110,8 @@ func _run_story_test() -> void:
 	await get_tree().physics_frame
 	all_ok = _check("Oeste vencida: lanterna apagada, bandeira e recompensa", not story.lanterns.Oeste.lit and current_checkpoint.name == "CidadeOeste"
 			and story.rewards.size() == 1 and story.rewards[0].kind == "granulado") and all_ok
+	all_ok = _check("convidados chegam para festejar na Oeste", _townsfolk_near(oeste.center, 12.0).size() >= 3,
+			"(%d)" % _townsfolk_near(oeste.center, 12.0).size()) and all_ok
 	await _stand(story.rewards[0].global_position)
 	await _wait(1.0)
 	all_ok = _check("pegar a recompensa dá o Granulado na mão", player.has_weapon("granulado") and player.current_weapon().id == "granulado") and all_ok
@@ -2224,9 +2275,20 @@ func _run_forest_test() -> void:
 	# Clareira: Torre de Ossinhos.
 	var clareira: Defense = story.defenses.clareira
 	await _stand(clareira.center + Vector3(0, 0, 9))
-	for k in 2:
-		await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
-		await _clear_wave(clareira)
+	await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
+	await _clear_wave(clareira)
+	# Segunda onda: o Golem de Ossos.
+	await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return _awake_wave_enemy("Skeleton_Golem") != null, 8.0)
+	var golem := _awake_wave_enemy("Skeleton_Golem")
+	all_ok = _check("Golem de Ossos vem na segunda onda com 16 de vida", golem != null and golem.health == 16.0,
+			"(%s)" % ("sem golem" if golem == null else "vida %.0f" % golem.health)) and all_ok
+	if golem != null:
+		var waves_before := _children_of(Boss.Shockwave).size()
+		golem._start_attack()
+		await _wait(1.3)
+		all_ok = _check("pancada do Golem solta uma onda no chão", _children_of(Boss.Shockwave).size() > waves_before) and all_ok
+	await _clear_wave(clareira)
 	await _wait_until(func() -> bool: return is_instance_valid(clareira.boss) and clareira.boss.phase == Boss.Phase.LUTANDO, 8.0)
 	var torre := clareira.boss as BossTorre
 	all_ok = _check("última onda traz a Torre de Ossinhos com 5 andares", is_instance_valid(torre) and torre.segments.size() == 5
@@ -2322,9 +2384,30 @@ func _run_forest_capture() -> void:
 	story.skip_to_forest()
 	var clareira: Defense = story.defenses.clareira
 	await _stand(clareira.center + Vector3(3, 0, 13))
-	for k in 2:
-		await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
-		await _clear_wave(clareira)
+	await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
+	await _clear_wave(clareira)
+	# Golem de Ossos da segunda onda: chegando e batendo no chão.
+	await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return _awake_wave_enemy("Skeleton_Golem") != null, 8.0)
+	var golem := _awake_wave_enemy("Skeleton_Golem")
+	if golem != null:
+		for e in _wave_enemies():
+			if e != golem:
+				e.visible = false
+				e.set_physics_process(false)
+		var away := player.global_position - golem.global_position
+		away.y = 0.0
+		await _stand(golem.global_position + away.normalized() * 10.0)
+		await _aim_for(golem, 2.5, 0.8)
+		await _shot("m00a_golem.png")
+		golem._start_attack()
+		await _wait(1.25)
+		await _aim_for(golem, 1.0, 0.15)
+		await _shot("m00b_golem_pancada.png")
+		for e in _wave_enemies():
+			e.visible = true
+			e.set_physics_process(true)
+	await _clear_wave(clareira)
 	await _wait_until(func() -> bool: return is_instance_valid(clareira.boss) and clareira.boss.phase == Boss.Phase.LUTANDO, 8.0)
 	var torre := clareira.boss as BossTorre
 	for e in _wave_enemies():
@@ -2397,6 +2480,35 @@ func _run_smoke() -> void:
 	print("trocou por todos os aventureiros; atual ", player.character_name)
 	print("SMOKE OK")
 	get_tree().quit()
+
+
+# --- festa e moradores ----------------------------------------------------------
+
+## Fotos da festa na praça e dos moradores, sem a interface, em tools/capturas/ (f01 a f08).
+## Uso: godot --path . -- --festa-captura
+func _run_festa_capture() -> void:
+	player.god_mode = true
+	await _wait(1.2)
+	var c := Vector3(0, 0, 170)
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	await _art_shot(out + "f01_praca.png", size, _ground_point(c + Vector3(0, 0, 22)) + Vector3.UP * 8.0, c + Vector3(0, 0.5, -3), 60.0)
+	await _art_shot(out + "f02_palco.png", size, c + Vector3(0, 2.4, -3.5), c + Vector3(0, 1.6, -11.5), 55.0)
+	await _art_shot(out + "f03_palhaco.png", size, c + Vector3(8.5, 2.4, 3.5), c + Vector3(14.0, 1.0, 9.5), 55.0)
+	await _art_shot(out + "f03b_plateia.png", size, c + Vector3(17.5, 2.2, 15.0), c + Vector3(12.5, 0.6, 9.5), 50.0)
+	await _art_shot(out + "f04_barraca.png", size, c + Vector3(-9.0, 2.4, 4.5), c + Vector3(-15.5, 0.9, 10.0), 55.0)
+	await _art_shot(out + "f05_mesas.png", size, c + Vector3(-5.5, 2.6, 0.5), c + Vector3(-11.5, 0.8, 0.5), 55.0)
+	await _stand(c + Vector3(-2.6, 0, 2.6))
+	await _wait(0.8)
+	await _art_shot(out + "f06_vovo.png", size, c + Vector3(-0.5, 2.2, 8.5), c + Vector3(-4.5, 1.4, 4.5), 45.0)
+	await _art_shot(out + "f07_rua.png", size, Vector3(-37, 3.0, 154), Vector3(-37, 1.2, 146.0), 60.0)
+	await _art_shot(out + "f08_trilheiro.png", size, _ground_point(Vector3(-2, 0, 107)) + Vector3.UP * 2.5, Vector3(-2, 1.2 + ground_y(Vector3(-2, 0, 100)), 100), 45.0)
+	print("FESTA OK")
+	get_tree().quit()
+
+
+func ground_y(p: Vector3) -> float:
+	return _ground_point(p).y
 
 
 # --- arte da Steam -------------------------------------------------------------

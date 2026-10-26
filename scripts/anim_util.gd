@@ -1,10 +1,11 @@
 class_name AnimUtil
 extends RefCounted
-## Carrega as bibliotecas de animação do KayKit (Rig_Medium) e liga num AnimationPlayer.
-## As animações vêm de arquivos .glb separados; como aventureiros e esqueletos usam o
-## mesmo esqueleto, as trilhas ("Rig_Medium/Skeleton3D:<osso>") servem para todos.
+## Carrega as bibliotecas de animação do KayKit e liga num AnimationPlayer.
+## As animações vêm de arquivos .glb separados; como aventureiros, moradores e esqueletos usam o
+## mesmo esqueleto, as trilhas ("Rig_Medium/Skeleton3D:<osso>") servem para todos. O Golem usa o
+## esqueleto grande (Rig_Large), com menos animações: só "geral", "mov" e "luta".
 
-const ANIM_DIR := "res://assets/animations/Rig_Medium_%s.glb"
+const ANIM_DIR := "res://assets/animations/Rig_%s_%s.glb"
 
 ## Nome curto da biblioteca no jogo -> arquivo do KayKit.
 const SETS := {
@@ -15,6 +16,7 @@ const SETS := {
 	"luta": "CombatMelee",
 	"especial": "Special",
 	"festa": "Simulation",
+	"ferramentas": "Tools",
 }
 
 ## O glTF chega sem loop; estas precisam repetir.
@@ -24,23 +26,25 @@ const LOOPING := [
 	"Walking_Backwards", "Ranged_1H_Shooting",
 	"Ranged_2H_Shooting", "Skeletons_Idle", "Skeletons_Walking", "Skeletons_Inactive_Floor_Pose",
 	"Cheering", "Waving", "Melee_Blocking", "Melee_Unarmed_Idle", "Melee_2H_Idle",
-	"Ranged_Magic_Spellcasting",
+	"Ranged_Magic_Spellcasting", "Sit_Chair_Idle", "Sit_Floor_Idle", "Lie_Idle", "Holding_A", "Holding_B",
+	"Holding_C", "Working_A", "Working_B", "Working_C", "Hammering", "Digging", "Fishing_Idle",
 ]
 
 static var _cache := {}
 
 
-static func library(short_name: String) -> AnimationLibrary:
-	if _cache.has(short_name):
-		return _cache[short_name]
-	var scene: Node = load(ANIM_DIR % SETS[short_name]).instantiate()
+static func library(short_name: String, rig := "Medium") -> AnimationLibrary:
+	var key := rig + "/" + short_name
+	if _cache.has(key):
+		return _cache[key]
+	var scene: Node = load(ANIM_DIR % [rig, SETS[short_name]]).instantiate()
 	var ap: AnimationPlayer = scene.find_child("AnimationPlayer", true, false)
 	var lib: AnimationLibrary = ap.get_animation_library(&"").duplicate(true)
 	for anim_name in lib.get_animation_list():
 		if String(anim_name) in LOOPING:
 			lib.get_animation(anim_name).loop_mode = Animation.LOOP_LINEAR
 	scene.free()
-	_cache[short_name] = lib
+	_cache[key] = lib
 	return lib
 
 
@@ -73,12 +77,12 @@ static func add_pose(short_name: String, anim_name: String, time: float, pose_na
 
 ## Cria um AnimationPlayer como filho de `model_root` (a raiz do .glb instanciado),
 ## com as bibliotecas pedidas. As animações ficam como "<biblioteca>/<nome>".
-static func make_player(model_root: Node, short_names: Array) -> AnimationPlayer:
+static func make_player(model_root: Node, short_names: Array, rig := "Medium") -> AnimationPlayer:
 	var ap := AnimationPlayer.new()
 	ap.name = "AnimationPlayer"
 	model_root.add_child(ap)
 	for n in short_names:
-		ap.add_animation_library(StringName(n), library(n))
+		ap.add_animation_library(StringName(n), library(n, rig))
 	return ap
 
 

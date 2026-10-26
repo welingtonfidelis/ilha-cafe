@@ -22,11 +22,11 @@ const REGIONS := {
 	},
 	"clareira": {
 		"nome": "Clareira da Jabuticabeira", "titulo": "Lanterna da Clareira", "lanterna": "Clareira", "guardiao": "torre", "recompensa": "coracao", "bandeira": "Clareira",
-		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3], ["Skeleton_Mage", 2], ["Skeleton_Rogue", 1]], [["Skeleton_Mage", 2]]],
+		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Mage", 1]], [["Skeleton_Golem", 1], ["Skeleton_Minion", 2], ["Skeleton_Mage", 2], ["Skeleton_Rogue", 1]], [["Skeleton_Mage", 2]]],
 	},
 	"ventos": {
 		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
-		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Warrior", 2], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
+		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
 }
 const CITY := ["oeste", "leste"]
@@ -39,6 +39,15 @@ const GUARDIANS := {
 }
 const BALLOONS := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
 const PLAT := "res://assets/props/platformer/%s.gltf"
+const FESTA := "res://assets/props/festa/%s.gltf"
+## Quem vem festejar em cada região vencida: [modelo, variante, atividade].
+const PARTY_GUESTS := {
+	"oeste": [["MonsterCostume", "monstercostume_texture_D", "torcendo"], ["MagicalGirl", "", "torcendo"], ["Farmer_A", "", "parado"]],
+	"leste": [["MagicalGirl", "magical_girl_texture_B", "torcendo"], ["MonsterCostume", "monstercostume_texture_C", "torcendo"], ["Driver", "", "parado"]],
+	"clareira": [["MonsterCostume", "", "torcendo"], ["Hiker", "hiker_texture_b", "parado"], ["Farmer_B", "", "torcendo"]],
+	"ventos": [["MagicalGirl", "magical_girl_texture_D", "torcendo"], ["MonsterCostume", "monstercostume_texture_B", "torcendo"], ["Hiker", "", "parado"]],
+}
+const PARTY_LINES := ["Obrigado! Agora é festa aqui também!", "Viva! A lanterna apagou!", "Vem dançar com a gente!"]
 const CASTLE := Vector3(0, 26, 0)
 const BRIDGE_SOUTH_Z := -97.0
 
@@ -54,6 +63,7 @@ var objective_target := Vector3.INF
 ## Testes: ondas e intervalos curtos.
 var fast := false
 
+var _crowd_check := 0.0
 var _bridge: StaticBody3D
 var _dome: StaticBody3D
 var _central_orb: MeshInstance3D
@@ -113,7 +123,11 @@ func _set_fast() -> void:
 		d.fast = fast
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
+	_crowd_check -= delta
+	if _crowd_check <= 0.0:
+		_crowd_check = 0.5
+		_update_crowd()
 	if stage == "castelo" and is_instance_valid(game.player):
 		if game.player.global_position.distance_to(CASTLE) < 14.0:
 			stage = "fim"
@@ -199,6 +213,55 @@ func _celebrate(d: Defense) -> void:
 		party.add_child(ball)
 		ball.global_position = pos + Vector3.UP * 3.6
 		Fx.confetti(game, pos + Vector3.UP * 3.0, 20, 4.0)
+	for t in get_tree().get_nodes_in_group(&"moradores"):
+		if (t as Node3D).global_position.distance_to(d.center) < d.radius + 16.0:
+			(t as Townsperson).celebrate(8.0, "Viva!")
+	if PARTY_GUESTS.has(d.id):
+		_party_guests(d)
+
+
+## Uma mesa com comida e três moradores que chegam para festejar na região vencida.
+func _party_guests(d: Defense) -> void:
+	var table_pos: Vector3 = game._ground_point(d.center + Vector3(5.0, 0, 3.0))
+	var table := StaticBody3D.new()
+	table.name = "MesaDaFesta_" + d.id
+	table.collision_layer = 1
+	game.add_child(table)
+	table.global_position = table_pos
+	var top: Node3D = load(FESTA % "comida/table_round_B_tablecloth_red").instantiate()
+	top.scale = Vector3.ONE * 0.8
+	table.add_child(top)
+	var cs := CollisionShape3D.new()
+	var cyl := CylinderShape3D.new()
+	cyl.radius = 1.2
+	cyl.height = 0.8
+	cs.shape = cyl
+	cs.position.y = 0.4
+	table.add_child(cs)
+	for spec in [["comida/food_pizza_cheese_plated", Vector3(-0.3, 0.8, -0.3), 0.42], ["doces/plate_decorated_A", Vector3(0.45, 0.8, 0.35), 0.7],
+			["comida/icecream_cone_stacked", Vector3(0.4, 0.8, -0.5), 0.6]]:
+		var food: Node3D = load(FESTA % spec[0]).instantiate()
+		food.scale = Vector3.ONE * spec[2]
+		food.position = spec[1]
+		table.add_child(food)
+	var guests: Array = PARTY_GUESTS[d.id]
+	for k in guests.size():
+		var a := TAU * k / guests.size() + 0.4
+		var pos: Vector3 = game._ground_point(table_pos + Vector3(cos(a), 0, sin(a)) * 2.4)
+		var to_table := table_pos - pos
+		var spec := {"nome": "Convidado_%s_%d" % [d.id, k], "modelo": guests[k][0], "variante": guests[k][1],
+			"atividade": guests[k][2], "falas": PackedStringArray([PARTY_LINES[k % PARTY_LINES.size()]])}
+		var t: Townsperson = game.spawn_townsperson(spec, pos, atan2(to_table.x, to_table.z))
+		t.celebrate(8.0)
+
+
+## Moradores perto de uma onda em andamento torcem pelo aventureiro.
+func _update_crowd() -> void:
+	var running := running_defense()
+	for t in get_tree().get_nodes_in_group(&"moradores"):
+		var near := running != null and running.state == Defense.State.ONDA \
+				and (t as Node3D).global_position.distance_to(running.center) < running.radius + 14.0
+		(t as Townsperson).crowd = near
 
 
 # --- lanternas, ponte e cúpula -----------------------------------------------

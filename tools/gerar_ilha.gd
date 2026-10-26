@@ -50,6 +50,8 @@ const CASTLE_DOME_R := 11.5
 const CITY := "res://assets/env/city/%s.gltf"
 const FOREST := "res://assets/env/forest/%s.gltf"
 const PLAT := "res://assets/props/platformer/%s.gltf"
+const FESTA := "res://assets/props/festa/%s.gltf"
+const MORADOR_ITEM := "res://assets/props/%s.gltf"
 const CITY_SCALE := 5.0
 ## Topo das ruas (a peça fica em y = 0,01 e tem 0,1 de altura).
 const ROAD_TOP := 0.11
@@ -90,6 +92,7 @@ func _init() -> void:
 	_terrain()
 	_sea()
 	_city()
+	_festa()
 	_morro()
 	_bridge_and_pier()
 	_forest()
@@ -515,6 +518,72 @@ func _city() -> void:
 		_prop(plaza, FOREST % "Tree_2_A_Color1", center + corner, rng.randf_range(0, 360), 1.3, "tronco")
 
 
+# --- festa na praça -----------------------------------------------------------
+
+## Enfeites e comida da Festa do Cafuné em volta da praça (o meio fica livre para a luta do prólogo):
+## presentes e trenzinho ao lado do palco, lanternas, mesas de comida e doces, a barraca dos
+## fazendeiros e o cantinho do palhaço. Posições fixas: não mexe no sorteio do resto da ilha.
+func _festa() -> void:
+	var festa := _group(_find_group("Cidade/Praca"), "Festa")
+	var c := Vector3(PLAZA.position.x + 20, 0, PLAZA.position.y + 20)
+	var at := func(x: float, z: float) -> Vector3:
+		return Vector3(c.x + x, ground(c.x + x, c.z + z), c.z + z)
+	# Presentes empilhados à esquerda do palco e trenzinho de presentes à direita.
+	var presents := [["doces/present_A_red", -6.6, -12.4, 20.0], ["doces/present_B_blue", -5.8, -13.3, 50.0],
+		["doces/present_C_yellow", -7.4, -13.2, 10.0], ["doces/present_D_green", -6.2, -11.5, 70.0],
+		["doces/present_sphere_A_green", -7.6, -11.9, 0.0], ["doces/present_E_white", -5.4, -12.2, 35.0],
+		["doces/present_sphere_B_red", -6.9, -14.0, 0.0], ["doces/present_F_red", -8.2, -12.6, 80.0]]
+	for spec in presents:
+		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), spec[3], 1.5)
+	_prop(festa, FESTA % "doces/present_A_yellow", at.call(-6.5, -12.7) + Vector3.UP * 0.99, 15.0, 1.3)
+	var train := ["doces/train_locomotive", "doces/train_tender_presents_A", "doces/train_wagon", "doces/train_tender_presents_B"]
+	for k in train.size():
+		_prop(festa, FESTA % train[k], at.call(5.2 + k * 1.5, -12.6), 90.0, 1.8)
+	# Lanternas enfeitadas nos cantos do palco e na entrada da praça.
+	for spot in [Vector2(-4.8, -9.4), Vector2(4.8, -9.4), Vector2(-3.5, 17.5), Vector2(3.5, 17.5)]:
+		_prop(festa, FESTA % "doces/lantern_decorated", at.call(spot.x, spot.y), 0.0, 0.8, "tronco")
+	# Mesas de comida a oeste e de doces a leste.
+	_table(festa, "comida/table_round_B_tablecloth_red", at.call(-11.5, -3.0), [
+		["comida/food_pizza_cheese_plated", Vector3(-0.35, 0, -0.3), 0.42], ["comida/food_burger", Vector3(0.55, 0, 0.35), 0.5],
+		["comida/icecream_bowl_decorated_A", Vector3(0.4, 0, -0.65), 0.6]])
+	_table(festa, "comida/table_round_B_tablecloth_green", at.call(-11.5, 4.0), [
+		["comida/food_pizza_pepperoni_plated", Vector3(0.3, 0, 0.3), 0.42], ["comida/food_vegetableburger", Vector3(-0.55, 0, -0.35), 0.5],
+		["comida/icecream_cone_stacked", Vector3(-0.5, 0, 0.55), 0.6]])
+	_table(festa, "comida/table_round_A_decorated", at.call(11.5, -3.0), [])
+	_table(festa, "comida/table_round_B_tablecloth_red", at.call(11.5, 4.0), [
+		["doces/plate_decorated_A", Vector3(-0.4, 0, -0.3), 0.7], ["doces/plate_decorated_B", Vector3(0.45, 0, 0.3), 0.7],
+		["doces/hot_chocolate_decorated", Vector3(0.45, 0, -0.5), 0.9], ["doces/candy_A_pink", Vector3(-0.3, 0, 0.55), 1.2],
+		["doces/candy_B_blue", Vector3(-0.6, 0, 0.2), 1.2]])
+	_prop(festa, FESTA % "comida/icecream_machine", at.call(14.5, -6.5), -60.0, 0.6, "caixa")
+	# Barraca dos fazendeiros (sudoeste): bancada com verduras, caixotes e o carrinho de mão.
+	_table(festa, "comida/kitchentable_A_large", at.call(-15.5, 9.0), [
+		["moradores/carrot", Vector3(-0.4, 0, -0.5), 1.4], ["moradores/lettuce", Vector3(0.3, 0, -0.2), 1.4],
+		["moradores/carrot", Vector3(0.1, 0, 0.5), 1.4]], 90.0, 0.8, MORADOR_ITEM)
+	for spec in [["comida/crate_carrots", -13.3, 7.6], ["comida/crate_lettuce", -13.3, 9.0], ["comida/crate_tomatoes", -13.3, 10.4]]:
+		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 90.0, 0.45, "caixa")
+	_prop(festa, MORADOR_ITEM % "moradores/wheelbarrow", at.call(-17.0, 12.6), 20.0, 0.9, "caixa")
+	# Cantinho do palhaço (sudeste): pódio, arco e brinquedos no chão.
+	_prop(festa, FESTA % "circo/circus_podium", at.call(15.0, 8.0), 0.0, 0.8, "caixa")
+	_prop(festa, FESTA % "circo/circus_hoop", at.call(16.8, 10.6), -30.0, 0.8)
+	for spec in [["circo/juggling_pin_red", 13.6, 9.6], ["circo/juggling_pin_blue", 13.9, 9.9], ["circo/juggling_pin_yellow", 13.4, 10.1]]:
+		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 40.0, 1.3)
+	_prop(festa, FESTA % "circo/clown_ball", at.call(13.4, 6.4), 0.0, 1.0)
+
+
+## Mesa com coisas em cima (posições relativas ao centro do tampo).
+func _table(parent: Node, table: String, pos: Vector3, items: Array, rot := 0.0, s := 0.8, item_fmt := FESTA) -> void:
+	var t := _prop(parent, FESTA % table, pos, rot, s, "caixa")
+	var inst: Node3D = t.get_child(0)
+	var top := _model_aabb(inst).end.y * s
+	for spec in items:
+		var off: Vector3 = Basis(Vector3.UP, deg_to_rad(rot)) * spec[1]
+		_prop(parent, item_fmt % spec[0], pos + off + Vector3.UP * top, rot + 20.0, spec[2])
+
+
+func _find_group(path: String) -> Node3D:
+	return ilha.get_node(path)
+
+
 # --- Morro -------------------------------------------------------------------
 
 func _morro() -> void:
@@ -816,6 +885,55 @@ func _markers() -> void:
 	]
 	for spot in crate_spots:
 		_marker(crates, spot[0], spot[1].x, spot[1].y)
+
+	# Moradores (personagens das Mystery Monthly do KayKit). Metadados: modelo, atividade, variante
+	# (textura), item (na mão), falas, destino (quem anda vai e volta) e altura (em cima do palco ou
+	# do pódio). A rotação do marcador é para onde ele olha.
+	var people := _group(markers, "Moradores")
+	var pc := Vector2(PLAZA.position.x + 20, PLAZA.position.y + 20)
+	var folks := [
+		["Banda1", "ToySoldier", "tocando", "", "moradores/ToySoldier_Trumpet", pc + Vector2(-1.5, -11.6), 0.0, 1.0,
+			["Tan-tan-taraaa! A banda está ensaiando para a festa!", "Amanhã a gente toca a noite inteira!"]],
+		["Banda2", "ToySoldier", "tocando", "", "moradores/ToySoldier_Trumpet", pc + Vector2(1.5, -11.6), 0.0, 1.0,
+			["Psiu! Os esqueletos saem daquelas rachaduras roxas."]],
+		["Fazendeiro", "Farmer_A", "trabalhando", "", "", pc + Vector2(-17.0, 9.0), 90.0, 0.0,
+			["Cenoura fresquinha para a festa!", "Caixa de munição pisca perto das casas. Pega que ajuda!"]],
+		["Fazendeira", "Farmer_B", "parado", "", "", pc + Vector2(-12.6, 12.8), 135.0, 0.0,
+			["Meu carrinho está cheio de verdura!", "Será que os esqueletos gostam de sopa de abóbora?"]],
+		["Palhaco", "Clown", "parado", "", "festa/circo/balloon_dog_red", pc + Vector2(15.0, 8.0), -120.0, 0.8,
+			["Respeitável público! Quer um cachorrinho de balão?", "Acerte a cabeça: vale o dobro!"]],
+		["Dino1", "MonsterCostume", "sentado_chao", "", "", pc + Vector2(12.0, 10.9), 70.0, 0.0,
+			["Eu sou um dinossauro! Rawr!", "O palhaço é muito engraçado!"]],
+		["Dino2", "MonsterCostume", "sentado_chao", "monstercostume_texture_C", "", pc + Vector2(11.2, 8.4), 95.0, 0.0,
+			["Shhh, o show vai começar!"]],
+		["Magica1", "MagicalGirl", "sentado_chao", "magical_girl_texture_B", "", pc + Vector2(13.0, 12.6), 40.0, 0.0,
+			["Minha varinha brilha! Mas não assusta esqueleto."]],
+		["Dino3", "MonsterCostume", "torcendo", "monstercostume_texture_B", "", pc + Vector2(-3.0, -7.4), 180.0, 0.0,
+			["Vai ter bolo na festa?", "Eu vou dançar a noite inteira!"]],
+		["Magica2", "MagicalGirl", "torcendo", "magical_girl_texture_C", "", pc + Vector2(3.0, -7.4), 180.0, 0.0,
+			["Que banda boa!", "Amanhã é a Festa do Cafuné!"]],
+		["Vovo", "Lorekeeper", "sentado_banco", "", "moradores/Lorekeeper_Staff", pc + Vector2(-4.95, 4.95), 45.0, 0.0,
+			["Quando eu era pequeno, os esqueletos também espiavam a festa lá do Morro.",
+			"Apague as quatro lanternas e a cúpula do castelinho cai.", "Será que alguém já convidou os esqueletos?"]],
+		["Magica3", "MagicalGirl", "sentado_banco", "magical_girl_texture_D", "moradores/MagicalGirl_Wand", pc + Vector2(4.95, 4.95), -45.0, 0.0,
+			["O vovô conta cada história do Morro..."]],
+		["Motorista1", "Driver", "andando", "", "", Vector2(-48.0, 146.0), 90.0, 0.0,
+			["Que movimento! É a véspera da festa.", "A ponte para a mata só abre quando as lanternas da cidade apagam."]],
+		["Motorista2", "Driver", "andando", "driver_texture_B", "", Vector2(26.0, 146.0), 90.0, 0.0,
+			["Cuidado na rua! E com os esqueletos também."]],
+		["Trilheiro", "Hiker", "parado", "", "", Vector2(-2.0, 100.0), 0.0, 0.0,
+			["A trilha sobe em espiral até o castelinho.", "Lá no Morro dos Ventos venta tanto que o boné voa!"]],
+	]
+	var walk_to := {"Motorista1": Vector2(-26.0, 146.0), "Motorista2": Vector2(48.0, 146.0)}
+	for f in folks:
+		var p: Vector2 = f[5]
+		var meta := {"modelo": f[1], "atividade": f[2], "variante": f[3], "item": f[4], "altura": f[7],
+			"falas": PackedStringArray(f[8])}
+		if walk_to.has(f[0]):
+			var w: Vector2 = walk_to[f[0]]
+			meta["destino"] = Vector3(w.x, ground(w.x, w.y), w.y)
+		var m := _marker(people, f[0], p.x, p.y, meta)
+		m.rotation_degrees.y = f[6]
 
 	# Lanternas mágicas: por enquanto só o visual (poste, esfera e raio até o castelinho).
 	var lanterns := _group(markers, "Lanternas")

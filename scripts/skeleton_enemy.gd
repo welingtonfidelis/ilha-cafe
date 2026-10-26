@@ -21,8 +21,9 @@ const BALLOON_APPEAR := 0.35
 const BALLOON_LIFT := 0.9
 const BALLOON_GONE := 7.0
 
-## kind: "melee" (golpe de perto), "flecha" ou "bolha" (à distância).
-## range: distância em que começa o ataque. windup: tempo do aviso até o golpe sair.
+## kind: "melee" (golpe de perto), "pancada" (de perto, bate no chão e solta uma onda que se pula),
+## "flecha" ou "bolha" (à distância). range: distância em que começa o ataque. windup: tempo do
+## aviso até o golpe sair. rig "Large" usa o esqueleto grande do KayKit (ver LARGE_ANIMS).
 const TYPES := {
 	"Skeleton_Minion": {
 		"kind": "melee", "health": 5.0, "speed": 2.4, "range": 1.8, "windup": 0.5, "cooldown": 1.6,
@@ -41,6 +42,21 @@ const TYPES := {
 		"kind": "bolha", "health": 4.0, "speed": 1.9, "range": 13.0, "windup": 0.7, "cooldown": 3.8,
 		"aim": "tiro/Ranged_Magic_Spellcasting", "attack": "tiro/Ranged_Magic_Shoot", "right": "Skeleton_Staff", "left": "",
 	},
+	# Golem de Ossos: grandão e lento das ondas da mata. A pancada no chão solta uma onda (pular escapa);
+	# empurrão de granada quase não mexe nele.
+	"Skeleton_Golem": {
+		"kind": "pancada", "health": 16.0, "speed": 1.5, "range": 3.6, "windup": 1.08, "cooldown": 3.0,
+		"attack": "luta/Melee_Unarmed_Smash", "attack_speed": 0.85, "recover": 1.4, "right": "", "left": "",
+		"rig": "Large", "scale": 0.85, "size": 1.7, "heavy": true,
+	},
+}
+
+## O esqueleto grande só tem parado, andar, levar golpe e golpes de luta: o resto vira o mais parecido.
+const LARGE_ANIMS := {
+	"especial/Skeletons_Walking": "mov/Walking_A", "especial/Skeletons_Idle": "geral/Idle_A",
+	"especial/Skeletons_Awaken_Floor": "geral/Idle_A", "especial/Skeletons_Inactive_Floor_Pose": "geral/Death_A_Pose",
+	"especial/Skeletons_Death": "geral/Death_A", "festa/Cheering": "luta/Melee_Unarmed_Idle",
+	"festa/Waving": "geral/Idle_B", "geral/Hit_B": "geral/Hit_A",
 }
 
 @export var type_name := "Skeleton_Minion"
@@ -72,27 +88,34 @@ var _start_y := 0.0
 var _cooldown := 0.0
 var _struck := false
 var _spawn_point := Vector3.ZERO
+## Tamanho relativo ao esqueleto comum (cápsula, regiões de impacto, aviso e balões).
+var _size := 1.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
 
 
 func _ready() -> void:
 	config = TYPES[type_name]
 	health = config.health
+	_size = config.get("size", 1.0)
 	collision_layer = 1 << 2
 	collision_mask = 1 | (1 << 1) | (1 << 2)
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.5
-	capsule.height = 2.0
+	capsule.radius = 0.5 * _size
+	capsule.height = 2.0 * _size
 	shape.shape = capsule
-	shape.position.y = 1.0
+	shape.position.y = 1.0 * _size
 	add_child(shape)
 	visual = Node3D.new()
 	visual.name = "Visual"
 	add_child(visual)
 	model = load(SKELETONS % type_name).instantiate()
+	model.scale = Vector3.ONE * config.get("scale", 1.0)
 	visual.add_child(model)
-	ap = AnimUtil.make_player(model, ["geral", "mov", "luta", "tiro", "especial", "festa"])
+	if _large():
+		ap = AnimUtil.make_player(model, ["geral", "mov", "luta"], "Large")
+	else:
+		ap = AnimUtil.make_player(model, ["geral", "mov", "luta", "tiro", "especial", "festa"])
 	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	_hand_r = _attach_weapon(sk, "handslot.r", config.right)
 	_attach_weapon(sk, "handslot.l", config.left)
@@ -105,13 +128,21 @@ func _ready() -> void:
 	_warning.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_warning.no_depth_test = true
 	_warning.pixel_size = 0.006
-	_warning.position.y = 3.0
+	_warning.position.y = 3.0 * _size
 	_warning.visible = false
 	add_child(_warning)
 	_spawn_point = global_position
 	if aggro_radius < 0.0:
-		aggro_radius = 16.0 if config.kind == "melee" else 22.0
-	if from_crack:
+		aggro_radius = 16.0 if _close_range() else 22.0
+	if from_crack and _large():
+		# O esqueleto grande não tem animação de sair do chão: sobe da rachadura parado.
+		_enter(State.ACORDANDO, "especial/Skeletons_Idle")
+		_rise_length = 1.3
+		visual.position.y = -2.0 * _size
+		var tw := create_tween()
+		tw.tween_property(visual, "position:y", 0.0, 1.2).set_ease(Tween.EASE_OUT)
+		Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+	elif from_crack:
 		# A animação de sair do chão tem 3,6 s: tocada 1,6x mais rápida para a onda não demorar.
 		_enter(State.ACORDANDO, "")
 		ap.play(&"especial/Skeletons_Spawn_Ground", 0.1, 1.6)
@@ -172,12 +203,27 @@ func _attach_weapon(sk: Skeleton3D, bone: String, weapon: String) -> BoneAttachm
 
 func _build_hurtboxes(sk: Skeleton3D) -> void:
 	var head := SphereShape3D.new()
-	head.radius = 0.5
-	_add_hurtbox(sk, "head", "cabeça", 2.0, head, Vector3(0, 0.45, 0), Color(1, 0.85, 0.2, 0.35))
+	head.radius = 0.5 * _size
+	_add_hurtbox(sk, "head", "cabeça", 2.0, head, Vector3(0, 0.45, 0) * _size, Color(1, 0.85, 0.2, 0.35))
 	var body := CapsuleShape3D.new()
-	body.radius = 0.4
-	body.height = 1.1
-	_add_hurtbox(sk, "chest", "corpo", 1.0, body, Vector3(0, -0.2, 0), Color(1, 0.3, 0.3, 0.35))
+	body.radius = 0.4 * _size
+	body.height = 1.1 * _size
+	_add_hurtbox(sk, "chest", "corpo", 1.0, body, Vector3(0, -0.2, 0) * _size, Color(1, 0.3, 0.3, 0.35))
+
+
+func _large() -> bool:
+	return config.get("rig", "Medium") == "Large"
+
+
+## Quem ataca chegando perto (o golpe começa junto com o aviso).
+func _close_range() -> bool:
+	return config.kind == "melee" or config.kind == "pancada"
+
+
+func _anim(anim_name: String) -> StringName:
+	if _large():
+		return StringName(LARGE_ANIMS.get(anim_name, anim_name))
+	return StringName(anim_name)
 
 
 func _add_hurtbox(sk: Skeleton3D, bone: String, region: String, mult: float, shape: Shape3D, offset: Vector3, debug_color: Color) -> void:
@@ -265,7 +311,7 @@ func _physics_process(delta: float) -> void:
 		State.PERSEGUINDO:
 			if dist <= config.range and _cooldown <= 0.0 and _can_see_target():
 				_start_attack()
-			elif config.kind != "melee" and dist <= config.range:
+			elif not _close_range() and dist <= config.range:
 				_enter(State.ESPERANDO, "especial/Skeletons_Idle")
 			elif dist < INF:
 				var dir := to_target / dist
@@ -288,10 +334,10 @@ func _physics_process(delta: float) -> void:
 				_struck = true
 				_warning.visible = false
 				_strike(dist, to_target)
-				_enter(State.ATACANDO, config.attack if config.kind != "melee" else "")
+				_enter(State.ATACANDO, config.attack if not _close_range() else "")
 		State.ATACANDO:
 			_move(Vector3.ZERO)
-			if _state_time > 0.5:
+			if _state_time > config.get("recover", 0.5):
 				_cooldown = config.cooldown
 				_enter(State.ESPERANDO, "especial/Skeletons_Idle")
 		State.ATINGIDO:
@@ -317,7 +363,7 @@ func _start_attack() -> void:
 	_warning.visible = true
 	Sfx.play_at(get_parent(), "alerta", global_position + Vector3.UP * 3.0)
 	# Golpe de perto: a animação já começa no aviso e o dano sai no meio dela.
-	_enter(State.PREPARANDO, config.attack if config.kind == "melee" else config.aim)
+	_enter(State.PREPARANDO, config.attack if _close_range() else config.aim, config.get("attack_speed", 1.0))
 
 
 func _strike(dist: float, to_target: Vector3) -> void:
@@ -329,6 +375,23 @@ func _strike(dist: float, to_target: Vector3) -> void:
 			var forward := visual.global_basis.z
 			if dist <= config.range + 0.8 and forward.dot(to_target.normalized()) > 0.3:
 				target.take_damage(1, global_position, name)
+		"pancada":
+			# Bate no chão na frente: quem está bem ali leva o golpe, e a onda corre pelo chão.
+			var forward := visual.global_basis.z
+			var center := global_position + forward * 1.8 * _size
+			Sfx.play_at(get_parent(), "pancada", center)
+			Fx.dust(get_parent(), center + Vector3.UP * 0.3)
+			var wave := Boss.Shockwave.new()
+			wave.target = target
+			wave.max_radius = 9.0
+			wave.speed = 7.0
+			wave.source = name
+			get_parent().add_child(wave)
+			wave.global_position = Vector3(center.x, global_position.y + 0.05, center.z)
+			if dist < 14.0:
+				target.shake(0.15)
+			if dist <= config.range and forward.dot(to_target.normalized()) > 0.3:
+				target.take_damage(1, global_position, name)
 		"flecha", "bolha":
 			var from := _hand_r.global_position + Vector3.UP * 0.2 + visual.global_basis.z * 0.5
 			var kind := Projectile.Kind.FLECHA if config.kind == "flecha" else Projectile.Kind.BOLHA
@@ -339,7 +402,7 @@ func _strike(dist: float, to_target: Vector3) -> void:
 func _can_see_target() -> bool:
 	if not is_instance_valid(target):
 		return false
-	if config.kind == "melee":
+	if _close_range():
 		return true
 	var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.5, target.global_position + Vector3.UP * 1.2, 1)
 	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
@@ -357,13 +420,13 @@ func _face(dir: Vector3, delta: float) -> void:
 
 
 ## anim_name vazio mantém a animação atual (o golpe de perto continua tocando).
-func _enter(new_state: State, anim_name: String) -> void:
+func _enter(new_state: State, anim_name: String, speed := 1.0) -> void:
 	state = new_state
 	_state_time = 0.0
 	if new_state != State.PREPARANDO:
 		_warning.visible = false
 	if anim_name != "":
-		ap.play(StringName(anim_name), 0.15)
+		ap.play(_anim(anim_name), 0.15, speed)
 	if new_state == State.ACORDANDO:
 		_rise_length = ap.current_animation_length if ap.current_animation != "" else 1.0
 		_set_hittable(false)
@@ -401,7 +464,8 @@ func take_explosion(amount: float, center: Vector3) -> void:
 		return
 	var away := global_position - center
 	away.y = 0.0
-	velocity += away.normalized() * 4.0 + Vector3.UP * 3.0
+	if not config.get("heavy", false):
+		velocity += away.normalized() * 4.0 + Vector3.UP * 3.0
 	_apply_damage(amount, global_position + Vector3.UP * 1.8, false)
 
 
@@ -440,7 +504,7 @@ func _start_leaving() -> void:
 func _build_balloons() -> void:
 	_balloons = Node3D.new()
 	_balloons.name = "Baloes"
-	_balloons.position.y = 2.6
+	_balloons.position.y = 2.6 * _size
 	_balloons.scale = Vector3.ONE * 0.01
 	add_child(_balloons)
 	var colors := BALLOONS.duplicate()
@@ -466,15 +530,15 @@ func _build_balloons() -> void:
 	var tw := _balloons.create_tween()
 	tw.tween_interval(BALLOON_APPEAR)
 	tw.tween_callback(func() -> void: Sfx.play_at(get_parent(), "balao", global_position + Vector3.UP * 3.0))
-	tw.tween_property(_balloons, "scale", Vector3.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_balloons, "scale", Vector3.ONE * sqrt(_size), 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _fly_away(delta: float) -> void:
 	if _state_time < BALLOON_LIFT:
 		return
-	if ap.current_animation != "festa/Waving":
-		ap.play(&"festa/Waving", 0.3)
-		Fx.popup_text(get_parent(), global_position + Vector3.UP * 3.2, "Tchau!", Color("#ffd6f3"))
+	if ap.current_animation != _anim("festa/Waving"):
+		ap.play(_anim("festa/Waving"), 0.3)
+		Fx.popup_text(get_parent(), global_position + Vector3.UP * 3.2 * _size, "Tchau!", Color("#ffd6f3"))
 	var t := _state_time - BALLOON_LIFT
 	var up := minf(0.6 + t * 1.4, 4.0)
 	global_position += (Vector3.UP * up + _drift) * delta

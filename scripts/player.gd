@@ -128,7 +128,7 @@ var _node_run: AnimationNodeAnimation
 
 func _ready() -> void:
 	collision_layer = 1 << 1
-	collision_mask = 1 | (1 << 2)
+	collision_mask = 1 | (1 << 2) | Townsperson.LAYER
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.5
