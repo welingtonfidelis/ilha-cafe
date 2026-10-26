@@ -294,6 +294,12 @@ func _ready() -> void:
 	elif "--mata-captura" in args:
 		select_panel.hide()
 		_run_forest_capture()
+	elif "--castelo" in args:
+		select_panel.hide()
+		_run_castle_test()
+	elif "--castelo-captura" in args:
+		select_panel.hide()
+		_run_castle_capture()
 	elif "--arte-steam" in args:
 		select_panel.hide()
 		_run_steam_art()
@@ -2369,9 +2375,173 @@ func _run_forest_test() -> void:
 	all_ok = _check("objetivo manda subir até o castelinho", "castelinho" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
 	await _stand(Vector3(9, 27, 0))
 	await _wait(0.5)
-	all_ok = _check("chegar ao castelinho fecha esta versão", story.stage == "fim", "(\"%s\")" % story.objective_text) and all_ok
+	all_ok = _check("chegar ao castelinho começa a defesa final", story.defenses.castelo.state in [Defense.State.CHEGANDO, Defense.State.ONDA],
+			"(%s)" % Defense.State.keys()[story.defenses.castelo.state]) and all_ok
 
 	print("MATA OK" if all_ok else "MATA COM FALHAS")
+	get_tree().quit()
+
+
+## Defesa final no castelinho e as três fases do Mestre Ossinho, partindo do atalho (tudo vencido
+## até a cúpula cair). Uso: godot --headless --path . -- --castelo
+func _run_castle_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	story.skip_to_castle()
+	await _wait(0.3)
+	var castelo: Defense = story.defenses.castelo
+	all_ok = _check("atalho: cúpula aberta e defesa final ativa", story.stage == "castelo" and story.dome_open() and castelo.active) and all_ok
+	await _stand(castelo.center + Vector3(0, 0, 2))
+	await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
+	all_ok = _check("entrar no castelinho começa a defesa", castelo.state == Defense.State.ONDA) and all_ok
+	for k in 2:
+		await _clear_wave(castelo, false)
+		await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return is_instance_valid(castelo.boss) and castelo.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mestre := castelo.boss as BossMestre
+	all_ok = _check("última onda traz o Mestre Ossinho com barra de vida", is_instance_valid(mestre) and mestre.display_name == "Mestre Ossinho"
+			and boss_bar.visible and mestre.stage_n == 1) and all_ok
+	if mestre == null:
+		print("CASTELO COM FALHAS")
+		get_tree().quit()
+		return
+	# Os outros da onda saem do caminho.
+	await _wait_until(func() -> bool: return _wave_enemies().all(func(e: SkeletonEnemy) -> bool: return e.state != SkeletonEnemy.State.ACORDANDO), 4.0)
+	for e in _wave_enemies():
+		e.take_hit(99.0, e.global_position + Vector3.UP, e.hurtboxes[0])
+	var before := castelo.remaining
+	mestre.summon()
+	await get_tree().physics_frame
+	all_ok = _check("fase 1: o Mestre chama dois minions", castelo.remaining == before + 2, "(%d -> %d)" % [before, castelo.remaining]) and all_ok
+	var bubbles := _projectiles(Projectile.Kind.BOLHA).size()
+	mestre._release()
+	await get_tree().physics_frame
+	all_ok = _check("fase 1: joga bolha mágica", _projectiles(Projectile.Kind.BOLHA).size() == bubbles + 1) and all_ok
+	mestre.set_physics_process(false)
+	var h0 := mestre.health
+	player.force_aim = true
+	await _aim_for(mestre.hurtboxes[0], 0.0, 0.5)
+	player.fire()
+	await get_tree().physics_frame
+	all_ok = _check("tiro de verdade na cabeça tira vida", mestre.health < h0, "(%.0f -> %.0f)" % [h0, mestre.health]) and all_ok
+	mestre.take_hit(mestre.health - 31.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await get_tree().physics_frame
+	all_ok = _check("fase 2: escudo de 6 bolhas", mestre.stage_n == 2 and mestre.shield.size() == 6, "(fase %d, %d bolhas)" % [mestre.stage_n, mestre.shield.size()]) and all_ok
+	var h1 := mestre.health
+	mestre.take_hit(2.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	all_ok = _check("com o escudo, o golpe é bloqueado", mestre.health == h1) and all_ok
+	await _aim_for(mestre.shield[0], 0.0, 0.4)
+	player.fire()
+	await get_tree().physics_frame
+	player.force_aim = false
+	all_ok = _check("tiro de verdade estoura uma bolha do escudo", mestre.shield.size() == 5, "(%d bolhas)" % mestre.shield.size()) and all_ok
+	for b in mestre.shield.duplicate():
+		b.take_hit(1.0, b.global_position, null)
+	await get_tree().physics_frame
+	var h2 := mestre.health
+	mestre.take_hit(2.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	all_ok = _check("sem bolhas, fica tonto e leva dano em dobro", mestre.is_dizzy() and is_equal_approx(h2 - mestre.health, 4.0),
+			"(%.0f -> %.0f)" % [h2, mestre.health]) and all_ok
+	mestre._dizzy = 0.0
+	mestre.set_physics_process(true)
+	mestre.take_hit(mestre.health - 15.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await get_tree().physics_frame
+	all_ok = _check("fase 3: escudo some", mestre.stage_n == 3 and mestre.shield.is_empty()) and all_ok
+	# is_instance_of não reconhece classes internas: filtra com "is".
+	var giants_now := func() -> Array: return get_children().filter(func(n: Node) -> bool: return n is BossMestre.GiantBubble and not n.is_queued_for_deletion())
+	var giants: int = giants_now.call().size()
+	# No jogo ele mantém distância: a bolha não pode nascer em cima do aventureiro.
+	mestre.set_physics_process(false)
+	await _stand(mestre.global_position + mestre.forward() * 10.0)
+	mestre._release()
+	await get_tree().physics_frame
+	var giant_list: Array = giants_now.call()
+	all_ok = _check("fase 3: bolha gigante", giant_list.size() == giants + 1, "(%d -> %d, fase %d, %s)" % [giants, giant_list.size(), mestre.stage_n, Boss.Phase.keys()[mestre.phase]]) and all_ok
+	if not giant_list.is_empty():
+		var small := func() -> int: return _projectiles(Projectile.Kind.BOLHA).filter(func(b: Node) -> bool: return not (b is BossMestre.GiantBubble)).size()
+		var small_before: int = small.call()
+		var g: Projectile = giant_list[-1]
+		g.take_hit(1.0, g.global_position, null)
+		await get_tree().physics_frame
+		all_ok = _check("estourada, a bolha gigante vira três", small.call() == small_before + 3, "(%d -> %d)" % [small_before, small.call()]) and all_ok
+	mestre.set_physics_process(true)
+	mestre.take_hit(999.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await _wait(5.0)
+	all_ok = _check("derrotado, o Mestre senta e tira a coroa (sem balão)", is_instance_valid(mestre) and mestre.is_sitting()
+			and is_instance_valid(mestre.crown_on_floor) and mestre._balloons == null) and all_ok
+	await _clear_wave(castelo, false)
+	await _wait_until(func() -> bool: return castelo.state == Defense.State.VENCIDA, 5.0)
+	await get_tree().physics_frame
+	all_ok = _check("defesa final vencida: fim da história e convite entregue", castelo.state == Defense.State.VENCIDA and story.stage == "fim",
+			"(\"%s\")" % story.objective_text) and all_ok
+	print("CASTELO OK" if all_ok else "CASTELO COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da defesa final e do Mestre Ossinho (precisa de janela). Uso: godot --path . -- --castelo-captura
+func _run_castle_capture() -> void:
+	player.god_mode = true
+	story.fast = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	story.skip_to_castle()
+	var castelo: Defense = story.defenses.castelo
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	# No fundo do pátio: o Mestre fica entre o aventureiro e o portão, e o arco vai para o fundo da foto.
+	await _stand(castelo.center + Vector3(2.5, 0, -5.0))
+	await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
+	await _wait(1.5)
+	await _art_shot(out + "c01_defesa_no_castelinho.png", size, castelo.center + Vector3(5.5, 6.5, 8.5), castelo.center + Vector3(-1, 0.5, -2), 60.0)
+	for k in 2:
+		await _clear_wave(castelo, false)
+		await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return is_instance_valid(castelo.boss) and castelo.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mestre := castelo.boss as BossMestre
+	await _wait(1.0)
+	for e in _wave_enemies():
+		e.visible = false
+		e.set_physics_process(false)
+	# Câmera livre atrás do aventureiro, um pouco acima, olhando o Mestre.
+	var view := func() -> Array:
+		var to_m := mestre.global_position - player.global_position
+		to_m.y = 0.0
+		var side := to_m.normalized().cross(Vector3.UP)
+		return [player.global_position - to_m.normalized() * 3.5 + side * 2.0 + Vector3.UP * 4.0, mestre.global_position + Vector3.UP * 2.6]
+	mestre._cast_timer = 0.0
+	await _wait(0.4)
+	var v: Array = view.call()
+	await _art_shot(out + "c02_mestre_ossinho.png", size, v[0], v[1], 55.0)
+	mestre.take_hit(mestre.health - 31.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await _wait(0.6)
+	v = view.call()
+	await _art_shot(out + "c03_escudo_de_bolhas.png", size, v[0], v[1], 55.0)
+	for b in mestre.shield.duplicate():
+		b.take_hit(1.0, b.global_position, null)
+	await _wait(0.8)
+	v = view.call()
+	await _art_shot(out + "c04_mestre_tonto.png", size, v[0], v[1], 55.0)
+	mestre._dizzy = 0.0
+	mestre.take_hit(mestre.health - 15.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await _wait(0.2)
+	mestre._release()
+	await _wait(1.0)
+	v = view.call()
+	await _art_shot(out + "c05_bolha_gigante.png", size, v[0], v[1], 60.0)
+	for n in _projectiles(Projectile.Kind.BOLHA):
+		n.queue_free()
+	mestre.take_hit(999.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await _wait(4.6)
+	var front := mestre.global_position + mestre.forward() * 7.0 + Vector3.UP * 3.0
+	await _art_shot(out + "c06_sem_coroa.png", size, front, mestre.global_position + Vector3.UP * 1.2 + mestre.forward() * 1.5, 50.0)
+	for e in _wave_enemies():
+		e.visible = true
+		e.set_physics_process(true)
+	await _clear_wave(castelo, false)
+	await _wait(1.0)
+	await _shot("c07_convite.png")
 	get_tree().quit()
 
 

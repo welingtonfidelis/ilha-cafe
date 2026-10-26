@@ -875,6 +875,16 @@ func _markers() -> void:
 			crack.position = Vector3(cp.x, ground(cp.x, cp.y) + 0.05, cp.y) - r.position
 			_add(r, crack)
 
+	# Defesa final: pátio do castelinho. O centro fica entre o poste da lanterna central e o portão;
+	# as rachaduras ficam nos quatro cantos de dentro dos muros.
+	var castle := _marker(regions, "castelo", 0, 3.5, {"raio": 10.0})
+	for k in 4:
+		var cp := Vector2(-4.5 if k % 2 == 0 else 4.5, -4.5 if k < 2 else 4.0)
+		var crack := Marker3D.new()
+		crack.name = "Rachadura%d" % (k + 1)
+		crack.position = Vector3(cp.x, ground(cp.x, cp.y) + 0.05, cp.y) - castle.position
+		_add(castle, crack)
+
 	# Caixas de munição: voltam um tempo depois de pegas (o jogo cuida disso).
 	var crates := _group(markers, "Municao")
 	var crate_spots := [

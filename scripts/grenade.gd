@@ -61,4 +61,7 @@ func explode() -> void:
 		elif node is Projectile and node.kind == Projectile.Kind.BOLHA:
 			if node.global_position.distance_to(center) <= radius:
 				node.pop()
+		elif node is BossMestre.ShieldBubble:
+			if node.global_position.distance_to(center) <= radius:
+				node.pop()
 	queue_free()

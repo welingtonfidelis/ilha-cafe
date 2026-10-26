@@ -28,6 +28,12 @@ const REGIONS := {
 		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
 		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
+	# Defesa final, dentro do castelinho (abre quando a cúpula cai): todos os tipos e o Mestre Ossinho.
+	"castelo": {
+		"nome": "Castelinho", "titulo": "castelinho", "lanterna": "", "guardiao": "mestre", "recompensa": "", "bandeira": "TopoDoMorro",
+		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1], ["Skeleton_Mage", 1]], [["Skeleton_Warrior", 2], ["Skeleton_Rogue", 2], ["Skeleton_Minion", 2]],
+			[["Skeleton_Golem", 1], ["Skeleton_Mage", 1]]],
+	},
 }
 const CITY := ["oeste", "leste"]
 const FOREST := ["clareira", "ventos"]
@@ -36,6 +42,7 @@ const GUARDIANS := {
 	"mira_torta": preload("res://scripts/boss_mira_torta.gd"),
 	"torre": preload("res://scripts/boss_torre.gd"),
 	"minionzao": preload("res://scripts/boss_minionzao.gd"),
+	"mestre": preload("res://scripts/boss_mestre.gd"),
 }
 const BALLOONS := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
 const PLAT := "res://assets/props/platformer/%s.gltf"
@@ -128,11 +135,6 @@ func _physics_process(delta: float) -> void:
 	if _crowd_check <= 0.0:
 		_crowd_check = 0.5
 		_update_crowd()
-	if stage == "castelo" and is_instance_valid(game.player):
-		if game.player.global_position.distance_to(CASTLE) < 14.0:
-			stage = "fim"
-			game.banner("Você chegou ao castelinho!", "O Mestre Ossinho aparece na próxima versão do jogo.")
-			_refresh_objective()
 	if stage in ["cidade", "mata", "castelo"]:
 		_refresh_objective()
 
@@ -173,10 +175,24 @@ func _on_defense_won(d: Defense) -> void:
 			if _all_won(FOREST):
 				_open_dome()
 				stage = "castelo"
+				defenses.castelo.activate()
 				game.banner("As quatro lanternas apagaram!", "A cúpula do castelinho caiu. Suba o Morro!", Color("#d9a8ff"))
 			else:
 				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na mata.")
+		"castelo":
+			_ending()
 	_refresh_objective()
+
+
+## Desfecho do Ato 3: o Mestre Ossinho sentou, tirou a coroa e confessou. As crianças entregam o convite.
+## (O epílogo com a festa e o modo "Defender a festa" vêm depois.)
+func _ending() -> void:
+	stage = "fim"
+	game.banner("O Mestre Ossinho tirou a coroa...", "\"Ninguém nunca convidou a gente para a festa.\"", Color("#d9a8ff"))
+	get_tree().create_timer(4.5 if not fast else 0.3).timeout.connect(func() -> void:
+		game.banner("Vocês entregaram o convite!", "Amanhã a Festa do Cafuné vai ter convidados novos.", Color("#ffd23f")))
+	for t in get_tree().get_nodes_in_group(&"moradores"):
+		(t as Townsperson).celebrate(10.0)
 
 
 func _all_won(ids: Array) -> bool:
@@ -331,6 +347,26 @@ func skip_to_forest() -> void:
 	_set_fast()
 	for id in FOREST:
 		defenses[id].activate()
+	_refresh_objective()
+
+
+## Atalho dos testes: tudo vencido até a cúpula cair, com os quatro blasters; a defesa final fica ativa.
+func skip_to_castle() -> void:
+	for id in ["praca"] + CITY + FOREST:
+		var d: Defense = defenses[id]
+		d.state = Defense.State.VENCIDA
+		d.active = false
+	for key in lanterns:
+		_set_lantern_look(key, false)
+	for id in ["granulado", "pipoqueira", "pe_de_moleque"]:
+		game.player.unlock_weapon(id)
+	game.player.switch_weapon(0)
+	open_bridge_now()
+	_dome.collision_layer = 0
+	_dome.visible = false
+	stage = "castelo"
+	_set_fast()
+	defenses.castelo.activate()
 	_refresh_objective()
 
 
