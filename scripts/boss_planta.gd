@@ -39,7 +39,7 @@ var _bowed := false
 func _setup() -> void:
 	display_name = "Guerreiro Planta"
 	subtitle = "o guardião da Vila das Copas"
-	max_health = 30.0
+	max_health = 40.0
 	body_scale = 1.7
 	speed = 2.4
 

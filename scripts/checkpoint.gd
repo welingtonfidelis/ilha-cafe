@@ -21,7 +21,7 @@ func _ready() -> void:
 	monitoring = true
 	var shape := CollisionShape3D.new()
 	var cyl := CylinderShape3D.new()
-	cyl.radius = 2.4
+	cyl.radius = 4.0
 	cyl.height = 3.0
 	shape.shape = cyl
 	shape.position.y = 1.5

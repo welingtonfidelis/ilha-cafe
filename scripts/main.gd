@@ -396,6 +396,8 @@ func _setup_input() -> void:
 	_bind_axis("olhar_cima", JOY_AXIS_RIGHT_Y, -1.0)
 	_bind_axis("olhar_baixo", JOY_AXIS_RIGHT_Y, 1.0)
 
+	_bind_key("correr", [KEY_SHIFT])
+	_bind_button("correr_alternar", JOY_BUTTON_LEFT_STICK)
 	_bind_key("pular", [KEY_SPACE])
 	_bind_button("pular", JOY_BUTTON_A)
 	_bind_mouse("atirar", MOUSE_BUTTON_LEFT)
@@ -916,6 +918,7 @@ func spawn_townsperson(spec: Dictionary, pos: Vector3, yaw: float) -> Townsperso
 	t.activity = spec.get("atividade", "parado")
 	t.variant = spec.get("variante", "")
 	t.item = spec.get("item", "")
+	t.item_rotation = spec.get("item_rot", Vector3.ZERO)
 	t.lines = spec.get("falas", PackedStringArray())
 	t.walk_to = spec.get("destino", Vector3.INF)
 	t.player = player
@@ -1339,6 +1342,20 @@ func _run_gamepad_test() -> void:
 	var walked := p0.distance_to(player.global_position)
 	all_ok = _check("analógico esquerdo anda", walked > 1.5, "(%.1f m em 0,6 s)" % walked) and all_ok
 	await _wait(0.3)
+
+	# L3 liga a corrida enquanto anda; parar de andar desliga.
+	var p1 := player.global_position
+	_joy_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await _joy_button(JOY_BUTTON_LEFT_STICK)
+	var p_sprint := player.global_position
+	await _wait(0.6)
+	var sprinted := p_sprint.distance_to(player.global_position)
+	var was_sprinting := player.sprinting
+	_joy_axis(JOY_AXIS_LEFT_Y, 0.0)
+	await _wait(0.3)
+	all_ok = _check("L3 corre mais rápido que andar", was_sprinting and sprinted > walked * 1.3 and not player.sprinting,
+			"(%.1f m em 0,6 s; andando %.1f m)" % [sprinted, walked]) and all_ok
+	await _wait(0.2)
 
 	# A pula.
 	var y0 := player.global_position.y
@@ -2069,11 +2086,16 @@ func _run_story_test() -> void:
 	# Prólogo na praça.
 	var praca: Defense = story.defenses.praca
 	story.start()
+	await _wait(0.3)
+	all_ok = _check("prólogo começa na praça e aponta a praia do cais", praca.state == Defense.State.ESPERANDO
+			and story.objective_target.distance_to(praca.center) < 1.0 and player.global_position.distance_to(praca.center) > praca.radius) and all_ok
+	await _stand(praca.center + Vector3(0, 0, -6))
 	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
 	await _wait(0.8)
 	all_ok = _check("prólogo: a primeira onda sai das rachaduras", praca.state == Defense.State.ONDA and _wave_enemies().size() == 3,
 			"(%d esqueletos, \"%s\")" % [_wave_enemies().size(), wave_label.text]) and all_ok
-	var plaza_folks := _townsfolk_near(praca.center, 30.0)
+	# A luta é na praia, mas quem torce é a gente da festa na praça, ali do lado.
+	var plaza_folks := _townsfolk_near(Vector3(0, 0, 170), 30.0)
 	all_ok = _check("moradores na praça torcem durante a onda", plaza_folks.size() >= 10
 			and plaza_folks.filter(func(t: Townsperson) -> bool: return t.crowd).size() >= 8,
 			"(%d moradores, %d torcendo)" % [plaza_folks.size(), plaza_folks.filter(func(t: Townsperson) -> bool: return t.crowd).size()]) and all_ok
@@ -2095,7 +2117,7 @@ func _run_story_test() -> void:
 	await _wait(3.0)
 	all_ok = _check("prólogo vencido acende as quatro lanternas", praca.state == Defense.State.VENCIDA and story.stage == "cidade"
 			and story.lanterns.values().all(func(l: Dictionary) -> bool: return l.lit)) and all_ok
-	all_ok = _check("moradores da praça comemoram a vitória", _townsfolk_near(praca.center, 30.0).filter(
+	all_ok = _check("moradores da praça comemoram a vitória", _townsfolk_near(Vector3(0, 0, 170), 30.0).filter(
 			func(t: Townsperson) -> bool: return t.is_celebrating()).size() >= 8) and all_ok
 	await get_tree().physics_frame
 	all_ok = _check("objetivo aponta uma lanterna da cidade", "cidade" in story.objective_text and story.objective_target != Vector3.INF
@@ -2222,6 +2244,7 @@ func _run_story_capture() -> void:
 	story.start()
 	await _wait(0.8)
 	await _shot("h01_inicio_faixa.png")
+	await _stand(praca.center + Vector3(0, 0, -6))
 	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
 	await _wait(1.2)
 	if not _wave_enemies().is_empty():
@@ -2325,7 +2348,7 @@ func _run_forest_test() -> void:
 	await _wait_until(func() -> bool: return is_instance_valid(clareira.boss) and clareira.boss.phase == Boss.Phase.LUTANDO, 8.0)
 	var torre := clareira.boss as BossTorre
 	all_ok = _check("última onda traz a Torre de Ossinhos com 5 andares", is_instance_valid(torre) and torre.segments.size() == 5
-			and torre.health == 20.0 and boss_bar.visible) and all_ok
+			and torre.health == BossTorre.SEGMENTS * BossTorre.SEG_HEALTH and boss_bar.visible) and all_ok
 	torre.set_physics_process(false)
 	player.force_aim = true
 	var bottom: Dictionary = torre.segments[0]
@@ -2396,6 +2419,8 @@ func _run_forest_test() -> void:
 	await _wait_until(func() -> bool: return ventos.state == Defense.State.VENCIDA, 4.0)
 	await get_tree().physics_frame
 	all_ok = _check("mata vencida: cúpula do cemitério cai", story.stage == "cemiterio" and story.dome_open()) and all_ok
+	await _wait(2.6)
+	all_ok = _check("o portão do cemitério abre", story.gate_open()) and all_ok
 	await _stand(story.rewards[0].global_position)
 	await _wait(1.0)
 	all_ok = _check("recompensa do Morro dos Ventos é o Pé-de-Moleque", player.has_weapon("pe_de_moleque")) and all_ok
@@ -2419,7 +2444,8 @@ func _run_cemetery_test() -> void:
 	story.skip_to_cemetery()
 	await _wait(0.3)
 	var cemiterio: Defense = story.defenses.cemiterio
-	all_ok = _check("atalho: cúpula aberta e defesa final ativa", story.stage == "cemiterio" and story.dome_open() and cemiterio.active) and all_ok
+	all_ok = _check("atalho: cúpula aberta, portão aberto e defesa final ativa", story.stage == "cemiterio" and story.dome_open()
+			and story.gate_open() and cemiterio.active) and all_ok
 	await _stand(cemiterio.center + Vector3(0, 0, 2))
 	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
 	all_ok = _check("entrar no cemitério começa a defesa", cemiterio.state == Defense.State.ONDA) and all_ok
@@ -2839,6 +2865,23 @@ func _run_landscape_capture() -> void:
 	await _art_shot(out + "p07_mata_ventos.png", size, _ground_point(Vector3(-60, 0, -130)) + Vector3(0, 10, 0), Vector3(-95, 8, -158), 60.0)
 	await _art_shot(out + "p08_morrinhos_do_rio.png", size, _ground_point(Vector3(-100, 0, -80)) + Vector3(0, 10, 0), Vector3(-118, 0, -100), 60.0)
 	await _art_shot(out + "p09_praca_cerejeiras.png", size, Vector3(0, 12, 196), Vector3(0, 1, 168), 60.0)
+	var beach: Vector3 = story.defenses.praca.center
+	await _art_shot(out + "p10_praia_do_cais.png", size, beach + Vector3(14, 9, -26), beach + Vector3(0, 0, 6), 60.0)
+	await _art_shot(out + "p11_cais_madeira.png", size, Vector3(6.5, 2.6, 214), Vector3(0, 0.5, 236), 60.0)
+	var lj: Node3D = get_node("Lenhador")
+	await _wait(0.46)
+	await _art_shot(out + "p12_lenhador.png", size, lj.global_position + Vector3(-1.5, 1.8, 4.2), lj.global_position + Vector3(-0.6, 0.7, 0), 50.0)
+	var ventos := _ground_point(Vector3(-95, 0, -158))
+	await _art_shot(out + "p13_morro_dos_ventos.png", size, ventos + Vector3(40, 14, 40), ventos + Vector3(0, 0, 0), 55.0)
+	var gate := find_child("PortaoDoCemiterio", true, false) as Node3D
+	if gate:
+		var out_dir := gate.global_position + gate.global_basis.z * 9.0 + gate.global_basis.x * 2.6
+		await _art_shot(out + "p14_portao_fechado.png", size, out_dir + Vector3.UP * 3.0, gate.global_position + gate.global_basis.x * 2.6 + Vector3.UP * 1.5, 55.0)
+		story._open_gate()
+		await _wait(2.5)
+		await _art_shot(out + "p15_portao_aberto.png", size, out_dir + Vector3.UP * 3.0, gate.global_position + gate.global_basis.x * 2.6 + Vector3.UP * 1.5, 55.0)
+	var pasture := _ground_point(Vector3(-104, 0, 52))
+	await _art_shot(out + "p16_pasto.png", size, pasture + Vector3(12, 6, 14), pasture + Vector3(0, 0.8, 0), 55.0)
 	print("PAISAGEM OK")
 	get_tree().quit()
 

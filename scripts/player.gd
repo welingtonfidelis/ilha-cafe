@@ -44,6 +44,8 @@ const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow"
 
 @export var run_speed := 6.0
 @export var aim_speed := 3.5
+## Correndo (Shift segurado, ou L3 no controle até parar de andar).
+@export var sprint_speed := 9.5
 @export var jump_velocity := 9.0
 @export var mouse_sensitivity := 0.0025
 
@@ -108,6 +110,9 @@ var _snap_time := 0.0
 var _yaw := 0.0
 var _pitch := -0.2
 var _air_state := "chao"
+## L3 liga a corrida no controle; desliga ao parar de andar ou mirar.
+var _sprint_toggle := false
+var sprinting := false
 var _joy_device := 0
 var _invulnerable := 0.0
 var _knockback := Vector3.ZERO
@@ -276,7 +281,10 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	ground_air.set_input_name(1, "ar")
 	ground_air.xfade_time = 0.15
 	bt.add_node(&"chao_ar", ground_air, Vector2(250, 100))
-	bt.connect_node(&"chao_ar", 0, &"loco")
+	var pace := AnimationNodeTimeScale.new()
+	bt.add_node(&"ritmo", pace, Vector2(120, 0))
+	bt.connect_node(&"ritmo", 0, &"loco")
+	bt.connect_node(&"chao_ar", 0, &"ritmo")
 	bt.connect_node(&"chao_ar", 1, &"ar")
 
 	var aim_blend := AnimationNodeBlend2.new()
@@ -436,7 +444,12 @@ func _physics_process(delta: float) -> void:
 	if dir.length() > 1.0:
 		dir = dir.normalized()
 
-	var speed := aim_speed if aiming else run_speed
+	if control and Input.is_action_just_pressed("correr_alternar"):
+		_sprint_toggle = not _sprint_toggle
+	if input.length() < 0.2 or aiming or dizzy:
+		_sprint_toggle = false
+	sprinting = not aiming and input.length() > 0.2 and (_sprint_toggle or (control and Input.is_action_pressed("correr")))
+	var speed := aim_speed if aiming else (sprint_speed if sprinting else run_speed)
 	var horizontal := Vector3(velocity.x, 0, velocity.z) - _knockback
 	horizontal = horizontal.lerp(dir * speed, 1.0 - exp(-14.0 * delta))
 	_knockback = _knockback.lerp(Vector3.ZERO, 1.0 - exp(-5.0 * delta))
@@ -919,6 +932,7 @@ func _update_animation(delta: float) -> void:
 	if blend.length() > 1.0:
 		blend = blend.normalized()
 	anim_tree.set("parameters/loco/blend_position", blend)
+	anim_tree.set("parameters/ritmo/scale", 1.35 if sprinting else 1.0)
 	var air := "chao" if is_on_floor() else "ar"
 	if air != _air_state:
 		_air_state = air

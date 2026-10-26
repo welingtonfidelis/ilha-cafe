@@ -7,13 +7,13 @@ extends Boss
 ## A vida na barra é a soma dos que sobraram.
 
 const SEGMENTS := 5
-const SEG_HEALTH := 4.0
+const SEG_HEALTH := 6.0
 const SEG_SCALE := 1.15
 const SPACING := 1.75
-const THROW_EVERY := 2.8
-const THROW_EVERY_SHORT := 2.0
+const THROW_EVERY := 2.2
+const THROW_EVERY_SHORT := 1.6
 const THROW_WINDUP := 0.7
-const HOP_EVERY := 5.0
+const HOP_EVERY := 4.0
 const HOP_SPEED := 8.0
 const KEEP_MIN := 7.0
 const KEEP_MAX := 14.0

@@ -27,7 +27,7 @@ var _next_attack := Move.LEQUE
 func _setup() -> void:
 	display_name = "Mira-Torta"
 	subtitle = "a esqueleta da besta"
-	max_health = 32.0
+	max_health = 44.0
 	body_scale = 2.3
 	speed = 0.0
 
@@ -44,7 +44,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 			move(Vector3.ZERO)
 			face(dir, delta, 6.0)
 			play(&"tiro/Pose_2H" if ap.get_animation_library(&"tiro").has_animation(&"Pose_2H") else &"especial/Skeletons_Idle")
-			if _move_time > 0.6:
+			if _move_time > 0.4:
 				_start_attack(_next_attack)
 		Move.LEQUE:
 			move(Vector3.ZERO)
@@ -123,7 +123,7 @@ func _fire_fan(dir: Vector3) -> void:
 func _rain() -> void:
 	if not is_instance_valid(target):
 		return
-	var count := 4 if health > max_health * 0.5 else 6
+	var count := 5 if health > max_health * 0.5 else 7
 	var center := target.global_position
 	danger_zone(center, RAIN_RADIUS, RAIN_DELAY)
 	for k in count - 1:

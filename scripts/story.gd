@@ -9,7 +9,7 @@ signal objective_changed(text: String)
 ## Ondas por região: lista de [tipo, quantidade]. O guardião vem na última onda.
 const REGIONS := {
 	"praca": {
-		"nome": "Praça da Festa", "titulo": "praça", "lanterna": "", "guardiao": "", "recompensa": "", "bandeira": "Praca",
+		"nome": "Praia do Cais", "titulo": "praia do cais", "lanterna": "", "guardiao": "", "recompensa": "", "bandeira": "Praca",
 		"ondas": [[["Skeleton_Minion", 3]], [["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]]],
 	},
 	"oeste": {
@@ -79,6 +79,8 @@ var fast := false
 var _crowd_check := 0.0
 var _bridge: StaticBody3D
 var _dome: StaticBody3D
+var _gate: StaticBody3D
+var _gate_closed_y := 0.0
 var _central_orb: MeshInstance3D
 
 
@@ -89,6 +91,9 @@ func setup(p_game: Node, p_island: Node3D) -> void:
 	_bridge = island.get_node("BarreiraDaPonte")
 	_dome = island.get_node("Morro/CupulaDoCemiterio")
 	_central_orb = island.get_node("Morro/Cemiterio/LanternaCentral")
+	_gate = island.get_node_or_null("Morro/Cemiterio/PortaoDoCemiterio")
+	if _gate:
+		_gate_closed_y = _gate.rotation.y
 	for key in ["Oeste", "Leste", "Ventos", "Clareira"]:
 		lanterns[key] = {
 			"orb": island.get_node("LanternasVisuais/Esfera" + key),
@@ -127,7 +132,7 @@ func start() -> void:
 	stage = "prologo"
 	_set_fast()
 	defenses.praca.activate()
-	game.banner("Véspera da Festa do Cafuné", "Os esqueletos querem levar a festa! Defenda a praça.")
+	game.banner("Véspera da Festa do Cafuné", "Os esqueletos estão chegando pela praia! Vá até o cais e defenda a festa.")
 	_refresh_objective()
 
 
@@ -247,7 +252,7 @@ func _celebrate(d: Defense) -> void:
 		ball.global_position = pos + Vector3.UP * 3.6
 		Fx.confetti(game, pos + Vector3.UP * 3.0, 20, 4.0)
 	for t in get_tree().get_nodes_in_group(&"moradores"):
-		if (t as Node3D).global_position.distance_to(d.center) < d.radius + 16.0:
+		if (t as Node3D).global_position.distance_to(d.center) < d.radius + _crowd_reach(d) + 2.0:
 			(t as Townsperson).celebrate(8.0, "Viva!")
 	if PARTY_GUESTS.has(d.id):
 		_party_guests(d)
@@ -288,12 +293,17 @@ func _party_guests(d: Defense) -> void:
 		t.celebrate(8.0)
 
 
+## Até onde a torcida ouve a luta: a praça inteira acompanha a defesa da praia ao lado.
+func _crowd_reach(d: Defense) -> float:
+	return 48.0 if d.id == "praca" else 14.0
+
+
 ## Moradores perto de uma onda em andamento torcem pelo aventureiro.
 func _update_crowd() -> void:
 	var running := running_defense()
 	for t in get_tree().get_nodes_in_group(&"moradores"):
 		var near := running != null and running.state == Defense.State.ONDA \
-				and (t as Node3D).global_position.distance_to(running.center) < running.radius + 14.0
+				and (t as Node3D).global_position.distance_to(running.center) < running.radius + _crowd_reach(running)
 		(t as Townsperson).crowd = near
 
 
@@ -333,6 +343,21 @@ func _open_bridge() -> void:
 func _open_dome() -> void:
 	_dissolve(_dome)
 	_set_orb_lit(_central_orb, false)
+	_open_gate()
+
+
+## O portão de ferro do cemitério abre girando na dobradiça (fica aberto).
+func _open_gate() -> void:
+	if not is_instance_valid(_gate):
+		return
+	var tw := _gate.create_tween()
+	tw.tween_interval(0.6)
+	tw.tween_property(_gate, "rotation:y", _gate.rotation.y - deg_to_rad(105.0), 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	Sfx.play_at(game, "escudo", _gate.global_position)
+
+
+func gate_open() -> bool:
+	return is_instance_valid(_gate) and absf(angle_difference(_gate.rotation.y, _gate_closed_y)) > 1.5
 
 
 ## A barreira some: perde a colisão na hora e desaparece em confete.
@@ -382,6 +407,8 @@ func skip_to_cemetery() -> void:
 	open_bridge_now()
 	_dome.collision_layer = 0
 	_dome.visible = false
+	if _gate:
+		_gate.rotation.y = _gate_closed_y - deg_to_rad(105.0)
 	stage = "cemiterio"
 	_set_fast()
 	defenses.cemiterio.activate()
@@ -424,7 +451,7 @@ func _refresh_objective() -> void:
 	else:
 		match stage:
 			"antes", "prologo":
-				text = "Defenda a praça da festa"
+				text = "Vá até a praia do cais e defenda a festa"
 				target = defenses.praca.center
 			"cidade":
 				var left := CITY.filter(func(id: String) -> bool: return defenses[id].state != Defense.State.VENCIDA)

@@ -25,17 +25,22 @@ const RIVER_HALF := 7.0
 const RIVER_BANK := 6.0
 ## Longe da costa (antes ficava na beira da praia e o terreno virava areia e mar).
 const VENTOS := Vector2(-95, -158)
-const VENTOS_R := 45.0
-const VENTOS_H := 14.0
+const VENTOS_R := 58.0
+const VENTOS_H := 8.0
+## Topo plano do Morro dos Ventos: a arena (22 m) inteira fica no plano, e a encosta é suave.
+const VENTOS_TOP_R := 27.0
 const CLAREIRA := Vector2(40, -180)
 const VILA := Vector2(115, -160)
+## Pasto dos cavalos, a oeste da cidade.
+const PASTURE := Vector2(-104, 52)
+const PASTURE_R := 11.0
 const SPIRAL_TURNS := 2.5
 const SPIRAL_R0 := 86.0
 const SPIRAL_R1 := 15.0
 const PATH_HALF := 3.2
 ## Regiões de defesa (centro da arena em x, z). Nas quatro de fora da praça a lanterna fica no centro.
 const REGIONS := {
-	"praca": Vector2(0, 170),
+	"praca": Vector2(-30, 212),  # a luta do prólogo é na praia ao lado do cais (o jogo começa na praça)
 	"oeste": Vector2(-84, 140),
 	"leste": Vector2(84, 140),
 	"clareira": Vector2(24, -166),
@@ -54,6 +59,7 @@ const FESTA := "res://assets/props/festa/%s.gltf"
 const CEMITERIO := "res://assets/props/cemiterio/%s.gltf"
 const PONTE := "res://assets/props/ponte/%s.gltf"
 const EXTRAS := "res://assets/props/%s.gltf"
+const CAIS := "res://assets/props/cais/%s.gltf"
 ## Árvores e arbustos nas outras cores do Forest Nature Pack completo (a cor 1 fica em env/forest/).
 const FOREST_COLOR := "res://assets/env/forest/cor%d/%s_Color%d.gltf"
 ## Formatos de árvore da mata (os 5, 6 e 7 só existem no pacote completo).
@@ -145,7 +151,8 @@ func height(x: float, z: float) -> float:
 	# Morro dos Ventos, a noroeste.
 	var rv := Vector2(x, z).distance_to(VENTOS)
 	if rv < VENTOS_R:
-		land = maxf(land, VENTOS_H * (0.5 + 0.5 * cos(PI * rv / VENTOS_R)))
+		var tv := clampf((rv - VENTOS_TOP_R) / (VENTOS_R - VENTOS_TOP_R), 0.0, 1.0)
+		land = maxf(land, VENTOS_H * (0.5 + 0.5 * cos(PI * tv)))
 	# Cidade plana.
 	if z > CITY_Z:
 		land = 0.0
@@ -680,6 +687,24 @@ func _cemiterio(morro: Node, top: float) -> void:
 		_prop(cem, CEMITERIO % "fence_pillar", at.call(q.x, q.y), _tangent_deg(a), 1.05, "caixa")
 	var g := Vector2(cos(gate_a), sin(gate_a)) * fence_r
 	_prop(cem, CEMITERIO % "arch_gate", at.call(g.x, g.y), _tangent_deg(gate_a), 1.3)
+	# Portão de ferro embaixo do arco, com a dobradiça num dos lados: fechado até a cúpula cair (o jogo abre).
+	var tangent := Vector2(-sin(gate_a), cos(gate_a))
+	var hinge := g - tangent * 2.6
+	var gate_pivot := StaticBody3D.new()
+	gate_pivot.name = "PortaoDoCemiterio"
+	gate_pivot.position = at.call(hinge.x, hinge.y)
+	gate_pivot.rotation_degrees.y = _tangent_deg(gate_a)
+	_add(cem, gate_pivot)
+	var gate_door: Node3D = load(CEMITERIO % "fence_gate").instantiate()
+	gate_door.position = Vector3(2.6, 0, 0)
+	gate_door.scale = Vector3(1.3, 1.1, 1.0)
+	_add(gate_pivot, gate_door)
+	var gate_cs := CollisionShape3D.new()
+	var gate_box := BoxShape3D.new()
+	gate_box.size = Vector3(5.2, 3.0, 0.4)
+	gate_cs.shape = gate_box
+	gate_cs.position = Vector3(2.6, 1.5, 0)
+	_add(gate_pivot, gate_cs)
 	# Cripta no fundo e a lanterna mágica flutuando em cima.
 	_prop(cem, CEMITERIO % "crypt", at.call(0, -17.5), 180.0, 1.3, "caixa")
 	_orb(cem, "LanternaCentral", Vector3(0, top + 13.0, -17.5), 1.0)
@@ -812,7 +837,7 @@ func _bridge_and_pier() -> void:
 	# Barreira mágica na cabeceira sul: some quando as duas lanternas da cidade apagam (o jogo cuida disso).
 	_magic_wall(ilha, "BarreiraDaPonte", Vector3(0, ground(0, z_south + 1.0) + 2.5, z_south + 1.0), Vector3(9, 5, 0.5))
 	# Cais: sai da praça para o mar, ao sul.
-	_walkway(ilha, "Cais", Vector3(0, ground(0, 206) + 0.02, 206), Vector3(0, 0.25, 252), 7.0)
+	_wood_pier(Vector3(0, ground(0, 206) + 0.02, 206), Vector3(0, 0.25, 252), 7.0)
 	# Pescador no fim do cais: caixa de pesca e balde (o pescador é um morador; o jogo cria).
 	var pier_y := lerpf(ground(0, 206) + 0.02, 0.25, (247.0 - 206.0) / 46.0)
 	_prop(ilha, EXTRAS % "pesca/fishing_tacklebox", Vector3(1.0, pier_y, 246.0), 15.0, 1.1)
@@ -820,8 +845,85 @@ func _bridge_and_pier() -> void:
 	# Toras do lenhador na margem sul do rio, perto da ponte.
 	var river_s := _river_z(12.0) + RIVER_HALF + RIVER_BANK + 6.0
 	var logs := _group(ilha, "Lenha")
-	for spec in [["log_stacks", 14.6, 1.6, 20.0], ["log_stacks", 9.2, 1.4, -15.0], ["log_split", 13.4, -1.8, 60.0]]:
+	for spec in [["log_stacks", 14.6, 2.4, 20.0], ["log_stacks", 9.2, 2.6, -15.0], ["log_split", 13.6, -2.2, 60.0]]:
 		_prop(logs, EXTRAS % ("moradores/lenhador/" + spec[0]), Vector3(spec[1], ground(spec[1], river_s + spec[2]), river_s + spec[2]), spec[3], 1.3, "caixa")
+	# Tronco caído na frente dele (o golpe do KayKit é de cima para baixo, na altura de um tronco deitado),
+	# o toco da árvore cortada e um pinheiro ainda de pé ao lado.
+	var trunk_x := 12.0 - 0.95
+	var trunk := _prop(logs, EXTRAS % "moradores/lenhador/log_A", Vector3(trunk_x, ground(trunk_x, river_s) + 0.17, river_s), 0.0, 1.0, "caixa")
+	trunk.rotation_degrees = Vector3(90, 0, 0)
+	trunk.scale = Vector3(0.8, 3.0, 0.8)
+	var stump := _prop(logs, EXTRAS % "moradores/lenhador/log_B", Vector3(trunk_x - 0.4, ground(trunk_x, river_s - 2.6) + 0.2, river_s - 2.6), 30.0, 1.0, "caixa")
+	stump.scale = Vector3(1.4, 0.4, 1.4)
+	_prop(logs, _tree_path("Tree_5_B", 1), Vector3(trunk_x - 2.6, ground(trunk_x - 2.6, river_s - 3.4) - 0.1, river_s - 3.4), 40.0, FOREST_SCALE, "tronco")
+
+
+## Pasto com cerca de madeira e cavalos pastando (Medieval Hexagon; só existem cavalos de animal na coleção).
+func _pasture() -> void:
+	var pasture := _group(ilha, "Pasto")
+	var segs := 14
+	for k in segs:
+		var a := TAU * k / segs
+		if k == 3:
+			continue  # porteira aberta
+		var p := PASTURE + Vector2(cos(a), sin(a)) * PASTURE_R
+		var rail: Node3D = load(CAIS % "fence_wood_straight").instantiate()
+		rail.position = Vector3(p.x, ground(p.x, p.y), p.y)
+		rail.rotation.y = -a
+		rail.scale = Vector3(3.0, 2.0, 4.3)
+		_add(pasture, rail)
+	var horses := ["horse_A", "horse_D", "horse_G", "horse_B"]
+	for k in horses.size():
+		var a := TAU * k / horses.size() + 0.5
+		var p := PASTURE + Vector2(cos(a), sin(a)) * 4.5
+		var horse := Node3D.new()
+		horse.name = "Cavalo%d" % (k + 1)
+		horse.set_script(load("res://scripts/horse.gd"))
+		horse.position = Vector3(p.x, ground(p.x, p.y), p.y)
+		horse.rotation.y = a + 1.3
+		_add(pasture, horse)
+		horse.set("model_name", horses[k])
+	_prop(pasture, FESTA % "comida/crate_lettuce", Vector3(PASTURE.x, ground(PASTURE.x, PASTURE.y), PASTURE.y), 20.0, 0.5, "caixa")
+
+
+## Cais de tábuas do Dungeon Pack (piso de madeira) com corrimão de cerca de madeira do Medieval Hexagon e
+## toras fincadas na água. A colisão é uma caixa invisível no comprimento todo.
+func _wood_pier(a: Vector3, b: Vector3, width: float) -> void:
+	var group := _group(ilha, "Cais")
+	var flat := Vector2(b.x - a.x, b.z - a.z)
+	var length := Vector3(b - a).length()
+	var basis := Basis(Vector3.UP, atan2(flat.x, flat.y)) * Basis(Vector3.RIGHT, -atan2(b.y - a.y, flat.length()))
+	var body := StaticBody3D.new()
+	body.name = "Piso"
+	_add(group, body)
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(width, 0.4, length)
+	cs.shape = box
+	cs.transform = Transform3D(basis, (a + b) * 0.5 - basis.y * 0.2)
+	_add(body, cs)
+	var tiles := int(ceil(length / 4.0))
+	for i in tiles:
+		var t := (i + 0.5) / tiles
+		var tile: Node3D = load(CAIS % "floor_wood_large").instantiate()
+		tile.transform = Transform3D(basis.scaled_local(Vector3(width / 4.0, 1.0, length / tiles / 4.0)), a.lerp(b, t) + basis.y * 0.04)
+		_add(group, tile)
+	var rails := int(length / 3.4)
+	for side in [-1.0, 1.0]:
+		for i in rails:
+			var t := (i + 0.5) / rails
+			var rail: Node3D = load(CAIS % "fence_wood_straight").instantiate()
+			# A cerca do pacote já fica no eixo Z (comprimento 1,15 m): estica até emendar com a próxima.
+			rail.transform = Transform3D(basis.scaled_local(Vector3(2.5, 2.0, (length / rails) / 1.15)), a.lerp(b, t) + basis.x * (side * (width * 0.5 - 0.2)))
+			_add(group, rail)
+	for i in int(length / 8.0) + 1:
+		var t := float(i) / int(length / 8.0)
+		for side in [-1.0, 1.0]:
+			var post_pos: Vector3 = a.lerp(b, t) + basis.x * (side * (width * 0.5 - 0.1))
+			var post: Node3D = load(EXTRAS % "moradores/lenhador/log_A").instantiate()
+			post.position = post_pos - Vector3.UP * 1.0
+			post.scale = Vector3(0.9, 2.0, 0.9)
+			_add(group, post)
 
 
 ## Ponte de pedra em arco (Medieval Hexagon) sobre o rio. No pacote ela fica na diagonal do hexágono (30° do
@@ -943,7 +1045,12 @@ func _forest() -> void:
 		if _island_d(p.x, p.y) > 0.84 or _near_region(p):
 			continue
 		var city_color: int = [1, 3][rng_cor.randi() % 2]
-		_prop(forest, _tree_path(trees[rng.randi() % trees.size()], city_color), Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.85, 1.2), "tronco")
+		var city_tree := _tree_path(trees[rng.randi() % trees.size()], city_color)
+		var city_rot := rng.randf_range(0, 360)
+		var city_scale := FOREST_SCALE * rng.randf_range(0.85, 1.2)
+		if p.distance_to(PASTURE) < PASTURE_R + 3.0:
+			continue
+		_prop(forest, city_tree, Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), city_rot, city_scale, "tronco")
 	# Jabuticabeira gigante no meio da clareira.
 	_prop(forest, FOREST % "Tree_1_A_Color1", Vector3(CLAREIRA.x, ground(CLAREIRA.x, CLAREIRA.y) - 0.2, CLAREIRA.y), 30.0, FOREST_SCALE * 3.2, "tronco")
 	# Vila das Copas: plataformas de madeira entre as árvores (chegar lá em cima fica para o pulo duplo).
@@ -1100,6 +1207,7 @@ func _markers() -> void:
 	var fun := _group(markers, "Diversao")
 	var pc0 := Vector2(PLAZA.position.x + 20, PLAZA.position.y + 20)
 	_marker(fun, "TiroAoAlvo", pc0.x - 6.0, pc0.y + 10.5)
+	_pasture()
 	var springs := _group(markers, "Molas")
 	for k in 3:
 		var sp := VILA + Vector2(cos(TAU * k / 3.0), sin(TAU * k / 3.0)) * 3.0
@@ -1184,6 +1292,9 @@ func _markers() -> void:
 		var p: Vector2 = f[5]
 		var meta := {"modelo": f[1], "atividade": f[2], "variante": f[3], "item": f[4], "altura": f[7],
 			"falas": PackedStringArray(f[8])}
+		# O machado do KayKit fica com a lâmina para cima no osso da mão: gira em volta do cabo.
+		if f[4] == "moradores/lenhador/axe":
+			meta["item_rot"] = Vector3(0, 180, 0)
 		if walk_to.has(f[0]):
 			var w: Vector2 = walk_to[f[0]]
 			meta["destino"] = Vector3(w.x, ground(w.x, w.y), w.y)

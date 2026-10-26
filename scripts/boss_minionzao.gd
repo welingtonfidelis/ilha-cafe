@@ -12,13 +12,13 @@ const PUNCH_RANGE := 6.5
 const PUNCH_HIT := 0.55 / 0.8
 const PUNCH_END := 1.17 / 0.8
 const CHARGE_RANGE := 24.0
-const CHARGE_WINDUP := 1.3
+const CHARGE_WINDUP := 1.15
 ## A faixa para de seguir o aventureiro um pouco antes da largada, para dar tempo de sair.
 const CHARGE_LOCK := 0.45
 const CHARGE_SPEED := 15.0
 const CHARGE_TIME := 1.5
 const CHARGE_HIT_RADIUS := 2.6
-const DIZZY_TIME := 2.6
+const DIZZY_TIME := 2.2
 const DIZZY_WALL_TIME := 3.6
 
 var _move := Move.ANDANDO
@@ -34,7 +34,7 @@ var _stars: Node3D
 func _setup() -> void:
 	display_name = "Minionzão"
 	subtitle = "o Minion gigante"
-	max_health = 36.0
+	max_health = 50.0
 	body_scale = 3.0
 	speed = 2.0
 
@@ -123,7 +123,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 			_stars.rotate_y(delta * 3.0)
 			if _move_time >= _dizzy_time:
 				_stars.visible = false
-				_charge_cooldown = 5.0
+				_charge_cooldown = 3.8
 				_rest()
 		Move.DESCANSO:
 			move(Vector3.ZERO)

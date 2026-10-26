@@ -25,6 +25,8 @@ const STANDING := ["parado", "torcendo", "trabalhando", "andando", "tocando", "c
 @export var activity := "parado"
 ## Objeto na mão direita (caminho do .gltf dentro de assets/props/, sem extensão), vazio é nenhum.
 @export var item := ""
+## Rotação do item na mão (graus).
+@export var item_rotation := Vector3.ZERO
 @export var lines := PackedStringArray()
 ## Só para "andando": vai e volta entre a posição inicial e este ponto.
 @export var walk_to := Vector3.INF
@@ -77,7 +79,9 @@ func _ready() -> void:
 		var hand := BoneAttachment3D.new()
 		hand.bone_name = "handslot.r"
 		sk.add_child(hand)
-		hand.add_child(load(ITEMS % item).instantiate())
+		var held: Node3D = load(ITEMS % item).instantiate()
+		held.rotation_degrees = item_rotation
+		hand.add_child(held)
 	_bubble = Label3D.new()
 	_bubble.font_size = 44
 	_bubble.outline_size = 12

@@ -24,14 +24,15 @@ var _move_time := 0.0
 var _slam_cooldown := 2.0
 var _struck := false
 var _summoned := false
+var _summoned_again := false
 
 
 func _setup() -> void:
 	display_name = "Ossão"
 	subtitle = "o guerreiro do escudo"
-	max_health = 40.0
+	max_health = 56.0
 	body_scale = 2.6
-	speed = 1.7
+	speed = 2.0
 
 
 func _build() -> void:
@@ -65,7 +66,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 				if is_instance_valid(target):
 					target.shake(0.35)
 			if _move_time >= SLAM_END:
-				_slam_cooldown = 4.5
+				_slam_cooldown = 3.4
 				_rest()
 		Move.GOLPE:
 			move(Vector3.ZERO)
@@ -115,6 +116,11 @@ func _blocks(point: Vector3, hb: Hurtbox) -> bool:
 
 
 func _on_damaged() -> void:
+	if _summoned and not _summoned_again and health <= max_health * 0.25:
+		_summoned_again = true
+		Fx.popup_text(get_parent(), global_position + Vector3.UP * 7.5, "Mais ossinhos!", Color("#ffd6f3"))
+		for side in [-1.0, 1.0]:
+			summon_requested.emit("Skeleton_Minion", global_position + visual.global_basis.x * side * 4.0)
 	if not _summoned and health <= max_health * 0.5:
 		_summoned = true
 		Fx.popup_text(get_parent(), global_position + Vector3.UP * 7.5, "Ossinhos, venham!", Color("#ffd6f3"))
