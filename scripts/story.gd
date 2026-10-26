@@ -1,7 +1,7 @@
 class_name Story
 extends Node
 ## A história na ilha (seção 4 do doc): prólogo na praça, lanternas da cidade, ponte, lanternas da mata
-## e castelinho. Cada região é uma Defense; vencer apaga a lanterna, deixa a região em festa e entrega
+## e o cemitério dos esqueletos. Cada região é uma Defense; vencer apaga a lanterna, deixa a região em festa e entrega
 ## a recompensa. Também cuida do objetivo atual (texto e ponto que o marcador da tela aponta).
 
 signal objective_changed(text: String)
@@ -28,9 +28,9 @@ const REGIONS := {
 		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
 		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
-	# Defesa final, dentro do castelinho (abre quando a cúpula cai): todos os tipos e o Mestre Ossinho.
-	"castelo": {
-		"nome": "Castelinho", "titulo": "castelinho", "lanterna": "", "guardiao": "mestre", "recompensa": "", "bandeira": "TopoDoMorro",
+	# Defesa final, no meio do cemitério do Morro (abre quando a cúpula cai): todos os tipos e o Mestre Ossinho.
+	"cemiterio": {
+		"nome": "Cemitério dos Ossinhos", "titulo": "cemitério", "lanterna": "", "guardiao": "mestre", "recompensa": "", "bandeira": "TopoDoMorro",
 		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1], ["Skeleton_Mage", 1]], [["Skeleton_Warrior", 2], ["Skeleton_Rogue", 2], ["Skeleton_Minion", 2]],
 			[["Skeleton_Golem", 1], ["Skeleton_Mage", 1]]],
 	},
@@ -55,12 +55,12 @@ const PARTY_GUESTS := {
 	"ventos": [["MagicalGirl", "magical_girl_texture_D", "torcendo"], ["MonsterCostume", "monstercostume_texture_B", "torcendo"], ["Hiker", "", "parado"]],
 }
 const PARTY_LINES := ["Obrigado! Agora é festa aqui também!", "Viva! A lanterna apagou!", "Vem dançar com a gente!"]
-const CASTLE := Vector3(0, 26, 0)
+const CEMETERY := Vector3(0, 26, 2)
 const BRIDGE_SOUTH_Z := -97.0
 
 var game: Node
 var island: Node3D
-## antes, prologo, cidade, mata, castelo, fim
+## antes, prologo, cidade, mata, cemiterio, fim
 var stage := "antes"
 var defenses := {}
 var lanterns := {}
@@ -81,8 +81,8 @@ func setup(p_game: Node, p_island: Node3D) -> void:
 	island = p_island
 	game.player.keep_only_weapons(["pacoca"])
 	_bridge = island.get_node("BarreiraDaPonte")
-	_dome = island.get_node("Morro/CupulaDoCastelinho")
-	_central_orb = island.get_node("Morro/Castelinho/LanternaCentral")
+	_dome = island.get_node("Morro/CupulaDoCemiterio")
+	_central_orb = island.get_node("Morro/Cemiterio/LanternaCentral")
 	for key in ["Oeste", "Leste", "Ventos", "Clareira"]:
 		lanterns[key] = {
 			"orb": island.get_node("LanternasVisuais/Esfera" + key),
@@ -135,7 +135,7 @@ func _physics_process(delta: float) -> void:
 	if _crowd_check <= 0.0:
 		_crowd_check = 0.5
 		_update_crowd()
-	if stage in ["cidade", "mata", "castelo"]:
+	if stage in ["cidade", "mata", "cemiterio"]:
 		_refresh_objective()
 
 
@@ -174,12 +174,12 @@ func _on_defense_won(d: Defense) -> void:
 		"mata":
 			if _all_won(FOREST):
 				_open_dome()
-				stage = "castelo"
-				defenses.castelo.activate()
-				game.banner("As quatro lanternas apagaram!", "A cúpula do castelinho caiu. Suba o Morro!", Color("#d9a8ff"))
+				stage = "cemiterio"
+				defenses.cemiterio.activate()
+				game.banner("As quatro lanternas apagaram!", "A cúpula do cemitério caiu. Suba o Morro!", Color("#d9a8ff"))
 			else:
 				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na mata.")
-		"castelo":
+		"cemiterio":
 			_ending()
 	_refresh_objective()
 
@@ -351,7 +351,7 @@ func skip_to_forest() -> void:
 
 
 ## Atalho dos testes: tudo vencido até a cúpula cair, com os quatro blasters; a defesa final fica ativa.
-func skip_to_castle() -> void:
+func skip_to_cemetery() -> void:
 	for id in ["praca"] + CITY + FOREST:
 		var d: Defense = defenses[id]
 		d.state = Defense.State.VENCIDA
@@ -364,9 +364,9 @@ func skip_to_castle() -> void:
 	open_bridge_now()
 	_dome.collision_layer = 0
 	_dome.visible = false
-	stage = "castelo"
+	stage = "cemiterio"
 	_set_fast()
-	defenses.castelo.activate()
+	defenses.cemiterio.activate()
 	_refresh_objective()
 
 
@@ -420,9 +420,9 @@ func _refresh_objective() -> void:
 				else:
 					text = "Apague as lanternas da mata (%d de 2)" % (2 - left.size())
 					target = _nearest(left)
-			"castelo":
-				text = "Suba o Morro até o castelinho"
-				target = CASTLE + Vector3.UP * 2.0
+			"cemiterio":
+				text = "Suba o Morro até o cemitério"
+				target = CEMETERY + Vector3.UP * 2.0
 			"fim":
 				text = "Explore a ilha à vontade!"
 	objective_target = target

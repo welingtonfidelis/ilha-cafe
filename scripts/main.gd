@@ -294,18 +294,21 @@ func _ready() -> void:
 	elif "--mata-captura" in args:
 		select_panel.hide()
 		_run_forest_capture()
-	elif "--castelo" in args:
+	elif "--cemiterio" in args:
 		select_panel.hide()
-		_run_castle_test()
-	elif "--castelo-captura" in args:
+		_run_cemetery_test()
+	elif "--cemiterio-captura" in args:
 		select_panel.hide()
-		_run_castle_capture()
+		_run_cemetery_capture()
 	elif "--arte-steam" in args:
 		select_panel.hide()
 		_run_steam_art()
 	elif "--festa-captura" in args:
 		select_panel.hide()
 		_run_festa_capture()
+	elif "--paisagem-captura" in args:
+		select_panel.hide()
+		_run_landscape_capture()
 	else:
 		open_menu("escolha")
 
@@ -1759,7 +1762,7 @@ func _run_island_capture() -> void:
 	await _wait(1.0)
 	player.aim_at(Vector3(0, 28, 0))
 	await _wait(0.4)
-	await _shot("ilha_jogo_05_castelinho.png")
+	await _shot("ilha_jogo_05_cemiterio.png")
 	player.global_position = Vector3(3, 2, -94)
 	await _wait(1.0)
 	player.set_yaw(0.0)
@@ -2266,7 +2269,7 @@ func _children_of(type: Variant) -> Array:
 	return get_children().filter(func(n: Node) -> bool: return is_instance_of(n, type) and not n.is_queued_for_deletion())
 
 
-## Defesas da mata (Torre de Ossinhos e Minionzão) e o caminho até o castelinho, partindo do
+## Defesas da mata (Torre de Ossinhos e Minionzão) e o caminho até o cemitério, partindo do
 ## atalho que dá a cidade como vencida. Uso: godot --headless --path . -- --mata
 func _run_forest_test() -> void:
 	var all_ok := true
@@ -2368,53 +2371,53 @@ func _run_forest_test() -> void:
 	await _clear_wave(ventos)
 	await _wait_until(func() -> bool: return ventos.state == Defense.State.VENCIDA, 4.0)
 	await get_tree().physics_frame
-	all_ok = _check("mata vencida: cúpula do castelinho cai", story.stage == "castelo" and story.dome_open()) and all_ok
+	all_ok = _check("mata vencida: cúpula do cemitério cai", story.stage == "cemiterio" and story.dome_open()) and all_ok
 	await _stand(story.rewards[0].global_position)
 	await _wait(1.0)
 	all_ok = _check("recompensa do Morro dos Ventos é o Pé-de-Moleque", player.has_weapon("pe_de_moleque")) and all_ok
-	all_ok = _check("objetivo manda subir até o castelinho", "castelinho" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
+	all_ok = _check("objetivo manda subir até o cemitério", "cemitério" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
 	await _stand(Vector3(9, 27, 0))
 	await _wait(0.5)
-	all_ok = _check("chegar ao castelinho começa a defesa final", story.defenses.castelo.state in [Defense.State.CHEGANDO, Defense.State.ONDA],
-			"(%s)" % Defense.State.keys()[story.defenses.castelo.state]) and all_ok
+	all_ok = _check("chegar ao cemitério começa a defesa final", story.defenses.cemiterio.state in [Defense.State.CHEGANDO, Defense.State.ONDA],
+			"(%s)" % Defense.State.keys()[story.defenses.cemiterio.state]) and all_ok
 
 	print("MATA OK" if all_ok else "MATA COM FALHAS")
 	get_tree().quit()
 
 
-## Defesa final no castelinho e as três fases do Mestre Ossinho, partindo do atalho (tudo vencido
-## até a cúpula cair). Uso: godot --headless --path . -- --castelo
-func _run_castle_test() -> void:
+## Defesa final no cemitério e as três fases do Mestre Ossinho, partindo do atalho (tudo vencido
+## até a cúpula cair). Uso: godot --headless --path . -- --cemiterio
+func _run_cemetery_test() -> void:
 	var all_ok := true
 	player.god_mode = true
 	story.fast = true
 	await _wait(0.5)
-	story.skip_to_castle()
+	story.skip_to_cemetery()
 	await _wait(0.3)
-	var castelo: Defense = story.defenses.castelo
-	all_ok = _check("atalho: cúpula aberta e defesa final ativa", story.stage == "castelo" and story.dome_open() and castelo.active) and all_ok
-	await _stand(castelo.center + Vector3(0, 0, 2))
-	await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
-	all_ok = _check("entrar no castelinho começa a defesa", castelo.state == Defense.State.ONDA) and all_ok
+	var cemiterio: Defense = story.defenses.cemiterio
+	all_ok = _check("atalho: cúpula aberta e defesa final ativa", story.stage == "cemiterio" and story.dome_open() and cemiterio.active) and all_ok
+	await _stand(cemiterio.center + Vector3(0, 0, 2))
+	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	all_ok = _check("entrar no cemitério começa a defesa", cemiterio.state == Defense.State.ONDA) and all_ok
 	for k in 2:
-		await _clear_wave(castelo, false)
-		await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
-	await _wait_until(func() -> bool: return is_instance_valid(castelo.boss) and castelo.boss.phase == Boss.Phase.LUTANDO, 8.0)
-	var mestre := castelo.boss as BossMestre
+		await _clear_wave(cemiterio, false)
+		await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return is_instance_valid(cemiterio.boss) and cemiterio.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mestre := cemiterio.boss as BossMestre
 	all_ok = _check("última onda traz o Mestre Ossinho com barra de vida", is_instance_valid(mestre) and mestre.display_name == "Mestre Ossinho"
 			and boss_bar.visible and mestre.stage_n == 1) and all_ok
 	if mestre == null:
-		print("CASTELO COM FALHAS")
+		print("CEMITERIO COM FALHAS")
 		get_tree().quit()
 		return
 	# Os outros da onda saem do caminho.
 	await _wait_until(func() -> bool: return _wave_enemies().all(func(e: SkeletonEnemy) -> bool: return e.state != SkeletonEnemy.State.ACORDANDO), 4.0)
 	for e in _wave_enemies():
 		e.take_hit(99.0, e.global_position + Vector3.UP, e.hurtboxes[0])
-	var before := castelo.remaining
+	var before := cemiterio.remaining
 	mestre.summon()
 	await get_tree().physics_frame
-	all_ok = _check("fase 1: o Mestre chama dois minions", castelo.remaining == before + 2, "(%d -> %d)" % [before, castelo.remaining]) and all_ok
+	all_ok = _check("fase 1: o Mestre chama dois minions", cemiterio.remaining == before + 2, "(%d -> %d)" % [before, cemiterio.remaining]) and all_ok
 	var bubbles := _projectiles(Projectile.Kind.BOLHA).size()
 	mestre._release()
 	await get_tree().physics_frame
@@ -2471,35 +2474,35 @@ func _run_castle_test() -> void:
 	await _wait(5.0)
 	all_ok = _check("derrotado, o Mestre senta e tira a coroa (sem balão)", is_instance_valid(mestre) and mestre.is_sitting()
 			and is_instance_valid(mestre.crown_on_floor) and mestre._balloons == null) and all_ok
-	await _clear_wave(castelo, false)
-	await _wait_until(func() -> bool: return castelo.state == Defense.State.VENCIDA, 5.0)
+	await _clear_wave(cemiterio, false)
+	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.VENCIDA, 5.0)
 	await get_tree().physics_frame
-	all_ok = _check("defesa final vencida: fim da história e convite entregue", castelo.state == Defense.State.VENCIDA and story.stage == "fim",
+	all_ok = _check("defesa final vencida: fim da história e convite entregue", cemiterio.state == Defense.State.VENCIDA and story.stage == "fim",
 			"(\"%s\")" % story.objective_text) and all_ok
-	print("CASTELO OK" if all_ok else "CASTELO COM FALHAS")
+	print("CEMITERIO OK" if all_ok else "CEMITERIO COM FALHAS")
 	get_tree().quit()
 
 
-## Fotos da defesa final e do Mestre Ossinho (precisa de janela). Uso: godot --path . -- --castelo-captura
-func _run_castle_capture() -> void:
+## Fotos da defesa final e do Mestre Ossinho (precisa de janela). Uso: godot --path . -- --cemiterio-captura
+func _run_cemetery_capture() -> void:
 	player.god_mode = true
 	story.fast = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	await _wait(0.6)
-	story.skip_to_castle()
-	var castelo: Defense = story.defenses.castelo
+	story.skip_to_cemetery()
+	var cemiterio: Defense = story.defenses.cemiterio
 	var out := "res://tools/capturas/"
 	var size := Vector2i(1280, 720)
 	# No fundo do pátio: o Mestre fica entre o aventureiro e o portão, e o arco vai para o fundo da foto.
-	await _stand(castelo.center + Vector3(2.5, 0, -5.0))
-	await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
+	await _stand(cemiterio.center + Vector3(2.5, 0, -5.0))
+	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
 	await _wait(1.5)
-	await _art_shot(out + "c01_defesa_no_castelinho.png", size, castelo.center + Vector3(5.5, 6.5, 8.5), castelo.center + Vector3(-1, 0.5, -2), 60.0)
+	await _art_shot(out + "c01_defesa_no_cemiterio.png", size, cemiterio.center + Vector3(5.5, 6.5, 8.5), cemiterio.center + Vector3(-1, 0.5, -2), 60.0)
 	for k in 2:
-		await _clear_wave(castelo, false)
-		await _wait_until(func() -> bool: return castelo.state == Defense.State.ONDA, 6.0)
-	await _wait_until(func() -> bool: return is_instance_valid(castelo.boss) and castelo.boss.phase == Boss.Phase.LUTANDO, 8.0)
-	var mestre := castelo.boss as BossMestre
+		await _clear_wave(cemiterio, false)
+		await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return is_instance_valid(cemiterio.boss) and cemiterio.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mestre := cemiterio.boss as BossMestre
 	await _wait(1.0)
 	for e in _wave_enemies():
 		e.visible = false
@@ -2539,7 +2542,7 @@ func _run_castle_capture() -> void:
 	for e in _wave_enemies():
 		e.visible = true
 		e.set_physics_process(true)
-	await _clear_wave(castelo, false)
+	await _clear_wave(cemiterio, false)
 	await _wait(1.0)
 	await _shot("c07_convite.png")
 	get_tree().quit()
@@ -2617,7 +2620,7 @@ func _run_forest_capture() -> void:
 	await _stand(Vector3(14, 27, 16))
 	player.aim_at(Vector3(0, 30, 0))
 	await _wait(0.6)
-	await _shot("m05_castelinho_aberto.png")
+	await _shot("m05_cemiterio_aberto.png")
 	await _stand(Vector3(9, 27, 0))
 	await _wait(0.8)
 	await _shot("m06_fim_desta_versao.png")
@@ -2654,6 +2657,32 @@ func _run_smoke() -> void:
 
 # --- festa e moradores ----------------------------------------------------------
 
+## Fotos da paisagem sem a interface (p01 a p08): cemitério do Morro, ponte de pedra, mata com as cores
+## do pacote completo, morrinhos na margem do rio e cerejeiras da praça. Uso: godot --path . -- --paisagem-captura
+func _run_landscape_capture() -> void:
+	player.god_mode = true
+	await _wait(1.0)
+	var dome := find_child("CupulaDoCemiterio", true, false) as StaticBody3D
+	if dome:
+		dome.visible = false
+		dome.collision_layer = 0
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	var top := _ground_point(Vector3(0, 0, 2))
+	await _art_shot(out + "p01_cemiterio_de_cima.png", size, top + Vector3(0, 32, 30), top + Vector3(0, 0, -3), 60.0)
+	await _art_shot(out + "p02_cemiterio_cripta.png", size, top + Vector3(-6, 4.5, 12), top + Vector3(0, 3.0, -17), 55.0)
+	await _art_shot(out + "p03_cemiterio_tumulos.png", size, top + Vector3(-4, 3.5, 6), top + Vector3(15, 1.0, -2), 60.0)
+	var bridge := _ground_point(Vector3(0, 0, -112))
+	await _art_shot(out + "p04_ponte.png", size, bridge + Vector3(26, 6, 6), bridge + Vector3(0, 1, 0), 55.0)
+	await _art_shot(out + "p05_ponte_de_cima.png", size, bridge + Vector3(8, 14, 28), bridge + Vector3(0, 0, -4), 55.0)
+	await _art_shot(out + "p06_mata_clareira.png", size, _ground_point(Vector3(40, 0, -140)) + Vector3(0, 9, 0), Vector3(40, 3, -180), 60.0)
+	await _art_shot(out + "p07_mata_ventos.png", size, _ground_point(Vector3(-60, 0, -130)) + Vector3(0, 10, 0), Vector3(-95, 8, -158), 60.0)
+	await _art_shot(out + "p08_morrinhos_do_rio.png", size, _ground_point(Vector3(-100, 0, -80)) + Vector3(0, 10, 0), Vector3(-118, 0, -100), 60.0)
+	await _art_shot(out + "p09_praca_cerejeiras.png", size, Vector3(0, 12, 196), Vector3(0, 1, 168), 60.0)
+	print("PAISAGEM OK")
+	get_tree().quit()
+
+
 ## Fotos da festa na praça e dos moradores, sem a interface, em tools/capturas/ (f01 a f08).
 ## Uso: godot --path . -- --festa-captura
 func _run_festa_capture() -> void:
@@ -2684,13 +2713,13 @@ func ground_y(p: Vector3) -> float:
 # --- arte da Steam -------------------------------------------------------------
 
 ## Arte da Steam (capas, fundo da página e ícone): monta uma cena posada na campina ao pé do Morro,
-## com o castelinho ao fundo, os dois aventureiros à direita, esqueletos descendo o Morro e outros
+## com o cemitério ao fundo, os dois aventureiros à direita, esqueletos descendo o Morro e outros
 ## indo embora de balão, e fotografa sem a interface com câmeras próprias em alta resolução. O lado
 ## esquerdo fica livre para o logo. Salva em build/arte_steam/; o logo e as capas finais saem de
 ## tools/arte_steam.py. Uso: godot --path . -- --arte-steam
 func _run_steam_art() -> void:
 	player.god_mode = true
-	var dome := find_child("CupulaDoCastelinho", true, false)
+	var dome := find_child("CupulaDoCemiterio", true, false)
 	if dome:
 		dome.visible = false
 	# Tudo é posicionado em relação à câmera do fundo da página: profundidade e deslocamento lateral.

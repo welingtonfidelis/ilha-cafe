@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: história completa até o Mestre Ossinho, com festa e moradores (2026-10-26).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do castelinho cair. A praça tem a festa montada (palco com banda, mesas de comida e doces, presentes, barraca dos fazendeiros e o cantinho do palhaço) e 15 moradores que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata. Com a cúpula caída, a defesa final no pátio do castelinho traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite. Faltam o epílogo na praça e o modo "Defender a festa". Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: história completa até o Mestre Ossinho, com festa e moradores (2026-10-26).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda, mesas de comida e doces, presentes, barraca dos fazendeiros e o cantinho do palhaço) e 15 moradores que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite. Faltam o epílogo na praça e o modo "Defender a festa". Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -24,7 +24,7 @@ Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os bla
 
 ## 1. Visão geral
 
-Na véspera da Festa do Cafuné, o Mestre Ossinho acende quatro Lanternas Mágicas que abrem rachaduras roxas pela ilha, e delas saem esqueletos em ondas para levar a festa embora. Duas crianças da cidade, um menino e uma menina, pegam os blasters novos e defendem cada região até o guardião aparecer. Esqueleto derrotado não se machuca: ganha balões e volta voando para o Morro, acenando. Apagando as quatro lanternas, o caminho do castelinho se abre, e no fim todos descobrem que os esqueletos só queriam ser convidados.
+Na véspera da Festa do Cafuné, o Mestre Ossinho acende quatro Lanternas Mágicas que abrem rachaduras roxas pela ilha, e delas saem esqueletos em ondas para levar a festa embora. Duas crianças da cidade, um menino e uma menina, pegam os blasters novos e defendem cada região até o guardião aparecer. Esqueleto derrotado não se machuca: ganha balões e volta voando para o Morro, acenando. Apagando as quatro lanternas, o caminho do cemitério se abre, e no fim todos descobrem que os esqueletos só queriam ser convidados.
 
 - **Público:** crianças de 6 a 12 anos, e quem joga com elas.
 - **Gênero:** tiro em terceira pessoa com defesa em ondas por região e exploração. Depois da história, o modo "Defender a festa" (ondas sem fim na praça, com recorde).
@@ -77,19 +77,20 @@ A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e 
 | Ilha | elipse de ~380 x 490 m com costa recortada | praia de areia em volta; terreno low-poly em grade de 4 m com cores por região |
 | Cidade | sul, x de −60 a 60, z de 110 a 190 | ruas do City Builder Bits em grade (4 x 3), prédios em volta dos quarteirões virados para a rua, carros, postes, lixeiras, caixa-d'água |
 | Praça da festa | quarteirão central do sul (x −20 a 20, z 150 a 190) | palco vermelho e azul, arco amarelo, 8 balões em postes, bancos e árvores; o jogo começa aqui |
-| Cais | sai da praça para o mar (z 206 a 252) | passarela de tábuas |
-| Morro | centro, raio 90 m, 26 m de altura | dá para subir andando por qualquer lado; trilha de terra em espiral (2,5 voltas) até o topo plano |
-| Castelinho | topo do Morro | 4 torres com bandeiras, muros, portão para o sul e a lanterna central roxa |
+| Cais | sai da praça para o mar (z 206 a 252) | passarela de tábuas (o cais do Medieval Hexagon é só uma faixa estreita e não serviu) |
+| Morro | centro, raio 90 m, 26 m de altura | dá para subir andando por qualquer lado; trilha de terra em espiral (2,5 voltas) até o topo plano, de 24 m de raio |
+| Cemitério dos Ossinhos | topo do Morro (desde 2026-10-26, no lugar do castelinho) | peças do Halloween Bits: cerca em volta com portão em arco onde a trilha chega, cripta no fundo (norte) com a lanterna central roxa flutuando em cima, caminho de pedra, túmulos nas laterais, abóboras sorridentes, velas, lanternas, espantalho, feno, baldes de doces na porta da cripta e pinheiros de outono por fora; o meio é um gramado livre para a luta final. Pedido do usuário; ficaram de fora caixões, ossos, caveiras e árvores secas, e o cemitério é de dia e colorido para seguir as regras de tom |
 | Rio Preguiçoso | atravessa a ilha de leste a oeste em z ≈ −112 | 14 m de largura; cair nele faz "tchibum" e volta na bandeira sem perder coração |
-| Ponte | x = 0, sobre o rio | passarela de tábuas com corrimão; é o único caminho para a mata |
-| Mata | norte do rio | ~330 árvores, pedras, arbustos, trilhas de terra |
+| Ponte | x = 0, sobre o rio | ponte de pedra em arco do Medieval Hexagon (`building_bridge_A`), girada 30° (no pacote ela fica na diagonal do hexágono) e esticada para 6 x 32 m; colisão por malha com a escala aplicada nos pontos e rampas invisíveis nas pontas; é o único caminho para a mata |
+| Mata | norte do rio | ~330 árvores, pedras, arbustos, trilhas de terra. Desde 2026-10-26 com as cores e formatos do Forest Nature Pack completo: verdes misturados (cores 1, 2 e 3), outono perto do Morro dos Ventos (5 e 6), cerejeiras perto da Clareira (7 e 8) e os formatos novos Tree 5, 6 e 7; as cores saem de um sorteio separado, então as posições continuaram as mesmas |
+| Morrinhos de pedra | margem sul do rio | blocos de pedra com topo de grama do Forest completo (`Hill_*`), com colisão |
 | Clareira da Jabuticabeira | (40, −180) | árvore gigante no meio |
 | Vila das Copas | (115, −160) | 3 plataformas de madeira sobre postes (chegar lá em cima fica para o pulo duplo) |
 | Morro dos Ventos | (−95, −158), 14 m | morrinho a noroeste (saiu da beira da praia para a investida do Minionzão não jogar ninguém no mar) |
-| Lanternas | no centro das regiões Oeste, Leste, Ventos e Clareira | poste com esfera roxa e raio até o castelinho; acendem no fim do prólogo e apagam quando a região é vencida |
+| Lanternas | no centro das regiões Oeste, Leste, Ventos e Clareira | poste com esfera roxa e raio até a lanterna em cima da cripta do cemitério; acendem no fim do prólogo e apagam quando a região é vencida |
 | Regiões de defesa | praça (0, 170), Oeste (−84, 140), Leste (84, 140), Clareira (24, −166), Ventos (−95, −158) | círculo de 22 m e 4 rachaduras; sem árvores, pedras nem arbustos num raio de 26 m |
 | Barreira da ponte | cabeceira sul da ponte | parede roxa translúcida com colisão; some quando as duas lanternas da cidade apagam |
-| Cúpula do castelinho | topo do Morro, raio 11,5 m | some quando as quatro lanternas apagam |
+| Cúpula do cemitério | topo do Morro, raio 25,5 m (cobre o topo inteiro) | some quando as quatro lanternas apagam; a bandeira TopoDoMorro fica na trilha logo antes do portão, do lado de fora |
 
 **Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (8 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos, CidadeOeste, CidadeLeste; a primeira começa ativa), `Esqueletos` (14 soltos entre as regiões, cada um com o tipo na metadata `tipo`), `Municao` (10 caixas), `Regioes` (centro de cada defesa, com o raio na metadata `raio` e as 4 rachaduras como filhos) e `Moradores` (15, com `modelo`, `atividade`, `variante`, `item`, `falas`, `destino` e `altura` nos metadados; a rotação do marcador é para onde o morador olha). A festa fica em `Cidade/Praca/Festa`. Mover um marcador no editor muda o jogo, sem mexer em código.
 
@@ -103,13 +104,13 @@ Estrutura escolhida pelo usuário em 2026-10-25 (opção C): a história é feit
 
 ### Premissa
 
-Todo ano a ilha faz a Festa do Cafuné, com balões, banda, doces e lanternas. Os esqueletos que moram no Morro ouvem a música lá de cima, mas nunca são convidados: todo mundo se assusta só de olhar para eles. Este ano o Mestre Ossinho, líder dos esqueletos, decidiu: se não podem ir à festa, a festa vai até eles. Ele acende quatro Lanternas Mágicas, que abrem rachaduras roxas no chão, e por elas os esqueletos saem em ondas para levar a decoração para o castelinho.
+Todo ano a ilha faz a Festa do Cafuné, com balões, banda, doces e lanternas. Os esqueletos que moram no Morro ouvem a música lá de cima, mas nunca são convidados: todo mundo se assusta só de olhar para eles. Este ano o Mestre Ossinho, líder dos esqueletos, decidiu: se não podem ir à festa, a festa vai até eles. Ele acende quatro Lanternas Mágicas, que abrem rachaduras roxas no chão, e por elas os esqueletos saem em ondas para levar a decoração para o cemitério do Morro.
 
 ### Prólogo: véspera da festa (praça, tutorial)
 
 1. O jogador escolhe o menino ou a menina na praça enfeitada.
 2. Rachaduras roxas se abrem na praça. **Onda 1:** 3 Minions (aprender a atirar). **Onda 2:** 4 Minions e 1 Rogue (aprender a desviar de flecha). No intervalo cai a primeira caixa de munição.
-3. O Mestre Ossinho aparece no céu sobre o Morro e acende as quatro lanternas: duas na cidade, duas na mata. Raios roxos ligam o castelinho às lanternas.
+3. O Mestre Ossinho aparece no céu sobre o Morro e acende as quatro lanternas: duas na cidade, duas na mata. Raios roxos ligam o cemitério do Morro às lanternas.
 4. A praça fica segura e vira a base: bandeira de retorno e caixa de munição que sempre volta.
 
 A ilha se abre. Objetivo: apagar as quatro lanternas.
@@ -141,15 +142,15 @@ Fecho do ato: com as duas apagadas, a barreira roxa da ponte some e a mata se ab
 | Clareira da Jabuticabeira | 4 Minions, 1 Mage | 1 Golem, 2 Minions, 2 Mages, 1 Rogue | 2 Mages | Torre de Ossinhos | +1 coração máximo |
 | Morro dos Ventos | 5 Minions, 1 Warrior | 1 Golem, 1 Warrior, 2 Rogues, 1 Mage | 3 Minions | Minionzão | blaster Pé-de-Moleque |
 
-Fecho do ato: com as quatro apagadas, a cúpula roxa do castelinho cai. Num bilhete deixado na última lanterna, um dos esqueletos escreveu que só queria dançar na festa.
+Fecho do ato: com as quatro apagadas, a cúpula roxa do cemitério cai. Num bilhete deixado na última lanterna, um dos esqueletos escreveu que só queria dançar na festa.
 
-### Ato 3: O castelinho
+### Ato 3: O cemitério do Morro
 
 - Subida do Morro pela trilha em espiral.
-- **Defesa final no castelinho:** 3 ondas com todos os tipos de esqueleto.
+- **Defesa final no cemitério:** 3 ondas com todos os tipos de esqueleto.
 - **Chefe final: Mestre Ossinho**, esqueleto mago de coroa. Três fases: chama minions pelas rachaduras, se protege com bolhas mágicas que precisam ser estouradas, e por fim lança bolhas gigantes que se dividem.
 - **Desfecho:** o Mestre Ossinho não vai de balão: senta no chão, tira a coroa e confessa que só queria ir à festa. As crianças entregam o convite.
-- **No jogo (2026-10-26):** a defesa `castelo` fica no pátio do castelinho (centro entre o poste da lanterna central e o portão, raio 10, rachaduras nos quatro cantos de dentro dos muros) e liga quando a cúpula cai. Ondas: 4 Minions, 1 Rogue e 1 Mage; 2 Warriors, 2 Rogues e 2 Minions; 1 Golem, 1 Mage e o Mestre Ossinho. Vencida, aparecem as faixas "O Mestre Ossinho tirou a coroa..." e "Vocês entregaram o convite!", os moradores comemoram e o objetivo vira "Explore a ilha à vontade!". O epílogo na praça ainda não foi feito.
+- **No jogo (2026-10-26):** a defesa `cemiterio` fica no gramado do meio do cemitério (centro entre o portão e a cripta, raio 18, rachaduras nas diagonais a 10 m) e liga quando a cúpula cai. Antes era no pátio do castelinho, pequeno demais; o usuário pediu o cemitério com espaço amplo. Ondas: 4 Minions, 1 Rogue e 1 Mage; 2 Warriors, 2 Rogues e 2 Minions; 1 Golem, 1 Mage e o Mestre Ossinho. Vencida, aparecem as faixas "O Mestre Ossinho tirou a coroa..." e "Vocês entregaram o convite!", os moradores comemoram e o objetivo vira "Explore a ilha à vontade!". O epílogo na praça ainda não foi feito.
 
 ### Epílogo: a Festa do Cafuné
 
@@ -171,8 +172,8 @@ Não se julga ninguém pela aparência. Às vezes falta só um convite.
 
 O jogo não tem fases. O progresso aparece no próprio mundo:
 
-- **Raios das lanternas:** quatro raios roxos saem do castelinho e apontam as regiões que faltam. Apagam um a um.
-- **Barreiras:** a barreira da ponte (some depois das duas lanternas da cidade) e a cúpula do castelinho (some depois das quatro).
+- **Raios das lanternas:** quatro raios roxos saem do cemitério do Morro e apontam as regiões que faltam. Apagam um a um.
+- **Barreiras:** a barreira da ponte (some depois das duas lanternas da cidade) e a cúpula do cemitério (some depois das quatro).
 - **Regiões em festa:** cada região vencida ganha balões e bandeirinhas e fica sem esqueletos.
 - **Blasters ganhos aos poucos** (pedido do usuário): Paçoca desde o começo; Granulado (Oeste), Pipoqueira (Leste) e Pé-de-Moleque (Morro dos Ventos). Granadas desde o prólogo. Cada blaster tem sua seta no direcional (↑ Paçoca, → Granulado, ↓ Pipoqueira, ← Pé-de-Moleque) e sua tecla (1 a 4); no painel, cada blaster mostra uma cruzinha do direcional com o braço dele aceso (no controle) ou a tecla (no teclado). Apertar um que ainda não ganhou mostra onde ele é ganho ("Granulado: você ganha ao apagar a Lanterna Oeste"). Os blasters ganhos aparecem no painel como cartões menores conforme são desbloqueados (pedido do usuário).
 - **Corações:** 5 no começo, +1 na Clareira.
@@ -239,7 +240,7 @@ Guardiões (todos montados com os esqueletos grátis, ampliados e com acessório
 | Mira-Torta | Lanterna Leste | Rogue 2,3x maior | pula de um lado para outro da arena; leque de 5 flechas; chuva de flechas com círculos de aviso no chão (sair do círculo antes de cair) |
 | Torre de Ossinhos | Clareira | 5 Minions empilhados | a torre anda e o de cima joga bolhas que estouram com tiro; cada Minion acertado o bastante sai de balão e os de cima descem; com 2 ou menos, a torre pula e solta uma onda |
 | Minionzão | Morro dos Ventos | Minion 3x maior | investida em linha reta (uma faixa vermelha no chão avisa o caminho); depois fica tonto uns segundos e leva dano em dobro; soco de perto |
-| Mestre Ossinho | castelinho | Necromancer do Skeletons completo (já vem de coroa), 2x maior, cajado do Mage; 48 de vida | mantém distância de 7 a 12 m. Fase 1 (até 2/3 da vida): bolhas mágicas e dois minions pelas bordas a cada 10 s. Fase 2: escudo de seis bolhas girando (tiro e granada estouram; enquanto houver bolha, nada passa); sem bolhas fica tonto 5 s com dano em dobro e o escudo volta. Fase 3 (abaixo de 1/3): bolhas gigantes e lentas que, estouradas com tiro, viram três pequenas. Derrotado, senta no chão, tira a coroa (cai no chão na frente dele) e diz "Eu só queria ir à festa..." |
+| Mestre Ossinho | cemitério do Morro | Necromancer do Skeletons completo (já vem de coroa), 2x maior, cajado do Mage; 48 de vida | mantém distância de 7 a 12 m. Fase 1 (até 2/3 da vida): bolhas mágicas e dois minions pelas bordas a cada 10 s. Fase 2: escudo de seis bolhas girando (tiro e granada estouram; enquanto houver bolha, nada passa); sem bolhas fica tonto 5 s com dano em dobro e o escudo volta. Fase 3 (abaixo de 1/3): bolhas gigantes e lentas que, estouradas com tiro, viram três pequenas. Derrotado, senta no chão, tira a coroa (cai no chão na frente dele) e diz "Eu só queria ir à festa..." |
 
 **Opção paga barata:** a versão Extra do Skeletons traz o Skeleton Golem e o Necromancer, que dariam um chefe e um Mestre Ossinho com visual próprio. A página mostra dois preços (US$ 3,97 e US$ 7,95).
 
@@ -281,6 +282,7 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 | Adventurers | KayKit | grátis 2.0 | 12 MB | substitutos dos jogáveis até 2026-10-25; hoje só nas ferramentas (baixado) |
 | Mystery Monthly Series 5 | KayKit | 1.1, da Coleção Completa v6.1 | 1,7 MB (só os Protagonists) | os dois jogáveis ("The Protagonists") (baixado) |
 | Skeletons, Holiday Bits, Restaurant Bits | KayKit | completos, da Coleção Completa v6.1 | 13 + 8 + 5 MB | Golem e Necromancer (o Mestre Ossinho), em `assets/characters/skeletons/`; enfeites e comida da festa em `assets/props/festa/` (`doces/`, `comida/`, `circo/`) |
+| Halloween Bits, Forest Nature Pack, Medieval Hexagon | KayKit | completos, da Coleção Completa v6.1 | 1,1 + 5,6 + 0,1 MB (só os usados) | cemitério do Morro (`assets/props/cemiterio/`); árvores e arbustos nas cores 2, 3, 5, 6, 7 e 8 (`assets/env/forest/corN/`), formatos Tree 5, 6 e 7 e morrinhos `Hill_*`; ponte de pedra (`assets/props/ponte/`) |
 | Mystery Monthly Series 4, 5 e 6 | KayKit | 1.1, da Coleção Completa v6.1 | 3,3 MB (só os usados) | moradores: Palhaço, Motorista, Fantasia de Monstro (Series 4); Trilheiro (Series 5); Fazendeiros, Soldadinho, Vovô (Lorekeeper), Garota Mágica (Series 6); objetos de mão em `assets/props/moradores/` |
 | Skeletons | KayKit | grátis 1.1 | 7,7 MB | inimigos e chefes (baixado) |
 | City Builder Bits | KayKit | grátis 1.0 | 4,6 MB | cidade (baixado) |
@@ -288,7 +290,6 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 | Blaster Kit | Kenney | 2.1 | 1,7 MB | blasters: 18 modelos (`blaster-a` a `blaster-r`), granadas, miras, alvos e projéteis de espuma (baixado) |
 | Character Animations | KayKit | grátis 1.1 | 14 MB | 161 animações para o `Rig_Medium` e o `Rig_Large`, incluindo tiro, mira e recarga de uma e duas mãos, e animações próprias de esqueleto (baixado) |
 | Platformer Pack | KayKit | grátis 1.0 | 22 MB | coração, bandeiras de retorno, estrelas; depois diamantes (baixado) |
-| Halloween Bits | KayKit | grátis | 5,3 MB | enfeites do Morro (opcional) |
 
 Todos são CC0: uso comercial livre, sem atribuição obrigatória. O KayKit pede só para não revender os modelos sem alteração.
 
@@ -337,13 +338,14 @@ godot -e --path .
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
 - `godot --headless --path . -- --historia` joga a história com ondas curtas e confere 31 pontos: só a Paçoca no começo; prólogo (rachaduras, moradores da praça torcendo na onda e comemorando no fim, intervalo com munição e coração, onda cancelada ao se afastar e recomeçada ao voltar, lanternas acesas); Lanterna Oeste (Ossão com barra, tiro na cabeça, onda de choque que acerta no chão e passa por baixo de quem pula, Minions na metade da vida, lanterna apagada, convidados festejando, recompensa Granulado, Ossão indo de balão); Lanterna Leste (ficar tonto cancela a onda, Mira-Torta com chuva de flechas e leque de 5, barreira da ponte some, Pipoqueira); atravessar a ponte. Termina com "HISTORIA OK". Leva uns 3 minutos.
-- `godot --headless --path . -- --mata` pula direto para a mata (cidade vencida, com Granulado e Pipoqueira) e confere 17 pontos: Golem de Ossos na segunda onda da Clareira (16 de vida, a pancada solta onda); Torre de Ossinhos com 5 andares, tiro na cabeça do andar de baixo, andar vencido indo de balão e os de cima descendo, bolha do de cima, pulo com onda quando sobram 2, coração de recompensa (vida máxima 6); Minionzão com a faixa da investida, acerto de quem fica no caminho, tonto com dano em dobro; cúpula caindo, Pé-de-Moleque e chegar ao castelinho começando a defesa final. Termina com "MATA OK". Leva uns 2 minutos.
+- `godot --headless --path . -- --mata` pula direto para a mata (cidade vencida, com Granulado e Pipoqueira) e confere 17 pontos: Golem de Ossos na segunda onda da Clareira (16 de vida, a pancada solta onda); Torre de Ossinhos com 5 andares, tiro na cabeça do andar de baixo, andar vencido indo de balão e os de cima descendo, bolha do de cima, pulo com onda quando sobram 2, coração de recompensa (vida máxima 6); Minionzão com a faixa da investida, acerto de quem fica no caminho, tonto com dano em dobro; cúpula caindo, Pé-de-Moleque e chegar ao cemitério começando a defesa final. Termina com "MATA OK". Leva uns 2 minutos.
 - `godot --path . -- --historia-captura` tira 12 fotos da história (`h01` a `h12`).
-- `godot --headless --path . -- --castelo` parte do atalho com a cúpula caída e confere 15 pontos: defesa ativa, entrar no pátio começa a defesa, Mestre Ossinho na última onda com barra, dois minions chamados, bolha, tiro na cabeça, escudo de 6 bolhas, golpe bloqueado com escudo, tiro que estoura bolha do escudo, tonto com dano em dobro, escudo some na fase 3, bolha gigante que vira três, senta e tira a coroa sem balão, defesa vencida com o fim da história. Termina com "CASTELO OK".
-- `godot --path . -- --castelo-captura` tira 7 fotos da defesa final (`c01` a `c07`), com a câmera livre dentro do pátio (o arco do portão não tem colisão e tapa a câmera do jogo quando o aventureiro está no portão).
+- `godot --headless --path . -- --cemiterio` parte do atalho com a cúpula caída e confere 15 pontos: defesa ativa, entrar no cemitério começa a defesa, Mestre Ossinho na última onda com barra, dois minions chamados, bolha, tiro na cabeça, escudo de 6 bolhas, golpe bloqueado com escudo, tiro que estoura bolha do escudo, tonto com dano em dobro, escudo some na fase 3, bolha gigante que vira três, senta e tira a coroa sem balão, defesa vencida com o fim da história. Termina com "CEMITERIO OK".
+- `godot --path . -- --cemiterio-captura` tira 7 fotos da defesa final (`c01` a `c07`), com a câmera livre.
+- `godot --path . -- --paisagem-captura` tira 9 fotos da paisagem sem interface (`p01` a `p09`): cemitério de cima, cripta, túmulos, ponte de lado e de cima, mata da Clareira e dos Ventos, morrinhos do rio e cerejeiras da praça.
 - `godot --path . -- --festa-captura` tira 9 fotos da festa e dos moradores sem a interface (`f01` a `f08`, mais `f03b` da plateia do palhaço): praça, palco, palhaço, barraca, mesas, vovô falando, motorista na calçada e trilheiro.
-- `godot --path . -- --mata-captura` tira 8 fotos da mata (`m00a`/`m00b`: Golem chegando e batendo no chão; `m01` a `m06`: Torre, andar indo de balão, faixa do Minionzão, Minionzão tonto, cúpula caindo, chegada ao castelinho).
-- `godot --path . -- --ilha-captura` tira 8 fotos jogando na ilha (praça, esqueleto dormindo e acordando, trilha do Morro, castelinho, ponte, clareira, tchibum).
+- `godot --path . -- --mata-captura` tira 8 fotos da mata (`m00a`/`m00b`: Golem chegando e batendo no chão; `m01` a `m06`: Torre, andar indo de balão, faixa do Minionzão, Minionzão tonto, cúpula caindo, chegada ao cemitério).
+- `godot --path . -- --ilha-captura` tira 8 fotos jogando na ilha (praça, esqueleto dormindo e acordando, trilha do Morro, cemitério, ponte, clareira, tchibum).
 - `godot --headless --path . -- --armas` confere 17 pontos dos blasters: pente, recarga automática e com R, não atirar recarregando, troca com modelo novo na mão, estoque, sem munição, caixa (e caixa que fica no chão), escopeta, luneta, granada e caixa que cai com munição no fim; termina com "ARMAS OK". O teste de controle também confere X (recarregar), Y (trocar de blaster) e RB (granada), e o da ilha confere as 10 caixas.
 - Os testes `--smoke`, `--controle`, `--combate`, `--som`, `--armas` e `--capture` rodam na **arena plana** (o mapa antigo, previsível), com esqueletos já acordados; o jogo normal e os modos `--ilha` abrem a ilha.
 - Os modos `--smoke`, `--controle` e `--capture` ligam `god_mode` no jogador, para o tonto não travar o teste.
@@ -356,7 +358,7 @@ godot -e --path .
 - `godot --headless --path . --export-release "Linux" build/linux/IlhaCafune.x86_64` gera o executável (uns 85 MB). `build/` tem `.gdignore`, para a Godot não importar o que sai ali.
 - No PC (Bazzite, `bazzite.local`, usuário `usario`, SSH ligado com `ujust toggle-ssh` e a chave do Mac autorizada), o jogo fica em `~/Games/IlhaCafune/`, com `ilha-cafune.desktop` e `icone.png`. Ele entrou na Steam como jogo de fora da loja pelo `steamos-add-to-steam` do próprio Bazzite, rodando com o ambiente da sessão gráfica (`DISPLAY=:0`, `WAYLAND_DISPLAY=wayland-0`, `XDG_RUNTIME_DIR=/run/user/1000`); o nome vem do `.desktop`. Roda nativo, sem Proton. Para atualizar, basta copiar o executável novo por cima.
 - **Regra do usuário (2026-10-26):** não refazer nem reenviar as imagens da Steam ou de apresentação (capas, fundo da página, logo, ícone e fotos de divulgação) quando o jogo mudar. Só quando ele pedir.
-- **Arte da Steam:** `godot --path . -- --arte-steam` monta uma cena posada na campina ao pé do Morro (os dois aventureiros, esqueletos descendo e outros indo de balão, castelinho sem cúpula ao fundo) e fotografa sem interface, com câmeras em SubViewport, em `build/arte_steam/`. Depois `python3 tools/arte_steam.py` faz o logo (Arial Rounded Bold, contorno roxo, três balões) e as capas em `build/arte_steam/steam/`. Na Steam, a arte de um atalho vai em `userdata/<conta>/config/grid/` com o appid do atalho: `<appid>p.png` (capa vertical 600 x 900), `<appid>.png` (horizontal 920 x 430), `<appid>_hero.png` (fundo 3840 x 1240) e `<appid>_logo.png`.
+- **Arte da Steam:** `godot --path . -- --arte-steam` monta uma cena posada na campina ao pé do Morro (os dois aventureiros, esqueletos descendo e outros indo de balão, castelinho sem cúpula ao fundo; a arte que está na Steam ainda mostra o castelinho antigo, e só é refeita quando o usuário pedir) e fotografa sem interface, com câmeras em SubViewport, em `build/arte_steam/`. Depois `python3 tools/arte_steam.py` faz o logo (Arial Rounded Bold, contorno roxo, três balões) e as capas em `build/arte_steam/steam/`. Na Steam, a arte de um atalho vai em `userdata/<conta>/config/grid/` com o appid do atalho: `<appid>p.png` (capa vertical 600 x 900), `<appid>.png` (horizontal 920 x 430), `<appid>_hero.png` (fundo 3840 x 1240) e `<appid>_logo.png`.
 
 **Controles.** A tela de jogo não mostra mais a lista de comandos nem o nome do personagem (pedido do usuário): os comandos ficam em Pausa > Comandos, e trocam sozinhos conforme o aparelho em uso. Com um menu aberto o jogo fica pausado.
 

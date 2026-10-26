@@ -19,7 +19,7 @@ const ISLAND_B := 245.0
 const CITY_Z := 95.0
 const MORRO_R := 90.0
 const MORRO_H := 26.0
-const MORRO_TOP_R := 13.0
+const MORRO_TOP_R := 24.0
 const RIVER_Z := -112.0
 const RIVER_HALF := 7.0
 const RIVER_BANK := 6.0
@@ -45,12 +45,19 @@ const REGION_NAMES := {"oeste": "Oeste", "leste": "Leste", "clareira": "Clareira
 ## Raio do círculo da arena e raio sem árvores, pedras e arbustos em volta do centro.
 const ARENA_R := 22.0
 const CLEAR_R := 26.0
-const CASTLE_DOME_R := 11.5
+const CEMETERY_DOME_R := 25.5
 
 const CITY := "res://assets/env/city/%s.gltf"
 const FOREST := "res://assets/env/forest/%s.gltf"
 const PLAT := "res://assets/props/platformer/%s.gltf"
 const FESTA := "res://assets/props/festa/%s.gltf"
+const CEMITERIO := "res://assets/props/cemiterio/%s.gltf"
+const PONTE := "res://assets/props/ponte/%s.gltf"
+## Árvores e arbustos nas outras cores do Forest Nature Pack completo (a cor 1 fica em env/forest/).
+const FOREST_COLOR := "res://assets/env/forest/cor%d/%s_Color%d.gltf"
+## Formatos de árvore da mata (os 5, 6 e 7 só existem no pacote completo).
+const TREE_SHAPES := ["Tree_1_A", "Tree_1_B", "Tree_2_A", "Tree_2_C", "Tree_3_A", "Tree_4_A", "Tree_4_B",
+	"Tree_5_A", "Tree_5_B", "Tree_5_C", "Tree_6_A", "Tree_6_B", "Tree_7_A", "Tree_7_B"]
 const MORADOR_ITEM := "res://assets/props/%s.gltf"
 const CITY_SCALE := 5.0
 ## Topo das ruas (a peça fica em y = 0,01 e tem 0,1 de altura).
@@ -80,6 +87,8 @@ var trails := [
 
 var ilha: Node3D
 var rng := RandomNumberGenerator.new()
+## Sorteio separado para as cores das árvores: assim trocar cores não muda a posição de nada.
+var rng_cor := RandomNumberGenerator.new()
 var _cols := 0
 var _rows := 0
 var _hs := PackedFloat32Array()
@@ -87,6 +96,7 @@ var _hs := PackedFloat32Array()
 
 func _init() -> void:
 	rng.seed = 2026
+	rng_cor.seed = 77
 	ilha = Node3D.new()
 	ilha.name = "Ilha"
 	_terrain()
@@ -126,7 +136,7 @@ func height(x: float, z: float) -> float:
 	var forest_w := clampf((-z - 60.0) / 60.0, 0.0, 1.0)
 	var n := 0.5 + 0.5 * (0.6 * sin(x * 0.045 + 1.3) * sin(z * 0.05 + 0.4) + 0.4 * sin(x * 0.11 + z * 0.07))
 	land += forest_w * 2.2 * n
-	# Morro no centro, com topo plano para o castelinho.
+	# Morro no centro, com topo plano e largo para o cemitério dos esqueletos.
 	var r := Vector2(x, z).length()
 	if r < MORRO_R:
 		var t := clampf((r - MORRO_TOP_R) / (MORRO_R - MORRO_TOP_R), 0.0, 1.0)
@@ -220,7 +230,7 @@ func _ground_color(x: float, z: float, h: float, ny: float) -> Color:
 		return C_PLAZA if PLAZA.has_point(p) else C_PAVEMENT
 	if ny < 0.78:
 		return C_ROCK
-	if p.length() < MORRO_R and (_spiral_dist(x, z) < PATH_HALF or p.length() < MORRO_TOP_R + 1.0):
+	if p.length() < MORRO_R and p.length() > MORRO_TOP_R - 1.0 and _spiral_dist(x, z) < PATH_HALF:
 		return C_DIRT
 	if _trail_dist(p) < 2.6:
 		return C_DIRT
@@ -515,7 +525,8 @@ func _city() -> void:
 		var a := TAU * k / 4.0 + PI / 4.0
 		_prop(plaza, CITY % "bench", center + Vector3(cos(a) * 7.0, 0, sin(a) * 7.0), rad_to_deg(-a), CITY_SCALE, "caixa")
 	for corner in [Vector3(-15, 0, -15), Vector3(15, 0, -15), Vector3(-15, 0, 15), Vector3(15, 0, 15)]:
-		_prop(plaza, FOREST % "Tree_2_A_Color1", center + corner, rng.randf_range(0, 360), 1.3, "tronco")
+		# Cerejeiras rosas nos cantos da praça da festa.
+		_prop(plaza, _tree_path("Tree_2_A", 8), center + corner, rng.randf_range(0, 360), 1.3, "tronco")
 
 
 # --- festa na praça -----------------------------------------------------------
@@ -589,45 +600,30 @@ func _find_group(path: String) -> Node3D:
 func _morro() -> void:
 	var morro := _group(ilha, "Morro")
 	var top := MORRO_H
-	# Castelinho dos esqueletos no topo: quatro torres, muros e um portão virado para o sul.
-	var castle := _group(morro, "Castelinho")
-	for cx in [-7.0, 7.0]:
-		for cz in [-7.0, 7.0]:
-			_prop(castle, PLAT % "neutral/pillar_2x2x8", Vector3(cx, top, cz), 0.0, 1.0, "caixa")
-			_prop(castle, PLAT % "red/flag_C_red", Vector3(cx, top + 8.0, cz), 90.0, 1.0)
-	for k in 3:
-		var offset := -4.0 + k * 4.0
-		_prop(castle, PLAT % "neutral/barrier_4x1x2", Vector3(offset, top, -7.0), 0.0, 1.0, "caixa")
-		_prop(castle, PLAT % "neutral/barrier_4x1x2", Vector3(-7.0, top, offset), 90.0, 1.0, "caixa")
-		_prop(castle, PLAT % "neutral/barrier_4x1x2", Vector3(7.0, top, offset), 90.0, 1.0, "caixa")
-	for side in [-1.0, 1.0]:
-		_prop(castle, PLAT % "neutral/barrier_4x1x2", Vector3(side * 4.5, top, 7.0), 0.0, 1.0, "caixa")
-	_prop(castle, PLAT % "red/arch_tall_red", Vector3(0, top, 7.0), 0.0, 1.0)
-	_prop(castle, PLAT % "neutral/pillar_1x1x4", Vector3(0, top, 0), 0.0, 1.0, "caixa")
-	_orb(castle, "LanternaCentral", Vector3(0, top + 5.0, 0), 0.9)
-	# Cúpula mágica: some quando as quatro lanternas apagam (o jogo cuida disso).
+	_cemiterio(morro, top)
+	# Cúpula mágica sobre o cemitério todo: some quando as quatro lanternas apagam (o jogo cuida disso).
 	var dome := StaticBody3D.new()
-	dome.name = "CupulaDoCastelinho"
+	dome.name = "CupulaDoCemiterio"
 	dome.position = Vector3(0, top, 0)
 	_add(morro, dome)
 	var dome_mi := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
-	sphere.radius = CASTLE_DOME_R
-	sphere.height = CASTLE_DOME_R * 2.0
+	sphere.radius = CEMETERY_DOME_R
+	sphere.height = CEMETERY_DOME_R * 2.0
 	sphere.material = _magic_material()
 	dome_mi.mesh = sphere
 	dome_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_add(dome, dome_mi)
 	var dome_cs := CollisionShape3D.new()
 	var dome_shape := SphereShape3D.new()
-	dome_shape.radius = CASTLE_DOME_R
+	dome_shape.radius = CEMETERY_DOME_R
 	dome_cs.shape = dome_shape
 	_add(dome, dome_cs)
 	# Placa no começo da subida.
 	var sign_pos := _spiral_point(0.0) + Vector2(4, 4)
 	_prop(morro, PLAT % "neutral/sign", Vector3(sign_pos.x, ground(sign_pos.x, sign_pos.y), sign_pos.y), 0.0, 1.0, "caixa")
 	# Algumas árvores e pedras nas encostas, fora da trilha.
-	var trees := ["Tree_1_A_Color1", "Tree_2_B_Color1", "Tree_3_B_Color1", "Tree_4_A_Color1"]
+	var trees := ["Tree_1_A", "Tree_2_B", "Tree_3_B", "Tree_4_A"]
 	var placed := 0
 	var tries := 0
 	while placed < 38 and tries < 3000:
@@ -638,7 +634,8 @@ func _morro() -> void:
 		var z := sin(a) * r
 		if _spiral_dist(x, z) < PATH_HALF + 3.0 or z > CITY_Z - 4 or _trail_dist(Vector2(x, z)) < 5.0:
 			continue
-		_prop(morro, FOREST % trees[rng.randi() % trees.size()], Vector3(x, ground(x, z) - 0.1, z), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.8, 1.15), "tronco")
+		var slope_color: int = [1, 2, 3, 6][rng_cor.randi() % 4]
+		_prop(morro, _tree_path(trees[rng.randi() % trees.size()], slope_color), Vector3(x, ground(x, z) - 0.1, z), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.8, 1.15), "tronco")
 		placed += 1
 	for k in 16:
 		var a := rng.randf_range(0, TAU)
@@ -648,6 +645,119 @@ func _morro() -> void:
 		if _spiral_dist(x, z) < PATH_HALF + 2.0 or z > CITY_Z:
 			continue
 		_prop(morro, FOREST % ("Rock_%d_%s_Color1" % [rng.randi_range(1, 3), "ABCDE"[rng.randi() % 5]]), Vector3(x, ground(x, z) - 0.1, z), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.8, 1.6), "convexo")
+
+
+## Cemitério dos Ossinhos no topo do Morro: a casa dos esqueletos, simpática e de dia. Cerca em volta com
+## portão em arco onde a trilha chega, cripta no fundo (norte) com a lanterna mágica flutuando em cima,
+## túmulos nas laterais, abóboras, velas, lanternas e os doces que os esqueletos juntaram para a festa.
+## O meio fica livre para a luta final. Posições fixas: não mexe no sorteio do resto da ilha.
+func _cemiterio(morro: Node, top: float) -> void:
+	var cem := _group(morro, "Cemiterio")
+	var at := func(x: float, z: float) -> Vector3:
+		return Vector3(x, ground(x, z), z)
+	var gate_a := _gate_angle()
+	var fence_r := MORRO_TOP_R - 2.0
+	# Cerca de segmentos de 4 m com pilares, deixando o vão do portão.
+	var segs := int(TAU * fence_r / 4.4)
+	var step := TAU / segs
+	for k in segs:
+		var a := step * k
+		if absf(angle_difference(a, gate_a)) < 0.2:
+			continue
+		var p := Vector2(cos(a), sin(a)) * fence_r
+		_prop(cem, CEMITERIO % "fence", at.call(p.x, p.y), _tangent_deg(a), 1.05, "caixa")
+		var q := Vector2(cos(a + step * 0.5), sin(a + step * 0.5)) * fence_r
+		_prop(cem, CEMITERIO % "fence_pillar", at.call(q.x, q.y), _tangent_deg(a), 1.05, "caixa")
+	var g := Vector2(cos(gate_a), sin(gate_a)) * fence_r
+	_prop(cem, CEMITERIO % "arch_gate", at.call(g.x, g.y), _tangent_deg(gate_a), 1.3)
+	# Cripta no fundo e a lanterna mágica flutuando em cima.
+	_prop(cem, CEMITERIO % "crypt", at.call(0, -17.5), 180.0, 1.3, "caixa")
+	_orb(cem, "LanternaCentral", Vector3(0, top + 13.0, -17.5), 1.0)
+	# Caminho de pedra do portão até o meio e do meio até a porta da cripta.
+	var mid := Vector2(0, 2)
+	for seg in [[g * 0.95, mid], [mid, Vector2(0, -11.5)]]:
+		var a2: Vector2 = seg[0]
+		var b2: Vector2 = seg[1]
+		var n := int(a2.distance_to(b2) / 2.1)
+		for i in n + 1:
+			var p := a2.lerp(b2, float(i) / maxf(n, 1))
+			_prop(cem, CEMITERIO % ["path_A", "path_B", "path_C"][i % 3], at.call(p.x, p.y) + Vector3.UP * 0.02, 37.0 * i, 1.1)
+	# Túmulos nas laterais (o meio fica livre).
+	var stones := ["grave_A", "gravestone", "grave_B", "gravemarker_A", "gravemarker_B"]
+	var spots := []
+	for x in [13.5, 17.0]:
+		for z in [-9.0, -5.0, -1.0, 3.0, 7.0]:
+			spots.append(Vector2(x, z))
+	for x in [-13.5, -17.0]:
+		for z in [-11.0, -7.0, -3.0]:
+			spots.append(Vector2(x, z))
+	for v in [Vector2(-7.5, -18.0), Vector2(7.5, -18.0)]:
+		spots.append(v)
+	for i in spots.size():
+		var v: Vector2 = spots[i]
+		var name: String = stones[i % stones.size()]
+		_prop(cem, CEMITERIO % name, at.call(v.x, v.y), 0.0, 1.1, "caixa" if name.begins_with("grave_") else "")
+		if i % 3 == 0:
+			_prop(cem, CEMITERIO % "candle_triple", at.call(v.x + 0.9, v.y + 0.8), 20.0 * i, 1.0)
+	# Lanternas pela beira da cerca.
+	for k in 8:
+		var a := TAU * k / 8.0 + 0.2
+		if absf(angle_difference(a, gate_a)) < 0.45:
+			continue
+		var p := Vector2(cos(a), sin(a)) * (fence_r - 1.6)
+		_prop(cem, CEMITERIO % "post_lantern", at.call(p.x, p.y), rad_to_deg(-a) - 90.0, 1.2, "tronco")
+	# Abóboras sorridentes no portão e espalhadas, espantalho e feno, doces juntados na porta da cripta.
+	for side in [-1.0, 1.0]:
+		var p := Vector2(cos(gate_a + side * 0.16), sin(gate_a + side * 0.16)) * (fence_r - 1.8)
+		_prop(cem, CEMITERIO % "pumpkin_orange_jackolantern", at.call(p.x, p.y), rad_to_deg(-gate_a) + 90.0, 1.1, "caixa")
+	for spec in [["pumpkin_yellow_jackolantern", 15.0, 10.0], ["pumpkin_orange", 11.5, -12.0], ["pumpkin_yellow_small", -11.0, -14.0],
+			["pumpkin_orange_small", 16.0, -12.5], ["pumpkin_orange", -15.0, 1.5], ["pumpkin_yellow", 4.0, -15.0]]:
+		_prop(cem, CEMITERIO % spec[0], at.call(spec[1], spec[2]), 30.0, 1.1, "caixa")
+	_prop(cem, CEMITERIO % "scarecrow", at.call(17.5, 12.5), -150.0, 1.2, "tronco")
+	_prop(cem, CEMITERIO % "haybale", at.call(15.5, 14.0), 70.0, 1.1, "caixa")
+	_prop(cem, CEMITERIO % "haybale", at.call(18.5, 10.0), 20.0, 1.1, "caixa")
+	for spec in [["candy_bucket_A_decorated", -2.6, -10.6], ["candy_bucket_B_decorated", 2.6, -10.8], ["lollipop_pink", -3.6, -10.0],
+			["lollipop_blue", 3.5, -10.2], ["candycorn", -1.8, -9.8], ["lollipop_orange", 1.6, -9.6]]:
+		_prop(cem, CEMITERIO % spec[0], at.call(spec[1], spec[2]), 15.0, 1.2)
+	_prop(cem, CEMITERIO % "shrine_candles", at.call(-5.0, -12.5), 0.0, 1.1, "caixa")
+	_prop(cem, CEMITERIO % "plaque_candles", at.call(5.0, -12.5), 0.0, 1.1, "caixa")
+	# Pinheiros de outono por fora da cerca, fora da trilha.
+	var pines := ["tree_pine_orange_large", "tree_pine_yellow_medium", "tree_pine_orange_medium", "tree_pine_yellow_large", "tree_pine_orange_small"]
+	for k in 14:
+		var a := TAU * k / 14.0 + 0.11
+		var r := MORRO_TOP_R + 2.5 + (k % 3) * 1.6
+		var p := Vector2(cos(a), sin(a)) * r
+		if absf(angle_difference(a, gate_a)) < 0.35 or _spiral_dist(p.x, p.y) < PATH_HALF + 2.0:
+			continue
+		_prop(cem, CEMITERIO % pines[k % pines.size()], at.call(p.x, p.y) - Vector3.UP * 0.3, 40.0 * k, 1.2, "tronco")
+
+
+## Ângulo (em volta do centro do Morro) em que a trilha chega na beira do topo.
+func _gate_angle() -> float:
+	var s := clampf((SPIRAL_R0 - (MORRO_TOP_R - 1.0)) / (SPIRAL_R0 - SPIRAL_R1), 0.0, 1.0)
+	var p := _spiral_point(s)
+	return atan2(p.y, p.x)
+
+
+## Rotação (graus, em Y) que deixa o eixo X do modelo na tangente do círculo no ângulo a.
+func _tangent_deg(a: float) -> float:
+	return rad_to_deg(atan2(-cos(a), -sin(a)))
+
+
+## Árvore ou arbusto na cor pedida (1 é a original do pacote grátis).
+func _tree_path(model: String, color: int) -> String:
+	if color == 1:
+		return FOREST % (model + "_Color1")
+	return FOREST_COLOR % [color, model, color]
+
+
+## Cor das árvores da mata: verdes misturados; outono perto do Morro dos Ventos; cerejeiras perto da Clareira.
+func _forest_color(p: Vector2) -> int:
+	if p.distance_to(VENTOS) < 55.0:
+		return [6, 6, 5, 1][rng_cor.randi() % 4]
+	if p.distance_to(CLAREIRA) < 45.0:
+		return [8, 7, 1, 3][rng_cor.randi() % 4]
+	return [1, 1, 2, 3][rng_cor.randi() % 4]
 
 
 func _orb(parent: Node, orb_name: String, pos: Vector3, radius: float) -> MeshInstance3D:
@@ -688,11 +798,67 @@ func _walkway(parent: Node, walk_name: String, a: Vector3, b: Vector3, width: fl
 func _bridge_and_pier() -> void:
 	var z_south := _river_z(0) + RIVER_HALF + RIVER_BANK + 2.0
 	var z_north := _river_z(0) - RIVER_HALF - RIVER_BANK - 2.0
-	_walkway(ilha, "Ponte", Vector3(0, ground(0, z_south) + 0.02, z_south), Vector3(0, ground(0, z_north) + 0.02, z_north), 6.0)
+	_stone_bridge(z_south, z_north)
 	# Barreira mágica na cabeceira sul: some quando as duas lanternas da cidade apagam (o jogo cuida disso).
 	_magic_wall(ilha, "BarreiraDaPonte", Vector3(0, ground(0, z_south + 1.0) + 2.5, z_south + 1.0), Vector3(9, 5, 0.5))
 	# Cais: sai da praça para o mar, ao sul.
 	_walkway(ilha, "Cais", Vector3(0, ground(0, 206) + 0.02, 206), Vector3(0, 0.25, 252), 7.0)
+
+
+## Ponte de pedra em arco (Medieval Hexagon) sobre o rio. No pacote ela fica na diagonal do hexágono (30° do
+## eixo Z), com o piso numa faixa de uns 0,4 x 2 m que desce de leve do meio (0,20) para as pontas (0,0):
+## gira para alinhar com o rio, estica (6 m de largura, comprimento de margem a margem) e as pontas ficam na
+## altura das margens. A colisão é uma malha com a escala já aplicada nos pontos (escala diferente por eixo
+## não funciona bem na física da Godot).
+func _stone_bridge(z_south: float, z_north: float) -> void:
+	var group := _group(ilha, "Ponte")
+	var length := (z_south - z_north) + 2.0
+	var sc := Vector3(6.0 / 0.4, 3.2, length / 2.0)
+	var deck_y := maxf(ground(0, z_south), ground(0, z_north)) + 0.08
+	var origin := Vector3(0, deck_y, (z_south + z_north) * 0.5)
+	var holder := Node3D.new()
+	holder.name = "PonteDePedra"
+	holder.position = origin
+	holder.scale = sc
+	_add(group, holder)
+	var inst: Node3D = load(PONTE % "building_bridge_A").instantiate()
+	inst.rotation_degrees.y = -30.0
+	_add(holder, inst)
+	var body := StaticBody3D.new()
+	body.name = "Piso"
+	_add(group, body)
+	var faces := PackedVector3Array()
+	var base := Transform3D(Basis.from_scale(sc), origin) * Transform3D(Basis(Vector3.UP, deg_to_rad(-30.0)), Vector3.ZERO)
+	for mi in inst.find_children("*", "MeshInstance3D", true, false):
+		var xf := base * _rel_xform(mi, inst)
+		for v in (mi as MeshInstance3D).mesh.get_faces():
+			faces.append(xf * v)
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
+	shape.backface_collision = true
+	var cs := CollisionShape3D.new()
+	cs.shape = shape
+	_add(body, cs)
+	# Rampas invisíveis nas pontas: o personagem não sobe degrau, e a margem fica um pouco abaixo do piso.
+	var end_s := z_south + 1.0
+	var end_n := z_north - 1.0
+	_ramp(group, Vector3(0, ground(0, end_s + 3.0), end_s + 3.0), Vector3(0, deck_y, end_s - 0.6), 6.0)
+	_ramp(group, Vector3(0, deck_y, end_n + 0.6), Vector3(0, ground(0, end_n - 3.0), end_n - 3.0), 6.0)
+
+
+## Rampa invisível (só colisão) de a até b.
+func _ramp(parent: Node, a: Vector3, b: Vector3, width: float) -> void:
+	var flat := Vector2(b.x - a.x, b.z - a.z)
+	var basis := Basis(Vector3.UP, atan2(flat.x, flat.y)) * Basis(Vector3.RIGHT, -atan2(b.y - a.y, flat.length()))
+	var body := StaticBody3D.new()
+	body.name = "Rampa"
+	_add(parent, body)
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(width, 0.3, Vector3(b - a).length())
+	cs.shape = box
+	cs.transform = Transform3D(basis, (a + b) * 0.5 - basis.y * 0.15)
+	_add(body, cs)
 
 
 func _magic_material() -> StandardMaterial3D:
@@ -732,7 +898,7 @@ func _magic_wall(parent: Node, wall_name: String, center: Vector3, size: Vector3
 
 func _forest() -> void:
 	var forest := _group(ilha, "Mata")
-	var trees := ["Tree_1_A_Color1", "Tree_1_B_Color1", "Tree_2_A_Color1", "Tree_2_C_Color1", "Tree_3_A_Color1", "Tree_4_A_Color1", "Tree_4_B_Color1"]
+	var trees := TREE_SHAPES
 	var placed: Array[Vector2] = []
 	var tries := 0
 	while placed.size() < 330 and tries < 12000:
@@ -750,14 +916,15 @@ func _forest() -> void:
 		if not ok:
 			continue
 		placed.append(p)
-		_prop(forest, FOREST % trees[rng.randi() % trees.size()], Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.85, 1.25), "tronco")
+		_prop(forest, _tree_path(trees[rng.randi() % trees.size()], _forest_color(p)), Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.85, 1.25), "tronco")
 	# Árvores nos arredores da cidade, a leste e a oeste.
 	for k in 60:
 		var side := -1.0 if k % 2 == 0 else 1.0
 		var p := Vector2(side * rng.randf_range(78, 175), rng.randf_range(20, 205))
 		if _island_d(p.x, p.y) > 0.84 or _near_region(p):
 			continue
-		_prop(forest, FOREST % trees[rng.randi() % trees.size()], Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.85, 1.2), "tronco")
+		var city_color: int = [1, 3][rng_cor.randi() % 2]
+		_prop(forest, _tree_path(trees[rng.randi() % trees.size()], city_color), Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.85, 1.2), "tronco")
 	# Jabuticabeira gigante no meio da clareira.
 	_prop(forest, FOREST % "Tree_1_A_Color1", Vector3(CLAREIRA.x, ground(CLAREIRA.x, CLAREIRA.y) - 0.2, CLAREIRA.y), 30.0, FOREST_SCALE * 3.2, "tronco")
 	# Vila das Copas: plataformas de madeira entre as árvores (chegar lá em cima fica para o pulo duplo).
@@ -779,9 +946,20 @@ func _forest() -> void:
 		var p := Vector2(rng.randf_range(-185, 185), rng.randf_range(-240, 200))
 		if _island_d(p.x, p.y) > 0.85 or _in_city(p.x, p.y) or _trail_dist(p) < 3.0 or ground(p.x, p.y) < SEA_LEVEL + 0.5 or _near_region(p, -6.0):
 			continue
-		if p.length() < MORRO_R and _spiral_dist(p.x, p.y) < PATH_HALF + 1.0:
+		if p.length() < MORRO_R and (_spiral_dist(p.x, p.y) < PATH_HALF + 1.0 or p.length() < MORRO_TOP_R + 1.0):
 			continue
-		_prop(forest, FOREST % ("Bush_%d_%s_Color1" % [rng.randi_range(1, 4), "ABC"[rng.randi() % 3]]), Vector3(p.x, ground(p.x, p.y) - 0.05, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.8, 1.2))
+		var bush := "Bush_%d_%s" % [rng.randi_range(1, 4), "ABC"[rng.randi() % 3]]
+		var bush_color: int = [1, 1, 2, 3, 8][rng_cor.randi() % 5]
+		_prop(forest, _tree_path(bush, bush_color), Vector3(p.x, ground(p.x, p.y) - 0.05, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.8, 1.2))
+	# Morrinhos de pedra com topo de grama na margem sul do rio (longe da ponte e do lugar do tchibum).
+	var hills := [["Hill_8x8x4", -150.0], ["Hill_12x6x4", -118.0], ["Hill_8x4x4", -86.0], ["Hill_4x4x4", -62.0],
+		["Hill_8x8x4", 78.0], ["Hill_12x6x4", 108.0], ["Hill_8x4x4", 140.0]]
+	for h in hills:
+		var hx: float = h[1]
+		var hz := _river_z(hx) + RIVER_HALF + RIVER_BANK + 5.0
+		if _island_d(hx, hz) > 0.82 or _trail_dist(Vector2(hx, hz)) < 6.0 or Vector2(hx, hz).length() < MORRO_R + 4.0:
+			continue
+		_prop(forest, FOREST % (h[0] + "_Color1"), Vector3(hx, ground(hx, hz) - 0.4, hz), rad_to_deg(atan2(_river_z(hx + 1.0) - _river_z(hx), 1.0)), 1.0, "caixa")
 
 
 ## Grama em MultiMesh (milhares de tufos sem pesar).
@@ -839,7 +1017,9 @@ func _markers() -> void:
 	var cps := _group(markers, "PontosDeRetorno")
 	_marker(cps, "Praca", 9, 170)
 	_marker(cps, "PeDoMorro", 8, 97)
-	_marker(cps, "TopoDoMorro", 9, 12)
+	# Na trilha, logo antes do portão do cemitério (fora da cúpula, que cobre o topo inteiro).
+	var top_cp := _spiral_point((SPIRAL_R0 - (CEMETERY_DOME_R + 2.5)) / (SPIRAL_R0 - SPIRAL_R1))
+	_marker(cps, "TopoDoMorro", top_cp.x, top_cp.y)
 	_marker(cps, "EntradaDaMata", 8, -133)
 	_marker(cps, "Clareira", 54, -170)
 	_marker(cps, "MorroDosVentos", -66, -142)
@@ -875,22 +1055,22 @@ func _markers() -> void:
 			crack.position = Vector3(cp.x, ground(cp.x, cp.y) + 0.05, cp.y) - r.position
 			_add(r, crack)
 
-	# Defesa final: pátio do castelinho. O centro fica entre o poste da lanterna central e o portão;
-	# as rachaduras ficam nos quatro cantos de dentro dos muros.
-	var castle := _marker(regions, "castelo", 0, 3.5, {"raio": 10.0})
+	# Defesa final: a arena no meio do cemitério, entre o portão e a cripta; rachaduras nas diagonais.
+	var cemetery := _marker(regions, "cemiterio", 0, 2, {"raio": 18.0})
 	for k in 4:
-		var cp := Vector2(-4.5 if k % 2 == 0 else 4.5, -4.5 if k < 2 else 4.0)
+		var a := PI / 4.0 + k * PI / 2.0
+		var cp := Vector2(0, 2) + Vector2(cos(a), sin(a)) * 10.0
 		var crack := Marker3D.new()
 		crack.name = "Rachadura%d" % (k + 1)
-		crack.position = Vector3(cp.x, ground(cp.x, cp.y) + 0.05, cp.y) - castle.position
-		_add(castle, crack)
+		crack.position = Vector3(cp.x, ground(cp.x, cp.y) + 0.05, cp.y) - cemetery.position
+		_add(cemetery, crack)
 
 	# Caixas de munição: voltam um tempo depois de pegas (o jogo cuida disso).
 	var crates := _group(markers, "Municao")
 	var crate_spots := [
 		["Praca", Vector2(-9, 164)], ["CidadeOeste", Vector2(-50, 150)], ["CidadeLeste", Vector2(50, 150)],
 		["PeDoMorro", Vector2(-8, 96)], ["TrilhaDoMorro", _spiral_point(0.45) + Vector2(2, 2)],
-		["Castelinho", Vector2(-13, 4)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
+		["Cemiterio", Vector2(9, -13)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
 		["VilaDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-86, -148)],
 	]
 	for spot in crate_spots:
@@ -924,7 +1104,7 @@ func _markers() -> void:
 			["Que banda boa!", "Amanhã é a Festa do Cafuné!"]],
 		["Vovo", "Lorekeeper", "sentado_banco", "", "moradores/Lorekeeper_Staff", pc + Vector2(-4.95, 4.95), 45.0, 0.0,
 			["Quando eu era pequeno, os esqueletos também espiavam a festa lá do Morro.",
-			"Apague as quatro lanternas e a cúpula do castelinho cai.", "Será que alguém já convidou os esqueletos?"]],
+			"Apague as quatro lanternas e a cúpula do cemitério cai.", "Será que alguém já convidou os esqueletos?"]],
 		["Magica3", "MagicalGirl", "sentado_banco", "magical_girl_texture_D", "moradores/MagicalGirl_Wand", pc + Vector2(4.95, 4.95), -45.0, 0.0,
 			["O vovô conta cada história do Morro..."]],
 		["Motorista1", "Driver", "andando", "", "", Vector2(-48.0, 146.0), 90.0, 0.0,
@@ -932,7 +1112,7 @@ func _markers() -> void:
 		["Motorista2", "Driver", "andando", "driver_texture_B", "", Vector2(26.0, 146.0), 90.0, 0.0,
 			["Cuidado na rua! E com os esqueletos também."]],
 		["Trilheiro", "Hiker", "parado", "", "", Vector2(-2.0, 100.0), 0.0, 0.0,
-			["A trilha sobe em espiral até o castelinho.", "Lá no Morro dos Ventos venta tanto que o boné voa!"]],
+			["A trilha sobe em espiral até o cemitério dos esqueletos.", "Lá no Morro dos Ventos venta tanto que o boné voa!"]],
 	]
 	var walk_to := {"Motorista1": Vector2(-26.0, 146.0), "Motorista2": Vector2(48.0, 146.0)}
 	for f in folks:
@@ -945,10 +1125,10 @@ func _markers() -> void:
 		var m := _marker(people, f[0], p.x, p.y, meta)
 		m.rotation_degrees.y = f[6]
 
-	# Lanternas mágicas: por enquanto só o visual (poste, esfera e raio até o castelinho).
+	# Lanternas mágicas: poste, esfera e raio até a lanterna em cima da cripta do cemitério.
 	var lanterns := _group(markers, "Lanternas")
 	var visuals := _group(ilha, "LanternasVisuais")
-	var source := Vector3(0, MORRO_H + 5.0, 0)
+	var source := Vector3(0, MORRO_H + 13.0, -17.5)
 	for spec in [["Oeste", REGIONS.oeste], ["Leste", REGIONS.leste], ["Ventos", REGIONS.ventos], ["Clareira", REGIONS.clareira]]:
 		var m := _marker(lanterns, "Lanterna" + spec[0], spec[1].x, spec[1].y)
 		var base := m.position

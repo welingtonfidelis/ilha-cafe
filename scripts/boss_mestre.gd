@@ -1,6 +1,6 @@
 class_name BossMestre
 extends Boss
-## Mestre Ossinho, chefe final no castelinho: o Necromancer do Skeletons completo (mago de coroa),
+## Mestre Ossinho, chefe final no cemitério do Morro: o Necromancer do Skeletons completo (mago de coroa),
 ## com o cajado do Mage. Três fases pela vida:
 ## 1. Fica a uma certa distância, joga bolhas mágicas e chama dois minions de vez em quando.
 ## 2. Escudo de seis bolhas girando em volta: enquanto houver bolha, nada passa. Estouradas todas,
