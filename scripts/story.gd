@@ -6,7 +6,7 @@ extends Node
 
 signal objective_changed(text: String)
 
-## Ondas por região: lista de [tipo, quantidade]. Guardiões ainda não feitos ficam sem (próxima etapa).
+## Ondas por região: lista de [tipo, quantidade]. O guardião vem na última onda.
 const REGIONS := {
 	"praca": {
 		"nome": "Praça da Festa", "titulo": "praça", "lanterna": "", "guardiao": "", "recompensa": "", "bandeira": "Praca",
@@ -31,7 +31,12 @@ const REGIONS := {
 }
 const CITY := ["oeste", "leste"]
 const FOREST := ["clareira", "ventos"]
-const GUARDIANS := {"ossao": preload("res://scripts/boss_ossao.gd"), "mira_torta": preload("res://scripts/boss_mira_torta.gd")}
+const GUARDIANS := {
+	"ossao": preload("res://scripts/boss_ossao.gd"),
+	"mira_torta": preload("res://scripts/boss_mira_torta.gd"),
+	"torre": preload("res://scripts/boss_torre.gd"),
+	"minionzao": preload("res://scripts/boss_minionzao.gd"),
+}
 const BALLOONS := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
 const PLAT := "res://assets/props/platformer/%s.gltf"
 const CASTLE := Vector3(0, 26, 0)
@@ -173,7 +178,7 @@ func _on_reward_collected(r: RewardPickup) -> void:
 		player.unlock_weapon(r.kind)
 		var i := Weapons.index_of(r.kind)
 		var def := Weapons.get_def(i)
-		game.banner("Novo blaster: %s!" % def.nome, "No controle, aperte %s no direcional. No teclado, a tecla %d." % [Weapons.ARROWS[i], i + 1], def.cor)
+		game.banner("Novo blaster: %s!" % def.nome, "No controle, direcional %s. No teclado, a tecla %d." % [Weapons.DPAD_WORDS[i], i + 1], def.cor)
 	_refresh_objective()
 
 
@@ -244,6 +249,26 @@ func _dissolve(body: StaticBody3D) -> void:
 	var tw := body.create_tween()
 	tw.tween_property(body, "scale", Vector3(1.0, 0.01, 1.0), 0.6)
 	tw.tween_callback(func() -> void: body.visible = false)
+
+
+## Pula direto para a mata, como se a cidade já tivesse sido vencida (testes e fotos da mata).
+func skip_to_forest() -> void:
+	for id in ["praca"] + CITY:
+		var d: Defense = defenses[id]
+		d.state = Defense.State.VENCIDA
+		d.active = false
+	for key in lanterns:
+		_set_lantern_look(key, key in ["Ventos", "Clareira"])
+	_set_orb_lit(_central_orb, true)
+	game.player.unlock_weapon("granulado")
+	game.player.unlock_weapon("pipoqueira")
+	game.player.switch_weapon(0)
+	open_bridge_now()
+	stage = "mata"
+	_set_fast()
+	for id in FOREST:
+		defenses[id].activate()
+	_refresh_objective()
 
 
 ## Abre a ponte na hora (usado pelo teste da ilha).

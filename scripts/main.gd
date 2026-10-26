@@ -286,6 +286,12 @@ func _ready() -> void:
 	elif "--historia-captura" in args:
 		select_panel.hide()
 		_run_story_capture()
+	elif "--mata" in args:
+		select_panel.hide()
+		_run_forest_test()
+	elif "--mata-captura" in args:
+		select_panel.hide()
+		_run_forest_capture()
 	else:
 		open_menu("escolha")
 
@@ -2193,6 +2199,172 @@ func _run_story_capture() -> void:
 	open_menu("pausa")
 	await _wait(0.3)
 	await _shot("h12_pausa_objetivo.png")
+	get_tree().quit()
+
+
+func _children_of(type: Variant) -> Array:
+	return get_children().filter(func(n: Node) -> bool: return is_instance_of(n, type) and not n.is_queued_for_deletion())
+
+
+## Defesas da mata (Torre de Ossinhos e Minionzão) e o caminho até o castelinho, partindo do
+## atalho que dá a cidade como vencida. Uso: godot --headless --path . -- --mata
+func _run_forest_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	story.skip_to_forest()
+	await _wait(0.3)
+	all_ok = _check("atalho: mata liberada, com Granulado e Pipoqueira", story.stage == "mata" and story.bridge_open()
+			and player.has_weapon("granulado") and player.has_weapon("pipoqueira") and not player.has_weapon("pe_de_moleque")) and all_ok
+
+	# Clareira: Torre de Ossinhos.
+	var clareira: Defense = story.defenses.clareira
+	await _stand(clareira.center + Vector3(0, 0, 9))
+	for k in 2:
+		await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(clareira)
+	await _wait_until(func() -> bool: return is_instance_valid(clareira.boss) and clareira.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var torre := clareira.boss as BossTorre
+	all_ok = _check("última onda traz a Torre de Ossinhos com 5 andares", is_instance_valid(torre) and torre.segments.size() == 5
+			and torre.health == 20.0 and boss_bar.visible) and all_ok
+	torre.set_physics_process(false)
+	player.force_aim = true
+	var bottom: Dictionary = torre.segments[0]
+	await _aim_for(bottom.hurtboxes[0], 0.0, 0.5)
+	player.fire()
+	await get_tree().physics_frame
+	player.force_aim = false
+	all_ok = _check("tiro de verdade na cabeça do andar de baixo", bottom.hp < BossTorre.SEG_HEALTH, "(vida do andar %.0f)" % bottom.hp) and all_ok
+	var middle: Dictionary = torre.segments[2]
+	var top_holder: Node3D = torre.segments[4].holder
+	torre.take_hit(99.0, (middle.holder as Node3D).global_position, middle.hurtboxes[0])
+	await _wait(0.6)
+	all_ok = _check("andar vencido sai de balão e os de cima descem", torre.segments.size() == 4 and absf(top_holder.position.y - 3 * BossTorre.SPACING) < 0.05
+			and is_instance_valid(middle.holder) and (middle.holder as Node3D).get_parent() == self, "(%d andares, topo em %.2f)" % [torre.segments.size(), top_holder.position.y]) and all_ok
+	var bubbles_before := _projectiles(Projectile.Kind.BOLHA).size()
+	torre._throw()
+	await get_tree().physics_frame
+	all_ok = _check("o de cima joga bolha", _projectiles(Projectile.Kind.BOLHA).size() == bubbles_before + 1) and all_ok
+	for k in 2:
+		var seg: Dictionary = torre.segments[-1]
+		torre.take_hit(99.0, (seg.holder as Node3D).global_position, seg.hurtboxes[0])
+	torre.set_physics_process(true)
+	torre._hop_timer = 0.0
+	await _wait_until(func() -> bool: return not _children_of(Boss.Shockwave).is_empty(), 4.0)
+	all_ok = _check("com 2 andares a torre pula e solta onda", torre.segments.size() == 2 and not _children_of(Boss.Shockwave).is_empty()) and all_ok
+	await _clear_wave(clareira)
+	await _wait_until(func() -> bool: return clareira.state == Defense.State.VENCIDA, 4.0)
+	await get_tree().physics_frame
+	all_ok = _check("Clareira vencida: lanterna apagada e recompensa de coração", not story.lanterns.Clareira.lit and story.rewards.size() == 1
+			and story.rewards[0].kind == "coracao") and all_ok
+	await _stand(story.rewards[0].global_position)
+	await _wait(1.0)
+	all_ok = _check("pegar o coração aumenta a vida máxima para 6", player.max_hearts == 6 and player.hearts == 6) and all_ok
+
+	# Morro dos Ventos: Minionzão.
+	var ventos: Defense = story.defenses.ventos
+	await _stand(ventos.center + Vector3(0, 0, 9))
+	for k in 2:
+		await _wait_until(func() -> bool: return ventos.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(ventos)
+	await _wait_until(func() -> bool: return is_instance_valid(ventos.boss) and ventos.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mz := ventos.boss as BossMinionzao
+	all_ok = _check("última onda traz o Minionzão", is_instance_valid(mz) and mz.display_name == "Minionzão" and boss_bar.visible) and all_ok
+	for e in _wave_enemies():
+		e.take_hit(99.0, e.global_position + Vector3.UP * 2.0, e.hurtboxes[0])
+	await _stand(mz.global_position + Vector3(0, 0, 12))
+	player.god_mode = false
+	player.hearts = player.max_hearts
+	player._invulnerable = 0.0
+	mz._charge_cooldown = 0.0
+	mz._rest()
+	mz._move_time = 0.8
+	var saw_stripe := [false]
+	var t := 0.0
+	while t < 5.0 and not mz.is_dizzy():
+		if is_instance_valid(mz._stripe) and mz._stripe.visible:
+			saw_stripe[0] = true
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	all_ok = _check("investida: faixa de aviso no chão e acerta quem fica no caminho", saw_stripe[0] and player.hearts == player.max_hearts - 1,
+			"(faixa %s, %d corações)" % [saw_stripe[0], player.hearts]) and all_ok
+	player.god_mode = true
+	var h0 := mz.health
+	mz.take_hit(2.0, mz.global_position + Vector3.UP * 5.0, mz.hurtboxes[1])
+	all_ok = _check("depois da investida fica tonto e leva dano em dobro", mz.is_dizzy() and is_equal_approx(h0 - mz.health, 4.0),
+			"(%.0f -> %.0f)" % [h0, mz.health]) and all_ok
+	await _clear_wave(ventos)
+	await _wait_until(func() -> bool: return ventos.state == Defense.State.VENCIDA, 4.0)
+	await get_tree().physics_frame
+	all_ok = _check("mata vencida: cúpula do castelinho cai", story.stage == "castelo" and story.dome_open()) and all_ok
+	await _stand(story.rewards[0].global_position)
+	await _wait(1.0)
+	all_ok = _check("recompensa do Morro dos Ventos é o Pé-de-Moleque", player.has_weapon("pe_de_moleque")) and all_ok
+	all_ok = _check("objetivo manda subir até o castelinho", "castelinho" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
+	await _stand(Vector3(9, 27, 0))
+	await _wait(0.5)
+	all_ok = _check("chegar ao castelinho fecha esta versão", story.stage == "fim", "(\"%s\")" % story.objective_text) and all_ok
+
+	print("MATA OK" if all_ok else "MATA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos dos guardiões da mata (precisa de janela). Uso: godot --path . -- --mata-captura
+func _run_forest_capture() -> void:
+	player.god_mode = true
+	story.fast = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	story.skip_to_forest()
+	var clareira: Defense = story.defenses.clareira
+	await _stand(clareira.center + Vector3(3, 0, 13))
+	for k in 2:
+		await _wait_until(func() -> bool: return clareira.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(clareira)
+	await _wait_until(func() -> bool: return is_instance_valid(clareira.boss) and clareira.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var torre := clareira.boss as BossTorre
+	for e in _wave_enemies():
+		e.visible = false
+	await _aim_for(torre, 4.5, 0.6)
+	await _shot("m01_torre.png")
+	var seg: Dictionary = torre.segments[1]
+	torre.take_hit(99.0, (seg.holder as Node3D).global_position, seg.hurtboxes[0])
+	await _wait(1.6)
+	await _aim_for(torre, 6.0, 0.3)
+	await _shot("m02_torre_andar_de_balao.png")
+	await _clear_wave(clareira)
+	await _wait(2.0)
+	var ventos: Defense = story.defenses.ventos
+	await _stand(ventos.center + Vector3(3, 0, 13))
+	for k in 2:
+		await _wait_until(func() -> bool: return ventos.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(ventos)
+	await _wait_until(func() -> bool: return is_instance_valid(ventos.boss) and ventos.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mz := ventos.boss as BossMinionzao
+	for e in _wave_enemies():
+		e.visible = false
+	mz._charge_cooldown = 0.0
+	mz._rest()
+	mz._move_time = 0.8
+	await _wait_until(func() -> bool: return is_instance_valid(mz._stripe) and mz._stripe.visible, 4.0)
+	await _wait(0.5)
+	player.global_position += Vector3(5, 0, 0)
+	await _aim_for(mz, 3.0, 0.3)
+	await _shot("m03_minionzao_faixa.png")
+	await _wait_until(func() -> bool: return mz.is_dizzy(), 4.0)
+	await _wait(0.4)
+	await _aim_for(mz, 6.0, 0.3)
+	await _shot("m04_minionzao_tonto.png")
+	await _clear_wave(ventos)
+	await _wait(2.5)
+	await _stand(Vector3(14, 27, 16))
+	player.aim_at(Vector3(0, 30, 0))
+	await _wait(0.6)
+	await _shot("m05_castelinho_aberto.png")
+	await _stand(Vector3(9, 27, 0))
+	await _wait(0.8)
+	await _shot("m06_fim_desta_versao.png")
 	get_tree().quit()
 
 

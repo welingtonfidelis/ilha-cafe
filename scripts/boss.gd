@@ -39,6 +39,7 @@ var hand_r: BoneAttachment3D
 var hurtboxes: Array[Hurtbox] = []
 
 var _warning: Label3D
+var _body_shape: CollisionShape3D
 var _phase_time := 0.0
 var _arrive_time := 2.3
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
@@ -84,6 +85,11 @@ func _cancel_attack() -> void:
 	pass
 
 
+## Altura do "!" de aviso (a Torre é bem mais alta que os outros).
+func _warning_height() -> float:
+	return 2.75 * body_scale
+
+
 # --- montagem ----------------------------------------------------------------
 
 func _ready() -> void:
@@ -91,13 +97,13 @@ func _ready() -> void:
 	health = max_health if start_health < 0.0 else minf(start_health, max_health)
 	collision_layer = 1 << 2
 	collision_mask = 1 | (1 << 1)
-	var shape := CollisionShape3D.new()
+	_body_shape = CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.5 * body_scale
 	capsule.height = 2.0 * body_scale
-	shape.shape = capsule
-	shape.position.y = body_scale
-	add_child(shape)
+	_body_shape.shape = capsule
+	_body_shape.position.y = body_scale
+	add_child(_body_shape)
 	visual = Node3D.new()
 	visual.name = "Visual"
 	visual.scale = Vector3.ONE * body_scale
@@ -111,7 +117,7 @@ func _ready() -> void:
 	_warning.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_warning.no_depth_test = true
 	_warning.pixel_size = 0.008
-	_warning.position.y = 2.75 * body_scale
+	_warning.position.y = _warning_height()
 	_warning.visible = false
 	add_child(_warning)
 	_arrive()

@@ -1,10 +1,13 @@
 class_name WeaponHud
 extends Control
 ## Painel das armas no canto de baixo à direita, inspirado em HUD de jogo de tiro:
-## - painel grande inclinado com a arma na mão: número do encaixe, ícone de balas, pente (grande,
+## - painel grande inclinado com a arma na mão: botão que puxa a arma, ícone de balas, pente (grande,
 ##   laranja) sobre o estoque (cinza) e a silhueta branca da arma;
-## - painel menor em cima com a próxima arma (a que vem ao apertar Y ou a rodinha), se houver;
+## - fileira de cartões menores em cima, um para cada outro blaster já ganho (aparecem conforme são
+##   desbloqueados), com silhueta, munição e o botão que puxa aquele blaster;
 ## - painel à esquerda com as granadas Brigadeiro.
+## O botão é uma cruzinha do direcional com o braço daquela arma aceso (no controle) ou a tecla do
+## número (no teclado). Blaster recém-ganho tem o botão piscando em amarelo por uns segundos.
 ## Desenhado em "unidades de projeto" (tela de 1280 x 720) e ampliado conforme a altura da janela.
 ## As silhuetas vêm de tools/gerar_icones.gd.
 
@@ -19,6 +22,10 @@ const ORANGE := Color("#ffb36b")
 const LOW := Color("#ffd23f")
 const EMPTY := Color("#ff6b6b")
 const RELOAD := Color("#9fdcff")
+const CARD_W := 124.0
+const CARD_H := 56.0
+const CARD_GAP := 8.0
+const FLASH_TIME := 3.5
 
 var _font: FontVariation
 var _icons := {}
@@ -29,6 +36,11 @@ var _last_mag := -1
 var _switch := 0.0
 ## 1 a cada tiro, caindo até 0 (o número do pente dá um pulinho).
 var _pulse := 0.0
+## Blasters que o aventureiro já tinha na última leitura (para notar quando ganha um novo).
+var _known := {}
+## id do blaster -> 1 ao ganhar, caindo até 0 (o botão dele pisca).
+var _flash := {}
+var _time := 0.0
 
 
 func _ready() -> void:
@@ -44,11 +56,19 @@ func _ready() -> void:
 ## Lê o estado do aventureiro; só redesenha quando algo mudou ou há animação.
 func refresh(p: Player) -> void:
 	var i := p.weapon_index
-	var n := p.next_weapon_index(1)
-	var next_id: String = Weapons.get_def(n).id
+	# Os outros blasters ganhos, na ordem da lista (a mesma do direcional: cima, direita, baixo, esquerda).
+	var others := []
+	var first_read := _known.is_empty()
+	for k in Weapons.count():
+		var id: String = Weapons.get_def(k).id
+		var has := p.has_weapon(id)
+		if has and not first_read and not _known.get(id, false):
+			_flash[id] = 1.0
+		_known[id] = has
+		if has and k != i:
+			others.append([k, p.ammo[id].mag, p.ammo[id].reserve])
 	var s := {
-		"i": i, "mag": p.mag(), "reserve": p.reserve(),
-		"n": n, "next_mag": p.ammo[next_id].mag, "next_reserve": p.ammo[next_id].reserve,
+		"i": i, "mag": p.mag(), "reserve": p.reserve(), "others": others,
 		"grenades": p.grenades, "reload": snappedf(p.reload_progress(), 0.01), "pad": p.using_gamepad,
 	}
 	if i != _last_weapon:
@@ -65,7 +85,12 @@ func refresh(p: Player) -> void:
 
 func _process(delta: float) -> void:
 	size = get_viewport_rect().size
-	if _switch > 0.0 or _pulse > 0.0:
+	_time += delta
+	for id in _flash.keys():
+		_flash[id] = maxf(_flash[id] - delta / FLASH_TIME, 0.0)
+		if _flash[id] <= 0.0:
+			_flash.erase(id)
+	if _switch > 0.0 or _pulse > 0.0 or not _flash.is_empty():
 		_switch = move_toward(_switch, 0.0, delta * 4.0)
 		_pulse = move_toward(_pulse, 0.0, delta * 6.0)
 		queue_redraw()
@@ -92,13 +117,47 @@ func _divider(x: float, y: float, h: float, alpha := 1.0) -> void:
 	draw_line(Vector2(x + h * SLANT, y + 4), Vector2(x, y + h - 4), Color(EDGE, EDGE.a * alpha), 1.5, true)
 
 
-## Etiqueta pequena inclinada com o número do encaixe.
-func _slot_tag(x: float, y: float, label: String, alpha := 1.0) -> void:
-	var pts := _slanted(x, y, 30, 20)
+## Botão que puxa o blaster `index`, centrado em `c`: a cruzinha do direcional no controle, a tecla do
+## número no teclado. `flash` (0 a 1) faz o botão piscar em amarelo.
+func _binding(c: Vector2, index: int, size: float, alpha: float, flash := 0.0) -> void:
+	var blink := flash * (0.5 + 0.5 * sin(_time * 10.0))
+	if _state.get("pad", false):
+		_dpad(c, size, index, alpha, blink)
+	else:
+		_keycap(c, size * 0.84, str(index + 1), alpha, blink)
+	if flash > 0.0:
+		draw_arc(c, size * 0.85, 0.0, TAU, 28, Color(LOW, alpha * flash * (0.4 + 0.6 * blink)), 2.0, true)
+
+
+## Cruz do direcional: os quatro braços apagados e o de `lit` aceso (na ordem de Weapons.DPAD).
+func _dpad(c: Vector2, size: float, lit: int, alpha: float, blink: float) -> void:
+	var w := size * 0.36
+	var half := size * 0.5
+	var arm := half - w * 0.5 - 1.0
+	var dim := Color(1, 1, 1, 0.3 * alpha)
+	var on := Color(ORANGE.lerp(LOW, blink), alpha)
+	draw_rect(Rect2(c.x - w * 0.5, c.y - w * 0.5, w, w), dim, true)
+	var arms := [
+		Rect2(c.x - w * 0.5, c.y - half, w, arm),
+		Rect2(c.x + w * 0.5 + 1.0, c.y - w * 0.5, arm, w),
+		Rect2(c.x - w * 0.5, c.y + w * 0.5 + 1.0, w, arm),
+		Rect2(c.x - half, c.y - w * 0.5, arm, w),
+	]
+	for k in arms.size():
+		draw_rect(arms[k], on if k == lit else dim, true)
+
+
+## Tecla pequena inclinada com o número.
+func _keycap(c: Vector2, size: float, label: String, alpha: float, blink: float) -> void:
+	var w := size * 1.5
+	var pts := _slanted(c.x - w * 0.5, c.y - size * 0.5, w, size)
 	var outline := pts.duplicate()
 	outline.append(pts[0])
-	draw_polyline(outline, Color(1, 1, 1, 0.5 * alpha), 1.2, true)
-	_text(Vector2(x + 9, y + 16), label, 14, Color(1, 1, 1, 0.8 * alpha))
+	var color := Color(Color.WHITE.lerp(LOW, blink), alpha)
+	draw_polyline(outline, Color(color, 0.5 * alpha), 1.2, true)
+	var font_size := int(round(size * 0.7))
+	var tw := _text_width(label, font_size)
+	_text(Vector2(c.x - tw * 0.5, c.y + font_size * 0.36), label, font_size, Color(color, 0.85 * alpha))
 
 
 ## Duas balinhas em pé.
@@ -133,11 +192,6 @@ func _icon(id: String, area: Rect2, alpha: float) -> void:
 	draw_texture_rect(tex, Rect2(pos, draw_size), false, Color(1, 1, 1, alpha))
 
 
-## No controle a etiqueta mostra a seta do direcional daquele blaster; no teclado, o número.
-func _slot_label(index: int) -> String:
-	return Weapons.ARROWS[index] if _state.get("pad", false) else str(index + 1)
-
-
 func _mag_color(mag: int, pente: int) -> Color:
 	if mag == 0:
 		return EMPTY
@@ -157,8 +211,7 @@ func _draw() -> void:
 	# Origem no canto de baixo à direita; desenha para a esquerda e para cima (coordenadas negativas).
 	draw_set_transform(Vector2(size.x - MARGIN * u, size.y - MARGIN * u), 0.0, Vector2(u, u))
 	_draw_main()
-	if _state.n != _state.i:
-		_draw_next()
+	_draw_others()
 	_draw_grenades()
 	draw_set_transform(Vector2.ZERO)
 
@@ -173,7 +226,7 @@ func _draw_main() -> void:
 	_bullets(Vector2(x + 52, y + 52), 44)
 	var slide := 36.0 * _switch
 	var glow := 1.0 - 0.6 * _switch
-	_slot_tag(x + 128 + slide, y + 10, _slot_label(_state.i), glow)
+	_binding(Vector2(x + 143 + slide, y + 19), _state.i, 24, glow, _flash.get(def.id, 0.0))
 	var mag_size := int(round(42 * (1.0 + 0.12 * _pulse)))
 	var mag_text := str(_state.mag)
 	var mag_color := _mag_color(_state.mag, def.pente)
@@ -196,24 +249,27 @@ func _draw_main() -> void:
 		_text(Vector2(icon_area.get_center().x - lw / 2.0, icon_area.get_center().y + 6), label, 16, RELOAD)
 
 
-func _draw_next() -> void:
-	var def := Weapons.get_def(_state.n)
-	var x := -282.0
-	var y := -104.0 - 10.0 - 62.0
-	var h := 62.0
-	var alpha := 0.8
-	_panel(x, y, 270, h, alpha)
-	_divider(x + 58, y, h, alpha)
-	_bullets(Vector2(x + 36, y + 31), 26, alpha)
-	_slot_tag(x + 84, y + 7, _slot_label(_state.n), alpha)
-	var mag_text := str(_state.next_mag)
-	var nx := x + 92.0
-	_text(Vector2(nx + 32, y + 26), mag_text, 22, Color(TEXT, alpha))
-	var reserve_text := _reserve_text(_state.next_reserve)
-	var col_w := maxf(_text_width(mag_text, 22), _text_width(reserve_text, 18)) + 6
-	draw_line(Vector2(nx + 30, y + 33), Vector2(nx + 32 + col_w, y + 33), Color(1, 1, 1, 0.3 * alpha), 1.2)
-	_text(Vector2(nx + 32, y + 54), reserve_text, 18, Color(GREY, alpha * 0.9))
-	_icon(def.id, Rect2(x + 160, y + 10, 92, h - 20), 0.8 * alpha)
+## Um cartão para cada outro blaster ganho, alinhados à direita em cima do painel grande.
+func _draw_others() -> void:
+	var others: Array = _state.others
+	var y := -104.0 - CARD_GAP - CARD_H
+	for k in others.size():
+		var o: Array = others[others.size() - 1 - k]
+		var x := -4.0 - CARD_W - k * (CARD_W + CARD_GAP)
+		_card(x, y, o[0], o[1], o[2])
+
+
+func _card(x: float, y: float, index: int, mag: int, reserve: int) -> void:
+	var def := Weapons.get_def(index)
+	var alpha := 0.85
+	var empty := mag == 0 and reserve == 0
+	_panel(x, y, CARD_W, CARD_H, alpha)
+	_binding(Vector2(x + 31, y + CARD_H * 0.5), index, 24, alpha, _flash.get(def.id, 0.0))
+	_icon(def.id, Rect2(x + 50, y + 6, CARD_W - 50 - 15, 30), (0.3 if empty else 0.85) * alpha)
+	var mag_text := str(mag)
+	var mx := x + 52.0
+	_text(Vector2(mx, y + 51), mag_text, 16, Color(EMPTY if empty else TEXT, alpha))
+	_text(Vector2(mx + _text_width(mag_text, 16) + 3, y + 51), "/ " + _reserve_text(reserve), 13, Color(GREY, alpha * 0.9))
 
 
 func _draw_grenades() -> void:

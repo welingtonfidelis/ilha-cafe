@@ -176,6 +176,47 @@ static func flat_material(color: Color, unshaded := true) -> StandardMaterial3D:
 	return mat
 
 
+## Leva um esqueleto (ou parte da Torre) embora de balão: três balões enchem sobre a cabeça,
+## ele acena e sobe em zigue-zague até sumir em confete. O nó deve estar solto no mundo.
+static func balloon_away(node: Node3D, ap: AnimationPlayer, head_height := 2.6) -> void:
+	var balloons := Node3D.new()
+	balloons.position.y = head_height
+	balloons.scale = Vector3.ONE * 0.01
+	node.add_child(balloons)
+	var colors := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
+	colors.shuffle()
+	var spots := [Vector3(0, 2.2, 0), Vector3(-0.7, 1.7, 0.25), Vector3(0.7, 1.75, -0.2)]
+	var string_mat := flat_material(Color.WHITE, false)
+	for k in 3:
+		var ball: Node3D = load("res://assets/props/platformer/%s.gltf" % colors[k]).instantiate()
+		ball.scale = Vector3(0.42, 0.5, 0.42)
+		ball.position = spots[k]
+		balloons.add_child(ball)
+		var bottom: Vector3 = spots[k] - Vector3(0, 0.5, 0)
+		var cord := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.015
+		cyl.bottom_radius = 0.015
+		cyl.height = bottom.length()
+		cyl.material = string_mat
+		cord.mesh = cyl
+		cord.transform = Transform3D(Basis(Quaternion(Vector3.UP, bottom.normalized())), bottom * 0.5)
+		balloons.add_child(cord)
+	var world := node.get_parent()
+	var tw := node.create_tween()
+	tw.tween_property(balloons, "scale", Vector3.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void:
+		Sfx.play_at(world, "balao", node.global_position + Vector3.UP * 3.0)
+		if is_instance_valid(ap) and ap.has_animation(&"festa/Waving"):
+			ap.play(&"festa/Waving", 0.3)
+		popup_text(world, node.global_position + Vector3.UP * 3.2, "Tchau!", Color("#ffd6f3")))
+	tw.tween_property(node, "position:y", node.position.y + 22.0, 6.0).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(node, "rotation:z", 0.12, 1.5).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(func() -> void:
+		confetti(world, node.global_position + Vector3.UP * 4.0, 30, 3.0)
+		node.queue_free())
+
+
 ## Onda da explosão da granada: uma bolha cor-de-rosa que cresce até o raio e some.
 static func shockwave(parent: Node, pos: Vector3, radius: float) -> void:
 	var mi := MeshInstance3D.new()

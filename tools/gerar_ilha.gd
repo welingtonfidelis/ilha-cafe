@@ -23,7 +23,8 @@ const MORRO_TOP_R := 13.0
 const RIVER_Z := -112.0
 const RIVER_HALF := 7.0
 const RIVER_BANK := 6.0
-const VENTOS := Vector2(-115, -185)
+## Longe da costa (antes ficava na beira da praia e o terreno virava areia e mar).
+const VENTOS := Vector2(-95, -158)
 const VENTOS_R := 45.0
 const VENTOS_H := 14.0
 const CLAREIRA := Vector2(40, -180)
@@ -38,7 +39,7 @@ const REGIONS := {
 	"oeste": Vector2(-84, 140),
 	"leste": Vector2(84, 140),
 	"clareira": Vector2(24, -166),
-	"ventos": Vector2(-112, -182),
+	"ventos": Vector2(-95, -158),
 }
 const REGION_NAMES := {"oeste": "Oeste", "leste": "Leste", "clareira": "Clareira", "ventos": "Ventos"}
 ## Raio do círculo da arena e raio sem árvores, pedras e arbustos em volta do centro.
@@ -71,7 +72,7 @@ const C_PLAZA := Color("#d3b98f")
 var trails := [
 	[Vector2(0, 106), Vector2(0, SPIRAL_R0)],  # da cidade ao começo da subida do Morro
 	[Vector2(0, -126), Vector2(10, -150), CLAREIRA],
-	[Vector2(10, -150), Vector2(-40, -165), Vector2(-100, -180)],
+	[Vector2(10, -150), Vector2(-40, -165), Vector2(-90, -165)],
 	[Vector2(10, -150), Vector2(70, -150), VILA],
 ]
 
@@ -772,7 +773,7 @@ func _markers() -> void:
 	_marker(cps, "TopoDoMorro", 9, 12)
 	_marker(cps, "EntradaDaMata", 8, -133)
 	_marker(cps, "Clareira", 54, -170)
-	_marker(cps, "MorroDosVentos", -88, -160)
+	_marker(cps, "MorroDosVentos", -66, -142)
 	_marker(cps, "CidadeOeste", -58, 152)
 	_marker(cps, "CidadeLeste", 58, 152)
 
@@ -811,7 +812,7 @@ func _markers() -> void:
 		["Praca", Vector2(-9, 164)], ["CidadeOeste", Vector2(-50, 150)], ["CidadeLeste", Vector2(50, 150)],
 		["PeDoMorro", Vector2(-8, 96)], ["TrilhaDoMorro", _spiral_point(0.45) + Vector2(2, 2)],
 		["Castelinho", Vector2(-13, 4)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
-		["VilaDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-100, -172)],
+		["VilaDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-86, -148)],
 	]
 	for spot in crate_spots:
 		_marker(crates, spot[0], spot[1].x, spot[1].y)

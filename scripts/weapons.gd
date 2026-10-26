@@ -58,7 +58,8 @@ const GRENADE := {
 ## No controle, cada blaster tem uma seta do direcional (na ordem de DEFS): ↑ Paçoca, → Granulado,
 ## ↓ Pipoqueira, ← Pé-de-Moleque. No teclado são as teclas 1 a 4.
 const DPAD := [JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT]
-const ARROWS := ["↑", "→", "↓", "←"]
+## Como a faixa de "novo blaster" fala o direcional (a fonte padrão não tem os glifos de seta).
+const DPAD_WORDS := ["para cima", "para a direita", "para baixo", "para a esquerda"]
 
 ## Quanto uma caixa de munição devolve de cada arma (com estoque limitado) e de granadas.
 const CRATE_AMMO := {"granulado": 30, "pipoqueira": 6, "pe_de_moleque": 5, "granadas": 1}

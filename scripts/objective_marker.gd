@@ -5,7 +5,7 @@ extends Control
 
 const MARGIN := 48.0
 ## Embaixo sobra espaço para o painel de armas não ficar por baixo do losango.
-const BOTTOM := 220.0
+const BOTTOM := 250.0
 const NEAR := 8.0
 
 var _font: FontVariation
@@ -33,6 +33,9 @@ func update_marker(camera: Camera3D, target: Vector3, from: Vector3) -> void:
 	var behind := camera.is_position_behind(target)
 	var u := clampf(view.y / 720.0, 0.75, 2.5)
 	var area := Rect2(Vector2(MARGIN, MARGIN), view - Vector2(MARGIN * 2.0, MARGIN + BOTTOM * u))
+	if area.size.x < 10.0 or area.size.y < 10.0:
+		# Janela minúscula (ou testes sem janela): usa a tela inteira.
+		area = Rect2(Vector2.ZERO, view.max(Vector2.ONE))
 	if behind:
 		# Atrás da câmera a projeção sai espelhada: inverte e joga para a borda de baixo.
 		p = view - p
