@@ -4,6 +4,8 @@ extends Control
 ## tela (ou atrás da câmera), o losango fica preso na borda, do lado certo. Some quando chega perto.
 
 const MARGIN := 48.0
+## Embaixo sobra espaço para o painel de armas não ficar por baixo do losango.
+const BOTTOM := 220.0
 const NEAR := 8.0
 
 var _font: FontVariation
@@ -29,19 +31,21 @@ func update_marker(camera: Camera3D, target: Vector3, from: Vector3) -> void:
 	_meters = roundi(from.distance_to(target))
 	var p := camera.unproject_position(target)
 	var behind := camera.is_position_behind(target)
+	var u := clampf(view.y / 720.0, 0.75, 2.5)
+	var area := Rect2(Vector2(MARGIN, MARGIN), view - Vector2(MARGIN * 2.0, MARGIN + BOTTOM * u))
 	if behind:
 		# Atrás da câmera a projeção sai espelhada: inverte e joga para a borda de baixo.
 		p = view - p
-		p.y = view.y - MARGIN
-	var inside := not behind and p.x > MARGIN and p.x < view.x - MARGIN and p.y > MARGIN and p.y < view.y - MARGIN
+		p.y = area.end.y
+	var inside := not behind and area.has_point(p)
 	_edge = not inside
 	if not inside:
-		var c := view * 0.5
+		var c := area.get_center()
 		var d := p - c
 		if d.length() < 1.0:
 			d = Vector2.DOWN
-		var kx := (c.x - MARGIN) / maxf(absf(d.x), 0.001)
-		var ky := (c.y - MARGIN) / maxf(absf(d.y), 0.001)
+		var kx := (area.size.x * 0.5) / maxf(absf(d.x), 0.001)
+		var ky := (area.size.y * 0.5) / maxf(absf(d.y), 0.001)
 		p = c + d * minf(kx, ky)
 	_pos = p
 	queue_redraw()

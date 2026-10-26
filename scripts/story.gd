@@ -9,23 +9,23 @@ signal objective_changed(text: String)
 ## Ondas por região: lista de [tipo, quantidade]. Guardiões ainda não feitos ficam sem (próxima etapa).
 const REGIONS := {
 	"praca": {
-		"nome": "Praça da Festa", "lanterna": "", "guardiao": "", "recompensa": "", "bandeira": "Praca",
+		"nome": "Praça da Festa", "titulo": "praça", "lanterna": "", "guardiao": "", "recompensa": "", "bandeira": "Praca",
 		"ondas": [[["Skeleton_Minion", 3]], [["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]]],
 	},
 	"oeste": {
-		"nome": "Lanterna Oeste", "lanterna": "Oeste", "guardiao": "ossao", "recompensa": "granulado", "bandeira": "CidadeOeste",
+		"nome": "Lanterna Oeste", "titulo": "Lanterna Oeste", "lanterna": "Oeste", "guardiao": "ossao", "recompensa": "granulado", "bandeira": "CidadeOeste",
 		"ondas": [[["Skeleton_Minion", 5]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 2]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 1]]],
 	},
 	"leste": {
-		"nome": "Lanterna Leste", "lanterna": "Leste", "guardiao": "mira_torta", "recompensa": "pipoqueira", "bandeira": "CidadeLeste",
+		"nome": "Lanterna Leste", "titulo": "Lanterna Leste", "lanterna": "Leste", "guardiao": "mira_torta", "recompensa": "pipoqueira", "bandeira": "CidadeLeste",
 		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]], [["Skeleton_Minion", 3], ["Skeleton_Rogue", 3]], [["Skeleton_Minion", 3], ["Skeleton_Rogue", 2]]],
 	},
 	"clareira": {
-		"nome": "Clareira da Jabuticabeira", "lanterna": "Clareira", "guardiao": "torre", "recompensa": "coracao", "bandeira": "Clareira",
+		"nome": "Clareira da Jabuticabeira", "titulo": "Lanterna da Clareira", "lanterna": "Clareira", "guardiao": "torre", "recompensa": "coracao", "bandeira": "Clareira",
 		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3], ["Skeleton_Mage", 2], ["Skeleton_Rogue", 1]], [["Skeleton_Mage", 2]]],
 	},
 	"ventos": {
-		"nome": "Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
+		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
 		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Warrior", 2], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
 }
@@ -147,16 +147,16 @@ func _on_defense_won(d: Defense) -> void:
 				stage = "mata"
 				for id in FOREST:
 					defenses[id].activate()
-				game.banner("%s vencida!" % d.nome, "A barreira da ponte sumiu: a mata está aberta!")
+				game.banner("%s apagada!" % spec.titulo, "A barreira da ponte sumiu: a mata está aberta!")
 			else:
-				game.banner("%s apagada!" % d.nome, "Falta uma lanterna na cidade.")
+				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na cidade.")
 		"mata":
 			if _all_won(FOREST):
 				_open_dome()
 				stage = "castelo"
 				game.banner("As quatro lanternas apagaram!", "A cúpula do castelinho caiu. Suba o Morro!", Color("#d9a8ff"))
 			else:
-				game.banner("%s apagada!" % d.nome, "Falta uma lanterna na mata.")
+				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na mata.")
 	_refresh_objective()
 
 
@@ -171,8 +171,9 @@ func _on_reward_collected(r: RewardPickup) -> void:
 		game.banner("+1 coração!", "Agora você tem %d corações." % player.max_hearts, Color("#ff8fa3"))
 	else:
 		player.unlock_weapon(r.kind)
-		var def := Weapons.get_def(Weapons.index_of(r.kind))
-		game.banner("Novo blaster: %s!" % def.nome, "Troque de blaster com Y ou o direcional (controle), ou 1 a 4 (teclado).", def.cor)
+		var i := Weapons.index_of(r.kind)
+		var def := Weapons.get_def(i)
+		game.banner("Novo blaster: %s!" % def.nome, "No controle, aperte %s no direcional. No teclado, a tecla %d." % [Weapons.ARROWS[i], i + 1], def.cor)
 	_refresh_objective()
 
 

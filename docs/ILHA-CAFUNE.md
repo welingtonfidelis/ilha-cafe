@@ -173,7 +173,7 @@ O jogo não tem fases. O progresso aparece no próprio mundo:
 - **Raios das lanternas:** quatro raios roxos saem do castelinho e apontam as regiões que faltam. Apagam um a um.
 - **Barreiras:** a barreira da ponte (some depois das duas lanternas da cidade) e a cúpula do castelinho (some depois das quatro).
 - **Regiões em festa:** cada região vencida ganha balões e bandeirinhas e fica sem esqueletos.
-- **Blasters ganhos aos poucos:** Paçoca desde o começo; Granulado (Oeste), Pipoqueira (Leste) e Pé-de-Moleque (Morro dos Ventos). Granadas desde o prólogo.
+- **Blasters ganhos aos poucos** (pedido do usuário): Paçoca desde o começo; Granulado (Oeste), Pipoqueira (Leste) e Pé-de-Moleque (Morro dos Ventos). Granadas desde o prólogo. Cada blaster tem sua seta no direcional (↑ Paçoca, → Granulado, ↓ Pipoqueira, ← Pé-de-Moleque) e sua tecla (1 a 4); no painel, a etiqueta mostra a seta no controle e o número no teclado. Apertar um que ainda não ganhou mostra onde ele é ganho ("Granulado: você ganha ao apagar a Lanterna Oeste"). O painel só mostra "próxima arma" quando há mais de uma.
 - **Corações:** 5 no começo, +1 na Clareira.
 - **Marcador na tela:** um losango roxo aponta o objetivo atual, com a distância em metros; o texto do objetivo aparece numa faixa quando muda e fica no menu de pausa.
 - **Pontos de retorno:** bandeiras em cada região e no caminho.
@@ -333,7 +333,7 @@ godot -e --path .
 | Atirar | botão esquerdo | RT / R2 |
 | Recarregar | R | X / quadrado |
 | Granada | G | RB / R1 |
-| Trocar de blaster | 1 a 4 ou rodinha do mouse | Y / triângulo, ou direcional ← e → |
+| Escolher blaster | 1 Paçoca, 2 Granulado, 3 Pipoqueira, 4 Pé-de-Moleque (ou rodinha do mouse) | direcional: ↑ Paçoca, → Granulado, ↓ Pipoqueira, ← Pé-de-Moleque (Y passa para o próximo) |
 | Pausa (continuar, trocar de personagem, comandos, sair) | Esc ou Tab | Start / Options |
 | Confirmar e voltar no menu | Enter e Esc | A e B / X e círculo |
 | Regiões de impacto | F3 | Back / Share |

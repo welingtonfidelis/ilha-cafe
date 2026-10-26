@@ -53,11 +53,12 @@ var _splashing := false
 const CONTROLS_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
 	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"],
-	["Trocar de blaster", "1 a 4 ou rodinha"], ["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
+	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
-	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Trocar de blaster", "Y ou direcional ←/→"],
+	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"],
+	["Blasters", "↑ Paçoca · → Granulado · ↓ Pipoqueira · ← Pé-de-Moleque (Y passa para o próximo)"],
 	["Pausa", "Start"], ["Regiões de impacto", "Back"],
 ]
 const MENU_KEYBOARD := "Clique, ou use as setas e Enter"
@@ -213,6 +214,7 @@ func _ready() -> void:
 	player.dizzy_started.connect(_on_player_dizzy)
 	player.ammo_changed.connect(_update_ammo_hud)
 	player.out_of_ammo.connect(func() -> void: show_message("Sem munição! Procure uma caixa ou troque de blaster", Color("#ff9d9d"), 1.6))
+	player.weapon_locked.connect(_on_weapon_locked)
 	for spawn in world.enemies:
 		var e := SkeletonEnemy.new()
 		e.type_name = spawn[0]
@@ -349,11 +351,10 @@ func _setup_input() -> void:
 	_bind_button("granada", JOY_BUTTON_RIGHT_SHOULDER)
 	_bind_mouse("arma_proxima", MOUSE_BUTTON_WHEEL_UP)
 	_bind_button("arma_proxima", JOY_BUTTON_Y)
-	_bind_button("arma_proxima", JOY_BUTTON_DPAD_RIGHT)
 	_bind_mouse("arma_anterior", MOUSE_BUTTON_WHEEL_DOWN)
-	_bind_button("arma_anterior", JOY_BUTTON_DPAD_LEFT)
 	for i in Weapons.count():
 		_bind_key("arma_%d" % (i + 1), [KEY_1 + i])
+		_bind_button("arma_%d" % (i + 1), Weapons.DPAD[i])
 	_bind_mouse("mirar", MOUSE_BUTTON_RIGHT)
 	_bind_axis("mirar", JOY_AXIS_TRIGGER_LEFT, 1.0)
 	_bind_button("mirar", JOY_BUTTON_LEFT_SHOULDER)
@@ -805,6 +806,19 @@ func _next_banner() -> void:
 	tw.tween_callback(_next_banner)
 
 
+## Apertou um blaster que ainda não tem: diz onde se ganha.
+func _on_weapon_locked(id: String) -> void:
+	var def := Weapons.get_def(Weapons.index_of(id))
+	var where := ""
+	if story:
+		for key in Story.REGIONS:
+			if Story.REGIONS[key].recompensa == id:
+				where = Story.REGIONS[key].titulo
+	var text := "%s: você ganha ao apagar a %s" % [def.nome, where] if where != "" else "%s: ainda não é seu" % def.nome
+	show_message(text, Color(1, 1, 1, 0.9), 1.8)
+	Sfx.play(self, "sem_municao", 0.0, 0.0)
+
+
 func show_guardian(b: Boss) -> void:
 	boss_bar.track(b)
 	banner(b.display_name, b.subtitle, Color("#ff9d7a"), 2.2)
@@ -1022,6 +1036,9 @@ func _shot(file_name: String) -> void:
 	await RenderingServer.frame_post_draw
 	var dir := ProjectSettings.globalize_path("res://tools/capturas/")
 	DirAccess.make_dir_recursive_absolute(dir)
+	# A Godot não deve importar as capturas como recursos do jogo.
+	if not FileAccess.file_exists(dir + ".gdignore"):
+		FileAccess.open(dir + ".gdignore", FileAccess.WRITE).store_string("")
 	get_viewport().get_texture().get_image().save_png(dir + file_name)
 	print("captura: ", file_name)
 
@@ -1300,16 +1317,15 @@ func _run_gamepad_test() -> void:
 	all_ok = _check("RT atira e acerta", target.health < shots_before or target.state == SkeletonEnemy.State.INDO_EMBORA,
 			"(vida %.0f -> %.0f, %s)" % [shots_before, target.health, SkeletonEnemy.State.keys()[target.state]]) and all_ok
 
-	# Direcional troca de blaster (o personagem só muda pelo menu de pausa).
-	var w0 := player.weapon_index
+	# Cada seta do direcional pega um blaster (o personagem só muda pelo menu de pausa).
 	var c0 := player.character_name
-	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
-	var w1 := player.weapon_index
-	await _wait(0.35)
-	await _joy_button(JOY_BUTTON_DPAD_LEFT)
-	all_ok = _check("direcional troca de blaster, não de personagem", w1 != w0 and player.weapon_index == w0 and player.character_name == c0,
-			"(%d -> %d -> %d)" % [w0, w1, player.weapon_index]) and all_ok
-	await _wait(0.35)
+	var picked: Array[String] = []
+	for button in [JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN, JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_UP]:
+		await _joy_button(button)
+		picked.append(player.current_weapon().id)
+		await _wait(0.35)
+	all_ok = _check("direcional: → Granulado, ↓ Pipoqueira, ← Pé-de-Moleque, ↑ Paçoca",
+			picked == ["granulado", "pipoqueira", "pe_de_moleque", "pacoca"] and player.character_name == c0, "(%s)" % ", ".join(picked)) and all_ok
 
 	# X recarrega, Y troca de blaster, RB joga granada.
 	player.fire()
@@ -1958,6 +1974,10 @@ func _run_story_test() -> void:
 	await _wait(0.5)
 	all_ok = _check("história começa só com a Paçoca", player.has_weapon("pacoca") and not player.has_weapon("granulado")
 			and player.next_weapon_index(1) == player.weapon_index) and all_ok
+	player.using_gamepad = true
+	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
+	all_ok = _check("seta de blaster ainda não ganho avisa onde ganhar", player.current_weapon().id == "pacoca"
+			and message_label.modulate.a > 0.5 and "Lanterna Oeste" in message_label.text, "(\"%s\")" % message_label.text) and all_ok
 	all_ok = _check("antes do prólogo: lanternas apagadas, ponte e cúpula fechadas",
 			story.lanterns.values().all(func(l: Dictionary) -> bool: return not l.lit) and not story.bridge_open() and not story.dome_open()) and all_ok
 

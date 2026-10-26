@@ -17,6 +17,8 @@ signal ammo_changed
 signal weapon_changed(index: int)
 signal reload_started(duration: float)
 signal out_of_ammo
+## Apertou a tecla ou seta de um blaster que ainda não ganhou.
+signal weapon_locked(id: String)
 
 ## Os dois personagens jogáveis: o menino de boné amarelo e a menina de boné branco do pacote
 ## "The Protagonists" (KayKit Mystery Monthly Series 5, pago). Até o pacote chegar, o Ranger e o
@@ -395,7 +397,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	else:
 		for i in Weapons.count():
 			if event.is_action_pressed("arma_%d" % (i + 1)):
-				switch_weapon(i)
+				var id: String = Weapons.get_def(i).id
+				if has_weapon(id):
+					switch_weapon(i)
+				else:
+					weapon_locked.emit(id)
 
 
 func _physics_process(delta: float) -> void:

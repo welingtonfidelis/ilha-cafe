@@ -49,7 +49,7 @@ func refresh(p: Player) -> void:
 	var s := {
 		"i": i, "mag": p.mag(), "reserve": p.reserve(),
 		"n": n, "next_mag": p.ammo[next_id].mag, "next_reserve": p.ammo[next_id].reserve,
-		"grenades": p.grenades, "reload": snappedf(p.reload_progress(), 0.01),
+		"grenades": p.grenades, "reload": snappedf(p.reload_progress(), 0.01), "pad": p.using_gamepad,
 	}
 	if i != _last_weapon:
 		if _last_weapon != -1:
@@ -133,6 +133,11 @@ func _icon(id: String, area: Rect2, alpha: float) -> void:
 	draw_texture_rect(tex, Rect2(pos, draw_size), false, Color(1, 1, 1, alpha))
 
 
+## No controle a etiqueta mostra a seta do direcional daquele blaster; no teclado, o número.
+func _slot_label(index: int) -> String:
+	return Weapons.ARROWS[index] if _state.get("pad", false) else str(index + 1)
+
+
 func _mag_color(mag: int, pente: int) -> Color:
 	if mag == 0:
 		return EMPTY
@@ -168,7 +173,7 @@ func _draw_main() -> void:
 	_bullets(Vector2(x + 52, y + 52), 44)
 	var slide := 36.0 * _switch
 	var glow := 1.0 - 0.6 * _switch
-	_slot_tag(x + 128 + slide, y + 10, str(_state.i + 1), glow)
+	_slot_tag(x + 128 + slide, y + 10, _slot_label(_state.i), glow)
 	var mag_size := int(round(42 * (1.0 + 0.12 * _pulse)))
 	var mag_text := str(_state.mag)
 	var mag_color := _mag_color(_state.mag, def.pente)
@@ -200,7 +205,7 @@ func _draw_next() -> void:
 	_panel(x, y, 270, h, alpha)
 	_divider(x + 58, y, h, alpha)
 	_bullets(Vector2(x + 36, y + 31), 26, alpha)
-	_slot_tag(x + 84, y + 7, str(_state.n + 1), alpha)
+	_slot_tag(x + 84, y + 7, _slot_label(_state.n), alpha)
 	var mag_text := str(_state.next_mag)
 	var nx := x + 92.0
 	_text(Vector2(nx + 32, y + 26), mag_text, 22, Color(TEXT, alpha))

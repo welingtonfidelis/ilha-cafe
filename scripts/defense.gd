@@ -161,6 +161,8 @@ func _on_defeated(_who: Node) -> void:
 	remaining = maxi(remaining - 1, 0)
 	if _who == boss:
 		guardian_health = 0.0
+		# A barra do guardião sai logo depois da derrota, sem esperar o balão sumir no céu.
+		get_tree().create_timer(1.5).timeout.connect(func() -> void: guardian_left.emit(self))
 	changed.emit(self)
 
 
