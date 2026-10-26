@@ -2,8 +2,10 @@ class_name Kart
 extends CharacterBody3D
 ## Veículo de corrida (Car Kit do Kenney, CC0; pedidos do usuário em 2026-10-26): kart ou carro de corrida.
 ## Estacionado, fica vazio (o piloto do modelo do kart é escondido) e é um obstáculo como qualquer outro.
-## Quem entra aparece só com a cabeça (uma cópia do modelo do aventureiro com o resto escondido), no lugar do
-## piloto. Controle de fliperama: frente / RT acelera, trás / LT freia e dá ré, esquerda e direita viram
+## Quem entra aparece no lugar do piloto da cintura para cima (o próprio modelo do aventureiro, com pernas e
+## mochila escondidas), na pose de segurar o volante (Holding_A, com o respirar dela). A primeira versão
+## mostrava só a cabeça, num esqueleto parado na pose de T: tinha falhas e parecia flutuar; um capacete
+## montado por código também não agradou. Controle de fliperama: frente / RT acelera, trás / LT freia e dá ré, esquerda e direita viram
 ## (mais devagar parado). As rodas giram e as da frente esterçam. Bater de frente em parede segura o carro e
 ## faz "bonk". A câmera vai atrás. O modelo olha para +Z.
 
@@ -18,9 +20,9 @@ const TURN := 2.3
 @export var model_scale := 1.6
 ## Cor da carroceria (multiplica a textura; branco é a cor original).
 @export var tint := Color.WHITE
-## Onde fica o pescoço do piloto e o tamanho da cabeça (em relação ao veículo).
-@export var head_spot := Vector3(0, 0.95, -0.15)
-@export var head_scale := 0.8
+## Onde o piloto senta (x e z do assento, y é a altura do banco, onde fica a cintura) e o tamanho dele.
+@export var driver_spot := Vector3(0, 0.42, -0.15)
+@export var driver_scale := 0.75
 @export var max_speed := 17.0
 @export var display_name := "Kart"
 
@@ -110,21 +112,23 @@ func park() -> void:
 	_pose_wheels()
 
 
-## Começa a dirigir com a cabeça do aventureiro (char_path: o .glb do personagem) no lugar do piloto.
+## Começa a dirigir, com o aventureiro (char_path: o .glb do personagem) no lugar do piloto.
 func drive(char_path: String) -> void:
 	driving = true
 	speed = 0.0
 	collision_layer = 1 << 1
 	set_physics_process(true)
 	_head = load(char_path).instantiate()
-	_head.name = "CabecaDoPiloto"
+	_head.name = "PilotoNoBanco"
 	for m in _head.find_children("*", "MeshInstance3D", true, false):
 		var n := String(m.name)
-		(m as Node3D).visible = n.ends_with("_Head") or n.ends_with("_Glasses") or n.ends_with("_Hat")
-	_head.scale = Vector3.ONE * head_scale
-	# O osso da cabeça do KayKit fica a 1,24 do chão do modelo.
-	_head.position = head_spot - Vector3(0, 1.24 * head_scale, 0)
+		(m as Node3D).visible = not (n.contains("Leg") or n.contains("Backpack"))
+	_head.scale = Vector3.ONE * driver_scale
+	# A cintura do KayKit fica a 0,45 do chão do modelo: ela vai na altura do banco.
+	_head.position = driver_spot - Vector3(0, 0.45 * driver_scale, 0)
 	_visual.add_child(_head)
+	var ap := AnimUtil.make_player(_head, ["ferramentas"])
+	ap.play(&"ferramentas/Holding_A")
 	_cam_yaw = 0.0
 	_cam_pitch = 0.0
 	_place_camera(1.0)

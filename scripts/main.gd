@@ -3037,8 +3037,8 @@ func _run_shop_capture() -> void:
 	get_tree().quit()
 
 
-## Atividades extras: barcos no mar; veículos do box (vazios, entrar perto de um, cabeça do aventureiro no
-## lugar do piloto, dirigir, LARGADA começa a corrida, voltas, chegada, descer na pista volta para a vaga,
+## Atividades extras: barcos no mar; veículos do box (vazios, entrar perto de um, o aventureiro da cintura
+## para cima no banco, dirigir, LARGADA começa a corrida, voltas, chegada, descer na pista volta para a vaga,
 ## deixar pela ilha e se afastar 50 m volta para a vaga, cair no mar); skate (pegar, perna empurrando,
 ## marca da sessão, half-pipe, pontos, tombo, fim com moedas, descer deixa no chão, longe volta para a
 ## pista). Uso: godot --headless --path . -- --atividades
@@ -3060,8 +3060,9 @@ func _run_activities_test() -> void:
 	var empty := cars.all(func(v: Kart) -> bool:
 		var pilot := v.find_child("character", true, false) as Node3D
 		return pilot == null or not pilot.visible)
-	all_ok = _check("5 veículos vazios nas vagas: karts coloridos e 2 carros de corrida", cars.size() == 5 and empty
-			and cars.all(func(v: Kart) -> bool: return v.is_home()) and "race" in models and "race-future" in models,
+	all_ok = _check("5 karts vazios nas vagas, cada um de uma cor", cars.size() == 5 and empty
+			and cars.all(func(v: Kart) -> bool: return v.is_home()) and models.count("kart-oopi") == 5
+			and cars.map(func(v: Kart) -> String: return v.tint.to_html(false)).reduce(func(acc: Array, c: String) -> Array: return acc if c in acc else acc + [c], []).size() == 5,
 			"(%s)" % ", ".join(models)) and all_ok
 	var car := cars[0]
 	await _stand(car.global_position + car.global_basis.z * 2.6)
@@ -3071,12 +3072,14 @@ func _run_activities_test() -> void:
 	var coins0 := story.coins
 	await _press_key(KEY_E)
 	await _wait(0.2)
-	var head := car.find_child("CabecaDoPiloto", true, false) as Node3D
-	var shown := head.find_children("*", "MeshInstance3D", true, false).filter(func(m: Node) -> bool: return (m as Node3D).visible) if head else []
-	all_ok = _check("B / E entra e já dirige, com a cabeça do aventureiro no lugar do piloto", kart_race.state == "dirigindo"
-			and kart_race.kart == car and not player.visible and get_viewport().get_camera_3d() == car.camera and shown.size() >= 1
-			and shown.all(func(m: Node) -> bool: return String(m.name).ends_with("_Head") or String(m.name).ends_with("_Glasses")),
-			"(%d malhas visíveis na cabeça)" % shown.size()) and all_ok
+	var pilot := car.find_child("PilotoNoBanco", true, false) as Node3D
+	var shown := pilot.find_children("*", "MeshInstance3D", true, false).filter(func(m: Node) -> bool: return (m as Node3D).visible) if pilot else []
+	var names := shown.map(func(m: Node) -> String: return String(m.name))
+	all_ok = _check("B / E entra e já dirige, com o aventureiro da cintura para cima no banco", kart_race.state == "dirigindo"
+			and kart_race.kart == car and not player.visible and get_viewport().get_camera_3d() == car.camera
+			and names.any(func(n: String) -> bool: return n.ends_with("_Head")) and names.any(func(n: String) -> bool: return n.ends_with("_Body"))
+			and not names.any(func(n: String) -> bool: return n.contains("Leg") or n.contains("Backpack")),
+			"(%s)" % ", ".join(names)) and all_ok
 	Input.action_press("olhar_direita")
 	await _wait(0.4)
 	Input.action_release("olhar_direita")
@@ -3113,14 +3116,14 @@ func _run_activities_test() -> void:
 	await _wait(0.3)
 	all_ok = _check("descer na pista: aventureiro fora dela e o carrinho de volta na vaga", kart_race.state == "a_pe" and player.visible
 			and car.is_home() and not kart_race.on_track(player.global_position) and get_viewport().get_camera_3d() == player.camera
-			and car.find_child("CabecaDoPiloto", true, false) == null) and all_ok
-	# Passeio pela ilha com o Fórmula, descer longe da pista e se afastar.
+			and car.find_child("PilotoNoBanco", true, false) == null) and all_ok
+	# Passeio pela ilha com outro carrinho, descer longe da pista e se afastar.
 	var formula := cars[2]
 	await _stand(formula.global_position + formula.global_basis.z * 2.6)
 	await _wait(0.2)
 	await _press_key(KEY_E)
 	await _wait(0.2)
-	all_ok = _check("entra no carro de corrida (o mais perto)", kart_race.kart == formula) and all_ok
+	all_ok = _check("entra em outro carrinho (o mais perto)", kart_race.kart == formula) and all_ok
 	var meadow := _ground_point(Vector3(95, 0, 85))
 	formula.global_position = meadow + Vector3.UP * 0.5
 	await _wait(0.4)
@@ -3227,7 +3230,7 @@ func _run_activities_test() -> void:
 	get_tree().quit()
 
 
-## Fotos dos veículos com a cabeça do aventureiro e do impulso no skate, de lado (precisa de janela).
+## Fotos dos veículos com o aventureiro no banco (os dois personagens) e do impulso no skate, de lado (precisa de janela).
 ## Uso: godot --path . -- --veiculos-captura
 func _run_vehicles_capture() -> void:
 	player.god_mode = true
@@ -3239,15 +3242,19 @@ func _run_vehicles_capture() -> void:
 	var row := kart_race.vehicles
 	var mid := (row[0].global_position + row[row.size() - 1].global_position) * 0.5
 	await _art_shot(out + "v01_vagas_vazias.png", size, mid + Vector3(9.0, 4.0, 3.0), mid + Vector3(0, 0.6, 0), 55.0)
-	for k in [0, 2, 3]:
-		var v: Kart = row[k]
-		v.drive(player.model_path())
-		v.set_physics_process(false)
-		var f := v.global_basis.z
-		var side := v.global_basis.x
-		await _art_shot(out + "v0%d_%s_com_cabeca.png" % [k + 2, v.model_name], size, v.global_position + f * 3.6 + side * 2.4 + Vector3.UP * 1.8,
-				v.global_position + Vector3.UP * 0.8, 50.0)
-		v.park()
+	var n := 2
+	for who in ["menina", "menino"]:
+		player.set_character(who)
+		for k in [0, 2, 3]:
+			var v: Kart = row[k]
+			v.drive(player.model_path())
+			v.set_physics_process(false)
+			var f := v.global_basis.z
+			var side := v.global_basis.x
+			await _art_shot(out + "v%02d_%s_%s.png" % [n, v.model_name, who], Vector2i(800, 600), v.global_position + f * 3.4 + side * 2.2 + Vector3.UP * 1.7,
+					v.global_position + Vector3.UP * 0.8, 50.0)
+			v.park()
+			n += 1
 	# Impulso no skate, de lado, num trecho plano da praça.
 	player.set_character("menina")
 	await _stand(_ground_point(Vector3(112, 0, 0)))

@@ -26,15 +26,14 @@ const TILE := 8.0
 const W := 6
 const L := 10
 const ENTRY := 6
-const KART := {"modelo": "kart-oopi", "escala": 1.6, "cabeca": Vector3(0, 0.95, -0.15), "cabeca_escala": 0.8, "velocidade": 17.0}
-const RACE := {"modelo": "race", "escala": 1.15, "cabeca": Vector3(0, 0.72, -0.08), "cabeca_escala": 0.62, "velocidade": 21.0}
-const ROCKET := {"modelo": "race-future", "escala": 1.15, "cabeca": Vector3(0, 0.78, -0.14), "cabeca_escala": 0.62, "velocidade": 22.0}
+## piloto: onde o aventureiro senta (y é a altura do banco, onde fica a cintura); piloto_escala: tamanho dele.
+const KART := {"modelo": "kart-oopi", "escala": 1.6, "piloto": Vector3(0, 0.42, -0.15), "piloto_escala": 0.75, "velocidade": 17.0}
 ## Um por vaga: [nome, modelo base, cor].
 const GARAGE := [
 	["Kart Morango", KART, Color("#ff7a7a")],
 	["Kart Mirtilo", KART, Color("#7ab8ff")],
-	["Fórmula Pimenta", RACE, Color.WHITE],
-	["Foguete Azul", ROCKET, Color.WHITE],
+	["Kart Hortelã", KART, Color("#8affa0")],
+	["Kart Uva", KART, Color("#c08aff")],
 	["Kart Limão", KART, Color("#ffe066")],
 ]
 
@@ -77,8 +76,8 @@ func _ready() -> void:
 		v.model_name = base.modelo
 		v.model_scale = base.escala
 		v.tint = spec[2]
-		v.head_spot = base.cabeca
-		v.head_scale = base.cabeca_escala
+		v.driver_spot = base.piloto
+		v.driver_scale = base.piloto_escala
 		v.max_speed = base.velocidade
 		v.home = spots[k]
 		v.transform = spots[k]

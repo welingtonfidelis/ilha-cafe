@@ -226,7 +226,7 @@ func _build_camera() -> void:
 	spring_arm.add_child(camera)
 
 
-## O .glb do personagem (a cabeça dele vai para dentro do kart).
+## O .glb do personagem (ele aparece da cintura para cima no lugar do piloto dos carrinhos).
 func model_path() -> String:
 	return CHARACTERS.get(character_name, CHARACTERS.menino)
 
