@@ -124,14 +124,15 @@ func _ready() -> void:
 
 
 ## Monta um esqueleto do KayKit dentro de `visual`, com armas e regiões de impacto
-## (cabeça vale o dobro). As regiões crescem junto com o modelo ampliado.
-func _skeleton(type_name: String, right: String, left: String) -> void:
-	model = load(SKELETONS % type_name).instantiate()
+## (cabeça vale o dobro). As regiões crescem junto com o modelo ampliado. Outros personagens no mesmo
+## Rig_Medium (o Guerreiro Planta) passam os próprios caminhos de modelo e de arma.
+func _skeleton(type_name: String, right: String, left: String, model_fmt := SKELETONS, weapon_fmt := WEAPONS) -> void:
+	model = load(model_fmt % type_name).instantiate()
 	visual.add_child(model)
 	ap = AnimUtil.make_player(model, ["geral", "mov", "luta", "tiro", "especial", "festa"])
 	skeleton = model.find_child("Skeleton3D", true, false)
-	hand_r = _attach(skeleton, "handslot.r", right)
-	_attach(skeleton, "handslot.l", left)
+	hand_r = _attach(skeleton, "handslot.r", right, weapon_fmt)
+	_attach(skeleton, "handslot.l", left, weapon_fmt)
 	var head := SphereShape3D.new()
 	head.radius = 0.5
 	add_hurtbox(skeleton, "head", "cabeça", 2.0, head, Vector3(0, 0.45, 0))
@@ -141,12 +142,12 @@ func _skeleton(type_name: String, right: String, left: String) -> void:
 	add_hurtbox(skeleton, "chest", "corpo", 1.0, body, Vector3(0, -0.2, 0))
 
 
-func _attach(sk: Skeleton3D, bone: String, weapon: String) -> BoneAttachment3D:
+func _attach(sk: Skeleton3D, bone: String, weapon: String, weapon_fmt := WEAPONS) -> BoneAttachment3D:
 	var attachment := BoneAttachment3D.new()
 	attachment.bone_name = bone
 	sk.add_child(attachment)
 	if weapon != "":
-		attachment.add_child(load(WEAPONS % weapon).instantiate())
+		attachment.add_child(load(weapon_fmt % weapon).instantiate())
 	return attachment
 
 

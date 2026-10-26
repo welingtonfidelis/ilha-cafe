@@ -27,7 +27,7 @@ const LOOPING := [
 	"Ranged_2H_Shooting", "Skeletons_Idle", "Skeletons_Walking", "Skeletons_Inactive_Floor_Pose",
 	"Cheering", "Waving", "Melee_Blocking", "Melee_Unarmed_Idle", "Melee_2H_Idle",
 	"Ranged_Magic_Spellcasting", "Sit_Chair_Idle", "Sit_Floor_Idle", "Lie_Idle", "Holding_A", "Holding_B",
-	"Holding_C", "Working_A", "Working_B", "Working_C", "Hammering", "Digging", "Fishing_Idle",
+	"Holding_C", "Working_A", "Working_B", "Working_C", "Hammering", "Digging", "Fishing_Idle", "Chopping", "Melee_Blocking", "Ranged_Bow_Aiming_Idle",
 ]
 
 static var _cache := {}

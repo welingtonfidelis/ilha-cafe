@@ -16,12 +16,12 @@ const TALK_COOLDOWN := 16.0
 const WALK_SPEED := 1.1
 const CROWD_LINES := ["Vai!", "Você consegue!", "Cuidado!", "Isso aí!", "Mira na cabeça!"]
 ## Atividades em que o morador fica de pé e pode virar, acenar e comemorar.
-const STANDING := ["parado", "torcendo", "trabalhando", "andando", "tocando"]
+const STANDING := ["parado", "torcendo", "trabalhando", "andando", "tocando", "cortando", "pescando"]
 
 @export var model_name := "Farmer_A"
 ## Textura alternativa do mesmo modelo (nome do arquivo em texturas/, sem .png); vazio é a original.
 @export var variant := ""
-## parado, sentado_banco, sentado_chao, torcendo, trabalhando, andando, tocando
+## parado, sentado_banco, sentado_chao, torcendo, trabalhando, andando, tocando, cortando, pescando
 @export var activity := "parado"
 ## Objeto na mão direita (caminho do .gltf dentro de assets/props/, sem extensão), vazio é nenhum.
 @export var item := ""
@@ -127,6 +127,10 @@ func _base_anim() -> StringName:
 			return &"ferramentas/Working_A"
 		"tocando":
 			return &"ferramentas/Holding_A"
+		"cortando":
+			return &"ferramentas/Chopping"
+		"pescando":
+			return &"ferramentas/Fishing_Idle"
 		"andando":
 			return &"mov/Walking_A" if _pause <= 0.0 else &"geral/Idle_A"
 	return &"geral/Idle_A"
@@ -144,7 +148,7 @@ func _physics_process(delta: float) -> void:
 	var standing := activity in STANDING
 	if activity == "andando":
 		_walk(delta, near)
-	if near and standing and activity != "trabalhando" and activity != "tocando":
+	if near and activity in ["parado", "torcendo", "andando"]:
 		_face(to_player.normalized(), delta)
 	if near and not _near:
 		_greet()

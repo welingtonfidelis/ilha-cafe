@@ -28,6 +28,11 @@ const REGIONS := {
 		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
 		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
+	# Desafio opcional na Vila das Copas: só o Guerreiro Planta, sem ondas. Não conta para a história.
+	"vila": {
+		"nome": "Vila das Copas", "titulo": "Vila das Copas", "lanterna": "", "guardiao": "planta", "recompensa": "coracao", "bandeira": "",
+		"ondas": [[]],
+	},
 	# Defesa final, no meio do cemitério do Morro (abre quando a cúpula cai): todos os tipos e o Mestre Ossinho.
 	"cemiterio": {
 		"nome": "Cemitério dos Ossinhos", "titulo": "cemitério", "lanterna": "", "guardiao": "mestre", "recompensa": "", "bandeira": "TopoDoMorro",
@@ -43,6 +48,7 @@ const GUARDIANS := {
 	"torre": preload("res://scripts/boss_torre.gd"),
 	"minionzao": preload("res://scripts/boss_minionzao.gd"),
 	"mestre": preload("res://scripts/boss_mestre.gd"),
+	"planta": preload("res://scripts/boss_planta.gd"),
 }
 const BALLOONS := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
 const PLAT := "res://assets/props/platformer/%s.gltf"
@@ -143,18 +149,18 @@ func _physics_process(delta: float) -> void:
 
 func _on_defense_won(d: Defense) -> void:
 	var spec: Dictionary = REGIONS[d.id]
+	if d.id == "vila":
+		_celebrate(d)
+		_spawn_reward(spec.recompensa, d.center + Vector3(0, 0, 3.0))
+		game.banner("Desafio vencido!", "O Guerreiro Planta deixou você subir na Vila das Copas.", Color("#c9f7a0"))
+		_refresh_objective()
+		return
 	_celebrate(d)
 	game.activate_checkpoint(spec.bandeira)
 	if spec.lanterna != "":
 		_set_lantern_look(spec.lanterna, false, true)
 	if spec.recompensa != "":
-		var r := RewardPickup.new()
-		r.kind = spec.recompensa
-		r.collected.connect(_on_reward_collected)
-		game.add_child(r)
-		r.global_position = d.center + Vector3(0, 0, 3.0)
-		rewards.append(r)
-		r.tree_exiting.connect(func() -> void: rewards.erase(r))
+		_spawn_reward(spec.recompensa, d.center + Vector3(0, 0, 3.0))
 	match stage:
 		"prologo":
 			_light_lanterns()
@@ -168,6 +174,7 @@ func _on_defense_won(d: Defense) -> void:
 				stage = "mata"
 				for id in FOREST:
 					defenses[id].activate()
+				defenses.vila.activate()
 				game.banner("%s apagada!" % spec.titulo, "A barreira da ponte sumiu: a mata está aberta!")
 			else:
 				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na cidade.")
@@ -193,6 +200,16 @@ func _ending() -> void:
 		game.banner("Vocês entregaram o convite!", "Amanhã a Festa do Cafuné vai ter convidados novos.", Color("#ffd23f")))
 	for t in get_tree().get_nodes_in_group(&"moradores"):
 		(t as Townsperson).celebrate(10.0)
+
+
+func _spawn_reward(kind: String, pos: Vector3) -> void:
+	var r := RewardPickup.new()
+	r.kind = kind
+	r.collected.connect(_on_reward_collected)
+	game.add_child(r)
+	r.global_position = pos
+	rewards.append(r)
+	r.tree_exiting.connect(func() -> void: rewards.erase(r))
 
 
 func _all_won(ids: Array) -> bool:
@@ -347,6 +364,7 @@ func skip_to_forest() -> void:
 	_set_fast()
 	for id in FOREST:
 		defenses[id].activate()
+	defenses.vila.activate()
 	_refresh_objective()
 
 
@@ -399,7 +417,7 @@ func _refresh_objective() -> void:
 	var player: Player = game.player
 	var running := running_defense()
 	if running:
-		text = "Defenda: %s" % running.nome
+		text = ("Desafio: %s" if running.id == "vila" else "Defenda: %s") % running.nome
 	elif not rewards.is_empty():
 		text = "Pegue a recompensa"
 		target = rewards[0].global_position + Vector3.UP * 2.0
