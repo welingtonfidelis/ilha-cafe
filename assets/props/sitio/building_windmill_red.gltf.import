@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c4k785dg3gi6j"
-path="res://.godot/imported/Llama.fbx-fcdec647d99a02c994ebbb4035434220.scn"
+uid="uid://1gpanlflwtf6"
+path="res://.godot/imported/building_windmill_red.gltf-7f7c57da78ccc356eeefd168c05faa4d.scn"
 
 [deps]
 
-source_file="res://assets/animais/Llama.fbx"
-dest_files=["res://.godot/imported/Llama.fbx-fcdec647d99a02c994ebbb4035434220.scn"]
+source_file="res://assets/props/sitio/building_windmill_red.gltf"
+dest_files=["res://.godot/imported/building_windmill_red.gltf-7f7c57da78ccc356eeefd168c05faa4d.scn"]
 
 [params]
 
@@ -32,7 +32,7 @@ meshes/force_disable_compression=false
 skins/use_named_skins=true
 animation/import=true
 animation/fps=30
-animation/trimming=true
+animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path=""
@@ -40,7 +40,6 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-fbx/importer=0
-fbx/allow_geometry_helper_nodes=false
-fbx/embedded_image_handling=1
-fbx/naming_version=2
+gltf/naming_version=2
+gltf/embedded_image_handling=1
+gltf/texture_map_mode=1

@@ -77,7 +77,6 @@ var objective_target := Vector3.INF
 var fast := false
 
 var _crowd_check := 0.0
-var _bridge: StaticBody3D
 var _dome: StaticBody3D
 var _gate: StaticBody3D
 var _gate_left: Node3D
@@ -89,7 +88,6 @@ func setup(p_game: Node, p_island: Node3D) -> void:
 	game = p_game
 	island = p_island
 	game.player.keep_only_weapons(["pacoca"])
-	_bridge = island.get_node("BarreiraDaPonte")
 	_dome = island.get_node("Morro/CupulaDoCemiterio")
 	_central_orb = island.get_node("Morro/Cemiterio/LanternaCentral")
 	_gate = island.get_node_or_null("Morro/Cemiterio/PortaoDoCemiterio")
@@ -176,12 +174,11 @@ func _on_defense_won(d: Defense) -> void:
 			game.banner("O Mestre Ossinho acendeu as Lanternas Mágicas!", "Apague as duas lanternas da cidade.", Color("#d9a8ff"))
 		"cidade":
 			if _all_won(CITY):
-				_open_bridge()
 				stage = "mata"
 				for id in FOREST:
 					defenses[id].activate()
 				defenses.vila.activate()
-				game.banner("%s apagada!" % spec.titulo, "A barreira da ponte sumiu: a mata está aberta!")
+				game.banner("%s apagada!" % spec.titulo, "Agora as lanternas da mata, do outro lado da ponte!")
 			else:
 				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na cidade.")
 		"mata":
@@ -346,10 +343,6 @@ func _set_orb_lit(orb: MeshInstance3D, lit: bool) -> void:
 	orb.material_override = mat
 
 
-func _open_bridge() -> void:
-	_dissolve(_bridge)
-
-
 func _open_dome() -> void:
 	_dissolve(_dome)
 	_set_orb_lit(_central_orb, false)
@@ -433,14 +426,14 @@ func skip_to_cemetery() -> void:
 	_refresh_objective()
 
 
-## Abre a ponte na hora (usado pelo teste da ilha).
+## A ponte não tem mais barreira (pedido do usuário): fica aberta desde o começo. As defesas da mata só
+## começam depois das lanternas da cidade.
 func open_bridge_now() -> void:
-	_bridge.collision_layer = 0
-	_bridge.visible = false
+	pass
 
 
 func bridge_open() -> bool:
-	return _bridge.collision_layer == 0
+	return true
 
 
 func dome_open() -> bool:

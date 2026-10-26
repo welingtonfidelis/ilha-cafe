@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bextrew4nrswa"
-path="res://.godot/imported/Bull.gltf-33731dbaa90301e97d9bbbdee14d03d8.scn"
+uid="uid://dkho71u1mxryj"
+path="res://.godot/imported/building_stables_red.gltf-c4219d589d05bf3f9358e54065b31e8e.scn"
 
 [deps]
 
-source_file="res://assets/animais/Bull.gltf"
-dest_files=["res://.godot/imported/Bull.gltf-33731dbaa90301e97d9bbbdee14d03d8.scn"]
+source_file="res://assets/props/sitio/building_stables_red.gltf"
+dest_files=["res://.godot/imported/building_stables_red.gltf-c4219d589d05bf3f9358e54065b31e8e.scn"]
 
 [params]
 

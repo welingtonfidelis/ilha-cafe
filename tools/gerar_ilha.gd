@@ -60,6 +60,8 @@ const CEMITERIO := "res://assets/props/cemiterio/%s.gltf"
 const PONTE := "res://assets/props/ponte/%s.gltf"
 const EXTRAS := "res://assets/props/%s.gltf"
 const CAIS := "res://assets/props/cais/%s.gltf"
+## Construções do sítio (Medieval Hexagon): estábulo, moinho, poço, bebedouros e feno.
+const SITIO := "res://assets/props/sitio/%s.gltf"
 ## Cais de madeira do Animated Cute Fish Pack (Quaternius): módulos com estacas e corda de corrimão.
 const DOCKS := "res://assets/props/cais_peixes/%s.fbx"
 const DOCK_SCALE := 0.75
@@ -857,8 +859,6 @@ func _bridge_and_pier() -> void:
 	var z_south := _river_z(0) + RIVER_HALF + RIVER_BANK + 2.0
 	var z_north := _river_z(0) - RIVER_HALF - RIVER_BANK - 2.0
 	_stone_bridge(z_south, z_north)
-	# Barreira mágica na cabeceira sul: some quando as duas lanternas da cidade apagam (o jogo cuida disso).
-	_magic_wall(ilha, "BarreiraDaPonte", Vector3(0, ground(0, z_south + 1.0) + 2.5, z_south + 1.0), Vector3(9, 5, 0.5))
 	# Cais: sai da praça para o mar, ao sul.
 	_dock_pier(206.0)
 	# Pescador na ponta (o pescador é um morador; o jogo cria): caixa de pesca e balde do lado.
@@ -881,7 +881,8 @@ func _bridge_and_pier() -> void:
 	_prop(logs, _tree_path("Tree_5_B", 1), Vector3(trunk_x - 2.6, ground(trunk_x - 2.6, river_s - 3.4) - 0.1, river_s - 3.4), 40.0, FOREST_SCALE, "tronco")
 
 
-## Pasto com cerca de madeira (Medieval Hexagon) e um caixote de alface; os bichos vêm dos marcadores Animais.
+## Sítio do Cafuné: pasto com cerca de madeira (Medieval Hexagon), estábulo, moinho, poço, bebedouros e feno;
+## os bichos vêm dos marcadores Animais e o casal de fazendeiros, dos Moradores.
 func _pasture() -> void:
 	var pasture := _group(ilha, "Pasto")
 	var segs := 14
@@ -895,6 +896,18 @@ func _pasture() -> void:
 		rail.rotation.y = -a
 		rail.scale = Vector3(3.0, 2.0, 4.3)
 		_add(pasture, rail)
+	# Sítio: estábulo de frente para o pasto, moinho, poço, bebedouro e feno (Medieval Hexagon).
+	var farm := func(model: String, offset: Vector2, rot: float, s: float, collider := "caixa") -> void:
+		var fp := PASTURE + offset
+		_prop(pasture, SITIO % model, Vector3(fp.x, ground(fp.x, fp.y), fp.y), rot, s, collider)
+	farm.call("building_stables_red", Vector2(0, -18.5), 0.0, 7.0)
+	farm.call("building_windmill_red", Vector2(-19, -12), 35.0, 7.0)
+	farm.call("building_well_red", Vector2(16.5, 10.0), -30.0, 4.0)
+	farm.call("trough_long", Vector2(4.0, -6.0), 90.0, 7.0)
+	farm.call("trough", Vector2(-5.5, 4.5), 0.0, 8.0)
+	farm.call("haybale", Vector2(9.5, -15.5), 70.0, 6.0)
+	farm.call("haybale", Vector2(11.0, -13.6), 20.0, 6.0)
+	farm.call("haybale", Vector2(-8.5, -16.0), -10.0, 6.0)
 	_prop(pasture, FESTA % "comida/crate_lettuce", Vector3(PASTURE.x, ground(PASTURE.x, PASTURE.y), PASTURE.y), 20.0, 0.5, "caixa")
 
 
@@ -1061,7 +1074,7 @@ func _forest() -> void:
 		var city_tree := _tree_path(trees[rng.randi() % trees.size()], city_color)
 		var city_rot := rng.randf_range(0, 360)
 		var city_scale := FOREST_SCALE * rng.randf_range(0.85, 1.2)
-		if p.distance_to(PASTURE) < PASTURE_R + 3.0:
+		if p.distance_to(PASTURE) < PASTURE_R + 17.0:
 			continue
 		_prop(forest, city_tree, Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), city_rot, city_scale, "tronco")
 	# Jabuticabeira gigante no meio da clareira.
@@ -1234,13 +1247,8 @@ func _markers() -> void:
 		["Vaca", "Cow.gltf", 0.36, 6.0, false, PASTURE + Vector2(0, 4)],
 		["Burro", "Donkey.gltf", 0.4, 6.0, false, PASTURE + Vector2(-4, -3)],
 		["Alpaca", "Alpaca.gltf", 0.38, 6.0, false, PASTURE + Vector2(4, 3)],
-		["Porco", "Pig.fbx", 0.22, 0.0, false, PASTURE + Vector2(2, -5)],
-		["Ovelha1", "Sheep.fbx", 0.22, 0.0, false, PASTURE + Vector2(-6, 1)],
-		["Ovelha2", "Sheep.fbx", 0.2, 0.0, false, PASTURE + Vector2(-5, 4)],
-		["Lhama", "Llama.fbx", 0.27, 0.0, false, PASTURE + Vector2(6, -1)],
 		["Shiba", "ShibaInu.gltf", 0.3, 5.0, false, pcz + Vector2(3, 3)],
 		["Husky", "Husky.gltf", 0.32, 8.0, false, Vector2(-12, 200)],
-		["Pug", "Pug.fbx", 0.3, 0.0, false, pcz + Vector2(-3.6, 6.2)],
 		["Veado1", "Deer.gltf", 0.42, 10.0, true, Vector2(55, -140)],
 		["Veado2", "Deer.gltf", 0.4, 10.0, true, Vector2(62, -146)],
 		["Cervo", "Stag.gltf", 0.42, 10.0, true, Vector2(-35, -145)],
@@ -1284,10 +1292,6 @@ func _markers() -> void:
 			["Tan-tan-taraaa! A banda está ensaiando para a festa!", "Amanhã a gente toca a noite inteira!"]],
 		["Banda2", "ToySoldier", "tocando", "", "moradores/ToySoldier_Trumpet", pc + Vector2(1.5, -11.6), 0.0, 1.0,
 			["Psiu! Os esqueletos saem daquelas rachaduras roxas."]],
-		["Fazendeiro", "Farmer_A", "trabalhando", "", "", pc + Vector2(-14.0, 9.4), 90.0, 0.0,
-			["Cenoura fresquinha para a festa!", "Caixa de munição pisca perto das casas. Pega que ajuda!"]],
-		["Fazendeira", "Farmer_B", "parado", "", "", pc + Vector2(-9.0, 12.6), 120.0, 0.0,
-			["Meu carrinho está cheio de verdura!", "Será que os esqueletos gostam de sopa de abóbora?"]],
 		["Palhaco", "Clown", "parado", "", "festa/circo/balloon_dog_red", pc + Vector2(12.4, 7.0), -120.0, 0.8,
 			["Respeitável público! Quer um cachorrinho de balão?", "Acerte a cabeça: vale o dobro!"]],
 		["Dino1", "MonsterCostume", "sentado_chao", "", "", pc + Vector2(9.4, 9.9), 60.0, 0.0,
@@ -1329,6 +1333,10 @@ func _markers() -> void:
 			["Esse trenzinho vai até a lua!", "Fantasia de astronauta, nota dez!"]],
 		["HomemDasCavernas", "Caveman", "parado", "", "", pc + Vector2(-9.3, 1.2), -90.0, 0.0,
 			["Uga! Pizza boa!", "Fantasia de homem das cavernas. A barba é de verdade."]],
+		["Fazendeiro", "Farmer_A", "trabalhando", "", "moradores/pitchfork", PASTURE + Vector2(8.5, -12.5), 160.0, 0.0,
+			["Bom dia! Bem-vindo ao Sítio do Cafuné.", "Os cavalos adoram feno fresquinho.", "Amanhã levo cenoura e alface para a festa!"]],
+		["Fazendeira", "Farmer_B", "parado", "", "", PASTURE + Vector2(14.0, 12.5), -140.0, 0.0,
+			["Pode chegar perto dos bichos, eles são mansos.", "A vaca não sai de perto do cocho!", "Cuidado com os esqueletos lá do Morro."]],
 		["Lenhador", "Werewolf_Man", "cortando", "", "moradores/lenhador/axe", Vector2(12.0, river_s), -90.0, 0.0,
 			["Lenha para a fogueira da festa!", "Do outro lado da ponte a mata está cheia de esqueletos. Cuidado!"]],
 		["Pescador", "Hiker", "pescando", "hiker_texture_b", "pesca/fishing_rod", Vector2(pier_x, pier_z), 90.0, pier_y - ground(pier_x, pier_z) - 0.1,

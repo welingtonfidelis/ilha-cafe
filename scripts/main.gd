@@ -1770,8 +1770,7 @@ func _run_island_test() -> void:
 	all_ok = _check("dá para subir a encosta do Morro andando", player.global_position.y > y0 + 3.0,
 			"(subiu %.1f m em 3 s)" % (player.global_position.y - y0)) and all_ok
 
-	# Atravessar a ponte para a mata (a barreira mágica da história fica aberta neste teste).
-	story.open_bridge_now()
+	# Atravessar a ponte para a mata.
 	var bridge: Node3D = island.get_node("Ponte")
 	var south := Vector3(0, 2, -92)
 	player.global_position = south
@@ -2102,8 +2101,8 @@ func _run_story_test() -> void:
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
 	all_ok = _check("seta de blaster ainda não ganho avisa onde ganhar", player.current_weapon().id == "pacoca"
 			and message_label.modulate.a > 0.5 and "Lanterna Oeste" in message_label.text, "(\"%s\")" % message_label.text) and all_ok
-	all_ok = _check("antes do prólogo: lanternas apagadas, ponte e cúpula fechadas",
-			story.lanterns.values().all(func(l: Dictionary) -> bool: return not l.lit) and not story.bridge_open() and not story.dome_open()) and all_ok
+	all_ok = _check("antes do prólogo: lanternas apagadas, ponte aberta e cúpula fechada",
+			story.lanterns.values().all(func(l: Dictionary) -> bool: return not l.lit) and story.bridge_open() and not story.dome_open()) and all_ok
 
 	# Prólogo na praça.
 	var praca: Defense = story.defenses.praca
@@ -2237,7 +2236,7 @@ func _run_story_test() -> void:
 	await _clear_wave(leste)
 	await _wait_until(func() -> bool: return leste.state == Defense.State.VENCIDA, 3.0)
 	await get_tree().physics_frame
-	all_ok = _check("cidade vencida: barreira da ponte some", story.stage == "mata" and story.bridge_open()) and all_ok
+	all_ok = _check("cidade vencida: as defesas da mata começam", story.stage == "mata" and story.defenses.clareira.active and story.defenses.ventos.active) and all_ok
 	await _stand(story.rewards[0].global_position)
 	await _wait(1.0)
 	all_ok = _check("recompensa da Leste é a Pipoqueira", player.has_weapon("pipoqueira")) and all_ok
@@ -2928,6 +2927,12 @@ func _run_landscape_capture() -> void:
 	await _art_shot(out + "p27_peixes_mar.png", size, Vector3(13, 6, 230), Vector3(13, -1.0, 238), 60.0)
 	var dog: Node3D = get_node("Shiba")
 	await _art_shot(out + "p28_cachorro_praca.png", size, dog.global_position + Vector3(3.5, 2.0, 3.5), dog.global_position + Vector3(0, 0.5, 0), 50.0)
+	await _art_shot(out + "p29_sitio.png", size, pasto + Vector3(22, 11, 24), pasto + Vector3(-2, 1.5, -6), 60.0)
+	var farmer: Node3D = get_node("Fazendeiro")
+	await _art_shot(out + "p30_fazendeiro.png", size, farmer.global_position + Vector3(-3.5, 2.0, 3.5), farmer.global_position + Vector3(0, 1.0, 0), 50.0)
+	var farmer_b: Node3D = get_node("Fazendeira")
+	await _art_shot(out + "p31_fazendeira.png", size, farmer_b.global_position + Vector3(-4.0, 2.0, -3.0), farmer_b.global_position + Vector3(1.5, 1.0, 1.0), 55.0)
+	await _art_shot(out + "p32_ponte_sem_barreira.png", size, Vector3(0, 3.0, -86), Vector3(0, 1.0, -112), 60.0)
 	print("PAISAGEM OK")
 	get_tree().quit()
 
