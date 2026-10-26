@@ -232,6 +232,28 @@ func _ready() -> void:
 		enemies.append(e)
 	for person in world.get("people", []):
 		spawn_townsperson(person[0], person[1], person[2])
+	for spec in world.get("animals", []):
+		var animal := Animal.new()
+		animal.name = spec[0]
+		animal.model_file = spec[2]
+		animal.model_scale = spec[3]
+		animal.wander_radius = spec[4]
+		animal.shy = spec[5]
+		animal.player = player
+		animal.position = spec[1]
+		add_child(animal)
+		animal.visual.rotation.y = randf() * TAU
+	for school in world.get("schools", []):
+		var kinds: PackedStringArray = school[2]
+		for k in kinds.size() + 2:
+			var fish := Fish.new()
+			fish.model_name = kinds[k % kinds.size()]
+			fish.center = school[0]
+			fish.radius = school[1] * randf_range(0.45, 1.0)
+			fish.depth = randf_range(0.2, 0.5)
+			fish.speed = randf_range(0.8, 1.6)
+			fish.can_jump = school[3]
+			add_child(fish)
 	if world.has("gallery"):
 		gallery = ShootingGallery.new()
 		gallery.name = "TiroAoAlvo"
@@ -362,8 +384,16 @@ func _load_island() -> Dictionary:
 			for key in m.get_meta_list():
 				spec[String(key)] = m.get_meta(key)
 			people.append([spec, m.global_position + Vector3.UP * (float(spec.get("altura", 0.0)) - 0.1), m.rotation.y])
+	var animals := []
+	if island.has_node("Marcadores/Animais"):
+		for m in island.get_node("Marcadores/Animais").get_children():
+			animals.append([m.name, m.global_position, m.get_meta("modelo"), m.get_meta("escala"), m.get_meta("raio"), m.get_meta("timido")])
+	var schools := []
+	if island.has_node("Marcadores/Cardumes"):
+		for m in island.get_node("Marcadores/Cardumes").get_children():
+			schools.append([m.global_position, m.get_meta("raio"), m.get_meta("peixes"), m.get_meta("pula")])
 	var result := {"start": start.global_position + Vector3.UP * 0.3, "start_yaw": start.rotation.y, "enemies": spawns, "checkpoints": cps,
-		"crates": crate_spots, "people": people}
+		"crates": crate_spots, "people": people, "animals": animals, "schools": schools}
 	if island.has_node("Marcadores/Diversao/TiroAoAlvo"):
 		var g: Marker3D = island.get_node("Marcadores/Diversao/TiroAoAlvo")
 		result["gallery"] = Transform3D(g.global_basis, g.global_position - Vector3.UP * 0.1)
@@ -2726,6 +2756,33 @@ func _run_extras_test() -> void:
 	var names := ["Urso", "Bruxa", "SuperHeroi", "Astronauta", "HomemDasCavernas", "Lenhador", "Pescador"]
 	var found := names.filter(func(n: String) -> bool: return get_node_or_null(n) is Townsperson)
 	all_ok = _check("moradores novos na ilha", found.size() == names.size(), "(%d de %d)" % [found.size(), names.size()]) and all_ok
+	# Bichos soltos e peixes (Quaternius).
+	var animal_markers := island.get_node("Marcadores/Animais").get_child_count()
+	var animals := get_tree().get_nodes_in_group(&"animais")
+	var starts := {}
+	for an in animals:
+		starts[an] = (an as Node3D).global_position
+	await _wait(9.0)
+	var walked := animals.filter(func(an: Node3D) -> bool: return an.global_position.distance_to(starts[an]) > 1.0)
+	all_ok = _check("bichos soltos na ilha, passeando", animals.size() == animal_markers and walked.size() >= 4,
+			"(%d bichos, %d andaram)" % [animals.size(), walked.size()]) and all_ok
+	var fishes := get_tree().get_nodes_in_group(&"peixes")
+	var under := fishes.filter(func(f: Node3D) -> bool: return f.global_position.y < SEA_LEVEL + 1.5)
+	all_ok = _check("peixes nadando no mar e no rio", fishes.size() >= 20 and under.size() == fishes.size(), "(%d peixes)" % fishes.size()) and all_ok
+	# Cais do pacote de peixes: dá para andar da areia até a ponta sem cair na água.
+	var deer: Animal = get_node("Veado1")
+	player.global_position = deer.global_position + Vector3(2.0, 1.0, 0)
+	var deer_start := deer.global_position
+	await _wait(2.0)
+	all_ok = _check("veado foge galopando quando o aventureiro chega perto", deer.global_position.distance_to(deer_start) > 4.0,
+			"(%.1f m)" % deer.global_position.distance_to(deer_start)) and all_ok
+	player.global_position = Vector3(0, 1.0, 199)
+	player.velocity = Vector3.ZERO
+	await _wait(0.5)
+	await _walk_toward(Vector3(0, 0, 260), 9.0)
+	await _wait(0.4)
+	all_ok = _check("dá para andar pelo cais até a ponta", player.global_position.z > 245.0 and player.global_position.y > 0.2 and not _splashing,
+			"(z %.1f, y %.2f)" % [player.global_position.z, player.global_position.y]) and all_ok
 	# Desafio do Guerreiro Planta.
 	story.skip_to_forest()
 	await _wait(0.3)
@@ -2859,6 +2916,18 @@ func _run_landscape_capture() -> void:
 	await _art_shot(out + "p21_bosque_das_copas.png", size, bosque + Vector3(11, 5, 11), bosque + Vector3(-2, 2, -2), 65.0)
 	var pasture := _ground_point(Vector3(-104, 0, 52))
 	await _art_shot(out + "p16_pasto.png", size, pasture + Vector3(12, 6, 14), pasture + Vector3(0, 0.8, 0), 55.0)
+	await _art_shot(out + "p22_cais_peixes.png", size, Vector3(14, 5.5, 214), Vector3(0, 0.3, 236), 60.0)
+	await _art_shot(out + "p23_cais_ponta.png", size, Vector3(-9, 4.0, 236), Vector3(2, 0.3, 252), 60.0)
+	var pasto := _ground_point(Vector3(-104, 0, 52))
+	await _wait(1.0)
+	await _art_shot(out + "p24_pasto_bichos.png", size, pasto + Vector3(13, 5, 13), pasto + Vector3(0, 0.8, 0), 55.0)
+	var deer: Node3D = get_node("Veado1")
+	await _art_shot(out + "p25_veados.png", size, deer.global_position + Vector3(6, 2.5, 7), deer.global_position + Vector3(2, 1.0, -2), 55.0)
+	var fox: Node3D = get_node("Raposa1")
+	await _art_shot(out + "p26_raposa.png", size, fox.global_position + Vector3(4, 2.0, 4), fox.global_position + Vector3(0, 0.5, 0), 50.0)
+	await _art_shot(out + "p27_peixes_mar.png", size, Vector3(13, 6, 230), Vector3(13, -1.0, 238), 60.0)
+	var dog: Node3D = get_node("Shiba")
+	await _art_shot(out + "p28_cachorro_praca.png", size, dog.global_position + Vector3(3.5, 2.0, 3.5), dog.global_position + Vector3(0, 0.5, 0), 50.0)
 	print("PAISAGEM OK")
 	get_tree().quit()
 

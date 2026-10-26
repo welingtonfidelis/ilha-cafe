@@ -60,6 +60,12 @@ const CEMITERIO := "res://assets/props/cemiterio/%s.gltf"
 const PONTE := "res://assets/props/ponte/%s.gltf"
 const EXTRAS := "res://assets/props/%s.gltf"
 const CAIS := "res://assets/props/cais/%s.gltf"
+## Cais de madeira do Animated Cute Fish Pack (Quaternius): módulos com estacas e corda de corrimão.
+const DOCKS := "res://assets/props/cais_peixes/%s.fbx"
+const DOCK_SCALE := 0.75
+## Altura do piso do módulo (medida na malha): 3,8 m acima do pé das estacas, no tamanho do pacote.
+const DOCK_DECK := 3.8
+const PIER_DECK_Y := 0.45
 ## A cerca de madeira do Medieval Hexagon é a borda de um hexágono: a madeira fica 1 m para -X da origem.
 const FENCE_OFFSET := 1.0
 ## Árvores e arbustos nas outras cores do Forest Nature Pack completo (a cor 1 fica em env/forest/).
@@ -96,6 +102,9 @@ var trails := [
 
 var ilha: Node3D
 var rng := RandomNumberGenerator.new()
+## Ponta do cais (centro da beira do mar, no nível do piso) e meia largura do módulo da ponta.
+var pier_end := Vector3.ZERO
+var pier_end_half_w := 4.0
 ## Sorteio separado para as cores das árvores: assim trocar cores não muda a posição de nada.
 var rng_cor := RandomNumberGenerator.new()
 var _cols := 0
@@ -851,23 +860,11 @@ func _bridge_and_pier() -> void:
 	# Barreira mágica na cabeceira sul: some quando as duas lanternas da cidade apagam (o jogo cuida disso).
 	_magic_wall(ilha, "BarreiraDaPonte", Vector3(0, ground(0, z_south + 1.0) + 2.5, z_south + 1.0), Vector3(9, 5, 0.5))
 	# Cais: sai da praça para o mar, ao sul.
-	_wood_pier(Vector3(0, ground(0, 206) + 0.02, 206), Vector3(0, 0.25, 252), 7.0)
-	# Ponta do cais: o cais do Medieval Hexagon (tábuas com estacas, corrimão, barril, caixote e bandeira),
-	# atravessado no fim, com o corrimão virado para o mar. O piso do modelo fica no y 0 (as estacas descem).
-	var dock := _prop(ilha, CAIS % "building_docks_blue", Vector3(0, 0.25, 253.0), 180.0, 4.0)
-	dock.name = "PontaDoCais"
-	var dock_body := StaticBody3D.new()
-	dock_body.name = "PisoDaPonta"
-	_add(ilha, dock_body)
-	var dock_cs := CollisionShape3D.new()
-	var dock_box := BoxShape3D.new()
-	dock_box.size = Vector3(8.0, 0.4, 2.0)
-	dock_cs.shape = dock_box
-	dock_cs.position = Vector3(0, 0.05, 253.0)
-	_add(dock_body, dock_cs)
+	_dock_pier(206.0)
 	# Pescador na ponta (o pescador é um morador; o jogo cria): caixa de pesca e balde do lado.
-	_prop(ilha, EXTRAS % "pesca/fishing_tacklebox", Vector3(2.0, 0.25, 252.6), 15.0, 1.1)
-	_prop(ilha, EXTRAS % "pesca/bucket_metal", Vector3(1.4, 0.25, 253.4), 0.0, 1.0)
+	var fish_spot := pier_end + Vector3(pier_end_half_w - 0.9, 0, -4.0)
+	_prop(ilha, EXTRAS % "pesca/fishing_tacklebox", fish_spot + Vector3(-1.1, 0, -0.8), 15.0, 1.1)
+	_prop(ilha, EXTRAS % "pesca/bucket_metal", fish_spot + Vector3(-1.0, 0, 0.9), 0.0, 1.0)
 	# Toras do lenhador na margem sul do rio, perto da ponte.
 	var river_s := _river_z(12.0) + RIVER_HALF + RIVER_BANK + 6.0
 	var logs := _group(ilha, "Lenha")
@@ -884,7 +881,7 @@ func _bridge_and_pier() -> void:
 	_prop(logs, _tree_path("Tree_5_B", 1), Vector3(trunk_x - 2.6, ground(trunk_x - 2.6, river_s - 3.4) - 0.1, river_s - 3.4), 40.0, FOREST_SCALE, "tronco")
 
 
-## Pasto com cerca de madeira e cavalos pastando (Medieval Hexagon; só existem cavalos de animal na coleção).
+## Pasto com cerca de madeira (Medieval Hexagon) e um caixote de alface; os bichos vêm dos marcadores Animais.
 func _pasture() -> void:
 	var pasture := _group(ilha, "Pasto")
 	var segs := 14
@@ -898,58 +895,48 @@ func _pasture() -> void:
 		rail.rotation.y = -a
 		rail.scale = Vector3(3.0, 2.0, 4.3)
 		_add(pasture, rail)
-	var horses := ["horse_A", "horse_D", "horse_G", "horse_B"]
-	for k in horses.size():
-		var a := TAU * k / horses.size() + 0.5
-		var p := PASTURE + Vector2(cos(a), sin(a)) * 4.5
-		var horse := Node3D.new()
-		horse.name = "Cavalo%d" % (k + 1)
-		horse.set_script(load("res://scripts/horse.gd"))
-		horse.position = Vector3(p.x, ground(p.x, p.y), p.y)
-		horse.rotation.y = a + 1.3
-		_add(pasture, horse)
-		horse.set("model_name", horses[k])
 	_prop(pasture, FESTA % "comida/crate_lettuce", Vector3(PASTURE.x, ground(PASTURE.x, PASTURE.y), PASTURE.y), 20.0, 0.5, "caixa")
 
 
-## Cais de tábuas do Dungeon Pack (piso de madeira) com corrimão de cerca de madeira do Medieval Hexagon e
-## toras fincadas na água. A colisão é uma caixa invisível no comprimento todo.
-func _wood_pier(a: Vector3, b: Vector3, width: float) -> void:
+## Cais do Animated Cute Fish Pack: dois módulos compridos e o largo na ponta, um atrás do outro a partir
+## da praia (z0) para o mar. As estacas descem para dentro da água; o piso fica a PIER_DECK_Y. A colisão é
+## uma caixa no piso de cada módulo, paredes invisíveis no lugar da corda e uma rampa na areia.
+func _dock_pier(z0: float) -> void:
 	var group := _group(ilha, "Cais")
-	var flat := Vector2(b.x - a.x, b.z - a.z)
-	var length := Vector3(b - a).length()
-	var basis := Basis(Vector3.UP, atan2(flat.x, flat.y)) * Basis(Vector3.RIGHT, -atan2(b.y - a.y, flat.length()))
+	var z := z0
+	var origin_y := PIER_DECK_Y - DOCK_DECK * DOCK_SCALE
 	var body := StaticBody3D.new()
 	body.name = "Piso"
 	_add(group, body)
+	var modules := ["Dock_Long", "Dock_Long", "Dock_Wide"]
+	for i in modules.size():
+		var dock: Node3D = load(DOCKS % modules[i]).instantiate()
+		var aabb := _model_aabb(dock)
+		var length := aabb.size.z * DOCK_SCALE
+		var half_w := aabb.size.x * DOCK_SCALE * 0.5 * 0.86
+		dock.position = Vector3(0, origin_y, z - aabb.position.z * DOCK_SCALE)
+		dock.scale = Vector3.ONE * DOCK_SCALE
+		dock.name = "Modulo%d" % (i + 1)
+		_add(group, dock)
+		var mid := z + length * 0.5
+		_box_shape(body, Vector3(half_w * 2.0, 0.3, length), Vector3(0, PIER_DECK_Y - 0.15, mid))
+		for side in [-1.0, 1.0]:
+			_box_shape(body, Vector3(0.3, 1.2, length), Vector3(side * half_w, PIER_DECK_Y + 0.6, mid))
+		if i == modules.size() - 1:
+			_box_shape(body, Vector3(half_w * 2.0, 1.2, 0.3), Vector3(0, PIER_DECK_Y + 0.6, z + length - 0.4))
+			pier_end = Vector3(0, PIER_DECK_Y, z + length)
+			pier_end_half_w = half_w
+		z += length - 0.15
+	_ramp(group, Vector3(0, ground(0, z0 - 3.5), z0 - 3.5), Vector3(0, PIER_DECK_Y, z0 + 0.5), 5.0)
+
+
+func _box_shape(body: StaticBody3D, size: Vector3, pos: Vector3) -> void:
 	var cs := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(width, 0.4, length)
+	box.size = size
 	cs.shape = box
-	cs.transform = Transform3D(basis, (a + b) * 0.5 - basis.y * 0.2)
+	cs.position = pos
 	_add(body, cs)
-	var tiles := int(ceil(length / 4.0))
-	for i in tiles:
-		var t := (i + 0.5) / tiles
-		var tile: Node3D = load(CAIS % "floor_wood_large").instantiate()
-		tile.transform = Transform3D(basis.scaled_local(Vector3(width / 4.0, 1.0, length / tiles / 4.0)), a.lerp(b, t) + basis.y * 0.04)
-		_add(group, tile)
-	var rails := int(length / 3.4)
-	for side in [-1.0, 1.0]:
-		for i in rails:
-			var t := (i + 0.5) / rails
-			var rail: Node3D = load(CAIS % "fence_wood_straight").instantiate()
-			# A cerca do pacote já fica no eixo Z (comprimento 1,15 m): estica até emendar com a próxima.
-			rail.transform = Transform3D(basis.scaled_local(Vector3(2.5, 2.0, (length / rails) / 1.15)), a.lerp(b, t) + basis.x * (side * (width * 0.5 - 0.2) + FENCE_OFFSET * 2.5))
-			_add(group, rail)
-	for i in int(length / 8.0) + 1:
-		var t := float(i) / int(length / 8.0)
-		for side in [-1.0, 1.0]:
-			var post_pos: Vector3 = a.lerp(b, t) + basis.x * (side * (width * 0.5 - 0.1))
-			var post: Node3D = load(EXTRAS % "moradores/lenhador/log_A").instantiate()
-			post.position = post_pos - Vector3.UP * 1.0
-			post.scale = Vector3(0.9, 2.0, 0.9)
-			_add(group, post)
 
 
 ## Ponte de pedra em arco (Medieval Hexagon) sobre o rio. No pacote ela fica na diagonal do hexágono (30° do
@@ -1238,6 +1225,44 @@ func _markers() -> void:
 	_marker(fun, "TiroAoAlvo", pc0.x - 4.0, pc0.y + 9.4)
 	_pasture()
 
+	# Bichos soltos (Quaternius, CC0): modelo, tamanho, raio do passeio e se foge do aventureiro.
+	var animals := _group(markers, "Animais")
+	var pcz := Vector2(PLAZA.position.x + 20, PLAZA.position.y + 20)
+	var bichos := [
+		["Cavalo", "Horse.gltf", 0.42, 7.0, false, PASTURE + Vector2(-3, 2)],
+		["CavaloBranco", "Horse_White.gltf", 0.42, 7.0, false, PASTURE + Vector2(3, -2)],
+		["Vaca", "Cow.gltf", 0.36, 6.0, false, PASTURE + Vector2(0, 4)],
+		["Burro", "Donkey.gltf", 0.4, 6.0, false, PASTURE + Vector2(-4, -3)],
+		["Alpaca", "Alpaca.gltf", 0.38, 6.0, false, PASTURE + Vector2(4, 3)],
+		["Porco", "Pig.fbx", 0.22, 0.0, false, PASTURE + Vector2(2, -5)],
+		["Ovelha1", "Sheep.fbx", 0.22, 0.0, false, PASTURE + Vector2(-6, 1)],
+		["Ovelha2", "Sheep.fbx", 0.2, 0.0, false, PASTURE + Vector2(-5, 4)],
+		["Lhama", "Llama.fbx", 0.27, 0.0, false, PASTURE + Vector2(6, -1)],
+		["Shiba", "ShibaInu.gltf", 0.3, 5.0, false, pcz + Vector2(3, 3)],
+		["Husky", "Husky.gltf", 0.32, 8.0, false, Vector2(-12, 200)],
+		["Pug", "Pug.fbx", 0.3, 0.0, false, pcz + Vector2(-3.6, 6.2)],
+		["Veado1", "Deer.gltf", 0.42, 10.0, true, Vector2(55, -140)],
+		["Veado2", "Deer.gltf", 0.4, 10.0, true, Vector2(62, -146)],
+		["Cervo", "Stag.gltf", 0.42, 10.0, true, Vector2(-35, -145)],
+		["Raposa1", "Fox.gltf", 0.3, 9.0, true, Vector2(-45, -205)],
+		["Raposa2", "Fox.gltf", 0.3, 9.0, true, Vector2(95, -130)],
+	]
+	for b in bichos:
+		var bp: Vector2 = b[5]
+		_marker(animals, b[0], bp.x, bp.y, {"modelo": b[1], "escala": b[2], "raio": b[3], "timido": b[4]})
+	# Cardumes de peixes fofos (Quaternius): no mar perto do cais e no rio perto da ponte. Os do mar pulam.
+	var schools := _group(markers, "Cardumes")
+	var cardumes := [
+		["MarLeste", Vector2(13, 238), 5.5, ["Clownfish", "BlueTang", "YellowTang", "ZebraClownFish", "Puffer"], true],
+		["MarOeste", Vector2(-13, 244), 5.0, ["ButterflyFish", "MoorishIdol", "RoyalGramma", "ParrotFish"], true],
+		["RioPonte", Vector2(22, _river_z(22)), 3.5, ["Koi", "Goldfish", "BlueGoldfish", "Tetra"], true],
+		["RioOeste", Vector2(-45, _river_z(-45)), 3.0, ["Betta", "CardinalFish", "MandarinFish"], false],
+	]
+	for c in cardumes:
+		var cp: Vector2 = c[1]
+		var m := _marker(schools, c[0], cp.x, cp.y, {"raio": c[2], "peixes": PackedStringArray(c[3]), "pula": c[4]})
+		m.position.y = SEA_LEVEL
+
 	# Caixas de munição: voltam um tempo depois de pegas (o jogo cuida disso).
 	var crates := _group(markers, "Municao")
 	var crate_spots := [
@@ -1289,8 +1314,9 @@ func _markers() -> void:
 	]
 	# Na festa: o urso da banda, a bruxa das poções e gente fantasiada. Fora dela: o lenhador na margem do
 	# rio e o pescador no fim do cais (altura do píer, não do fundo do mar).
-	var pier_z := 252.7
-	var pier_y := 0.25
+	var pier_z := pier_end.z - 4.0
+	var pier_y := PIER_DECK_Y
+	var pier_x := pier_end_half_w - 0.9
 	var river_s := _river_z(12.0) + RIVER_HALF + RIVER_BANK + 6.0
 	folks.append_array([
 		["Urso", "Animatronic_Normal", "tocando", "", "moradores/urso/Guitar", pc + Vector2(0.0, -12.4), 0.0, 1.0,
@@ -1305,7 +1331,7 @@ func _markers() -> void:
 			["Uga! Pizza boa!", "Fantasia de homem das cavernas. A barba é de verdade."]],
 		["Lenhador", "Werewolf_Man", "cortando", "", "moradores/lenhador/axe", Vector2(12.0, river_s), -90.0, 0.0,
 			["Lenha para a fogueira da festa!", "Do outro lado da ponte a mata está cheia de esqueletos. Cuidado!"]],
-		["Pescador", "Hiker", "pescando", "hiker_texture_b", "pesca/fishing_rod", Vector2(3.1, pier_z), 90.0, pier_y - ground(3.1, pier_z) - 0.1,
+		["Pescador", "Hiker", "pescando", "hiker_texture_b", "pesca/fishing_rod", Vector2(pier_x, pier_z), 90.0, pier_y - ground(pier_x, pier_z) - 0.1,
 			["Psiu! Os peixes estão quase mordendo.", "Hoje só pesquei uma bota... e um balão!"]],
 	])
 	var walk_to := {"Motorista1": Vector2(-26.0, 146.0), "Motorista2": Vector2(48.0, 146.0)}
