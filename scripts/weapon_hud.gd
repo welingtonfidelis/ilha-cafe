@@ -3,7 +3,7 @@ extends Control
 ## Painel das armas no canto de baixo à direita, inspirado em HUD de jogo de tiro:
 ## - painel grande inclinado com a arma na mão: número do encaixe, ícone de balas, pente (grande,
 ##   laranja) sobre o estoque (cinza) e a silhueta branca da arma;
-## - painel menor em cima com a próxima arma (a que vem ao apertar Y ou a rodinha);
+## - painel menor em cima com a próxima arma (a que vem ao apertar Y ou a rodinha), se houver;
 ## - painel à esquerda com as granadas Brigadeiro.
 ## Desenhado em "unidades de projeto" (tela de 1280 x 720) e ampliado conforme a altura da janela.
 ## As silhuetas vêm de tools/gerar_icones.gd.
@@ -44,7 +44,7 @@ func _ready() -> void:
 ## Lê o estado do aventureiro; só redesenha quando algo mudou ou há animação.
 func refresh(p: Player) -> void:
 	var i := p.weapon_index
-	var n := wrapi(i + 1, 0, Weapons.count())
+	var n := p.next_weapon_index(1)
 	var next_id: String = Weapons.get_def(n).id
 	var s := {
 		"i": i, "mag": p.mag(), "reserve": p.reserve(),
@@ -152,7 +152,8 @@ func _draw() -> void:
 	# Origem no canto de baixo à direita; desenha para a esquerda e para cima (coordenadas negativas).
 	draw_set_transform(Vector2(size.x - MARGIN * u, size.y - MARGIN * u), 0.0, Vector2(u, u))
 	_draw_main()
-	_draw_next()
+	if _state.n != _state.i:
+		_draw_next()
 	_draw_grenades()
 	draw_set_transform(Vector2.ZERO)
 

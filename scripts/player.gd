@@ -82,6 +82,8 @@ var last_hit_by := ""
 ## Blaster na mão (índice em Weapons.DEFS) e munição de cada um: id -> {mag, reserve}.
 ## reserve = -1 é estoque infinito.
 var weapon_index := 0
+## Blasters que o aventureiro já tem (id -> true). Na arena dos testes, todos; na história, ganhos aos poucos.
+var unlocked := {}
 var ammo := {}
 var grenades := 0
 var reloading := false
@@ -115,6 +117,7 @@ var _auto_reload_delay := 0.0
 var _switch_left := 0.0
 var _throw_cooldown := 0.0
 var _node_aim: AnimationNodeAnimation
+var _shake := 0.0
 var _recoil: Node3D
 var _kick := 0.0
 var _node_reload: AnimationNodeAnimation
@@ -140,6 +143,7 @@ func _ready() -> void:
 	hearts = max_hearts
 	for def in Weapons.DEFS:
 		ammo[def.id] = {"mag": def.pente, "reserve": def.estoque}
+		unlocked[def.id] = true
 	grenades = Weapons.GRENADE.inicio
 	if character_name == "":
 		set_character("menino")
@@ -385,9 +389,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("granada"):
 		throw_grenade()
 	elif event.is_action_pressed("arma_proxima"):
-		switch_weapon(weapon_index + 1)
+		switch_weapon(next_weapon_index(1))
 	elif event.is_action_pressed("arma_anterior"):
-		switch_weapon(weapon_index - 1)
+		switch_weapon(next_weapon_index(-1))
 	else:
 		for i in Weapons.count():
 			if event.is_action_pressed("arma_%d" % (i + 1)):
@@ -462,6 +466,19 @@ func _physics_process(delta: float) -> void:
 	_update_invulnerability(delta)
 	_update_animation(delta)
 	_update_recoil(delta)
+	_update_shake(delta)
+
+
+## Tremor rápido da câmera (o Ossão batendo no chão, por exemplo).
+func shake(amount: float) -> void:
+	_shake = maxf(_shake, amount)
+	rumble(0.4, 0.5, 0.2)
+
+
+func _update_shake(delta: float) -> void:
+	_shake = move_toward(_shake, 0.0, delta * 1.5)
+	camera.h_offset = randf_range(-1.0, 1.0) * _shake * 0.4
+	camera.v_offset = randf_range(-1.0, 1.0) * _shake * 0.4
 
 
 ## Coice no blaster: a boca sobe e a arma recua um pouco, voltando rápido. No osso da mão,
@@ -507,16 +524,58 @@ func limited_ammo_fraction() -> float:
 	var have := 0.0
 	var cap := 0.0
 	for def in Weapons.DEFS:
-		if Weapons.infinite(def):
+		if Weapons.infinite(def) or not has_weapon(def.id):
 			continue
 		have += ammo[def.id].mag + ammo[def.id].reserve
 		cap += def.pente + def.estoque_max
 	return have / cap if cap > 0.0 else 1.0
 
 
+func has_weapon(id: String) -> bool:
+	return unlocked.get(id, false)
+
+
+## Próximo blaster que o aventureiro tem, andando `step` (1 ou -1) na lista. Se só tem um, é o mesmo.
+func next_weapon_index(step: int) -> int:
+	for k in range(1, Weapons.count() + 1):
+		var i := wrapi(weapon_index + step * k, 0, Weapons.count())
+		if has_weapon(Weapons.get_def(i).id):
+			return i
+	return weapon_index
+
+
+## Deixa só os blasters da lista (a história começa só com a Paçoca).
+func keep_only_weapons(ids: Array) -> void:
+	for def in Weapons.DEFS:
+		unlocked[def.id] = def.id in ids
+	if not has_weapon(current_weapon().id):
+		weapon_index = Weapons.index_of(ids[0])
+		_equip_model()
+		_apply_weapon_animations()
+	ammo_changed.emit()
+
+
+## Ganha um blaster novo: já vem carregado e vai para a mão.
+func unlock_weapon(id: String) -> void:
+	var def := Weapons.get_def(Weapons.index_of(id))
+	unlocked[id] = true
+	ammo[id].mag = def.pente
+	if def.estoque >= 0:
+		ammo[id].reserve = maxi(ammo[id].reserve, def.estoque)
+	switch_weapon(Weapons.index_of(id))
+	ammo_changed.emit()
+
+
+## Um coração a mais no máximo, e cheio.
+func add_max_heart() -> void:
+	max_hearts += 1
+	hearts = max_hearts
+	health_changed.emit(hearts, max_hearts)
+
+
 func switch_weapon(index: int) -> void:
 	index = wrapi(index, 0, Weapons.count())
-	if index == weapon_index or dizzy:
+	if index == weapon_index or dizzy or not has_weapon(Weapons.get_def(index).id):
 		return
 	_cancel_reload()
 	weapon_index = index
@@ -687,7 +746,7 @@ func _release_grenade() -> void:
 func add_ammo_crate() -> bool:
 	var changed := false
 	for id in Weapons.CRATE_AMMO:
-		if id == "granadas":
+		if id == "granadas" or not has_weapon(id):
 			continue
 		var def := Weapons.get_def(Weapons.index_of(id))
 		var a: Dictionary = ammo[id]

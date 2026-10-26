@@ -10,7 +10,7 @@ signal defeated(enemy: SkeletonEnemy)
 ## Saiu de vez (o balão subiu e sumiu). Logo depois o nó é liberado.
 signal gone(enemy: SkeletonEnemy)
 
-enum State { PERSEGUINDO, PREPARANDO, ATACANDO, ESPERANDO, ATINGIDO, INDO_EMBORA, ACORDANDO, COMEMORANDO, DORMINDO, VOLTANDO }
+enum State { PERSEGUINDO, PREPARANDO, ATACANDO, ESPERANDO, ATINGIDO, INDO_EMBORA, ACORDANDO, COMEMORANDO, DORMINDO, VOLTANDO, AFUNDANDO }
 
 const SKELETONS := "res://assets/characters/skeletons/%s.glb"
 const WEAPONS := "res://assets/weapons/skeleton/%s.gltf"
@@ -50,6 +50,8 @@ const TYPES := {
 @export var start_awake := false
 @export var aggro_radius := -1.0  # -1: 16 m para golpe de perto, 22 m para quem atira
 @export var leash_radius := 45.0
+## Esqueleto de onda: sai de uma rachadura (sobe do chão) e persegue o aventureiro por toda a região.
+@export var from_crack := false
 
 var target: Player
 var health := 3.0
@@ -109,16 +111,39 @@ func _ready() -> void:
 	_spawn_point = global_position
 	if aggro_radius < 0.0:
 		aggro_radius = 16.0 if config.kind == "melee" else 22.0
-	if start_awake:
+	if from_crack:
+		# A animação de sair do chão tem 3,6 s: tocada 1,6x mais rápida para a onda não demorar.
+		_enter(State.ACORDANDO, "")
+		ap.play(&"especial/Skeletons_Spawn_Ground", 0.1, 1.6)
+		_rise_length = ap.current_animation_length / 1.6
+		visual.position.y = -1.2
+		var tw := create_tween()
+		tw.tween_property(visual, "position:y", 0.0, 0.6).set_ease(Tween.EASE_OUT)
+		Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+	elif start_awake:
 		_enter(State.ACORDANDO, "especial/Skeletons_Awaken_Floor")
 	else:
 		_enter(State.DORMINDO, "especial/Skeletons_Inactive_Floor_Pose")
 
 
+## Onda cancelada: afunda de volta na rachadura e some (não conta como derrotado).
+func sink_away() -> void:
+	if state in [State.INDO_EMBORA, State.AFUNDANDO]:
+		return
+	_enter(State.AFUNDANDO, "especial/Skeletons_Death")
+	velocity = Vector3.ZERO
+	collision_mask = 0
+	Fx.dust(get_parent(), global_position + Vector3.UP * 0.3)
+	var tw := create_tween()
+	tw.tween_interval(0.3)
+	tw.tween_property(visual, "position:y", -2.6, 0.9).set_ease(Tween.EASE_IN)
+	tw.tween_callback(queue_free)
+
+
 ## Volta para o lugar de origem (usado quando o aventureiro reaparece na bandeira):
 ## na ilha deita de novo; na arena acorda na hora. Quem já está indo embora segue o balão.
 func reset_to_spawn() -> void:
-	if state == State.INDO_EMBORA:
+	if state in [State.INDO_EMBORA, State.AFUNDANDO] or from_crack:
 		return
 	global_position = _spawn_point
 	velocity = Vector3.ZERO
@@ -201,6 +226,8 @@ func _physics_process(delta: float) -> void:
 	_cooldown -= delta
 	if state == State.INDO_EMBORA:
 		_fly_away(delta)
+		return
+	if state == State.AFUNDANDO:
 		return
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
@@ -338,11 +365,11 @@ func _enter(new_state: State, anim_name: String) -> void:
 	if anim_name != "":
 		ap.play(StringName(anim_name), 0.15)
 	if new_state == State.ACORDANDO:
-		_rise_length = ap.current_animation_length
+		_rise_length = ap.current_animation_length if ap.current_animation != "" else 1.0
 		_set_hittable(false)
 		if is_inside_tree():
 			Sfx.play_at(get_parent(), "remontar", global_position + Vector3.UP, -3.0)
-	elif new_state == State.INDO_EMBORA or new_state == State.DORMINDO:
+	elif new_state in [State.INDO_EMBORA, State.DORMINDO, State.AFUNDANDO]:
 		_set_hittable(false)
 
 
@@ -354,7 +381,7 @@ func _set_hittable(on: bool) -> void:
 
 
 func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
-	if state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO]:
+	if state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO, State.AFUNDANDO]:
 		return
 	# O guerreiro segura o escudo na frente: tiro no corpo de frente não passa,
 	# a não ser quando ele está erguendo o machado.
@@ -370,7 +397,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 
 ## Explosão da granada: o escudo não segura, e o dano já vem com a distância descontada.
 func take_explosion(amount: float, center: Vector3) -> void:
-	if state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO]:
+	if state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO, State.AFUNDANDO]:
 		return
 	var away := global_position - center
 	away.y = 0.0

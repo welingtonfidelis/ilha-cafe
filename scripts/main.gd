@@ -37,6 +37,16 @@ const SEA_LEVEL := -0.6
 
 var arena := false
 var island: Node3D
+## História na ilha (prólogo, lanternas, ondas); fica nula na arena dos testes.
+var story: Story
+var boss_bar: BossBar
+var objective_marker: ObjectiveMarker
+var wave_label: Label
+var banner_title: Label
+var banner_subtitle: Label
+var pause_objective: Label
+var _banners: Array = []
+var _banner_busy := false
 var _splashing := false
 
 ## Comandos mostrados no menu de pausa (não ficam mais na tela durante o jogo).
@@ -214,7 +224,7 @@ func _ready() -> void:
 			e.aggro_radius = 999.0
 			e.leash_radius = 999.0
 		e.defeated.connect(_on_enemy_defeated)
-		e.tree_exited.connect(func() -> void: enemies.erase(e))
+		e.tree_exiting.connect(func() -> void: enemies.erase(e))
 		add_child(e)
 		enemies.append(e)
 	for cp_spec in world.checkpoints:
@@ -229,6 +239,13 @@ func _ready() -> void:
 	for pos in world.crates:
 		_spawn_crate(pos, CRATE_RESPAWN)
 	_build_ui()
+	if not arena:
+		story = Story.new()
+		story.name = "Historia"
+		add_child(story)
+		story.setup(self, island)
+		story.objective_changed.connect(func(text: String) -> void: pause_objective.text = "Objetivo: " + text)
+		pause_objective.text = "Objetivo: " + story.objective_text
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -261,6 +278,12 @@ func _ready() -> void:
 	elif "--ilha-captura" in args:
 		select_panel.hide()
 		_run_island_capture()
+	elif "--historia" in args:
+		select_panel.hide()
+		_run_story_test()
+	elif "--historia-captura" in args:
+		select_panel.hide()
+		_run_story_capture()
 	else:
 		open_menu("escolha")
 
@@ -455,6 +478,8 @@ func close_menus() -> void:
 	crosshair.show()
 	get_tree().paused = false
 	_game_started = true
+	if story and story.stage == "antes":
+		story.start()
 	if not player.using_gamepad:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo.
@@ -652,6 +677,16 @@ func _build_ui() -> void:
 	layer.add_child(hearts_bar)
 	ammo_hud = WeaponHud.new()
 	layer.add_child(ammo_hud)
+	objective_marker = ObjectiveMarker.new()
+	layer.add_child(objective_marker)
+	objective_marker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	boss_bar = BossBar.new()
+	layer.add_child(boss_bar)
+	wave_label = _hud_label(layer, 26, Color.WHITE)
+	banner_title = _hud_label(layer, 40, Color("#ffd23f"))
+	banner_subtitle = _hud_label(layer, 22, Color.WHITE)
+	for l in [banner_title, banner_subtitle]:
+		l.modulate.a = 0.0
 	message_label = Label.new()
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_label.add_theme_font_size_override("font_size", 30)
@@ -700,6 +735,13 @@ func _build_ui() -> void:
 	# Pausa: continuar, trocar de personagem, ver os comandos ou sair.
 	var pbox := _menu_box(layer, "Pausa")
 	pause_panel = pbox.get_parent().get_parent()
+	pause_objective = Label.new()
+	pause_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pause_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pause_objective.custom_minimum_size = Vector2(320, 0)
+	pause_objective.add_theme_font_size_override("font_size", 18)
+	pause_objective.add_theme_color_override("font_color", Color("#d9a8ff"))
+	pbox.add_child(pause_objective)
 	for spec in [["Continuar", close_menus], ["Trocar de personagem", open_menu.bind("escolha")],
 			["Comandos", open_menu.bind("comandos")], ["Sair do jogo", get_tree().quit]]:
 		var b := _menu_button(spec[0], focus_style)
@@ -723,6 +765,83 @@ func _build_ui() -> void:
 	cbox.add_child(_controls_back)
 	for panel_root in [select_panel, pause_panel, controls_panel]:
 		panel_root.hide()
+
+
+func _hud_label(layer: CanvasLayer, font_size: int, color: Color) -> Label:
+	var l := Label.new()
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", font_size)
+	l.add_theme_constant_override("outline_size", maxi(8, font_size / 3))
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	l.add_theme_color_override("font_color", color)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(l)
+	return l
+
+
+## Faixa grande no alto da tela (título e subtítulo). Várias seguidas entram em fila.
+func banner(title: String, subtitle := "", color := Color("#ffd23f"), seconds := 3.2) -> void:
+	_banners.append([title, subtitle, color, seconds])
+	if not _banner_busy:
+		_next_banner()
+
+
+func _next_banner() -> void:
+	if _banners.is_empty():
+		_banner_busy = false
+		return
+	_banner_busy = true
+	var b: Array = _banners.pop_front()
+	banner_title.text = b[0]
+	banner_title.add_theme_color_override("font_color", b[2])
+	banner_subtitle.text = b[1]
+	var tw := create_tween()
+	tw.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tw.tween_property(banner_title, "modulate:a", 1.0, 0.25)
+	tw.parallel().tween_property(banner_subtitle, "modulate:a", 1.0, 0.25)
+	tw.tween_interval(b[3])
+	tw.tween_property(banner_title, "modulate:a", 0.0, 0.4)
+	tw.parallel().tween_property(banner_subtitle, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(_next_banner)
+
+
+func show_guardian(b: Boss) -> void:
+	boss_bar.track(b)
+	banner(b.display_name, b.subtitle, Color("#ff9d7a"), 2.2)
+
+
+func hide_guardian() -> void:
+	boss_bar.release()
+
+
+func activate_checkpoint(cp_name: String) -> void:
+	for cp in checkpoints:
+		if cp.name == cp_name:
+			_on_checkpoint_activated(cp)
+
+
+## Esqueleto de onda: sai de uma rachadura e persegue por toda a região.
+func spawn_wave_enemy(type_name: String, pos: Vector3) -> SkeletonEnemy:
+	var e := SkeletonEnemy.new()
+	e.type_name = type_name
+	e.from_crack = true
+	e.start_awake = true
+	e.aggro_radius = 999.0
+	e.leash_radius = 999.0
+	e.target = player
+	e.set_meta("onda", true)
+	e.defeated.connect(_on_enemy_defeated)
+	e.tree_exiting.connect(func() -> void: enemies.erase(e))
+	add_child(e)
+	e.global_position = pos
+	enemies.append(e)
+	return e
+
+
+func add_boss(b: Boss, pos: Vector3) -> void:
+	b.target = player
+	add_child(b)
+	b.global_position = pos
 
 
 ## Caixa de menu centralizada: CenterContainer > PanelContainer > VBox com título. Devolve a VBox.
@@ -807,11 +926,14 @@ func _on_checkpoint_activated(cp: Checkpoint) -> void:
 
 
 func _on_enemy_defeated(e: SkeletonEnemy) -> void:
-	if player.hearts <= 2 or randf() < heart_drop_chance:
+	var wave := e.has_meta("onda")
+	var heart_chance := 0.12 if wave else heart_drop_chance
+	var crate_chance := 0.15 if wave else AMMO_DROP_CHANCE
+	if player.hearts <= (1 if wave else 2) or randf() < heart_chance:
 		var heart := HeartPickup.new()
 		heart.position = e.global_position
 		add_child(heart)
-	if player.limited_ammo_fraction() < 0.25 or randf() < AMMO_DROP_CHANCE:
+	if player.limited_ammo_fraction() < (0.12 if wave else 0.25) or randf() < crate_chance:
 		var crate := AmmoPickup.new()
 		crate.dropped = true
 		crate.position = e.global_position + e.visual.global_basis.x * 1.4
@@ -849,6 +971,15 @@ func _process(_delta: float) -> void:
 		crosshair.reload_progress = player.reload_progress()
 		crosshair.scoped = player.is_zoomed()
 		ammo_hud.refresh(player)
+	if story and is_instance_valid(player):
+		var d := story.running_defense()
+		wave_label.text = d.hud_text() if d else ""
+		var view := get_viewport().get_visible_rect().size
+		var top := 96.0 if boss_bar.visible else 24.0
+		wave_label.position = Vector2(view.x * 0.5 - wave_label.size.x * 0.5, top)
+		banner_title.position = Vector2(view.x * 0.5 - banner_title.size.x * 0.5, view.y * 0.2)
+		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
+		objective_marker.update_marker(player.camera, story.objective_target if menu_state == "" else Vector3.INF, player.global_position)
 
 
 func _choose_character(key: String) -> void:
@@ -1511,7 +1642,8 @@ func _run_island_test() -> void:
 	all_ok = _check("dá para subir a encosta do Morro andando", player.global_position.y > y0 + 3.0,
 			"(subiu %.1f m em 3 s)" % (player.global_position.y - y0)) and all_ok
 
-	# Atravessar a ponte para a mata.
+	# Atravessar a ponte para a mata (a barreira mágica da história fica aberta neste teste).
+	story.open_bridge_now()
 	var bridge: Node3D = island.get_node("Ponte")
 	var south := Vector3(0, 2, -92)
 	player.global_position = south
@@ -1782,6 +1914,265 @@ func _run_weapons_test() -> void:
 			"(boca %.3f -> %.3f -> %.3f m acima da mão)" % [rest_y, kick_y, back_y]) and all_ok
 
 	print("ARMAS OK" if all_ok else "ARMAS COM FALHAS")
+	get_tree().quit()
+
+
+# --- teste e fotos da história ------------------------------------------------
+
+func _wave_enemies() -> Array:
+	var leaving := [SkeletonEnemy.State.AFUNDANDO, SkeletonEnemy.State.INDO_EMBORA]
+	return enemies.filter(func(e: SkeletonEnemy) -> bool: return is_instance_valid(e) and e.has_meta("onda") and not (e.state in leaving))
+
+
+## Derrota os esqueletos da onda atual até ela terminar (e o guardião também, se include_boss).
+func _clear_wave(d: Defense, include_boss := true) -> void:
+	var start_wave := d.wave_index
+	var t := 0.0
+	while t < 25.0 and d.wave_index == start_wave and d.state != Defense.State.VENCIDA:
+		for e in d.alive.duplicate():
+			if is_instance_valid(e) and e is SkeletonEnemy and not (e.state in [SkeletonEnemy.State.ACORDANDO, SkeletonEnemy.State.INDO_EMBORA, SkeletonEnemy.State.AFUNDANDO]):
+				e.take_hit(99.0, e.global_position + Vector3.UP * 2.0, e.hurtboxes[0])
+		if include_boss and is_instance_valid(d.boss) and d.boss.phase == Boss.Phase.LUTANDO:
+			d.boss.take_hit(999.0, d.boss.global_position + Vector3.UP * 4.0, d.boss.hurtboxes[0])
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+
+
+func _near_count(type: Variant, center: Vector3, radius: float) -> int:
+	return get_children().filter(func(n: Node) -> bool:
+		return is_instance_of(n, type) and not n.is_queued_for_deletion() and (n as Node3D).global_position.distance_to(center) < radius).size()
+
+
+func _stand(pos: Vector3) -> void:
+	player.global_position = pos + Vector3.UP * 1.0
+	player.velocity = Vector3.ZERO
+	await _wait(0.3)
+
+
+## História na ilha com ondas curtas: prólogo, Lanterna Oeste (Ossão) e Leste (Mira-Torta), ponte.
+## Uso: godot --headless --path . -- --historia
+func _run_story_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	all_ok = _check("história começa só com a Paçoca", player.has_weapon("pacoca") and not player.has_weapon("granulado")
+			and player.next_weapon_index(1) == player.weapon_index) and all_ok
+	all_ok = _check("antes do prólogo: lanternas apagadas, ponte e cúpula fechadas",
+			story.lanterns.values().all(func(l: Dictionary) -> bool: return not l.lit) and not story.bridge_open() and not story.dome_open()) and all_ok
+
+	# Prólogo na praça.
+	var praca: Defense = story.defenses.praca
+	story.start()
+	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
+	await _wait(0.8)
+	all_ok = _check("prólogo: a primeira onda sai das rachaduras", praca.state == Defense.State.ONDA and _wave_enemies().size() == 3,
+			"(%d esqueletos, \"%s\")" % [_wave_enemies().size(), wave_label.text]) and all_ok
+	await _clear_wave(praca)
+	await _wait_until(func() -> bool: return praca.state == Defense.State.INTERVALO, 3.0)
+	all_ok = _check("intervalo dá munição e coração no centro", _near_count(AmmoPickup, praca.center, 4.0) >= 1
+			and _near_count(HeartPickup, praca.center, 4.0) >= 1, "(\"%s\")" % wave_label.text) and all_ok
+	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
+	await _wait(0.6)
+	var back := player.global_position
+	await _stand(Vector3(120, 0.5, 170))
+	all_ok = _check("longe demais, a onda é cancelada", praca.state == Defense.State.PAUSADA) and all_ok
+	await _wait(1.8)
+	all_ok = _check("os esqueletos da onda afundam e somem", _wave_enemies().is_empty(), "(%d restando)" % _wave_enemies().size()) and all_ok
+	await _stand(back)
+	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
+	all_ok = _check("voltando, a mesma onda recomeça", praca.state == Defense.State.ONDA and praca.wave_index == 1) and all_ok
+	await _clear_wave(praca)
+	await _wait(3.0)
+	all_ok = _check("prólogo vencido acende as quatro lanternas", praca.state == Defense.State.VENCIDA and story.stage == "cidade"
+			and story.lanterns.values().all(func(l: Dictionary) -> bool: return l.lit)) and all_ok
+	await get_tree().physics_frame
+	all_ok = _check("objetivo aponta uma lanterna da cidade", "cidade" in story.objective_text and story.objective_target != Vector3.INF
+			and objective_marker.visible, "(\"%s\")" % story.objective_text) and all_ok
+
+	# Lanterna Oeste: 3 ondas e o Ossão.
+	var oeste: Defense = story.defenses.oeste
+	await _stand(oeste.center + Vector3(0, 0, 8))
+	for k in 2:
+		await _wait_until(func() -> bool: return oeste.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(oeste)
+	await _wait_until(func() -> bool: return oeste.state == Defense.State.ONDA and is_instance_valid(oeste.boss), 6.0)
+	var ossao: Boss = oeste.boss
+	all_ok = _check("última onda traz o Ossão com barra de vida", is_instance_valid(ossao) and boss_bar.visible and ossao.display_name == "Ossão") and all_ok
+	await _wait_until(func() -> bool: return ossao.phase == Boss.Phase.LUTANDO, 5.0)
+	player.force_aim = true
+	var h0 := ossao.health
+	await _aim_for(ossao.hurtboxes[0], 0.0, 0.5)
+	player.fire()
+	await get_tree().physics_frame
+	player.force_aim = false
+	all_ok = _check("tiro de verdade na cabeça do Ossão tira vida", ossao.health < h0, "(%.0f -> %.0f)" % [h0, ossao.health]) and all_ok
+	ossao.set_physics_process(false)
+	player.god_mode = false
+	player.hearts = 5
+	player._invulnerable = 0.0
+	ossao.shockwave(player.global_position + Vector3(4, 0, 0), 9.0, 8.0)
+	await _wait(0.9)
+	all_ok = _check("onda de choque acerta quem está no chão", player.hearts == 4, "(%d corações)" % player.hearts) and all_ok
+	player.hearts = 5
+	player._invulnerable = 0.0
+	await _wait(0.3)
+	player.velocity.y = player.jump_velocity
+	ossao.shockwave(player.global_position + Vector3(3.5, 0, 0), 9.0, 8.0)
+	await _wait(0.9)
+	all_ok = _check("pulando, a onda passa por baixo", player.hearts == 5, "(%d corações)" % player.hearts) and all_ok
+	player.god_mode = true
+	ossao.set_physics_process(true)
+	var before_summon := oeste.remaining
+	ossao.take_hit(ossao.health - ossao.max_health * 0.5 + 0.5, ossao.global_position + Vector3.UP * 6.0, ossao.hurtboxes[0])
+	await get_tree().physics_frame
+	all_ok = _check("na metade da vida o Ossão chama 2 Minions", oeste.remaining == before_summon + 2) and all_ok
+	await _clear_wave(oeste)
+	await _wait_until(func() -> bool: return oeste.state == Defense.State.VENCIDA, 3.0)
+	await get_tree().physics_frame
+	all_ok = _check("Oeste vencida: lanterna apagada, bandeira e recompensa", not story.lanterns.Oeste.lit and current_checkpoint.name == "CidadeOeste"
+			and story.rewards.size() == 1 and story.rewards[0].kind == "granulado") and all_ok
+	await _stand(story.rewards[0].global_position)
+	await _wait(1.0)
+	all_ok = _check("pegar a recompensa dá o Granulado na mão", player.has_weapon("granulado") and player.current_weapon().id == "granulado") and all_ok
+	var ossao_ref: WeakRef = weakref(ossao)
+	await _wait_until(func() -> bool: return ossao_ref.get_ref() == null, 12.0)
+	all_ok = _check("o Ossão vai embora de balão e a barra some", ossao_ref.get_ref() == null and not boss_bar.visible) and all_ok
+
+	# Lanterna Leste: ficar tonto cancela; depois as ondas e a Mira-Torta.
+	var leste: Defense = story.defenses.leste
+	await _stand(leste.center + Vector3(0, 0, 8))
+	await _wait_until(func() -> bool: return leste.state == Defense.State.ONDA, 6.0)
+	await _wait(0.8)
+	player.god_mode = false
+	player.hearts = 1
+	player._invulnerable = 0.0
+	player.take_damage(1, player.global_position + Vector3.FORWARD, "teste")
+	await _wait(0.3)
+	all_ok = _check("ficar tonto cancela a onda", leste.state == Defense.State.PAUSADA) and all_ok
+	await _wait_until(func() -> bool: return not player.dizzy and fade.modulate.a < 0.05, 8.0)
+	player.god_mode = true
+	await _stand(leste.center + Vector3(0, 0, 8))
+	await _wait_until(func() -> bool: return leste.state == Defense.State.ONDA, 6.0)
+	all_ok = _check("de volta ao círculo, a defesa continua", leste.state == Defense.State.ONDA and leste.wave_index == 0) and all_ok
+	for k in 2:
+		await _wait_until(func() -> bool: return leste.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(leste)
+	await _wait_until(func() -> bool: return leste.state == Defense.State.ONDA and is_instance_valid(leste.boss), 6.0)
+	var mira: Boss = leste.boss
+	await _wait_until(func() -> bool: return mira.phase == Boss.Phase.LUTANDO, 5.0)
+	all_ok = _check("última onda traz a Mira-Torta", mira.display_name == "Mira-Torta" and boss_bar.visible) and all_ok
+	mira.set_physics_process(false)
+	player.god_mode = false
+	player.hearts = 5
+	player._invulnerable = 0.0
+	mira._rain()
+	await get_tree().physics_frame
+	var zones := get_children().filter(func(n: Node) -> bool: return n is Boss.DangerZone).size()
+	await _wait(2.0)
+	all_ok = _check("chuva de flechas: círculos no chão e acerta quem fica", zones >= 4 and player.hearts == 4, "(%d círculos, %d corações)" % [zones, player.hearts]) and all_ok
+	player.god_mode = true
+	var arrows_before := _projectiles(Projectile.Kind.FLECHA).size()
+	mira._fire_fan(mira.forward())
+	await get_tree().physics_frame
+	all_ok = _check("leque de 5 flechas", _projectiles(Projectile.Kind.FLECHA).size() - arrows_before == 5) and all_ok
+	mira.set_physics_process(true)
+	await _clear_wave(leste)
+	await _wait_until(func() -> bool: return leste.state == Defense.State.VENCIDA, 3.0)
+	await get_tree().physics_frame
+	all_ok = _check("cidade vencida: barreira da ponte some", story.stage == "mata" and story.bridge_open()) and all_ok
+	await _stand(story.rewards[0].global_position)
+	await _wait(1.0)
+	all_ok = _check("recompensa da Leste é a Pipoqueira", player.has_weapon("pipoqueira")) and all_ok
+	await _stand(Vector3(0, 0.5, 60))
+	await _wait(0.2)
+	all_ok = _check("objetivo manda atravessar a ponte", "ponte" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
+
+	# Ponte livre.
+	await _stand(Vector3(0, 1, -92))
+	await _walk_toward(Vector3(0, 0, -140), 7.0)
+	all_ok = _check("atravessa a ponte agora", player.global_position.z < -128.0, "(z %.1f)" % player.global_position.z) and all_ok
+	await _wait(0.3)
+	all_ok = _check("na mata, objetivo aponta as lanternas da mata", "mata" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
+
+	print("HISTORIA OK" if all_ok else "HISTORIA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da história (precisa de janela). Uso: godot --path . -- --historia-captura
+func _run_story_capture() -> void:
+	player.god_mode = true
+	story.fast = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	var praca: Defense = story.defenses.praca
+	story.start()
+	await _wait(0.8)
+	await _shot("h01_inicio_faixa.png")
+	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
+	await _wait(1.2)
+	if not _wave_enemies().is_empty():
+		player.aim_at(_wave_enemies()[0].global_position + Vector3.UP)
+	await _wait(0.2)
+	await _shot("h02_onda_rachaduras.png")
+	await _clear_wave(praca)
+	await _wait_until(func() -> bool: return praca.state == Defense.State.ONDA, 4.0)
+	await _clear_wave(praca)
+	await _wait(2.6)
+	player.aim_at(Vector3(0, 30, 0))
+	await _wait(0.3)
+	await _shot("h03_lanternas_acesas.png")
+	var oeste: Defense = story.defenses.oeste
+	player.set_yaw(PI * 0.5)
+	await _wait(0.4)
+	await _shot("h04_marcador_objetivo.png")
+	await _stand(oeste.center + Vector3(4, 0, 12))
+	for k in 2:
+		await _wait_until(func() -> bool: return oeste.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(oeste)
+	await _wait_until(func() -> bool: return is_instance_valid(oeste.boss) and oeste.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var ossao := oeste.boss
+	for e in _wave_enemies():
+		e.visible = false
+	await _aim_for(ossao, 5.0, 0.5)
+	await _shot("h05_ossao.png")
+	ossao.shockwave(ossao.global_position + ossao.forward() * 2.0, 16.0, 8.0)
+	await _wait(0.7)
+	await _shot("h06_onda_de_choque.png")
+	await _clear_wave(oeste)
+	await _wait(1.8)
+	await _aim_for(ossao, 8.0, 0.3)
+	await _shot("h07_ossao_balao.png")
+	await _wait(1.0)
+	player.aim_at(story.rewards[0].global_position + Vector3.UP)
+	await _wait(0.2)
+	await _shot("h08_recompensa_e_festa.png")
+	await _stand(story.rewards[0].global_position)
+	await _wait(1.2)
+	await _shot("h09_novo_blaster.png")
+	var leste: Defense = story.defenses.leste
+	await _stand(leste.center + Vector3(0, 0, 12))
+	for k in 2:
+		await _wait_until(func() -> bool: return leste.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(leste)
+	await _wait_until(func() -> bool: return is_instance_valid(leste.boss) and leste.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mira := leste.boss
+	for e in _wave_enemies():
+		e.visible = false
+	mira.set_physics_process(false)
+	mira._rain()
+	await _aim_for(mira, 2.0, 0.6)
+	await _shot("h10_mira_torta_chuva.png")
+	mira.set_physics_process(true)
+	await _clear_wave(leste)
+	await _wait(1.0)
+	await _stand(Vector3(4, 1.5, -86))
+	player.set_yaw(0.0)
+	await _wait(0.5)
+	await _shot("h11_ponte_aberta.png")
+	open_menu("pausa")
+	await _wait(0.3)
+	await _shot("h12_pausa_objetivo.png")
 	get_tree().quit()
 
 

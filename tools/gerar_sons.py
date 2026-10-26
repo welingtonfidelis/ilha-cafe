@@ -244,6 +244,11 @@ def make_sfx():
     ting = lambda f: envelope(mix(0.25, (osc(f, f, 0.25), 0, 1.0), (osc(f * 2.76, f * 2.76, 0.25), 0, 0.3)), 0.002, 0.07)
     sfx("municao", mix(0.45, (ting(1046), 0, 0.7), (ting(1318), 0.06, 0.7), (ting(1568), 0.12, 0.7)), -6)
 
+    # Pancada no chão do guardião: estrondo grave e curto, com chacoalhar de terra.
+    thud = envelope(osc(90, 32, 0.7, "sine"), 0.002, 0.25)
+    rumble = envelope(lowpass(noise(0.8), 500), 0.01, 0.3)
+    sfx("pancada", mix(0.9, (thud, 0, 1.0), (rumble, 0.02, 0.7)), -2)
+
     # Tchibum (caiu na água): chuá de ruído grave, um "blop" descendo e gotinhas.
     splash = envelope(lowpass(noise(0.6), 1800), 0.01, 0.18)
     blop = envelope(osc(500, 140, 0.25, "sine"), 0.003, 0.08)

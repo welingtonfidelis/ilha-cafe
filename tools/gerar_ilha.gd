@@ -32,6 +32,19 @@ const SPIRAL_TURNS := 2.5
 const SPIRAL_R0 := 86.0
 const SPIRAL_R1 := 15.0
 const PATH_HALF := 3.2
+## Regiões de defesa (centro da arena em x, z). Nas quatro de fora da praça a lanterna fica no centro.
+const REGIONS := {
+	"praca": Vector2(0, 170),
+	"oeste": Vector2(-84, 140),
+	"leste": Vector2(84, 140),
+	"clareira": Vector2(24, -166),
+	"ventos": Vector2(-112, -182),
+}
+const REGION_NAMES := {"oeste": "Oeste", "leste": "Leste", "clareira": "Clareira", "ventos": "Ventos"}
+## Raio do círculo da arena e raio sem árvores, pedras e arbustos em volta do centro.
+const ARENA_R := 22.0
+const CLEAR_R := 26.0
+const CASTLE_DOME_R := 11.5
 
 const CITY := "res://assets/env/city/%s.gltf"
 const FOREST := "res://assets/env/forest/%s.gltf"
@@ -178,6 +191,14 @@ func _trail_dist(p: Vector2) -> float:
 			var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
 			best = minf(best, p.distance_to(a + ab * t))
 	return best
+
+
+## Perto do centro de alguma arena de defesa (fica sem árvores, pedras nem arbustos).
+func _near_region(p: Vector2, extra := 0.0) -> bool:
+	for key in REGIONS:
+		if key != "praca" and p.distance_to(REGIONS[key]) < CLEAR_R + extra:
+			return true
+	return false
 
 
 func _in_city(x: float, z: float) -> bool:
@@ -514,6 +535,24 @@ func _morro() -> void:
 	_prop(castle, PLAT % "red/arch_tall_red", Vector3(0, top, 7.0), 0.0, 1.0)
 	_prop(castle, PLAT % "neutral/pillar_1x1x4", Vector3(0, top, 0), 0.0, 1.0, "caixa")
 	_orb(castle, "LanternaCentral", Vector3(0, top + 5.0, 0), 0.9)
+	# Cúpula mágica: some quando as quatro lanternas apagam (o jogo cuida disso).
+	var dome := StaticBody3D.new()
+	dome.name = "CupulaDoCastelinho"
+	dome.position = Vector3(0, top, 0)
+	_add(morro, dome)
+	var dome_mi := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = CASTLE_DOME_R
+	sphere.height = CASTLE_DOME_R * 2.0
+	sphere.material = _magic_material()
+	dome_mi.mesh = sphere
+	dome_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_add(dome, dome_mi)
+	var dome_cs := CollisionShape3D.new()
+	var dome_shape := SphereShape3D.new()
+	dome_shape.radius = CASTLE_DOME_R
+	dome_cs.shape = dome_shape
+	_add(dome, dome_cs)
 	# Placa no começo da subida.
 	var sign_pos := _spiral_point(0.0) + Vector2(4, 4)
 	_prop(morro, PLAT % "neutral/sign", Vector3(sign_pos.x, ground(sign_pos.x, sign_pos.y), sign_pos.y), 0.0, 1.0, "caixa")
@@ -580,8 +619,43 @@ func _bridge_and_pier() -> void:
 	var z_south := _river_z(0) + RIVER_HALF + RIVER_BANK + 2.0
 	var z_north := _river_z(0) - RIVER_HALF - RIVER_BANK - 2.0
 	_walkway(ilha, "Ponte", Vector3(0, ground(0, z_south) + 0.02, z_south), Vector3(0, ground(0, z_north) + 0.02, z_north), 6.0)
+	# Barreira mágica na cabeceira sul: some quando as duas lanternas da cidade apagam (o jogo cuida disso).
+	_magic_wall(ilha, "BarreiraDaPonte", Vector3(0, ground(0, z_south + 1.0) + 2.5, z_south + 1.0), Vector3(9, 5, 0.5))
 	# Cais: sai da praça para o mar, ao sul.
 	_walkway(ilha, "Cais", Vector3(0, ground(0, 206) + 0.02, 206), Vector3(0, 0.25, 252), 7.0)
+
+
+func _magic_material() -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.72, 0.45, 1.0, 0.35)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.emission_enabled = true
+	mat.emission = Color("#b06cff")
+	mat.emission_energy_multiplier = 0.8
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return mat
+
+
+## Parede mágica roxa translúcida, com colisão.
+func _magic_wall(parent: Node, wall_name: String, center: Vector3, size: Vector3) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = wall_name
+	body.position = center
+	_add(parent, body)
+	var mi := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mesh.material = _magic_material()
+	mi.mesh = mesh
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_add(body, mi)
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	cs.shape = box
+	_add(body, cs)
+	return body
 
 
 # --- mata --------------------------------------------------------------------
@@ -596,7 +670,7 @@ func _forest() -> void:
 		var p := Vector2(rng.randf_range(-190, 190), rng.randf_range(-245, RIVER_Z - 15))
 		if _island_d(p.x, p.y) > 0.84 or _trail_dist(p) < 4.5:
 			continue
-		if p.distance_to(CLAREIRA) < 24.0 or p.distance_to(VILA) < 14.0 or p.distance_to(VENTOS) < 10.0:
+		if p.distance_to(CLAREIRA) < 24.0 or p.distance_to(VILA) < 14.0 or p.distance_to(VENTOS) < 10.0 or _near_region(p):
 			continue
 		var ok := true
 		for q in placed:
@@ -611,7 +685,7 @@ func _forest() -> void:
 	for k in 60:
 		var side := -1.0 if k % 2 == 0 else 1.0
 		var p := Vector2(side * rng.randf_range(78, 175), rng.randf_range(20, 205))
-		if _island_d(p.x, p.y) > 0.84:
+		if _island_d(p.x, p.y) > 0.84 or _near_region(p):
 			continue
 		_prop(forest, FOREST % trees[rng.randi() % trees.size()], Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.85, 1.2), "tronco")
 	# Jabuticabeira gigante no meio da clareira.
@@ -626,14 +700,14 @@ func _forest() -> void:
 	# Pedras e arbustos.
 	for k in 70:
 		var p := Vector2(rng.randf_range(-185, 185), rng.randf_range(-240, 200))
-		if _island_d(p.x, p.y) > 0.84 or _in_city(p.x, p.y) or _trail_dist(p) < 4.0 or p.length() < MORRO_R:
+		if _island_d(p.x, p.y) > 0.84 or _in_city(p.x, p.y) or _trail_dist(p) < 4.0 or p.length() < MORRO_R or _near_region(p):
 			continue
 		if absf(p.y - _river_z(p.x)) < RIVER_HALF + RIVER_BANK + 2.0:
 			continue
 		_prop(forest, FOREST % ("Rock_%d_%s_Color1" % [rng.randi_range(1, 3), "ABCDEFG"[rng.randi() % 7]]), Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.7, 1.5), "convexo")
 	for k in 160:
 		var p := Vector2(rng.randf_range(-185, 185), rng.randf_range(-240, 200))
-		if _island_d(p.x, p.y) > 0.85 or _in_city(p.x, p.y) or _trail_dist(p) < 3.0 or ground(p.x, p.y) < SEA_LEVEL + 0.5:
+		if _island_d(p.x, p.y) > 0.85 or _in_city(p.x, p.y) or _trail_dist(p) < 3.0 or ground(p.x, p.y) < SEA_LEVEL + 0.5 or _near_region(p, -6.0):
 			continue
 		if p.length() < MORRO_R and _spiral_dist(p.x, p.y) < PATH_HALF + 1.0:
 			continue
@@ -698,17 +772,18 @@ func _markers() -> void:
 	_marker(cps, "TopoDoMorro", 9, 12)
 	_marker(cps, "EntradaDaMata", 8, -133)
 	_marker(cps, "Clareira", 54, -170)
-	_marker(cps, "MorroDosVentos", -104, -166)
+	_marker(cps, "MorroDosVentos", -88, -160)
+	_marker(cps, "CidadeOeste", -58, 152)
+	_marker(cps, "CidadeLeste", 58, 152)
 
 	var enemies := _group(markers, "Esqueletos")
+	# Grupinhos soltos entre as regiões (a maior parte dos esqueletos vem nas ondas das defesas).
 	var spawns := [
-		["Skeleton_Minion", Vector2(-40, 110)], ["Skeleton_Minion", Vector2(40, 110)], ["Skeleton_Minion", Vector2(-60, 132)],
-		["Skeleton_Minion", Vector2(4, 112)], ["Skeleton_Warrior", Vector2(60, 168)],
+		["Skeleton_Minion", Vector2(-30, 110)], ["Skeleton_Minion", Vector2(30, 110)], ["Skeleton_Rogue", Vector2(2, 112)],
 		["Skeleton_Minion", _spiral_point(0.08)], ["Skeleton_Minion", _spiral_point(0.2)], ["Skeleton_Rogue", _spiral_point(0.36)],
-		["Skeleton_Rogue", _spiral_point(0.56)], ["Skeleton_Warrior", _spiral_point(0.82)], ["Skeleton_Mage", Vector2(0, -3)],
-		["Skeleton_Minion", Vector2(10, -142)], ["Skeleton_Minion", Vector2(-32, -164)], ["Skeleton_Mage", Vector2(30, -168)],
-		["Skeleton_Mage", Vector2(58, -192)], ["Skeleton_Rogue", Vector2(-96, -176)], ["Skeleton_Warrior", Vector2(104, -152)],
-		["Skeleton_Minion", Vector2(78, -150)],
+		["Skeleton_Rogue", _spiral_point(0.56)], ["Skeleton_Warrior", _spiral_point(0.82)],
+		["Skeleton_Minion", Vector2(10, -142)], ["Skeleton_Minion", Vector2(-32, -164)], ["Skeleton_Rogue", Vector2(-62, -196)],
+		["Skeleton_Mage", Vector2(70, -205)], ["Skeleton_Warrior", Vector2(104, -152)], ["Skeleton_Minion", Vector2(78, -150)],
 	]
 	var counts := {}
 	for spawn in spawns:
@@ -717,12 +792,25 @@ func _markers() -> void:
 		var p: Vector2 = spawn[1]
 		_marker(enemies, "%s_%02d" % [kind.trim_prefix("Skeleton_"), counts[kind]], p.x, p.y, {"tipo": kind})
 
+	# Regiões de defesa: centro da arena e 4 rachaduras em volta, de onde saem as ondas.
+	var regions := _group(markers, "Regioes")
+	for key in REGIONS:
+		var c: Vector2 = REGIONS[key]
+		var r := _marker(regions, key, c.x, c.y, {"raio": ARENA_R})
+		for k in 4:
+			var a := PI / 4.0 + k * PI / 2.0
+			var cp := c + Vector2(cos(a), sin(a)) * (12.0 if key == "praca" else 15.0)
+			var crack := Marker3D.new()
+			crack.name = "Rachadura%d" % (k + 1)
+			crack.position = Vector3(cp.x, ground(cp.x, cp.y) + 0.05, cp.y) - r.position
+			_add(r, crack)
+
 	# Caixas de munição: voltam um tempo depois de pegas (o jogo cuida disso).
 	var crates := _group(markers, "Municao")
 	var crate_spots := [
 		["Praca", Vector2(-9, 164)], ["CidadeOeste", Vector2(-50, 150)], ["CidadeLeste", Vector2(50, 150)],
 		["PeDoMorro", Vector2(-8, 96)], ["TrilhaDoMorro", _spiral_point(0.45) + Vector2(2, 2)],
-		["Castelinho", Vector2(-3, 3)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
+		["Castelinho", Vector2(-13, 4)], ["EntradaDaMata", Vector2(-6, -134)], ["Clareira", Vector2(50, -178)],
 		["VilaDasCopas", Vector2(108, -150)], ["MorroDosVentos", Vector2(-100, -172)],
 	]
 	for spot in crate_spots:
@@ -732,7 +820,7 @@ func _markers() -> void:
 	var lanterns := _group(markers, "Lanternas")
 	var visuals := _group(ilha, "LanternasVisuais")
 	var source := Vector3(0, MORRO_H + 5.0, 0)
-	for spec in [["Oeste", Vector2(-82, 140)], ["Leste", Vector2(82, 140)], ["Ventos", VENTOS], ["Clareira", CLAREIRA + Vector2(-14, 8)]]:
+	for spec in [["Oeste", REGIONS.oeste], ["Leste", REGIONS.leste], ["Ventos", REGIONS.ventos], ["Clareira", REGIONS.clareira]]:
 		var m := _marker(lanterns, "Lanterna" + spec[0], spec[1].x, spec[1].y)
 		var base := m.position
 		_prop(visuals, PLAT % "neutral/pillar_1x1x4", base, 0.0, 1.0, "caixa")

@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: ilha jogável com 4 blasters e granada (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1): cidade, Morro com castelinho, rio com ponte, mata, cais e 18 esqueletos que dormem até o aventureiro chegar perto. Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
+**Estado atual: história em ondas até a ponte (2026-10-25).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, sem remoto). O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça e as duas defesas da cidade (Ossão e Mira-Torta), ganhar o Granulado e a Pipoqueira e atravessar a ponte. As defesas da mata funcionam sem guardião ainda (Torre de Ossinhos e Minionzão são a próxima etapa), e o castelinho mostra uma mensagem de "próxima versão" no lugar do Mestre Ossinho; o modo "Defender a festa" também não foi feito. Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com armas que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1.
 
 ## Índice
 
@@ -86,11 +86,14 @@ A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e 
 | Clareira da Jabuticabeira | (40, −180) | árvore gigante no meio |
 | Vila das Copas | (115, −160) | 3 plataformas de madeira sobre postes (chegar lá em cima fica para o pulo duplo) |
 | Morro dos Ventos | (−115, −185), 14 m | morrinho a noroeste |
-| Lanternas | 2 na cidade (leste e oeste), 1 no Morro dos Ventos, 1 na clareira | poste com esfera roxa e raio até o castelinho; por enquanto só visual |
+| Lanternas | no centro das regiões Oeste, Leste, Ventos e Clareira | poste com esfera roxa e raio até o castelinho; acendem no fim do prólogo e apagam quando a região é vencida |
+| Regiões de defesa | praça (0, 170), Oeste (−84, 140), Leste (84, 140), Clareira (24, −166), Ventos (−112, −182) | círculo de 22 m e 4 rachaduras; sem árvores, pedras nem arbustos num raio de 26 m |
+| Barreira da ponte | cabeceira sul da ponte | parede roxa translúcida com colisão; some quando as duas lanternas da cidade apagam |
+| Cúpula do castelinho | topo do Morro, raio 11,5 m | some quando as quatro lanternas apagam |
 
-**Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (6 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos; a primeira começa ativa) e `Esqueletos` (18, cada um com o tipo na metadata `tipo`). Mover um marcador no editor muda o jogo, sem mexer em código.
+**Marcadores editáveis** (`Marcadores` dentro da ilha): `Inicio` (onde o aventureiro começa e para onde olha), `PontosDeRetorno` (8 bandeiras: Praca, PeDoMorro, TopoDoMorro, EntradaDaMata, Clareira, MorroDosVentos, CidadeOeste, CidadeLeste; a primeira começa ativa), `Esqueletos` (14 soltos entre as regiões, cada um com o tipo na metadata `tipo`), `Municao` (10 caixas) e `Regioes` (centro de cada defesa, com o raio na metadata `raio` e as 4 rachaduras como filhos). Mover um marcador no editor muda o jogo, sem mexer em código.
 
-**Esqueletos na ilha:** começam dormindo como pilha de ossos e se montam quando o aventureiro chega a 16 m (golpe de perto) ou 22 m (quem atira). Se o aventureiro se afasta mais de 45 m da casa deles, voltam para casa e deitam de novo. Derrotados, vão embora de balão. (Provisório: com as ondas, a maioria vira esqueleto de defesa, saindo das rachaduras.)
+**Esqueletos na ilha:** começam dormindo como pilha de ossos e se montam quando o aventureiro chega a 16 m (golpe de perto) ou 22 m (quem atira). Se o aventureiro se afasta mais de 45 m da casa deles, voltam para casa e deitam de novo. Derrotados, vão embora de balão e não voltam. Os das ondas saem das rachaduras (animação de sair do chão, 1,6x mais rápida) e perseguem o aventureiro por toda a região; se a onda é cancelada, afundam de volta.
 
 **Regerar a ilha** (`godot --headless --path . -s res://tools/gerar_ilha.gd`) sobrescreve `scenes/ilha.tscn` e o terreno em `assets/terrain/`. Depois de mexer na ilha pelo editor, faça commit antes de regerar. `tools/foto_ilha.gd` tira fotos da ilha de cima e de alguns pontos, para conferir sem abrir o editor.
 
@@ -310,6 +313,8 @@ godot -e --path .
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
+- `godot --headless --path . -- --historia` joga a história com ondas curtas e confere 28 pontos: só a Paçoca no começo; prólogo (rachaduras, intervalo com munição e coração, onda cancelada ao se afastar e recomeçada ao voltar, lanternas acesas); Lanterna Oeste (Ossão com barra, tiro na cabeça, onda de choque que acerta no chão e passa por baixo de quem pula, Minions na metade da vida, lanterna apagada, recompensa Granulado, Ossão indo de balão); Lanterna Leste (ficar tonto cancela a onda, Mira-Torta com chuva de flechas e leque de 5, barreira da ponte some, Pipoqueira); atravessar a ponte. Termina com "HISTORIA OK". Leva uns 3 minutos.
+- `godot --path . -- --historia-captura` tira 12 fotos da história (`h01` a `h12`).
 - `godot --path . -- --ilha-captura` tira 8 fotos jogando na ilha (praça, esqueleto dormindo e acordando, trilha do Morro, castelinho, ponte, clareira, tchibum).
 - `godot --headless --path . -- --armas` confere 17 pontos dos blasters: pente, recarga automática e com R, não atirar recarregando, troca com modelo novo na mão, estoque, sem munição, caixa (e caixa que fica no chão), escopeta, luneta, granada e caixa que cai com munição no fim; termina com "ARMAS OK". O teste de controle também confere X (recarregar), Y (trocar de blaster) e RB (granada), e o da ilha confere as 10 caixas.
 - Os testes `--smoke`, `--controle`, `--combate`, `--som`, `--armas` e `--capture` rodam na **arena plana** (o mapa antigo, previsível), com esqueletos já acordados; o jogo normal e os modos `--ilha` abrem a ilha.
@@ -352,6 +357,12 @@ godot -e --path .
 | `anim_util.gd` | carrega as bibliotecas de animação do KayKit e marca as que repetem |
 | `fx.gd` | confete, poeira, rastro do tiro, clarão, onda da granada e texto flutuante |
 | `weapon_hud.gd` | painel de armas inclinado (arma atual, próxima arma, granadas, recarga) |
+| `story.gd` | a história: regiões e ondas (`REGIONS`), lanternas, barreira da ponte, cúpula, recompensas, região em festa, objetivo atual |
+| `defense.gd` | uma defesa em ondas: círculo, rachaduras, ondas, intervalo, cancelar e recomeçar, guardião na última onda |
+| `boss.gd` | base dos guardiões: chegada pela rachadura, vida, aviso, onda de choque, círculos de perigo, saída de balão gigante |
+| `boss_ossao.gd`, `boss_mira_torta.gd` | os guardiões da cidade |
+| `reward_pickup.gd` | recompensa de região (blaster novo ou +1 coração) |
+| `boss_bar.gd`, `objective_marker.gd` | barra de vida do guardião e losango do objetivo |
 | `weapons.gd` | os 4 blasters e a granada (pente, estoque, recarga, dano, espalhamento, luneta, modelo e encaixe) e o que a caixa de munição devolve |
 | `grenade.gd` | granada Brigadeiro: arco, quique, explosão em área |
 | `ammo_pickup.gd` | caixa de munição (fixa com retorno ou caída de esqueleto) |
@@ -380,7 +391,7 @@ godot -e --path .
 
 Se quiser sons gravados em vez de sintetizados, os pacotes de áudio grátis (CC0) do Kenney servem; é só trocar os WAV mantendo os nomes.
 
-**Ainda não tem:** história (missões, lanternas funcionando, chefes, ponte que baixa), pulo duplo e gancho, ganhar os blasters aos poucos, ajuste de volume pelo jogador, exportação para `.exe` e otimização para computador fraco (a ilha tem centenas de árvores e milhares de tufos de grama; no Mac M4 roda leve, mas não foi medido em outra máquina). O aventureiro, os esqueletos e a interface ainda são montados por código; só a ilha é cena editável. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate, o som e os blasters ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
+**Ainda não tem:** guardiões da mata (Torre de Ossinhos e Minionzão), defesa final e Mestre Ossinho, epílogo, modo "Defender a festa", ajuste de volume pelo jogador, exportação para `.exe` e otimização para computador fraco (a ilha tem centenas de árvores e milhares de tufos de grama; no Mac M4 roda leve, mas não foi medido em outra máquina). O aventureiro, os esqueletos e a interface ainda são montados por código; só a ilha é cena editável. O controle foi testado com controle físico no Mac (vibração aprovada); o ciclo de combate, o som e os blasters ainda só foram testados pelos testes automáticos e capturas (o som não foi ouvido por ninguém ainda).
 
 ## 10. Decisões em aberto
 
