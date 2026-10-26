@@ -78,7 +78,7 @@ func _physics_process(delta: float) -> void:
 	var d := Vector2(p.global_position.x - center.x, p.global_position.z - center.z).length()
 	match state:
 		State.ESPERANDO, State.PAUSADA:
-			if d < radius and not p.dizzy:
+			if d < radius and not p.dizzy and not p.in_vehicle:
 				state = State.CHEGANDO
 				_timer = INTRO * (0.2 if fast else 1.0)
 				Sfx.play(game, "alerta", 2.0, 0.0)
@@ -226,17 +226,18 @@ func _build_visuals() -> void:
 	torus.outer_radius = radius
 	torus.rings = 96
 	torus.ring_segments = 4
-	torus.material = _glow(Color(purple, 0.7))
+	torus.material = glow(Color(purple, 0.7))
 	ring.mesh = torus
 	ring.scale = Vector3(1, 0.25, 1)
 	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_visuals.add_child(ring)
 	ring.global_position = center + Vector3.UP * 0.1
 	for c in cracks:
-		_visuals.add_child(_crack(c))
+		_visuals.add_child(crack(c))
 
 
-func _crack(pos: Vector3) -> Node3D:
+## Rachadura roxa no chão (de onde os esqueletos saem). Também usada na Festa sem fim.
+static func crack(pos: Vector3) -> Node3D:
 	var root := Node3D.new()
 	root.position = pos
 	var disc := MeshInstance3D.new()
@@ -245,7 +246,7 @@ func _crack(pos: Vector3) -> Node3D:
 	cyl.bottom_radius = 1.3
 	cyl.height = 0.06
 	cyl.radial_segments = 10
-	cyl.material = _glow(Color(0.42, 0.18, 0.7, 0.9))
+	cyl.material = glow(Color(0.42, 0.18, 0.7, 0.9))
 	disc.mesh = cyl
 	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(disc)
@@ -254,7 +255,7 @@ func _crack(pos: Vector3) -> Node3D:
 		var slit := MeshInstance3D.new()
 		var box := BoxMesh.new()
 		box.size = Vector3(2.2 - k * 0.4, 0.07, 0.16)
-		box.material = _glow(Color("#e2c4ff"))
+		box.material = glow(Color("#e2c4ff"))
 		slit.mesh = box
 		slit.rotation.y = k * 1.05
 		slit.position.y = 0.02
@@ -272,13 +273,13 @@ func _crack(pos: Vector3) -> Node3D:
 	var dot := SphereMesh.new()
 	dot.radius = 0.05
 	dot.height = 0.1
-	dot.material = _glow(Color("#d9a8ff"))
+	dot.material = glow(Color("#d9a8ff"))
 	sparks.mesh = dot
 	root.add_child(sparks)
 	return root
 
 
-func _glow(color: Color) -> StandardMaterial3D:
+static func glow(color: Color) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

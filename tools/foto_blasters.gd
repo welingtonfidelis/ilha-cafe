@@ -17,8 +17,9 @@ func _init() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-30, -60, 0)
 	world.add_child(sun)
-	for i in Weapons.count():
-		var def := Weapons.get_def(i)
+	var defs := Weapons.all()
+	for i in defs.size():
+		var def: Dictionary = defs[i]
 		var holder := Node3D.new()
 		holder.position = Vector3(0, -i * 0.75 + 1.1, 0)
 		world.add_child(holder)
@@ -62,8 +63,8 @@ func _init() -> void:
 	# Câmera olhando de lado (de +X para -X): +Z aparece à esquerda.
 	var cam := Camera3D.new()
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	cam.size = 3.4
-	cam.position = Vector3(5, 0, 0.1)
+	cam.size = defs.size() * 0.78
+	cam.position = Vector3(5, 1.1 - (defs.size() - 1) * 0.375, 0.1)
 	cam.rotation_degrees.y = 90
 	world.add_child(cam)
 	cam.current = true

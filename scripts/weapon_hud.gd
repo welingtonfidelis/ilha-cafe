@@ -50,7 +50,7 @@ func _ready() -> void:
 	_font = FontVariation.new()
 	_font.base_font = ThemeDB.fallback_font
 	_font.variation_embolden = 0.6
-	for def in Weapons.DEFS:
+	for def in Weapons.all():
 		_icons[def.id] = load(ICONS % def.id)
 	_icons["granada"] = load(ICONS % "granada")
 
@@ -62,7 +62,7 @@ func refresh(p: Player) -> void:
 	var others := []
 	var first_read := _known.is_empty()
 	for k in Weapons.count():
-		var id: String = Weapons.get_def(k).id
+		var id: String = p.equipped[k]
 		var has := p.has_weapon(id)
 		if has and not first_read and not _known.get(id, false):
 			_flash[id] = 1.0
@@ -72,6 +72,7 @@ func refresh(p: Player) -> void:
 	var s := {
 		"i": i, "mag": p.mag(), "reserve": p.reserve(), "others": others,
 		"grenades": p.grenades, "reload": snappedf(p.reload_progress(), 0.01), "pad": p.using_gamepad,
+		"ids": p.equipped.duplicate(),
 	}
 	if i != _last_weapon:
 		if _last_weapon != -1:
@@ -219,7 +220,7 @@ func _draw() -> void:
 
 
 func _draw_main() -> void:
-	var def := Weapons.get_def(_state.i)
+	var def := Weapons.find(_state.ids[_state.i])
 	var x := -400.0
 	var y := -104.0
 	var h := 104.0
@@ -262,7 +263,7 @@ func _draw_others() -> void:
 
 
 func _card(x: float, y: float, index: int, mag: int, reserve: int) -> void:
-	var def := Weapons.get_def(index)
+	var def := Weapons.find(_state.ids[index])
 	var alpha := 0.85
 	var empty := mag == 0 and reserve == 0
 	_panel(x, y, CARD_W, CARD_H, alpha)

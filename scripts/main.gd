@@ -52,12 +52,12 @@ var _splashing := false
 ## Comandos mostrados no menu de pausa (não ficam mais na tela durante o jogo).
 const CONTROLS_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
-	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"],
+	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"], ["Kart e skate", "E (entrar e sair)"],
 	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
-	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"],
+	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart e skate", "B (entrar e sair)"],
 	["Blasters", "↑ Paçoca · → Granulado · ↓ Pipoqueira · ← Pé-de-Moleque (Y passa para o próximo)"],
 	["Pausa", "Start"], ["Regiões de impacto", "Back"],
 ]
@@ -101,9 +101,20 @@ var environment: Environment
 var sky_material: ProceduralSkyMaterial
 var sun_light: DirectionalLight3D
 var ending: Ending
-## Brincadeira "Defender a festa" (só no pós-jogo).
-var party_mode: PartyDefense
+## "Festa sem fim" no cemitério (só no pós-jogo).
+var party_mode: EndlessParty
+## Lojinha de Blasters (barraca na praia), o menu dela, a seta dourada e o contador de moedas.
+var shop: Shop
+var shop_menu: ShopMenu
+var shop_marker: ObjectiveMarker
+var coins_bar: CoinsBar
+## Atividades extras: corrida de kart e pista de skate.
+var kart_race: KartRace
+var skate_park: SkatePark
 var message_label: Label
+## Aviso fixo embaixo, quando dá para fazer algo com o B (ou E): correr de kart, andar de skate.
+var hint_label: Label
+var _shop_back_time := -1.0
 var _message_tween: Tween
 ## Chance de um esqueleto desmontado deixar cair uma caixa de munição (sempre cai se a munição estiver no fim).
 const AMMO_DROP_CHANCE := 0.5
@@ -116,6 +127,46 @@ var damage_flash: ColorRect
 var fade: ColorRect
 var dizzy_label: Label
 var heart_drop_chance := HEART_DROP_CHANCE
+
+
+## Moedas embaixo dos corações (aparece depois da primeira moeda); dá um pulinho quando muda.
+class CoinsBar:
+	extends Control
+	var coins := 0
+	var _pulse := 0.0
+	var _font: FontVariation
+
+	func _ready() -> void:
+		mouse_filter = MOUSE_FILTER_IGNORE
+		visible = false
+		_font = FontVariation.new()
+		_font.base_font = ThemeDB.fallback_font
+		_font.variation_embolden = 0.7
+
+	func set_coins(n: int, show: bool) -> void:
+		if n != coins:
+			_pulse = 1.0
+		coins = n
+		visible = show
+		queue_redraw()
+
+	func _process(delta: float) -> void:
+		position = Vector2(get_viewport_rect().size.x - 170.0, 60.0)
+		if _pulse > 0.0:
+			_pulse = move_toward(_pulse, 0.0, delta * 3.0)
+			queue_redraw()
+
+	func _draw() -> void:
+		var r := 15.0 * (1.0 + 0.25 * _pulse)
+		var c := Vector2(140.0, 18.0)
+		draw_circle(c, r, Color("#ffd23f"))
+		draw_arc(c, r, 0.0, TAU, 32, Color("#c98a10"), 3.0, true)
+		draw_arc(c, r * 0.55, 0.0, TAU, 24, Color("#c98a10"), 2.0, true)
+		var text := str(coins)
+		var w := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
+		var p := Vector2(c.x - r - 8.0 - w, 28.0)
+		draw_string_outline(_font, p, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, 8, Color(0, 0, 0, 0.75))
+		draw_string(_font, p, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color("#ffe9a8"))
 
 
 ## Corações de vida no canto de cima à direita; o que acabou de ser perdido dá um pulinho.
@@ -300,6 +351,36 @@ func _ready() -> void:
 		ending.name = "Desfecho"
 		add_child(ending)
 		ending.setup(self)
+		shop = Shop.new()
+		shop.name = "Lojinha"
+		shop.game = self
+		add_child(shop)
+		var sea := SeaTraffic.new()
+		sea.name = "Barcos"
+		sea.game = self
+		add_child(sea)
+		var fun := island.get_node("Marcadores/Diversao")
+		kart_race = KartRace.new()
+		kart_race.name = "CorridaDeKart"
+		kart_race.game = self
+		kart_race.story = story
+		kart_race.paddock = (fun.get_node("Kart") as Node3D).global_position
+		kart_race.start = (fun.get_node("KartLargada") as Node3D).global_transform
+		for v in fun.get_node("Vagas").get_children():
+			kart_race.spots.append((v as Node3D).global_transform)
+		add_child(kart_race)
+		skate_park = SkatePark.new()
+		skate_park.name = "PistaDeSkate"
+		skate_park.game = self
+		skate_park.story = story
+		skate_park.entrance = (fun.get_node("Skate") as Node3D).global_position
+		skate_park.center = skate_park.entrance + Vector3(0, 0, -23.0)
+		skate_park.session_spot = _ground_point(skate_park.center + Vector3(3.0, 0, 13.0))
+		add_child(skate_park)
+		story.coins_changed.connect(func(n: int) -> void:
+			coins_bar.set_coins(n, story.coins_ever)
+			if menu_state == "loja":
+				shop_menu.refresh())
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -368,6 +449,21 @@ func _ready() -> void:
 	elif "--pirulito-captura" in args:
 		select_panel.hide()
 		_run_lollipop_capture()
+	elif "--loja-captura" in args:
+		select_panel.hide()
+		_run_shop_capture()
+	elif "--atividades" in args:
+		select_panel.hide()
+		_run_activities_test()
+	elif "--veiculos-captura" in args:
+		select_panel.hide()
+		_run_vehicles_capture()
+	elif "--atividades-captura" in args:
+		select_panel.hide()
+		_run_activities_capture()
+	elif "--mapa-captura" in args:
+		select_panel.hide()
+		_run_map_capture()
 	elif "--banda-captura" in args:
 		select_panel.hide()
 		_run_band_capture()
@@ -377,9 +473,12 @@ func _ready() -> void:
 	elif "--final-captura" in args:
 		select_panel.hide()
 		_run_ending_capture()
-	elif "--festa-modo" in args:
+	elif "--loja" in args:
 		select_panel.hide()
-		_run_party_mode_test()
+		_run_shop_test()
+	elif "--festa-sem-fim" in args:
+		select_panel.hide()
+		_run_endless_test()
 	elif "--salvar" in args:
 		select_panel.hide()
 		_run_save_test()
@@ -474,6 +573,8 @@ func _setup_input() -> void:
 	_bind_button("recarregar", JOY_BUTTON_X)
 	_bind_key("granada", [KEY_G])
 	_bind_button("granada", JOY_BUTTON_RIGHT_SHOULDER)
+	_bind_key("interagir", [KEY_E])
+	_bind_button("interagir", JOY_BUTTON_B)
 	_bind_key("corpo_a_corpo", [KEY_F])
 	_bind_mouse("corpo_a_corpo", MOUSE_BUTTON_MIDDLE)
 	_bind_button("corpo_a_corpo", JOY_BUTTON_RIGHT_STICK)
@@ -564,6 +665,15 @@ func _menu_input(event: InputEvent) -> void:
 			open_menu("pausa")
 		"confirmar":
 			open_menu(_confirm_return)
+		"loja":
+			# Voltar da prévia leva aos cartões; só fora da prévia fecha a loja. Um segundo aperto colado no
+			# primeiro (controle que manda o botão duas vezes) não fecha.
+			var now := Time.get_ticks_msec() / 1000.0
+			if shop_menu.in_preview():
+				shop_menu.back()
+				_shop_back_time = now
+			elif now - _shop_back_time > 0.35:
+				close_menus()
 		"escolha":
 			# Na abertura do jogo voltar leva ao menu inicial; vindo da pausa, à pausa.
 			if _game_started:
@@ -586,6 +696,7 @@ func open_menu(state: String) -> void:
 	menu_state = state
 	start_panel.visible = state == "inicio"
 	confirm_panel.visible = state == "confirmar"
+	shop_menu.visible = state == "loja"
 	select_panel.visible = state == "escolha"
 	pause_panel.visible = state == "pausa"
 	controls_panel.visible = state == "comandos"
@@ -603,6 +714,9 @@ func open_menu(state: String) -> void:
 			(_start_buttons[0] if has_save else _start_buttons[1]).grab_focus.call_deferred()
 		"confirmar":
 			_confirm_buttons[1].grab_focus.call_deferred()
+		"loja":
+			story.shop_visited = true
+			shop_menu.open()
 		"escolha":
 			var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
 			_buttons[i].grab_focus.call_deferred()
@@ -618,6 +732,7 @@ func close_menus() -> void:
 	menu_state = ""
 	start_panel.hide()
 	confirm_panel.hide()
+	shop_menu.hide()
 	select_panel.hide()
 	pause_panel.hide()
 	controls_panel.hide()
@@ -634,6 +749,11 @@ func close_menus() -> void:
 
 
 # --- campanha: continuar e começar de novo ------------------------------------
+
+func open_shop() -> void:
+	if story and menu_state == "":
+		open_menu("loja")
+
 
 func _continue_campaign() -> void:
 	var data := SaveGame.read()
@@ -688,10 +808,36 @@ func capture_view() -> Image:
 	return image
 
 
+## Entrou num veículo (o kart): o aventureiro some, para de colidir e de ler o controle; a câmera é a do veículo.
+func enter_vehicle() -> void:
+	player.in_vehicle = true
+	player.input_enabled = false
+	player.visible = false
+	player.set_physics_process(false)
+	player.collision_layer = 0
+	player.velocity = Vector3.ZERO
+	crosshair.visible = false
+	ammo_hud.visible = false
+
+
+func exit_vehicle(at: Vector3) -> void:
+	player.in_vehicle = false
+	player.global_position = at
+	player.velocity = Vector3.ZERO
+	player.visible = true
+	player.set_physics_process(true)
+	player.collision_layer = 1 << 1
+	player.camera.make_current()
+	player.input_enabled = true
+	crosshair.visible = true
+	ammo_hud.visible = true
+
+
 ## Esconde a mira, os corações, os blasters e a seta do objetivo (cena final e créditos).
 func set_hud_visible(on: bool) -> void:
-	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, wave_label]:
+	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, shop_marker, wave_label]:
 		(node as CanvasItem).visible = on
+	coins_bar.visible = on and story != null and story.coins_ever
 
 
 func _toggle_regions() -> void:
@@ -749,6 +895,8 @@ func _physics_process(_delta: float) -> void:
 
 func _splash() -> void:
 	_splashing = true
+	if skate_park:
+		skate_park.splash()
 	Fx.bubble_pop(self, player.global_position + Vector3.UP * 0.8)
 	Fx.confetti(self, player.global_position + Vector3.UP * 0.8, 20, 4.0)
 	Sfx.play(self, "splash", 0.0, 0.0)
@@ -891,6 +1039,12 @@ func _build_ui() -> void:
 	objective_marker = ObjectiveMarker.new()
 	layer.add_child(objective_marker)
 	objective_marker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shop_marker = ObjectiveMarker.new()
+	shop_marker.coin = true
+	layer.add_child(shop_marker)
+	shop_marker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	coins_bar = CoinsBar.new()
+	layer.add_child(coins_bar)
 	boss_bar = BossBar.new()
 	layer.add_child(boss_bar)
 	wave_label = _hud_label(layer, 26, Color.WHITE)
@@ -911,6 +1065,20 @@ func _build_ui() -> void:
 	message_label.offset_bottom = -150
 	message_label.offset_left = -400
 	message_label.offset_right = 400
+	hint_label = Label.new()
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_label.add_theme_font_size_override("font_size", 30)
+	hint_label.add_theme_constant_override("outline_size", 10)
+	hint_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	hint_label.add_theme_color_override("font_color", Color("#ffd23f"))
+	hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_label.visible = false
+	layer.add_child(hint_label)
+	hint_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	hint_label.offset_top = -250
+	hint_label.offset_bottom = -205
+	hint_label.offset_left = -500
+	hint_label.offset_right = 500
 
 	menu_dim = _overlay(layer, Color(0.03, 0.04, 0.08))
 	menu_dim.modulate.a = 0.45
@@ -1016,7 +1184,12 @@ func _build_ui() -> void:
 		Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 		open_menu("pausa"))
 	cbox.add_child(_controls_back)
-	for panel_root in [start_panel, confirm_panel, select_panel, pause_panel, controls_panel]:
+	shop_menu = ShopMenu.new()
+	shop_menu.game = self
+	shop_menu.focus_style = focus_style
+	layer.add_child(shop_menu)
+	shop_menu.build()
+	for panel_root in [start_panel, confirm_panel, select_panel, pause_panel, controls_panel, shop_menu]:
 		panel_root.hide()
 
 
@@ -1060,13 +1233,10 @@ func _next_banner() -> void:
 
 ## Apertou um blaster que ainda não tem: diz onde se ganha.
 func _on_weapon_locked(id: String) -> void:
-	var def := Weapons.get_def(Weapons.index_of(id))
-	var where := ""
-	if story:
-		for key in Story.REGIONS:
-			if Story.REGIONS[key].recompensa == id:
-				where = Story.REGIONS[key].titulo
-	var text := "%s: você ganha ao apagar a %s" % [def.nome, where] if where != "" else "%s: ainda não é seu" % def.nome
+	var def := Weapons.find(id)
+	var price := Weapons.price(id)
+	var text := "%s: compre na Lojinha de Blasters, na beira da praia (%d moedas)" % [def.nome, price] if story and price > 0 \
+			else "%s: ainda não é seu" % def.nome
 	show_message(text, Color(1, 1, 1, 0.9), 1.8)
 	Sfx.play(self, "sem_municao", 0.0, 0.0)
 
@@ -1264,14 +1434,33 @@ func _process(_delta: float) -> void:
 		ammo_hud.refresh(player)
 	if story and is_instance_valid(player):
 		var d := story.running_defense()
-		wave_label.text = d.hud_text() if d else (party_mode.hud_text() if is_instance_valid(party_mode) and party_mode.running() else "")
+		var hud := ""
+		if d:
+			hud = d.hud_text()
+		elif is_instance_valid(party_mode) and party_mode.running():
+			hud = party_mode.hud_text()
+		elif kart_race and kart_race.driving():
+			hud = kart_race.hud_text()
+		elif skate_park and skate_park.riding():
+			hud = skate_park.hud_text()
+		wave_label.text = hud
+		var button := "B" if player.using_gamepad else "E"
+		var hint := ""
+		if menu_state == "" and kart_race and kart_race.state == "a_pe" and kart_race.nearest:
+			hint = "Aperte %s para dirigir: %s" % [button, kart_race.nearest.display_name]
+		elif menu_state == "" and skate_park and skate_park.state == "a_pe" and skate_park.near:
+			hint = "Aperte %s para pegar o skate" % button
+		hint_label.text = hint
+		hint_label.visible = hint != ""
 		var view := get_viewport().get_visible_rect().size
 		var top := 96.0 if boss_bar.visible else 24.0
 		wave_label.position = Vector2(view.x * 0.5 - wave_label.size.x * 0.5, top)
 		banner_title.position = Vector2(view.x * 0.5 - banner_title.size.x * 0.5, view.y * 0.2)
 		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
 		var show_target := menu_state == "" and not (ending and ending.busy())
-		objective_marker.update_marker(player.camera, story.objective_target if show_target else Vector3.INF, player.global_position)
+		var view_cam := get_viewport().get_camera_3d()
+		objective_marker.update_marker(view_cam, story.objective_target if show_target else Vector3.INF, player.global_position)
+		shop_marker.update_marker(view_cam, story.shop_target() if show_target else Vector3.INF, player.global_position)
 
 
 func _choose_character(key: String) -> void:
@@ -2310,8 +2499,8 @@ func _run_story_test() -> void:
 			and player.next_weapon_index(1) == player.weapon_index) and all_ok
 	player.using_gamepad = true
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
-	all_ok = _check("seta de blaster ainda não ganho avisa onde ganhar", player.current_weapon().id == "pacoca"
-			and message_label.modulate.a > 0.5 and "Lanterna Oeste" in message_label.text, "(\"%s\")" % message_label.text) and all_ok
+	all_ok = _check("seta de blaster ainda não comprado avisa onde comprar", player.current_weapon().id == "pacoca"
+			and message_label.modulate.a > 0.5 and "Lojinha" in message_label.text, "(\"%s\")" % message_label.text) and all_ok
 	all_ok = _check("antes do prólogo: lanternas apagadas, ponte aberta e cúpula fechada",
 			story.lanterns.values().all(func(l: Dictionary) -> bool: return not l.lit) and story.bridge_open() and not story.dome_open()) and all_ok
 
@@ -2395,13 +2584,13 @@ func _run_story_test() -> void:
 	await _clear_wave(oeste)
 	await _wait_until(func() -> bool: return oeste.state == Defense.State.VENCIDA, 3.0)
 	await get_tree().physics_frame
-	all_ok = _check("Oeste vencida: lanterna apagada, bandeira e recompensa", not story.lanterns.Oeste.lit and current_checkpoint.name == "CidadeOeste"
-			and story.rewards.size() == 1 and story.rewards[0].kind == "granulado") and all_ok
+	all_ok = _check("Oeste vencida: lanterna apagada, bandeira e 50 moedas (sem blaster de presente)", not story.lanterns.Oeste.lit
+			and current_checkpoint.name == "CidadeOeste" and story.rewards.is_empty() and story.coins == 50 and story.shop_target() != Vector3.INF,
+			"(%d moedas)" % story.coins) and all_ok
 	all_ok = _check("convidados chegam para festejar na Oeste", _townsfolk_near(oeste.center, 12.0).size() >= 3,
 			"(%d)" % _townsfolk_near(oeste.center, 12.0).size()) and all_ok
-	await _stand(story.rewards[0].global_position)
-	await _wait(1.0)
-	all_ok = _check("pegar a recompensa dá o Granulado na mão", player.has_weapon("granulado") and player.current_weapon().id == "granulado") and all_ok
+	all_ok = _check("comprar o Granulado na lojinha (40) põe ele na mão", shop_menu.buy("granulado") == "comprou" and player.has_weapon("granulado")
+			and player.current_weapon().id == "granulado" and story.coins == 10) and all_ok
 	var ossao_ref: WeakRef = weakref(ossao)
 	await _wait_until(func() -> bool: return ossao_ref.get_ref() == null, 12.0)
 	all_ok = _check("o Ossão vai embora de balão e a barra some", ossao_ref.get_ref() == null and not boss_bar.visible) and all_ok
@@ -2448,9 +2637,8 @@ func _run_story_test() -> void:
 	await _wait_until(func() -> bool: return leste.state == Defense.State.VENCIDA, 3.0)
 	await get_tree().physics_frame
 	all_ok = _check("cidade vencida: as defesas da mata começam", story.stage == "mata" and story.defenses.clareira.active and story.defenses.ventos.active) and all_ok
-	await _stand(story.rewards[0].global_position)
-	await _wait(1.0)
-	all_ok = _check("recompensa da Leste é a Pipoqueira", player.has_weapon("pipoqueira")) and all_ok
+	all_ok = _check("com as moedas da Leste dá para comprar a Pipoqueira", story.coins == 60 and shop_menu.buy("pipoqueira") == "comprou"
+			and player.has_weapon("pipoqueira") and story.coins == 10, "(%d moedas)" % story.coins) and all_ok
 	await _stand(Vector3(0, 0.5, 60))
 	await _wait(0.2)
 	all_ok = _check("objetivo manda atravessar a ponte", "ponte" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
@@ -2512,10 +2700,9 @@ func _run_story_capture() -> void:
 	await _aim_for(ossao, 8.0, 0.3)
 	await _shot("h07_ossao_balao.png")
 	await _wait(1.0)
-	player.aim_at(story.rewards[0].global_position + Vector3.UP)
 	await _wait(0.2)
-	await _shot("h08_recompensa_e_festa.png")
-	await _stand(story.rewards[0].global_position)
+	await _shot("h08_moedas_e_festa.png")
+	shop_menu.buy("granulado")
 	await _wait(1.2)
 	await _shot("h09_novo_blaster.png")
 	var leste: Defense = story.defenses.leste
@@ -2664,9 +2851,8 @@ func _run_forest_test() -> void:
 	all_ok = _check("mata vencida: cúpula do cemitério cai", story.stage == "cemiterio" and story.dome_open()) and all_ok
 	await _wait(2.6)
 	all_ok = _check("o portão do cemitério abre", story.gate_open()) and all_ok
-	await _stand(story.rewards[0].global_position)
-	await _wait(1.0)
-	all_ok = _check("recompensa do Morro dos Ventos é o Pé-de-Moleque", player.has_weapon("pe_de_moleque")) and all_ok
+	all_ok = _check("Morro dos Ventos dá moedas, sem blaster de presente", story.coins == 100 and not player.has_weapon("pe_de_moleque")
+			and shop_menu.buy("pe_de_moleque") == "comprou" and story.coins == 40, "(%d moedas)" % story.coins) and all_ok
 	all_ok = _check("objetivo manda subir até o cemitério", "cemitério" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
 	await _stand(Vector3(9, 27, 0))
 	await _wait(0.5)
@@ -2802,6 +2988,368 @@ func _run_lollipop_capture() -> void:
 	get_tree().quit()
 
 
+## Fotos da lojinha (precisa de janela): a barraca, a seta dourada vista da praça, o menu e a Jujuba na mão.
+## Uso: godot --path . -- --loja-captura
+func _run_shop_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	close_menus()
+	story.add_coins(140, player.global_position)
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	var s := shop.global_position
+	await _art_shot(out + "l01_lojinha.png", size, s + Vector3(-3.5, 2.6, -7.5), s + Vector3(0, 1.3, 0), 55.0)
+	await _stand(_ground_point(Ending.PLAZA + Vector3(4.0, 0, 8.0)))
+	var to := s - player.global_position
+	player.set_yaw(atan2(-to.x, -to.z))
+	await _wait(3.5)
+	if menu_state != "":
+		close_menus()
+		await _wait(0.4)
+	await _shot("l02_seta_da_lojinha.png")
+	if menu_state != "":
+		close_menus()
+	await _stand(shop._mat_point)
+	await _wait_until(func() -> bool: return menu_state == "loja", 2.0)
+	if menu_state != "loja":
+		close_menus()
+		open_shop()
+	await _wait(0.3)
+	await _shot("l03_menu_da_lojinha.png")
+	shop_menu.open_preview("granulado")
+	await _wait(1.0)
+	await _shot("l04_previa_granulado.png")
+	shop_menu.buy("granulado")
+	await _wait(0.6)
+	await _shot("l05_comprou.png")
+	shop_menu.back()
+	shop_menu.open_preview("bombom")
+	await _wait(1.3)
+	await _shot("l06_previa_bombom.png")
+	shop_menu.back()
+	await _wait(0.2)
+	await _shot("l07_cartoes_depois.png")
+	close_menus()
+	await _wait(0.6)
+	await _shot("l08_granulado_na_mao.png")
+	print("capturas da lojinha em tools/capturas/")
+	get_tree().quit()
+
+
+## Atividades extras: barcos no mar; veículos do box (vazios, entrar perto de um, cabeça do aventureiro no
+## lugar do piloto, dirigir, LARGADA começa a corrida, voltas, chegada, descer na pista volta para a vaga,
+## deixar pela ilha e se afastar 50 m volta para a vaga, cair no mar); skate (pegar, perna empurrando,
+## marca da sessão, half-pipe, pontos, tombo, fim com moedas, descer deixa no chão, longe volta para a
+## pista). Uso: godot --headless --path . -- --atividades
+func _run_activities_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	close_menus()
+	await _wait(0.3)
+	var sea: SeaTraffic = get_node("Barcos")
+	var fishers := sea.find_children("PescadorDoBarco*", "Townsperson", true, false).size()
+	all_ok = _check("barcos no mar: ancorados, pescadores e navios no horizonte", sea._anchored.size() >= 14 and sea._ships.size() == 3
+			and fishers >= 5, "(%d ancorados, %d pescadores)" % [sea._anchored.size(), fishers]) and all_ok
+
+	# Veículos do box.
+	var cars := kart_race.vehicles
+	var models := cars.map(func(v: Kart) -> String: return v.model_name)
+	var empty := cars.all(func(v: Kart) -> bool:
+		var pilot := v.find_child("character", true, false) as Node3D
+		return pilot == null or not pilot.visible)
+	all_ok = _check("5 veículos vazios nas vagas: karts coloridos e 2 carros de corrida", cars.size() == 5 and empty
+			and cars.all(func(v: Kart) -> bool: return v.is_home()) and "race" in models and "race-future" in models,
+			"(%s)" % ", ".join(models)) and all_ok
+	var car := cars[0]
+	await _stand(car.global_position + car.global_basis.z * 2.6)
+	await _wait(0.3)
+	all_ok = _check("perto de um carrinho, o aviso chama para dirigir", kart_race.nearest == car and hint_label.visible
+			and "dirigir" in hint_label.text, "(\"%s\")" % hint_label.text) and all_ok
+	var coins0 := story.coins
+	await _press_key(KEY_E)
+	await _wait(0.2)
+	var head := car.find_child("CabecaDoPiloto", true, false) as Node3D
+	var shown := head.find_children("*", "MeshInstance3D", true, false).filter(func(m: Node) -> bool: return (m as Node3D).visible) if head else []
+	all_ok = _check("B / E entra e já dirige, com a cabeça do aventureiro no lugar do piloto", kart_race.state == "dirigindo"
+			and kart_race.kart == car and not player.visible and get_viewport().get_camera_3d() == car.camera and shown.size() >= 1
+			and shown.all(func(m: Node) -> bool: return String(m.name).ends_with("_Head") or String(m.name).ends_with("_Glasses")),
+			"(%d malhas visíveis na cabeça)" % shown.size()) and all_ok
+	Input.action_press("olhar_direita")
+	await _wait(0.4)
+	Input.action_release("olhar_direita")
+	var turned := car._cam_yaw
+	await _wait(2.6)
+	all_ok = _check("no kart, o analógico direito gira a câmera e ela volta para trás depois", absf(turned) > 0.5 and absf(car._cam_yaw) < 0.2,
+			"(girou %.1f, voltou para %.2f)" % [turned, car._cam_yaw]) and all_ok
+	var x0 := car.global_position.x
+	Input.action_press("frente")
+	await _wait(1.4)
+	Input.action_release("frente")
+	all_ok = _check("acelera e sai da vaga (para a pista, a leste)", car.global_position.x > x0 + 5.0 and kart_race.state == "dirigindo",
+			"(andou %.1f m)" % (car.global_position.x - x0)) and all_ok
+	# Entra pela LARGADA, vindo de fora da pista.
+	var zone := kart_race._entry_zone
+	car.global_position = Vector3(zone.position.x - 4.0, 0.4, zone.get_center().y)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	car.global_position = Vector3(zone.get_center().x, 0.4, zone.get_center().y)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	all_ok = _check("entrar pela LARGADA começa a corrida na largada", kart_race.state == "contagem"
+			and car.global_position.distance_to(kart_race.start.origin) < 1.0) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	for lap in KartRace.LAPS:
+		for g in kart_race.gates:
+			car.global_position = g + Vector3.UP * 0.5
+			await get_tree().physics_frame
+			await get_tree().physics_frame
+	await _wait(0.3)
+	all_ok = _check("três voltas: chegada com tempo, recorde e moedas, e continua dirigindo", kart_race.state == "dirigindo"
+			and story.records.kart > 0.0 and story.coins == coins0 + KartRace.COINS + KartRace.RECORD_BONUS, "(%d moedas)" % (story.coins - coins0)) and all_ok
+	await _press_key(KEY_E)
+	await _wait(0.3)
+	all_ok = _check("descer na pista: aventureiro fora dela e o carrinho de volta na vaga", kart_race.state == "a_pe" and player.visible
+			and car.is_home() and not kart_race.on_track(player.global_position) and get_viewport().get_camera_3d() == player.camera
+			and car.find_child("CabecaDoPiloto", true, false) == null) and all_ok
+	# Passeio pela ilha com o Fórmula, descer longe da pista e se afastar.
+	var formula := cars[2]
+	await _stand(formula.global_position + formula.global_basis.z * 2.6)
+	await _wait(0.2)
+	await _press_key(KEY_E)
+	await _wait(0.2)
+	all_ok = _check("entra no carro de corrida (o mais perto)", kart_race.kart == formula) and all_ok
+	var meadow := _ground_point(Vector3(95, 0, 85))
+	formula.global_position = meadow + Vector3.UP * 0.5
+	await _wait(0.4)
+	await _press_key(KEY_E)
+	await _wait(0.3)
+	all_ok = _check("descer pela ilha: o carro fica onde parou, o aventureiro do lado", kart_race.state == "a_pe" and not formula.is_home()
+			and formula.global_position.distance_to(meadow) < 3.0 and player.global_position.distance_to(formula.global_position) < 4.0) and all_ok
+	await _stand(meadow + Vector3(0, 0, 30))
+	await _wait(0.3)
+	all_ok = _check("a 30 m o carro continua lá", not formula.is_home()) and all_ok
+	await _stand(meadow + Vector3(0, 0, 60))
+	await _wait(0.3)
+	all_ok = _check("a mais de 50 m o carro volta para a vaga", formula.is_home()) and all_ok
+	# Cair no mar com o carrinho.
+	var blue := cars[1]
+	await _stand(blue.global_position + blue.global_basis.z * 2.6)
+	await _wait(0.2)
+	await _press_key(KEY_E)
+	await _wait(0.2)
+	blue.global_position = Vector3(0, -3.0, 300)
+	await _wait(0.3)
+	all_ok = _check("caiu no mar: o carrinho volta para a vaga", kart_race.state == "a_pe" and blue.is_home() and player.visible) and all_ok
+	await _wait_until(func() -> bool: return not _splashing, 4.0)
+
+	# Skate.
+	all_ok = _check("pista de skate perto da cidade", skate_park.center.distance_to(Vector3(-72, 0, 98)) < 50.0,
+			"(%.0f m da esquina)" % skate_park.center.distance_to(Vector3(-72, 0, 98))) and all_ok
+	await _stand(skate_park.board.global_position + Vector3(1.5, 0, 0))
+	await _wait(0.3)
+	all_ok = _check("perto do skate, o aviso chama para pegar", skate_park.near and hint_label.visible and "skate" in hint_label.text) and all_ok
+	await _press_key(KEY_E)
+	await _wait(0.2)
+	all_ok = _check("B / E pega o skate (some do chão, aparece nos pés)", player.skating and skate_park.state == "andando"
+			and not skate_park.board.visible and is_instance_valid(player._board) and is_instance_valid(player._rider)) and all_ok
+	# Perna empurrando: o pé do impulso desce até o chão e o skate ganha velocidade.
+	player.global_position = _ground_point(skate_park.center + Vector3(-8, 0, 14)) + Vector3.UP * 0.3
+	player._skate_heading = PI / 2.0
+	player._skate_speed = 0.0
+	await _wait(0.3)
+	var lowest := INF
+	Input.action_press("frente")
+	var t := 0.0
+	while t < 1.5:
+		await get_tree().process_frame
+		t += get_process_delta_time()
+		lowest = minf(lowest, player._rider.right_foot_drop)
+	Input.action_release("frente")
+	all_ok = _check("dar impulso: o pé direito desce até o chão e o skate anda", player._skate_speed > 3.0
+			and lowest < -Player.SKATE_LIFT * 0.6, "(%.1f m/s, pé %.2f abaixo da tábua)" % [player._skate_speed, -lowest]) and all_ok
+	var yaw0 := player.get_yaw()
+	Input.action_press("olhar_direita")
+	await _wait(0.4)
+	Input.action_release("olhar_direita")
+	await _wait(0.5)
+	all_ok = _check("no skate, a câmera gira livre (não volta na hora)", absf(angle_difference(player.get_yaw(), yaw0)) > 0.5,
+			"(%.1f)" % angle_difference(player.get_yaw(), yaw0)) and all_ok
+	# Passar pela marca da sessão.
+	player.global_position = skate_park.session_spot + Vector3.UP * 0.3
+	await _wait(0.2)
+	all_ok = _check("passar pela marca SESSÃO começa a sessão de pontos", skate_park.state == "sessao") and all_ok
+	player.global_position = skate_park.center + Vector3(-5, 0.5, -10)
+	player._skate_heading = PI
+	player._skate_speed = 11.0
+	player.velocity = Vector3(0, 0, -11)
+	await get_tree().physics_frame
+	var top := -INF
+	var came_back := false
+	t = 0.0
+	while t < 4.0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		top = maxf(top, player.global_position.y)
+		if top > 1.5 and player.velocity.z > 1.0:
+			came_back = true
+	all_ok = _check("no half-pipe o skate sobe a rampa e volta", top > 1.5 and came_back, "(subiu %.1f m)" % top) and all_ok
+	var s0 := skate_park.score
+	player.skate_landed.emit(1.0, TAU * 1.02, true)
+	all_ok = _check("pulo com giro 360 vale pontos (ar + meias voltas)", skate_park.score == s0 + SkatePark.trick_points(1.0, TAU * 1.02)
+			and SkatePark.trick_points(1.0, TAU * 1.02) == 400 and SkatePark.trick_name(TAU * 1.02) == "Giro 360", "(+%d)" % (skate_park.score - s0)) and all_ok
+	var s1 := skate_park.score
+	player.skate_landed.emit(1.0, PI, false)
+	all_ok = _check("pousar atravessado é tombo, sem pontos", skate_park.score == s1) and all_ok
+	var coins1 := story.coins
+	skate_park.time_left = 0.05
+	await _wait(0.2)
+	all_ok = _check("fim da sessão: recorde e moedas, e continua no skate", skate_park.state == "andando" and player.skating
+			and story.records.skate == skate_park.score and story.coins == coins1 + mini(skate_park.score / 100, SkatePark.MAX_COINS),
+			"(%d pontos)" % skate_park.score) and all_ok
+	# Descer pela ilha: o skate fica no chão; longe, volta para a pista.
+	var street := _ground_point(Vector3(-17.5, 0, 130))
+	player.global_position = street + Vector3.UP * 0.3
+	player._skate_speed = 0.0
+	player.velocity = Vector3.ZERO
+	await _wait(0.3)
+	await _press_key(KEY_E)
+	await _wait(0.2)
+	all_ok = _check("B / E desce: o skate fica no chão onde parou", not player.skating and skate_park.state == "a_pe"
+			and skate_park.board.visible and skate_park.board.global_position.distance_to(street) < 3.0 and not is_instance_valid(player._rider),
+			"(skate %s, rua %s, estado %s, skating %s)" % [skate_park.board.global_position.snappedf(0.1), street.snappedf(0.1), skate_park.state, player.skating]) and all_ok
+	await _stand(street + Vector3(0, 0, 60))
+	await _wait(0.3)
+	all_ok = _check("a mais de 50 m o skate volta para a pista", skate_park.board_at_home()) and all_ok
+	print("ATIVIDADES OK" if all_ok else "ATIVIDADES COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos dos veículos com a cabeça do aventureiro e do impulso no skate, de lado (precisa de janela).
+## Uso: godot --path . -- --veiculos-captura
+func _run_vehicles_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.6)
+	close_menus()
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	var row := kart_race.vehicles
+	var mid := (row[0].global_position + row[row.size() - 1].global_position) * 0.5
+	await _art_shot(out + "v01_vagas_vazias.png", size, mid + Vector3(9.0, 4.0, 3.0), mid + Vector3(0, 0.6, 0), 55.0)
+	for k in [0, 2, 3]:
+		var v: Kart = row[k]
+		v.drive(player.model_path())
+		v.set_physics_process(false)
+		var f := v.global_basis.z
+		var side := v.global_basis.x
+		await _art_shot(out + "v0%d_%s_com_cabeca.png" % [k + 2, v.model_name], size, v.global_position + f * 3.6 + side * 2.4 + Vector3.UP * 1.8,
+				v.global_position + Vector3.UP * 0.8, 50.0)
+		v.park()
+	# Impulso no skate, de lado, num trecho plano da praça.
+	player.set_character("menina")
+	await _stand(_ground_point(Vector3(112, 0, 0)))
+	player.start_skating()
+	player._skate_heading = PI / 2.0
+	player.visual.rotation.y = PI / 2.0
+	await _wait(0.3)
+	player.force_skate_push = true
+	await _wait(0.4)
+	for k in 8:
+		await _wait(0.05)
+		var p := player.global_position
+		await _art_shot(out + "v1%d_skate_impulso.png" % k, Vector2i(800, 600), p + Vector3(1.2, 1.3, 4.6), p + Vector3(1.0, 0.9, 0), 45.0)
+	player.force_skate_push = false
+	print("capturas dos veículos em tools/capturas/")
+	get_tree().quit()
+
+
+## Fotos das atividades extras (precisa de janela): pista de kart, pista de skate e barcos no mar.
+## Uso: godot --path . -- --atividades-captura
+func _run_activities_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.8)
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	var kart := Vector3(125, 0, 15)
+	var skate := skate_park.center
+	await _art_shot(out + "a01_kart_de_cima.png", size, kart + Vector3(0, 95, 0.5), kart, 50.0)
+	await _art_shot(out + "a02_kart_largada.png", size, kart + Vector3(-34, 9, 28), kart + Vector3(-20, 1, 8), 60.0)
+	await _art_shot(out + "a03_kart_curva.png", size, kart + Vector3(10, 12, -50), kart + Vector3(0, 0, -30), 60.0)
+	await _art_shot(out + "a04_skate_de_cima.png", size, skate + Vector3(0, 70, 0.5), skate, 50.0)
+	await _art_shot(out + "a05_skate_lado.png", size, skate + Vector3(18, 12, 34), skate + Vector3(-2, 1, -4), 60.0)
+	await _art_shot(out + "a06_half_pipe.png", size, skate + Vector3(-12, 6, -2), skate + Vector3(-8, 1, -16), 60.0)
+	await _art_shot(out + "a07_barcos_cais.png", size, Vector3(0, 8, 228), Vector3(0, 0, 275), 65.0)
+	await _art_shot(out + "a14_skate_e_cidade.png", size, Vector3(-55, 30, 118), skate + Vector3(-5, 0, -5), 55.0)
+	await _art_shot(out + "a15_fazenda_nova.png", size, Vector3(-120, 22, 30), Vector3(-120, 0, -6), 55.0)
+	var sea: SeaTraffic = get_node("Barcos")
+	for k in sea._ships.size():
+		var ship: Node3D = sea._ships[k].no
+		var from := ship.global_position * 0.62 + Vector3.UP * 6.0
+		await _art_shot(out + "a08_navio_%d.png" % k, size, from, ship.global_position + Vector3.UP * 8.0, 40.0)
+	# Em ação: kart andando (câmera do kart) e skate no ar no half-pipe.
+	close_menus()
+	await _stand(kart_race.paddock)
+	var car := kart_race.vehicles[0]
+	kart_race.enter(car)
+	await _wait(0.3)
+	await _shot("a09a_kart_vaga.png")
+	car.global_position = Vector3(kart_race._entry_zone.get_center().x, 0.4, kart_race._entry_zone.get_center().y)
+	kart_race._armed = true
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 6.0)
+	Input.action_press("frente")
+	await _wait(1.4)
+	await _shot("a09_kart_andando.png")
+	Input.action_press("direita")
+	await _wait(1.6)
+	await _shot("a10_kart_curva.png")
+	Input.action_release("direita")
+	Input.action_release("frente")
+	kart_race.leave()
+	await _wait(0.4)
+	await _stand(skate_park.entrance + Vector3(0, 0, 4))
+	var to_park := skate_park.center - player.global_position
+	player.set_yaw(atan2(-to_park.x, -to_park.z))
+	await _wait(1.2)
+	await _shot("a11_skate_aviso.png")
+	skate_park.pick()
+	await _wait(0.3)
+	player.global_position = skate_park.center + Vector3(-5, 0.5, -10)
+	player._skate_heading = PI
+	player.set_yaw(0.0)
+	player._skate_speed = 11.0
+	await _wait(1.25)
+	await _shot("a12_skate_no_ar.png")
+	await _wait(0.8)
+	var p := player.global_position
+	await _art_shot(out + "a13_skate_half_pipe.png", size, p + Vector3(9.0, 1.5, 4.0), p + Vector3(0, 0.5, 0), 55.0)
+	print("capturas das atividades em tools/capturas/")
+	get_tree().quit()
+
+
+## Foto da ilha vista de cima (precisa de janela), com marcas a cada 50 m para planejar onde pôr as coisas.
+## Uso: godot --path . -- --mapa-captura
+func _run_map_capture() -> void:
+	player.god_mode = true
+	await _wait(0.6)
+	for x in range(-250, 251, 50):
+		for z in range(-250, 251, 50):
+			var label := Label3D.new()
+			label.text = "%d,%d" % [x, z]
+			label.font_size = 64
+			label.outline_size = 16
+			label.pixel_size = 0.05
+			label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			label.no_depth_test = true
+			add_child(label)
+			label.global_position = Vector3(x, 30, z)
+	await _art_shot("res://tools/capturas/mapa_de_cima.png", Vector2i(1400, 1400), Vector3(0, 700, 0.5), Vector3(0, 0, 0), 46.0)
+	get_tree().quit()
+
+
 ## Fotos da banda tocando (precisa de janela): de frente, de lado e em três instantes, com um esqueleto
 ## de trompete do epílogo junto. Uso: godot --path . -- --banda-captura
 func _run_band_capture() -> void:
@@ -2893,7 +3441,7 @@ func _run_ending_test() -> void:
 	all_ok = _check("pós-jogo: de dia, lanternas de festa e a brincadeira na praia", story.stage == "fim" and not ending.night
 			and not get_tree().paused and sky_material.sky_top_color == Color("#4f9cf0") and orb.emission != Color("#b06cff")
 			and is_instance_valid(party_mode) and get_node_or_null("MestreDaBrincadeira") != null and get_node_or_null("ConvidadoMestre") == null) and all_ok
-	all_ok = _check("objetivo do pós-jogo chama para a praia", "praia" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
+	all_ok = _check("objetivo do pós-jogo chama para a Festa sem fim", "Festa sem fim" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
 	print("FINAL OK" if all_ok else "FINAL COM FALHAS")
 	get_tree().quit()
 
@@ -2907,46 +3455,125 @@ func _skip_to_post_game() -> void:
 	ending.post_game(false)
 
 
-## "Defender a festa": ladrões que não atacam, enfeite que volta, enfeites perdidos e recorde.
-## Uso: godot --headless --path . -- --festa-modo
-func _run_party_mode_test() -> void:
+## "Festa sem fim" no cemitério: começa no círculo, ondas que crescem, moedas e recorde por onda, guardião
+## na onda 5 e fim ao ficar tonto. Uso: godot --headless --path . -- --festa-sem-fim
+func _run_endless_test() -> void:
 	var all_ok := true
 	story.fast = true
 	await _wait(0.5)
 	_skip_to_post_game()
 	await _wait(0.3)
 	var pd := party_mode
-	all_ok = _check("pós-jogo: cinco enfeites nos pódios e o Mestre na praia", is_instance_valid(pd) and pd.state == PartyDefense.State.PARADA
-			and pd.left_count() == 5 and pd.slots.all(func(s: Dictionary) -> bool: return s.estado == "podio") and is_instance_valid(pd.host)) and all_ok
+	all_ok = _check("pós-jogo: Festa sem fim no cemitério com o Mestre", is_instance_valid(pd) and pd.state == EndlessParty.State.PARADA
+			and pd.center.distance_to(story.defenses.cemiterio.center) < 1.0 and is_instance_valid(pd.host) and pd.cracks.size() >= 6,
+			"(%d rachaduras)" % pd.cracks.size()) and all_ok
 	await _stand(pd.center)
-	await _wait_until(func() -> bool: return pd.running(), 3.0)
-	all_ok = _check("ficar no círculo começa a brincadeira", pd.running()) and all_ok
-	await _wait_until(func() -> bool: return pd.state == PartyDefense.State.ONDA and pd.thieves.size() >= 2, 6.0)
-	all_ok = _check("primeira onda: ladrões saem das rachaduras", pd.wave == 1 and pd.thieves.size() >= 2, "(%d)" % pd.thieves.size()) and all_ok
-	var hearts_before := player.hearts
-	await _wait_until(func() -> bool: return pd.slots.any(func(s: Dictionary) -> bool: return s.estado == "levando"), 20.0)
-	var slot: Dictionary = {}
-	for s in pd.slots:
-		if s.estado == "levando":
-			slot = s
-	all_ok = _check("um esqueleto pega um enfeite e foge (sem atacar)", not slot.is_empty() and player.hearts == hearts_before
-			and is_instance_valid(slot.ladrao) and (slot.enfeite as Node).get_parent() == slot.ladrao) and all_ok
-	if not slot.is_empty():
-		var carrier: SkeletonEnemy = slot.ladrao
-		carrier.take_hit(99.0, carrier.global_position + Vector3.UP, carrier.hurtboxes[0])
-		await _wait(1.2)
-		all_ok = _check("derrubado, o enfeite volta para o pódio", slot.estado == "podio"
-				and (slot.enfeite as Node3D).global_position.distance_to(slot.casa) < 0.3 and (slot.enfeite as Node).get_parent() == pd) and all_ok
-	await _wait_until(func() -> bool: return pd.left_count() < 5, 30.0)
-	all_ok = _check("quem chega na rachadura leva o enfeite", pd.left_count() < 5, "(%d de 5)" % pd.left_count()) and all_ok
-	await _wait_until(func() -> bool: return pd.state == PartyDefense.State.FIM, 90.0)
-	all_ok = _check("sem enfeites, a brincadeira acaba e guarda o recorde", pd.state == PartyDefense.State.FIM and pd.cleared >= 1
-			and story.records.festa == pd.cleared and pd.thieves.is_empty(), "(%d ondas, recorde %d)" % [pd.cleared, story.records.festa]) and all_ok
-	await _wait_until(func() -> bool: return pd.state == PartyDefense.State.PARADA, 5.0)
-	all_ok = _check("depois, os enfeites voltam e dá para jogar de novo", pd.left_count() == 5 and "Recorde: %d" % pd.cleared in pd._board.text) and all_ok
-	await _stand(pd.center + Vector3(0, 0, -8))
-	print("FESTA-MODO OK" if all_ok else "FESTA-MODO COM FALHAS")
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.ONDA, 4.0)
+	await _wait_until(func() -> bool: return pd.alive.size() == EndlessParty.wave_list(1).size(), 6.0)
+	all_ok = _check("ficar no círculo começa a onda 1 com esqueletos de verdade", pd.wave == 1 and pd.alive.size() == 4
+			and pd.alive.all(func(e: Node) -> bool: return e is SkeletonEnemy and e.has_meta("onda")), "(%d)" % pd.alive.size()) and all_ok
+	var coins_before: int = story.coins
+	await _stand(pd.center + Vector3(0, 0, 6))
+	await _clear_endless(pd)
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.INTERVALO, 4.0)
+	all_ok = _check("onda vencida dá moedas, recorde e intervalo com munição e coração", story.coins == coins_before + EndlessParty.wave_coins(1)
+			and story.records.festa == 1 and _near_count(AmmoPickup, pd.center, 3.0) >= 1, "(%d moedas)" % story.coins) and all_ok
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.ONDA, 4.0)
+	await _wait_until(func() -> bool: return pd.alive.size() >= 5, 6.0)
+	all_ok = _check("onda 2 é maior e traz Rogue", pd.wave == 2 and pd.alive.any(func(e: Node) -> bool: return e is SkeletonEnemy and e.type_name == "Skeleton_Rogue"),
+			"(onda %d: %s)" % [pd.wave, ", ".join(pd.alive.map(func(e: Node) -> String: return e.type_name if e is SkeletonEnemy else e.name))]) and all_ok
+	await _clear_endless(pd)
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.INTERVALO, 4.0)
+	pd.wave = 4
+	pd._timer = 0.0
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.ONDA and is_instance_valid(pd.boss), 4.0)
+	all_ok = _check("onda 5 traz um guardião (o Ossão)", pd.wave == 5 and pd.boss is BossOssao and boss_bar.visible) and all_ok
+	player.god_mode = false
+	for k in player.hearts + 1:
+		player._invulnerable = 0.0
+		player.take_damage(1, player.global_position + Vector3(1, 0, 0), "teste")
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.FIM, 3.0)
+	await _wait(1.5)
+	all_ok = _check("tonto: a festa acaba, os esqueletos afundam e o recorde fica", pd.state != EndlessParty.State.ONDA and pd.alive.is_empty()
+			and story.records.festa == 2 and pd.boss == null, "(recorde %d)" % story.records.festa) and all_ok
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.PARADA, 5.0)
+	all_ok = _check("depois dá para começar de novo", pd.state == EndlessParty.State.PARADA and "Recorde: 2" in pd._board.text) and all_ok
+	print("FESTA-SEM-FIM OK" if all_ok else "FESTA-SEM-FIM COM FALHAS")
 	get_tree().quit()
+
+
+## Lojinha: a primeira moeda acende a seta dourada, o tapete abre o menu, comprar, equipar, melhorias, caixa de
+## munição com o blaster comprado e o que vai para o salvamento. Uso: godot --headless --path . -- --loja
+func _run_shop_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	close_menus()
+	await _wait(0.3)
+	all_ok = _check("lojinha montada na praia, sem seta antes da primeira moeda", is_instance_valid(shop)
+			and story.shop_target() == Vector3.INF and not coins_bar.visible) and all_ok
+	story.add_coins(100, player.global_position)
+	await _wait(0.2)
+	all_ok = _check("primeira moeda: contador e seta dourada para a lojinha", story.coins == 100 and coins_bar.visible
+			and story.shop_target() != Vector3.INF and shop_marker.visible and "Lojinha" in banner_subtitle.text + banner_title.text + str(_banners)) and all_ok
+	await _stand(shop._mat_point)
+	await _wait_until(func() -> bool: return menu_state == "loja", 2.0)
+	all_ok = _check("parar no tapete abre a lojinha e apaga a seta", menu_state == "loja" and shop_menu.visible and story.shop_visited
+			and story.shop_target() == Vector3.INF and get_tree().paused) and all_ok
+	var r := shop_menu.buy("bombom")
+	all_ok = _check("sem moedas não compra", r == "sem_moedas" and story.coins == 100 and not player.has_weapon("bombom")) and all_ok
+	r = shop_menu.buy("jujuba")
+	await get_tree().process_frame
+	all_ok = _check("comprar a Jujuba: desconta, equipa na seta de cima e vai para a mão", r == "comprou" and story.coins == 40
+			and player.has_weapon("jujuba") and player.equipped[0] == "jujuba" and player.current_weapon().id == "jujuba" and _hand_model() == "blaster-k.glb",
+			"(%s, %d moedas, %s)" % [r, story.coins, _hand_model()]) and all_ok
+	r = shop_menu.buy("pacoca")
+	all_ok = _check("usar a Paçoca de volta", r == "equipou" and player.equipped[0] == "pacoca" and player.has_weapon("jujuba")) and all_ok
+	r = shop_menu.buy("granulado")
+	all_ok = _check("o blaster da história também se compra (Granulado, 40)", r == "comprou" and player.has_weapon("granulado") and story.coins == 0) and all_ok
+	story.add_coins(70, player.global_position)
+	r = shop_menu.buy("granada_extra")
+	all_ok = _check("+1 Brigadeiro: cabem 4 granadas", r == "comprou" and player.grenade_max == 4 and player.grenades == 4 and story.coins == 0) and all_ok
+	all_ok = _check("melhoria comprada não se compra de novo", shop_menu.buy("granada_extra") == "nada" and story.coins == 0) and all_ok
+	shop_menu.open_preview("pipoqueira")
+	await get_tree().process_frame
+	all_ok = _check("prévia mostra o blaster girando, o tipo, o dano e as barras", shop_menu.in_preview() and shop_menu._turntable.get_child_count() >= 1
+			and shop_menu._p_type.text == "ESCOPETA" and shop_menu._p_damage.text == "4,2" and shop_menu._p_bars["Força"].value == 4
+			and shop_menu._p_action.text.begins_with("Comprar"), "(%s, %s)" % [shop_menu._p_type.text, shop_menu._p_damage.text]) and all_ok
+	shop_menu.back()
+	all_ok = _check("voltar da prévia mostra os cartões", not shop_menu.in_preview() and shop_menu._grid.visible) and all_ok
+	close_menus()
+	await _wait(0.3)
+	shop_menu.buy("jujuba")
+	player._fire_cooldown = 0.0
+	player._switch_left = 0.0
+	player.fire()
+	all_ok = _check("a Jujuba atira com o pente dela", player.current_weapon().id == "jujuba" and player.mag() == 15 and player.reserve() == -1,
+			"(%s %d / %d)" % [player.current_weapon().id, player.mag(), player.reserve()]) and all_ok
+	story.add_coins(90, player.global_position)
+	shop_menu.buy("beijinho")
+	player.ammo.beijinho.reserve = 0
+	player.add_ammo_crate()
+	all_ok = _check("caixa de munição completa o blaster comprado equipado", player.equipped[1] == "beijinho" and player.ammo.beijinho.reserve == 45,
+			"(%d)" % player.ammo.beijinho.reserve) and all_ok
+	var snap := story.snapshot()
+	all_ok = _check("salvamento guarda moedas, equipados, compras e melhorias", snap.moedas == story.coins and "jujuba" in snap.equipados
+			and "beijinho" in snap.blasters and "granada_extra" in snap.melhorias and snap.loja_visitada) and all_ok
+	print("LOJA OK" if all_ok else "LOJA COM FALHAS")
+	get_tree().quit()
+
+
+## Derruba os esqueletos da onda atual da Festa sem fim, conforme saem do chão.
+func _clear_endless(pd: EndlessParty) -> void:
+	var t := 0.0
+	var start := pd.wave
+	while t < 20.0 and pd.state == EndlessParty.State.ONDA and pd.wave == start:
+		for e in pd.alive.duplicate():
+			if e is SkeletonEnemy and is_instance_valid(e) and e.hurtboxes[0].is_active():
+				e.take_hit(99.0, e.global_position + Vector3.UP, e.hurtboxes[0])
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
 
 
 ## Salvar e continuar: vence o prólogo, recarrega a ilha, continua do mesmo ponto e testa a "Nova campanha"
@@ -2977,6 +3604,8 @@ func _run_save_test() -> void:
 			player.unlock_weapon("granulado")
 			player.add_max_heart()
 			story.records.festa = 3
+			story.add_coins(150, player.global_position)
+			shop_menu.buy("jujuba")
 			story.save()
 			var data := SaveGame.read()
 			_save_check("vencer a praia salva a etapa, a defesa, o personagem e a bandeira", data.get("etapa", "") == "cidade"
@@ -2994,7 +3623,8 @@ func _run_save_test() -> void:
 					and story.defenses.praca.state == Defense.State.VENCIDA and story.defenses.oeste.active and story.defenses.leste.active
 					and story.lanterns.Oeste.lit and menu_state == "")
 			_save_check("continuar mantém blasters, corações, personagem e recordes", player.has_weapon("granulado")
-					and player.max_hearts == 6 and player.character_name == "menina" and story.records.festa == 3,
+					and player.max_hearts == 6 and player.character_name == "menina" and story.records.festa == 3
+					and story.coins == 90 and player.has_weapon("jujuba") and player.equipped[0] == "jujuba" and coins_bar.visible,
 					"(%d corações, %s)" % [player.max_hearts, player.character_name])
 			open_menu("pausa")
 			await get_tree().process_frame
@@ -3009,9 +3639,12 @@ func _run_save_test() -> void:
 					and story.stage == "antes" and story.defenses.praca.state != Defense.State.VENCIDA)
 			SaveGame.go_new = false
 			# Campanha salva já na festa (depois do desfecho): continuar volta na praça, à noite.
-			SaveGame.write({"etapa": "festa", "vencidas": Story.REGIONS.keys(), "blasters": ["pacoca", "granulado", "pipoqueira", "pe_de_moleque"],
+			# Gravado como a versão 1 (antes das moedas): ao continuar, ganha as moedas dos guardiões vencidos.
+			var old := FileAccess.open(SaveGame.path, FileAccess.WRITE)
+			old.store_string(JSON.stringify({"etapa": "festa", "vencidas": Story.REGIONS.keys(), "blasters": ["pacoca", "granulado", "pipoqueira", "pe_de_moleque"],
 				"coracoes": 7, "personagem": "menino", "bandeira": "TopoDoMorro", "recompensas": [], "fotos": [{"legenda": "Teste", "arquivo": ""}],
-				"recordes": {"festa": 2, "tiro": 7}})
+				"recordes": {"festa": 2, "tiro": 7}, "versao": 1}))
+			old.close()
 			SaveGame.test_phase = 3
 			get_tree().reload_current_scene()
 		3:
@@ -3022,6 +3655,8 @@ func _run_save_test() -> void:
 					and player.global_position.distance_to(Ending.PLAZA) < 20.0 and gallery.hits == 7 and story.photos.size() == 1
 					and story.defenses.values().all(func(d: Defense) -> bool: return d.state == Defense.State.VENCIDA and not d.active),
 					"(%s, %d convidados, %d acertos)" % [story.stage, guests.size(), gallery.hits])
+			_save_check("campanha antiga ganha as moedas dos guardiões (350 menos os 3 blasters, 150)", story.coins == 200 and story.coins_ever,
+					"(%d moedas)" % story.coins)
 			SaveGame.erase()
 			print("SALVAR OK" if SaveGame.test_ok else "SALVAR COM FALHAS")
 			get_tree().quit()
@@ -3088,11 +3723,11 @@ func _run_ending_capture() -> void:
 	await _wait(2.0)
 	await _art_shot(out + "f12_pos_jogo_praca.png", size, Ending.PLAZA + Vector3(10.0, 7.0, 16.0), Ending.PLAZA + Vector3(-1.0, 1.5, -4.0), 60.0)
 	var pd := party_mode
-	await _art_shot(out + "f13_defender_a_festa.png", size, pd.center + Vector3(9.0, 6.0, -9.0), pd.center + Vector3(0, 1.0, 0), 60.0)
+	await _art_shot(out + "f13_festa_sem_fim.png", size, pd.center + Vector3(9.0, 6.0, 9.0), pd.center + Vector3(0, 1.0, 0), 60.0)
 	await _stand(pd.center)
-	await _wait_until(func() -> bool: return pd.slots.any(func(s: Dictionary) -> bool: return s.estado == "levando"), 30.0)
-	await _wait(0.5)
-	await _art_shot(out + "f14_ladrao_de_enfeite.png", size, pd.center + Vector3(-7.0, 5.0, -10.0), pd.center + Vector3(0, 1.0, 0), 65.0)
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.ONDA and pd.alive.size() >= 3, 12.0)
+	await _wait(2.5)
+	await _art_shot(out + "f14_festa_sem_fim_onda.png", size, pd.center + Vector3(-7.0, 5.0, 10.0), pd.center + Vector3(0, 1.0, 0), 65.0)
 	print("capturas do fim em tools/capturas/")
 	get_tree().quit()
 

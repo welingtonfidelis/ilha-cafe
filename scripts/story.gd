@@ -4,6 +4,7 @@ extends Node
 ## e o cemitério dos esqueletos. Cada região é uma Defense; vencer apaga a lanterna, deixa a região em festa e entrega
 ## a recompensa. Também cuida do objetivo atual (texto e ponto que o marcador da tela aponta).
 
+signal coins_changed(coins: int)
 signal objective_changed(text: String)
 
 ## Ondas por região: lista de [tipo, quantidade]. O guardião vem na última onda.
@@ -13,11 +14,11 @@ const REGIONS := {
 		"ondas": [[["Skeleton_Minion", 3]], [["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]]],
 	},
 	"oeste": {
-		"nome": "Lanterna Oeste", "titulo": "Lanterna Oeste", "lanterna": "Oeste", "guardiao": "ossao", "recompensa": "granulado", "bandeira": "CidadeOeste",
+		"nome": "Lanterna Oeste", "titulo": "Lanterna Oeste", "lanterna": "Oeste", "guardiao": "ossao", "recompensa": "", "bandeira": "CidadeOeste",
 		"ondas": [[["Skeleton_Minion", 5]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 2]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 1]]],
 	},
 	"leste": {
-		"nome": "Lanterna Leste", "titulo": "Lanterna Leste", "lanterna": "Leste", "guardiao": "mira_torta", "recompensa": "pipoqueira", "bandeira": "CidadeLeste",
+		"nome": "Lanterna Leste", "titulo": "Lanterna Leste", "lanterna": "Leste", "guardiao": "mira_torta", "recompensa": "", "bandeira": "CidadeLeste",
 		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]], [["Skeleton_Minion", 3], ["Skeleton_Rogue", 3]], [["Skeleton_Minion", 3], ["Skeleton_Rogue", 2]]],
 	},
 	"clareira": {
@@ -25,7 +26,7 @@ const REGIONS := {
 		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Mage", 1]], [["Skeleton_Golem", 1], ["Skeleton_Minion", 2], ["Skeleton_Mage", 2], ["Skeleton_Rogue", 1]], [["Skeleton_Mage", 2]]],
 	},
 	"ventos": {
-		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "pe_de_moleque", "bandeira": "MorroDosVentos",
+		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "", "bandeira": "MorroDosVentos",
 		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
 	# Desafio opcional no Bosque das Copas (clareira de árvores gigantes): só o Guerreiro Planta, sem ondas. Não conta para a história.
@@ -81,7 +82,18 @@ var objective_target := Vector3.INF
 var fast := false
 ## Fotos do álbum: {legenda, arquivo, imagem} (a imagem só fica na memória; o arquivo vai para user://album/).
 var photos: Array = []
-## Recordes: ondas no "Defender a festa" e acertos na barraca de tiro.
+## Moedas da lojinha (seção 8 do doc): cada guardião vencido dá moedas e a Festa sem fim dá por onda vencida.
+## Os blasters não são mais recompensa (pedido do usuário): os da história se compram na lojinha. Até a mata
+## são 200 moedas (250 com o Guerreiro Planta), o bastante para os três da história (150) ou para juntar e
+## levar um melhor.
+var coins := 0
+## Já teve moedas alguma vez (o contador aparece) e já abriu a lojinha (até lá, a seta dourada mostra o caminho).
+var coins_ever := false
+var shop_visited := false
+## Melhorias compradas (ids de Weapons.UPGRADES).
+var upgrades: Array = []
+const GUARDIAN_COINS := {"oeste": 50, "leste": 50, "clareira": 50, "ventos": 50, "vila": 50, "cemiterio": 100}
+## Recordes: ondas na "Festa sem fim" e acertos na barraca de tiro.
 var records := {"festa": 0, "tiro": 0}
 ## Legenda da foto tirada quando cada região é vencida.
 const PHOTO_CAPTIONS := {
@@ -171,6 +183,8 @@ func _physics_process(delta: float) -> void:
 
 func _on_defense_won(d: Defense) -> void:
 	var spec: Dictionary = REGIONS[d.id]
+	if GUARDIAN_COINS.has(d.id):
+		add_coins(GUARDIAN_COINS[d.id], d.center + Vector3.UP * 4.0)
 	if PHOTO_CAPTIONS.has(d.id):
 		get_tree().create_timer(1.6 if not fast else 0.1, false).timeout.connect(func() -> void: take_photo(PHOTO_CAPTIONS[d.id]))
 	if d.id == "vila":
@@ -517,8 +531,8 @@ func _refresh_objective() -> void:
 				if is_instance_valid(game.party_mode) and game.party_mode.running():
 					text = game.party_mode.objective_text()
 				else:
-					text = "Defenda a festa na praia, ou explore a ilha à vontade!"
-					target = defenses.praca.center
+					text = "Festa sem fim no cemitério, ou explore a ilha à vontade!"
+					target = defenses.cemiterio.center + Vector3.UP * 2.0
 	objective_target = target
 	if text != objective_text:
 		objective_text = text
@@ -534,15 +548,43 @@ func save() -> void:
 func snapshot() -> Dictionary:
 	var player: Player = game.player
 	var won := defenses.keys().filter(func(id: String) -> bool: return defenses[id].state == Defense.State.VENCIDA)
-	var weapons := Weapons.DEFS.map(func(def: Dictionary) -> String: return def.id).filter(func(id: String) -> bool: return player.has_weapon(id))
+	var weapons := Weapons.all().map(func(def: Dictionary) -> String: return def.id).filter(func(id: String) -> bool: return player.has_weapon(id))
 	var pending := rewards.filter(func(r: RewardPickup) -> bool: return is_instance_valid(r)).map(
 			func(r: RewardPickup) -> Array: return [r.kind, r.global_position.x, r.global_position.y, r.global_position.z])
 	return {
 		"etapa": stage, "vencidas": won, "blasters": weapons, "coracoes": player.max_hearts,
 		"personagem": player.character_name, "bandeira": String(game.current_checkpoint.name),
-		"recompensas": pending, "recordes": _records_now(),
+		"recompensas": pending, "recordes": _records_now(), "moedas": coins, "moedas_ja": coins_ever,
+		"loja_visitada": shop_visited, "melhorias": upgrades, "equipados": player.equipped,
 		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
 	}
+
+
+## Ganha moedas (guardião vencido, onda da Festa sem fim). A primeira vez avisa da lojinha.
+func add_coins(n: int, at: Vector3) -> void:
+	var first := not coins_ever
+	coins += n
+	coins_ever = true
+	Fx.popup_text(game, at, "+%d moedas" % n, Color("#ffd23f"))
+	Sfx.play(game, "municao", 0.0, 0.0)
+	coins_changed.emit(coins)
+	if first and not shop_visited:
+		game.banner("Você ganhou moedas!", "Gaste na Lojinha de Blasters, na beira da praia. Siga a moeda dourada!", Color("#ffd23f"), 4.5)
+
+
+func spend_coins(n: int) -> bool:
+	if coins < n:
+		return false
+	coins -= n
+	coins_changed.emit(coins)
+	return true
+
+
+## Para onde aponta a seta dourada da lojinha (só até a primeira visita).
+func shop_target() -> Vector3:
+	if coins_ever and not shop_visited and is_instance_valid(game.shop) and stage not in ["festa"]:
+		return game.shop.marker_point()
+	return Vector3.INF
 
 
 func _records_now() -> Dictionary:
@@ -605,7 +647,30 @@ func restore(data: Dictionary) -> void:
 	for id in data.get("blasters", []):
 		if id != "pacoca":
 			player.unlock_weapon(id)
+	for id in data.get("equipados", []):
+		if player.has_weapon(id):
+			player.equip(id)
 	player.switch_weapon(0)
+	coins = int(data.get("moedas", 0))
+	coins_ever = data.get("moedas_ja", coins > 0)
+	# Campanha salva antes das moedas: ganha as dos guardiões já vencidos, menos os blasters da história que
+	# já tem (vieram de presente naquela versão).
+	if int(data.get("versao", 1)) < 2:
+		var owed := 0
+		for id in won:
+			owed += int(GUARDIAN_COINS.get(id, 0))
+		for def in Weapons.DEFS:
+			if def.has("preco") and def.id in data.get("blasters", []):
+				owed -= int(def.preco)
+		if owed > 0:
+			coins += owed
+			coins_ever = true
+			game.banner.call_deferred("Moedas dos guardiões: %d!" % owed, "Os guardiões que você já venceu deixaram moedas. Gaste na Lojinha de Blasters, na beira da praia!", Color("#ffd23f"), 5.0)
+	shop_visited = data.get("loja_visitada", false)
+	upgrades = data.get("melhorias", [])
+	if "granada_extra" in upgrades:
+		player.grenade_max = Weapons.GRENADE.max + 1
+	coins_changed.emit(coins)
 	player.max_hearts = int(data.get("coracoes", 5))
 	player.hearts = player.max_hearts
 	player.health_changed.emit(player.hearts, player.max_hearts)
@@ -616,7 +681,8 @@ func restore(data: Dictionary) -> void:
 		photos.append({"legenda": p.legenda, "arquivo": p.arquivo, "imagem": SaveGame.load_photo(p.arquivo)})
 	var saved_records: Dictionary = data.get("recordes", {})
 	for k in saved_records:
-		records[k] = int(saved_records[k])
+		# O recorde do kart é tempo (com décimos); os outros são contagens.
+		records[k] = float(saved_records[k]) if k == "kart" else int(saved_records[k])
 	if game.gallery:
 		game.gallery.set_hits(records.tiro)
 	game.activate_checkpoint(data.get("bandeira", "Praca"))

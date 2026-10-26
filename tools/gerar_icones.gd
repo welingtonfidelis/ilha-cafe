@@ -29,7 +29,7 @@ func _init() -> void:
 	for k in 6:
 		await process_frame
 	var items := []
-	for def in Weapons.DEFS:
+	for def in Weapons.all():
 		items.append([def.id, def.modelo])
 	items.append(["granada", Weapons.GRENADE.modelo])
 	for item in items:

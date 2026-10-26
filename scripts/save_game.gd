@@ -5,7 +5,8 @@ extends RefCounted
 ## o personagem, as fotos do álbum e os recordes. Os testes automáticos desligam o salvamento (enabled) ou
 ## usam outro arquivo (path), para nunca mexer na campanha de quem joga.
 
-const VERSION := 1
+## 2: moedas da lojinha (campanhas da versão 1 ganham as moedas dos guardiões já vencidos ao continuar).
+const VERSION := 2
 
 static var path := "user://campanha.json"
 static var enabled := true

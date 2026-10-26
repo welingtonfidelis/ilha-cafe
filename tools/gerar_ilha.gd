@@ -32,7 +32,28 @@ const VENTOS_TOP_R := 29.0
 const CLAREIRA := Vector2(40, -180)
 const VILA := Vector2(115, -160)
 ## Pasto dos cavalos, a oeste da cidade.
-const PASTURE := Vector2(-104, 52)
+## Atividades extras (pedido do usuário em 2026-10-26, pacotes do Kenney, CC0): pista de kart na campina a
+## leste do Morro (City Kit Roads, peças de 1 m ampliadas 8x) e pista de skate na campina a oeste (Mini Skate,
+## peças de 1 m ampliadas 5x). As áreas ficam sem árvores, pedras, arbustos e grama.
+const KART := Vector2(125, 15)
+const KART_TILE := 8.0
+const KART_W := 6
+const KART_L := 10
+## O piso das peças tem 0,16 m (o asfalto precisa ficar acima do chão da ilha, senão a grama aparece por cima).
+const KART_Y := 0.0
+## Pedaço da reta oeste sem a mureta de fora: é a entrada da pista, de frente para o box (a largada fica ali).
+const KART_ENTRY := 6
+## Vagas do box (o jogo põe os veículos nelas).
+const KART_SPOTS := 5
+## A pista de skate fica perto da cidade (a noroeste, entrada virada para as ruas; pedido do usuário) e a
+## fazenda foi para a campina a oeste do Morro, onde a pista ficava antes.
+const SKATE := Vector2(-98, 66)
+const SKATE_TILE := 5.0
+const SKATE_N := 8
+const PISTA := "res://assets/pista/%s.glb"
+const SKATE_PIECES := "res://assets/skate/%s.glb"
+const CARROS := "res://assets/carros/%s.glb"
+const PASTURE := Vector2(-120, -6)
 const PASTURE_R := 11.0
 const SPIRAL_TURNS := 2.5
 const SPIRAL_R0 := 86.0
@@ -126,6 +147,9 @@ func _init() -> void:
 	_morro()
 	_bridge_and_pier()
 	_forest()
+	_clear_activity_areas()
+	_kart_track()
+	_skate_park()
 	_grass()
 	_markers()
 	var packed := PackedScene.new()
@@ -345,6 +369,17 @@ func _prop(parent: Node, path: String, pos: Vector3, rot_y: float, s: float, col
 			var mi: MeshInstance3D = inst.find_children("*", "MeshInstance3D", true, false)[0]
 			cs.shape = mi.mesh.create_convex_shape()
 			cs.transform = _rel_xform(mi, inst)
+		"malha":
+			# Colisão no formato exato do modelo (rampas, curvas com mureta).
+			var faces := PackedVector3Array()
+			for m in inst.find_children("*", "MeshInstance3D", true, false):
+				var xf := _rel_xform(m, inst)
+				for v in (m as MeshInstance3D).mesh.get_faces():
+					faces.append(xf * v)
+			var shape := ConcavePolygonShape3D.new()
+			shape.set_faces(faces)
+			shape.backface_collision = true
+			cs.shape = shape
 	_add(body, cs)
 	return body
 
@@ -1103,12 +1138,14 @@ func _forest() -> void:
 		var p := Vector2(rng.randf_range(-185, 185), rng.randf_range(-240, 200))
 		if _island_d(p.x, p.y) > 0.84 or _in_city(p.x, p.y) or _trail_dist(p) < 4.0 or p.length() < MORRO_R or _near_region(p):
 			continue
-		if absf(p.y - _river_z(p.x)) < RIVER_HALF + RIVER_BANK + 2.0:
+		if absf(p.y - _river_z(p.x)) < RIVER_HALF + RIVER_BANK + 2.0 or p.distance_to(PASTURE) < PASTURE_R + 17.0:
 			continue
 		_prop(forest, FOREST % ("Rock_%d_%s_Color1" % [rng.randi_range(1, 3), "ABCDEFG"[rng.randi() % 7]]), Vector3(p.x, ground(p.x, p.y) - 0.1, p.y), rng.randf_range(0, 360), FOREST_SCALE * rng.randf_range(0.7, 1.5), "convexo")
 	for k in 160:
 		var p := Vector2(rng.randf_range(-185, 185), rng.randf_range(-240, 200))
 		if _island_d(p.x, p.y) > 0.85 or _in_city(p.x, p.y) or _trail_dist(p) < 3.0 or ground(p.x, p.y) < SEA_LEVEL + 0.5 or _near_region(p, -6.0):
+			continue
+		if p.distance_to(PASTURE) < PASTURE_R + 17.0:
 			continue
 		if p.length() < MORRO_R and (_spiral_dist(p.x, p.y) < PATH_HALF + 1.0 or p.length() < MORRO_TOP_R + 1.0):
 			continue
@@ -1124,6 +1161,116 @@ func _forest() -> void:
 		if _island_d(hx, hz) > 0.82 or _trail_dist(Vector2(hx, hz)) < 6.0 or Vector2(hx, hz).length() < MORRO_R + 4.0:
 			continue
 		_prop(forest, FOREST % (h[0] + "_Color1"), Vector3(hx, ground(hx, hz) - 0.4, hz), rad_to_deg(atan2(_river_z(hx + 1.0) - _river_z(hx), 1.0)), 1.0, "caixa")
+
+
+# --- pista de kart e pista de skate -------------------------------------------
+
+func _activity_rects() -> Array[Rect2]:
+	var kart_size := Vector2(KART_W, KART_L) * KART_TILE
+	var skate_size := Vector2.ONE * SKATE_N * SKATE_TILE
+	return [Rect2(KART - kart_size * 0.5 - Vector2(16, 6), kart_size + Vector2(22, 12)),
+		Rect2(SKATE - skate_size * 0.5 - Vector2(4, 4), skate_size + Vector2(8, 12))]
+
+
+func _in_activity(p: Vector2) -> bool:
+	for r in _activity_rects():
+		if r.has_point(p):
+			return true
+	return false
+
+
+## Tira árvores, pedras e arbustos de dentro das áreas (depois do sorteio: não muda o resto da ilha).
+func _clear_activity_areas() -> void:
+	var forest := _find_group("Mata")
+	for child in forest.get_children():
+		var n := child as Node3D
+		if n and _in_activity(Vector2(n.position.x, n.position.z)):
+			forest.remove_child(n)
+			n.free()
+
+
+## Pista oval de kart: retas de 48 m nas laterais, 16 m em cima e embaixo e curvas de 12 m de raio
+## (uns 200 m por volta). Peças do City Kit Roads: a peça "-barrier" é só a mureta, então cada pedaço leva
+## o asfalto (com colisão, o kart anda nele) e a mureta por cima. A reta corre norte-sul; a curva grande (2x2)
+## liga sul e oeste e, girada +90°, leste e sul. O kart corre no sentido horário visto de cima: sobe a reta
+## da esquerda (para o norte), passa pela largada e faz a volta.
+func _kart_track() -> void:
+	var group := _group(ilha, "PistaDeKart")
+	var o := Vector3(KART.x - KART_W * KART_TILE * 0.5, KART_Y, KART.y - KART_L * KART_TILE * 0.5)
+	var at := func(i: float, j: float) -> Vector3:
+		return o + Vector3(i * KART_TILE, 0, j * KART_TILE)
+	var piece := func(road: String, pos: Vector3, rot: float) -> void:
+		_prop(group, PISTA % road, pos, rot, KART_TILE, "malha")
+		var rail := road.replace("-crossing", "-straight") + "-barrier"
+		_prop(group, PISTA % rail, pos, rot, KART_TILE, "malha")
+	for spec in [[0, 0, 90.0], [KART_W - 2, 0, 0.0], [KART_W - 2, KART_L - 2, -90.0], [0, KART_L - 2, 180.0]]:
+		piece.call("road-curve", at.call(spec[0] + 1, spec[1] + 1), spec[2])
+	for j in range(2, KART_L - 2):
+		for i in [0, KART_W - 1]:
+			if i == 0 and j == KART_ENTRY:
+				# Entrada: só o asfalto e a mureta de dentro (a peça do pacote tem as duas muretas juntas).
+				var ep: Vector3 = at.call(i + 0.5, j + 0.5)
+				_prop(group, PISTA % "road-straight", ep, 0.0, KART_TILE, "malha")
+				_box_body(group, "MuretaDaEntrada", Vector3(0.18, 0.64, KART_TILE),
+					Transform3D(Basis.IDENTITY, ep + Vector3(0.47 * KART_TILE, 0.32, 0)), Color("#a6aad8"))
+				continue
+			# A faixa de pedestre da reta da esquerda vira a linha de chegada.
+			piece.call("road-crossing" if i == 0 and j == 5 else "road-straight", at.call(i + 0.5, j + 0.5), 0.0)
+	for i in range(2, KART_W - 2):
+		for j in [0, KART_L - 1]:
+			piece.call("road-straight", at.call(i + 0.5, j + 0.5), 90.0)
+	# Largada: arco quadriculado (o do Watercraft Kit) em cima da faixa da reta da esquerda.
+	var start: Vector3 = at.call(0.5, 5.5)
+	_prop(group, "res://assets/barcos/gate-finish.glb", Vector3(start.x, 0, start.z), 0.0, 1.35)
+	# Postes de luz por fora das retas e cones nas curvas, por dentro.
+	for j in [2.5, 5.0, 7.5]:
+		for side in [[-0.15, 90.0], [KART_W + 0.15, -90.0]]:
+			var lp: Vector3 = at.call(side[0], j)
+			_prop(group, PISTA % "light-curved", Vector3(lp.x, 0, lp.z), side[1], 7.0, "tronco")
+	for spec in [[2.1, 2.1], [KART_W - 2.1, 2.1], [2.1, KART_L - 2.1], [KART_W - 2.1, KART_L - 2.1]]:
+		for k in 3:
+			var cp: Vector3 = at.call(spec[0] + (k - 1) * 0.25, spec[1] + (1 - k) * 0.25)
+			_prop(group, CARROS % "cone", Vector3(cp.x, 0, cp.z), k * 30.0, 2.2)
+	# Box (paddock) a oeste da pista: pneus e caixas (os veículos o jogo põe nas vagas, marcadores "Vagas").
+	var pit: Vector3 = at.call(-1.4, 6.5)
+	for k in 3:
+		_prop(group, CARROS % "wheel-racing", Vector3(pit.x - 6.0, 0.3 * 1.6 + k * 0.62, pit.z - 3.0), 0.0, 1.6)
+	_prop(group, CARROS % "box", Vector3(pit.x - 6.0, 0, pit.z - 0.5), 20.0, 1.8, "caixa")
+
+
+## Pista de skate: chão de concreto, half-pipe de 4 m (dois quarter-pipes de frente um para o outro), rampas,
+## caixote e corrimão para manobras, escada com corrimão, rampa longa de lado e cerca em volta com a entrada
+## no meio do lado sul. Tudo com a colisão no formato das peças.
+func _skate_park() -> void:
+	var group := _group(ilha, "PistaDeSkate")
+	var t := SKATE_TILE
+	var o := Vector3(SKATE.x - SKATE_N * t * 0.5, 0, SKATE.y - SKATE_N * t * 0.5)
+	var at := func(i: float, j: float) -> Vector3:
+		return o + Vector3(i * t, 0, j * t)
+	for i in SKATE_N:
+		for j in SKATE_N:
+			var fp: Vector3 = at.call(i + 0.5, j + 0.5)
+			_prop(group, SKATE_PIECES % "floor-concrete", fp + Vector3.UP * 0.03, 0.0, t)
+	# Half-pipe: o quarter-pipe sobe para o norte; o de frente, girado 180°, sobe para o sul.
+	for i in range(1, 5):
+		_prop(group, SKATE_PIECES % "half-pipe", at.call(i + 0.5, 0.5), 0.0, t, "malha")
+		_prop(group, SKATE_PIECES % "half-pipe", at.call(i + 0.5, 3.5), 180.0, t, "malha")
+	# Rampas para pular, caixote, corrimão e escada.
+	_prop(group, SKATE_PIECES % "ramp", at.call(6.5, 1.5), 0.0, t, "malha")
+	_prop(group, SKATE_PIECES % "ramp", at.call(6.5, 5.5), 180.0, t, "malha")
+	_prop(group, SKATE_PIECES % "obstacle-box-grind", at.call(4.0, 5.5), 90.0, t, "malha")
+	_prop(group, SKATE_PIECES % "rail-low", at.call(2.0, 6.0), 90.0, t, "malha")
+	_prop(group, SKATE_PIECES % "steps-rail", at.call(6.5, 3.5), 90.0, t, "malha")
+	_prop(group, SKATE_PIECES % "slope-smooth", at.call(0.5, 6.0), 0.0, t, "malha")
+	# Cerca em volta, com a entrada no meio do lado sul.
+	for k in SKATE_N:
+		_prop(group, SKATE_PIECES % "fence", at.call(k + 0.5, 0.0), 0.0, t, "caixa")
+		_prop(group, SKATE_PIECES % "fence", at.call(0.0, k + 0.5), 90.0, t, "caixa")
+		_prop(group, SKATE_PIECES % "fence", at.call(SKATE_N, k + 0.5), 90.0, t, "caixa")
+		if k < 3 or k > 4:
+			_prop(group, SKATE_PIECES % "fence", at.call(k + 0.5, SKATE_N), 0.0, t, "caixa")
+	for k in 2:
+		_prop(group, SKATE_PIECES % "bench", at.call(2.0 + k * 4.0, SKATE_N + 0.9), 180.0, 3.0, "caixa")
 
 
 ## Grama em MultiMesh (milhares de tufos sem pesar).
@@ -1143,7 +1290,11 @@ func _grass() -> void:
 			if p.length() < MORRO_R and (_spiral_dist(p.x, p.y) < PATH_HALF + 0.5 or p.length() < MORRO_TOP_R + 2.0):
 				continue
 			var s := FOREST_SCALE * rng.randf_range(0.8, 1.3)
-			xforms.append(Transform3D(Basis(Vector3.UP, rng.randf_range(0, TAU)).scaled(Vector3.ONE * s), Vector3(p.x, h - 0.05, p.y)) * _rel_xform(mi, inst))
+			var turn := rng.randf_range(0, TAU)
+			# Sem grama na pista de kart e na de skate (o sorteio de cada tufo continua o mesmo).
+			if _in_activity(p):
+				continue
+			xforms.append(Transform3D(Basis(Vector3.UP, turn).scaled(Vector3.ONE * s), Vector3(p.x, h - 0.05, p.y)) * _rel_xform(mi, inst))
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = mi.mesh
@@ -1236,6 +1387,17 @@ func _markers() -> void:
 	var fun := _group(markers, "Diversao")
 	var pc0 := Vector2(PLAZA.position.x + 20, PLAZA.position.y + 20)
 	_marker(fun, "TiroAoAlvo", pc0.x - 4.0, pc0.y + 9.4)
+	# Kart: onde o aventureiro pega o kart (no box) e a posição de largada (logo depois do arco, virado para o norte).
+	var kart_o := Vector2(KART.x - KART_W * KART_TILE * 0.5, KART.y - KART_L * KART_TILE * 0.5)
+	_marker(fun, "Kart", kart_o.x - 1.4 * KART_TILE + 1.0, kart_o.y + 6.5 * KART_TILE)
+	var grid := _marker(fun, "KartLargada", kart_o.x + 0.5 * KART_TILE, kart_o.y + (KART_ENTRY + 0.6) * KART_TILE)
+	grid.rotation_degrees.y = 180.0
+	# Vagas do box, viradas para a pista (leste): o veículo do Car Kit olha para +Z, girado 90° olha para +X.
+	var spots := _group(fun, "Vagas")
+	for k in KART_SPOTS:
+		var v := _marker(spots, "Vaga%d" % (k + 1), kart_o.x - 1.4 * KART_TILE - 2.5, kart_o.y + 6.5 * KART_TILE - 7.0 + k * 3.8)
+		v.rotation_degrees.y = 90.0
+	_marker(fun, "Skate", SKATE.x, SKATE.y + SKATE_N * SKATE_TILE * 0.5 + 3.0)
 	_pasture()
 
 	# Bichos soltos (Quaternius, CC0): modelo, tamanho, raio do passeio e se foge do aventureiro.

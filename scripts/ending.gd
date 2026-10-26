@@ -6,8 +6,8 @@ extends Node
 ## - epílogo: a Festa do Cafuné à noite na praça, com luzinhas, lua, estrelas e fogos; os esqueletos que
 ##   foram embora de balão descem de balão como convidados (dançam, tocam na banda, servem doces);
 ## - créditos: subir no palco abre o álbum de fotos da partida e os créditos (scripts/credits.gd);
-## - pós-jogo: a ilha de dia, em festa, com os esqueletos amigos e a brincadeira "Defender a festa" na
-##   praia (scripts/party_defense.gd).
+## - pós-jogo: a ilha de dia, em festa, com os esqueletos amigos e a "Festa sem fim" no cemitério
+##   (scripts/endless_party.gd).
 
 ## Centro da praça da festa (o quarteirão PLAZA de tools/gerar_ilha.gd).
 const PLAZA := Vector3(0, 0, 170)
@@ -41,8 +41,8 @@ const GUESTS := [
 		["Sorvete! Eu nunca tinha tomado sorvete!"]],
 ]
 const MESTRE_LINES := ["Melhor festa de todas!", "O vovô está me contando histórias da ilha."]
-const MESTRE_BEACH_LINES := ["Vamos brincar de Defender a festa? Fique no círculo!",
-	"Meus amigos vão tentar levar os enfeites... derrube quem estiver carregando um!"]
+const MESTRE_PARTY_LINES := ["Vamos brincar de Festa sem fim? É luta de brincadeira, mas vale de verdade!",
+	"Fique no círculo dourado quando estiver pronto. Cada onda vencida dá moedas!"]
 ## A Torre balança ao lado do palco; o aventureiro chega na festa a sudeste do meio da praça.
 const TOWER_SPOT := Vector2(-7.4, -8.2)
 const ARRIVAL := Vector2(5.5, 9.5)
@@ -548,21 +548,22 @@ func post_game(animate: bool) -> void:
 	if bench:
 		bench.queue_free()
 	story.party_lanterns()
-	var praca: Defense = story.defenses.praca
+	var cemiterio: Defense = story.defenses.cemiterio
 	if not is_instance_valid(game.party_mode):
-		var pd := PartyDefense.new()
-		pd.name = "DefenderAFesta"
+		var pd := EndlessParty.new()
+		pd.name = "FestaSemFim"
 		pd.game = game
 		pd.story = story
-		pd.center = praca.center
-		pd.cracks = praca.cracks
+		pd.center = cemiterio.center
+		pd.radius = cemiterio.radius
+		pd.cracks = cemiterio.cracks.duplicate()
 		pd.fast = story.fast
 		game.add_child(pd)
 		game.party_mode = pd
-		var host_pos: Vector3 = game._ground_point(praca.center + Vector3(-5.5, 0, -5.0))
-		var look := praca.center - host_pos
+		var host_pos: Vector3 = game._ground_point(cemiterio.center + Vector3(5.0, 0, -7.0))
+		var look := cemiterio.center - host_pos
 		var host := _spawn({"nome": "MestreDaBrincadeira", "modelo_caminho": SKELETONS % "Necromancer", "atividade": "parado",
-			"esconder": PackedStringArray(["Necromancer_Crown"]), "falas": PackedStringArray(MESTRE_BEACH_LINES)},
+			"esconder": PackedStringArray(["Necromancer_Crown"]), "falas": PackedStringArray(MESTRE_PARTY_LINES)},
 			host_pos, atan2(look.x, look.z))
 		pd.host = host
 	story._refresh_objective()
@@ -573,7 +574,7 @@ func post_game(animate: bool) -> void:
 		var tw := fade.create_tween()
 		tw.tween_interval(0.3)
 		tw.tween_property(fade, "modulate:a", 0.0, 1.0)
-		game.banner("Depois da festa...", "Os esqueletos agora são amigos da ilha. O Mestre Ossinho chamou você para brincar na praia!", Color("#ffd23f"), 4.5)
+		game.banner("Depois da festa...", "Os esqueletos agora são amigos da ilha. O Mestre Ossinho chamou você para a Festa sem fim no cemitério!", Color("#ffd23f"), 4.5)
 	story.save()
 
 
