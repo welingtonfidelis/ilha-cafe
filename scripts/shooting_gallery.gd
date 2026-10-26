@@ -38,6 +38,12 @@ func _ready() -> void:
 	_refresh()
 
 
+## Os acertos ficam salvos na campanha (recorde da barraca).
+func set_hits(n: int) -> void:
+	hits = n
+	_refresh()
+
+
 func scored() -> void:
 	hits += 1
 	_refresh()

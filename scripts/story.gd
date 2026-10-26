@@ -66,7 +66,7 @@ const BRIDGE_SOUTH_Z := -97.0
 
 var game: Node
 var island: Node3D
-## antes, prologo, cidade, mata, cemiterio, fim
+## antes, prologo, cidade, mata, cemiterio, festa (epílogo, à noite), fim (depois dos créditos)
 var stage := "antes"
 var defenses := {}
 var lanterns := {}
@@ -75,6 +75,19 @@ var objective_text := ""
 var objective_target := Vector3.INF
 ## Testes: ondas e intervalos curtos.
 var fast := false
+## Fotos do álbum: {legenda, arquivo, imagem} (a imagem só fica na memória; o arquivo vai para user://album/).
+var photos: Array = []
+## Recordes: ondas no "Defender a festa" e acertos na barraca de tiro.
+var records := {"festa": 0, "tiro": 0}
+## Legenda da foto tirada quando cada região é vencida.
+const PHOTO_CAPTIONS := {
+	"praca": "A primeira defesa, na praia do cais",
+	"oeste": "O Ossão foi embora de balão",
+	"leste": "A Mira-Torta errou de novo",
+	"clareira": "A Torre de Ossinhos desmontou",
+	"ventos": "O Minionzão ficou tonto",
+	"vila": "O Guerreiro Planta virou amigo da gente",
+}
 
 var _crowd_check := 0.0
 var _dome: StaticBody3D
@@ -133,6 +146,7 @@ func start() -> void:
 	defenses.praca.activate()
 	game.banner("Véspera da Festa do Cafuné", "Os esqueletos estão chegando pela praia! Vá até o cais e defenda a festa.")
 	_refresh_objective()
+	save()
 
 
 func _set_fast() -> void:
@@ -145,7 +159,7 @@ func _physics_process(delta: float) -> void:
 	if _crowd_check <= 0.0:
 		_crowd_check = 0.5
 		_update_crowd()
-	if stage in ["cidade", "mata", "cemiterio"]:
+	if stage in ["cidade", "mata", "cemiterio", "festa", "fim"]:
 		_refresh_objective()
 
 
@@ -153,11 +167,14 @@ func _physics_process(delta: float) -> void:
 
 func _on_defense_won(d: Defense) -> void:
 	var spec: Dictionary = REGIONS[d.id]
+	if PHOTO_CAPTIONS.has(d.id):
+		get_tree().create_timer(1.6 if not fast else 0.1, false).timeout.connect(func() -> void: take_photo(PHOTO_CAPTIONS[d.id]))
 	if d.id == "vila":
 		_celebrate(d)
 		_spawn_reward(spec.recompensa, d.center + Vector3(0, 0, 3.0))
 		game.banner("Desafio vencido!", "O Guerreiro Planta reconheceu você como amigo da mata.", Color("#c9f7a0"))
 		_refresh_objective()
+		save()
 		return
 	_celebrate(d)
 	game.activate_checkpoint(spec.bandeira)
@@ -190,19 +207,12 @@ func _on_defense_won(d: Defense) -> void:
 			else:
 				game.banner("%s apagada!" % spec.titulo, "Falta uma lanterna na mata.")
 		"cemiterio":
-			_ending()
+			# O desfecho em cena leva ao epílogo, que salva a campanha já na festa.
+			game.ending.start_cutscene(d.boss as BossMestre)
+			_refresh_objective()
+			return
 	_refresh_objective()
-
-
-## Desfecho do Ato 3: o Mestre Ossinho sentou, tirou a coroa e confessou. As crianças entregam o convite.
-## (O epílogo com a festa e o modo "Defender a festa" vêm depois.)
-func _ending() -> void:
-	stage = "fim"
-	game.banner("O Mestre Ossinho tirou a coroa...", "\"Ninguém nunca convidou a gente para a festa.\"", Color("#d9a8ff"))
-	get_tree().create_timer(4.5 if not fast else 0.3).timeout.connect(func() -> void:
-		game.banner("Vocês entregaram o convite!", "Amanhã a Festa do Cafuné vai ter convidados novos.", Color("#ffd23f")))
-	for t in get_tree().get_nodes_in_group(&"moradores"):
-		(t as Townsperson).celebrate(10.0)
+	save()
 
 
 func _spawn_reward(kind: String, pos: Vector3) -> void:
@@ -230,10 +240,12 @@ func _on_reward_collected(r: RewardPickup) -> void:
 		var def := Weapons.get_def(i)
 		game.banner("Novo blaster: %s!" % def.nome, "No controle, direcional %s. No teclado, a tecla %d." % [Weapons.DPAD_WORDS[i], i + 1], def.cor)
 	_refresh_objective()
+	save.call_deferred()
 
 
-## Região em festa: postes com balões em volta do círculo e confete.
-func _celebrate(d: Defense) -> void:
+## Região em festa: postes com balões em volta do círculo e confete (quiet: ao carregar a campanha, sem
+## confete nem comemoração).
+func _celebrate(d: Defense, quiet := false) -> void:
 	var party := Node3D.new()
 	party.name = "Festa_" + d.id
 	game.add_child(party)
@@ -250,16 +262,18 @@ func _celebrate(d: Defense) -> void:
 		ball.scale = Vector3(0.5, 0.6, 0.5)
 		party.add_child(ball)
 		ball.global_position = pos + Vector3.UP * 3.6
-		Fx.confetti(game, pos + Vector3.UP * 3.0, 20, 4.0)
-	for t in get_tree().get_nodes_in_group(&"moradores"):
-		if (t as Node3D).global_position.distance_to(d.center) < d.radius + _crowd_reach(d) + 2.0:
-			(t as Townsperson).celebrate(8.0, "Viva!")
+		if not quiet:
+			Fx.confetti(game, pos + Vector3.UP * 3.0, 20, 4.0)
+	if not quiet:
+		for t in get_tree().get_nodes_in_group(&"moradores"):
+			if (t as Node3D).global_position.distance_to(d.center) < d.radius + _crowd_reach(d) + 2.0:
+				(t as Townsperson).celebrate(8.0, "Viva!")
 	if PARTY_GUESTS.has(d.id):
-		_party_guests(d)
+		_party_guests(d, quiet)
 
 
 ## Uma mesa com comida e três moradores que chegam para festejar na região vencida.
-func _party_guests(d: Defense) -> void:
+func _party_guests(d: Defense, quiet := false) -> void:
 	var table_pos: Vector3 = game._ground_point(d.center + Vector3(5.0, 0, 3.0))
 	var table := StaticBody3D.new()
 	table.name = "MesaDaFesta_" + d.id
@@ -290,7 +304,8 @@ func _party_guests(d: Defense) -> void:
 		var spec := {"nome": "Convidado_%s_%d" % [d.id, k], "modelo": guests[k][0], "variante": guests[k][1],
 			"atividade": guests[k][2], "falas": PackedStringArray([PARTY_LINES[k % PARTY_LINES.size()]])}
 		var t: Townsperson = game.spawn_townsperson(spec, pos, atan2(to_table.x, to_table.z))
-		t.celebrate(8.0)
+		if not quiet:
+			t.celebrate(8.0)
 
 
 ## Os postes de balão da comemoração não ficam na rua (a cidade vai de x −72 a 72 e de z 98 a 202) nem na água.
@@ -341,6 +356,18 @@ func _set_orb_lit(orb: MeshInstance3D, lit: bool) -> void:
 	mat.emission = Color("#b06cff")
 	mat.emission_energy_multiplier = 2.0
 	orb.material_override = mat
+
+
+## Pós-jogo: as lanternas mágicas viram lanternas de festa, cada uma de uma cor.
+func party_lanterns() -> void:
+	var k := 0
+	for key in lanterns:
+		var l: Dictionary = lanterns[key]
+		l.lit = false
+		(l.beam as Node3D).visible = false
+		(l.orb as MeshInstance3D).material_override = Fx.glow_material(Fx.CONFETTI_COLORS[k % Fx.CONFETTI_COLORS.size()], 2.2)
+		k += 1
+	_central_orb.material_override = Fx.glow_material(Color("#ffd23f"), 2.2)
 
 
 func _open_dome() -> void:
@@ -479,12 +506,123 @@ func _refresh_objective() -> void:
 			"cemiterio":
 				text = "Suba o Morro até o cemitério"
 				target = CEMETERY + Vector3.UP * 2.0
+			"festa":
+				text = "Aproveite a festa! Suba no palco para ver o álbum"
+				target = Ending.STAGE_TOP + Vector3.UP * 1.5
 			"fim":
-				text = "Explore a ilha à vontade!"
+				if is_instance_valid(game.party_mode) and game.party_mode.running():
+					text = game.party_mode.objective_text()
+				else:
+					text = "Defenda a festa na praia, ou explore a ilha à vontade!"
+					target = defenses.praca.center
 	objective_target = target
 	if text != objective_text:
 		objective_text = text
 		objective_changed.emit(text)
+
+
+# --- campanha salva ------------------------------------------------------------
+
+func save() -> void:
+	SaveGame.write(snapshot())
+
+
+func snapshot() -> Dictionary:
+	var player: Player = game.player
+	var won := defenses.keys().filter(func(id: String) -> bool: return defenses[id].state == Defense.State.VENCIDA)
+	var weapons := Weapons.DEFS.map(func(def: Dictionary) -> String: return def.id).filter(func(id: String) -> bool: return player.has_weapon(id))
+	var pending := rewards.filter(func(r: RewardPickup) -> bool: return is_instance_valid(r)).map(
+			func(r: RewardPickup) -> Array: return [r.kind, r.global_position.x, r.global_position.y, r.global_position.z])
+	return {
+		"etapa": stage, "vencidas": won, "blasters": weapons, "coracoes": player.max_hearts,
+		"personagem": player.character_name, "bandeira": String(game.current_checkpoint.name),
+		"recompensas": pending, "recordes": _records_now(),
+		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
+	}
+
+
+func _records_now() -> Dictionary:
+	if game.gallery:
+		records.tiro = game.gallery.hits
+	return records
+
+
+## Foto do álbum: a tela do jogo sem a interface, guardada na memória e em user://album/.
+func take_photo(caption: String) -> void:
+	# Sem tela (testes), a foto fica só com a legenda; os créditos mostram um cartão no lugar.
+	var image: Image = await game.capture_view()
+	var file := ""
+	if image != null and not image.is_empty():
+		image.resize(960, 540, Image.INTERPOLATE_BILINEAR)
+		file = SaveGame.save_photo(image, photos.size())
+	else:
+		image = null
+	photos.append({"legenda": caption, "arquivo": file, "imagem": image})
+	if stage not in ["cemiterio"]:
+		save()
+
+
+## Monta a ilha no ponto em que a campanha salva parou.
+func restore(data: Dictionary) -> void:
+	stage = data.get("etapa", "antes")
+	var won: Array = data.get("vencidas", [])
+	for id in won:
+		if defenses.has(id):
+			var d: Defense = defenses[id]
+			d.state = Defense.State.VENCIDA
+			d.active = false
+			_celebrate(d, true)
+	var lit := stage in ["cidade", "mata", "cemiterio"]
+	for id in REGIONS:
+		var key: String = REGIONS[id].lanterna
+		if key != "":
+			_set_lantern_look(key, lit and not (id in won))
+	_set_orb_lit(_central_orb, stage in ["cidade", "mata"])
+	if stage in ["cemiterio", "festa", "fim"]:
+		_dome.collision_layer = 0
+		_dome.visible = false
+		_open_gate(true)
+	match stage:
+		"prologo":
+			defenses.praca.activate()
+		"cidade":
+			for id in CITY:
+				defenses[id].activate()
+		"mata":
+			for id in FOREST:
+				defenses[id].activate()
+		"cemiterio":
+			defenses.cemiterio.activate()
+	if stage in ["mata", "cemiterio", "festa", "fim"]:
+		defenses.vila.activate()
+	var player: Player = game.player
+	player.set_character(data.get("personagem", "menino"))
+	player.keep_only_weapons(["pacoca"])
+	for id in data.get("blasters", []):
+		if id != "pacoca":
+			player.unlock_weapon(id)
+	player.switch_weapon(0)
+	player.max_hearts = int(data.get("coracoes", 5))
+	player.hearts = player.max_hearts
+	player.health_changed.emit(player.hearts, player.max_hearts)
+	for r in data.get("recompensas", []):
+		_spawn_reward(r[0], Vector3(r[1], r[2], r[3]))
+	photos.clear()
+	for p in data.get("fotos", []):
+		photos.append({"legenda": p.legenda, "arquivo": p.arquivo, "imagem": SaveGame.load_photo(p.arquivo)})
+	var saved_records: Dictionary = data.get("recordes", {})
+	for k in saved_records:
+		records[k] = int(saved_records[k])
+	if game.gallery:
+		game.gallery.set_hits(records.tiro)
+	game.activate_checkpoint(data.get("bandeira", "Praca"))
+	player.respawn(game.current_checkpoint.spawn_position())
+	_set_fast()
+	if stage == "festa":
+		game.ending.start_epilogue(false)
+	elif stage == "fim":
+		game.ending.post_game(false)
+	_refresh_objective()
 
 
 func _nearest(ids: Array) -> Vector3:

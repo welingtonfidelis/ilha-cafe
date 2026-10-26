@@ -26,6 +26,8 @@ var _state := "parado"
 var _timer := 0.0
 var _stuck := 0.0
 var _last_pos := Vector3.ZERO
+## Desvios tentados na fuga atual (travou numa árvore: tenta pelos lados).
+var _turns := 0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
 
 
@@ -102,6 +104,7 @@ func _physics_process(delta: float) -> void:
 		_state = "fugindo"
 		_timer = 3.0
 		_stuck = 0.0
+		_turns = 0
 		_last_pos = global_position
 	match _state:
 		"parado", "pastando":
@@ -126,7 +129,13 @@ func _physics_process(delta: float) -> void:
 			var moved := Vector2(global_position.x - _last_pos.x, global_position.z - _last_pos.z).length()
 			_stuck = _stuck + delta if moved < WALK_SPEED * 0.25 * delta else 0.0
 			_last_pos = global_position
-			if to.length() < 0.6 or _timer <= 0.0 or _stuck > 1.5:
+			if fleeing and _stuck > 0.5 and _turns < 3:
+				# Fugindo e travado: desvia para um lado, depois para o outro.
+				_target = global_position + to.normalized().rotated(Vector3.UP, 1.2 if _turns % 2 == 0 else -2.4) * 10.0
+				_turns += 1
+				_stuck = 0.0
+				_timer = maxf(_timer, 1.5)
+			elif to.length() < 0.6 or _timer <= 0.0 or _stuck > 1.5:
 				_rest()
 			else:
 				_move(to.normalized() * (FLEE_SPEED if fleeing else WALK_SPEED), delta)

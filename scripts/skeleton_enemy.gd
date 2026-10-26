@@ -70,6 +70,9 @@ const LARGE_ANIMS := {
 @export var from_crack := false
 
 var target: Player
+## Brincadeira "Defender a festa" (pós-jogo): o esqueleto não ataca; vai até um enfeite, pega e foge com
+## ele para a rachadura (a PartyDefense diz para onde ir). Derrubado, solta o enfeite.
+var thief: PartyDefense
 var health := 3.0
 var state := State.ACORDANDO
 var hurtboxes: Array[Hurtbox] = []
@@ -285,6 +288,11 @@ func _physics_process(delta: float) -> void:
 		dist = to_target.length()
 	var target_down := is_instance_valid(target) and target.is_dizzy()
 
+	if thief != null and state in [State.PERSEGUINDO, State.ESPERANDO, State.PREPARANDO, State.ATACANDO, State.COMEMORANDO, State.VOLTANDO]:
+		_steal(delta)
+		move_and_slide()
+		return
+
 	# Com o aventureiro tonto, os esqueletos comemoram em vez de atacar.
 	if target_down and state in [State.PERSEGUINDO, State.PREPARANDO, State.ATACANDO, State.ESPERANDO]:
 		_enter(State.COMEMORANDO, "festa/Cheering")
@@ -356,6 +364,20 @@ func _physics_process(delta: float) -> void:
 				_cooldown = 1.0
 				_enter(State.PERSEGUINDO if dist <= aggro_radius else State.VOLTANDO, "especial/Skeletons_Walking")
 	move_and_slide()
+
+
+func _steal(delta: float) -> void:
+	if state != State.PERSEGUINDO:
+		_enter(State.PERSEGUINDO, "especial/Skeletons_Walking")
+	var to := thief.goal_for(self) - global_position
+	to.y = 0.0
+	if to.length() < 1.1:
+		_move(Vector3.ZERO)
+		thief.arrived(self)
+	else:
+		var dir := to.normalized()
+		_move(dir * config.speed * thief.speed_factor(self))
+		_face(dir, delta)
 
 
 func _start_attack() -> void:

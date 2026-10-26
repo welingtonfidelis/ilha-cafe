@@ -179,29 +179,9 @@ static func flat_material(color: Color, unshaded := true) -> StandardMaterial3D:
 ## Leva um esqueleto (ou parte da Torre) embora de balão: três balões enchem sobre a cabeça,
 ## ele acena e sobe em zigue-zague até sumir em confete. O nó deve estar solto no mundo.
 static func balloon_away(node: Node3D, ap: AnimationPlayer, head_height := 2.6) -> void:
-	var balloons := Node3D.new()
-	balloons.position.y = head_height
+	var balloons := balloons(head_height)
 	balloons.scale = Vector3.ONE * 0.01
 	node.add_child(balloons)
-	var colors := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
-	colors.shuffle()
-	var spots := [Vector3(0, 2.2, 0), Vector3(-0.7, 1.7, 0.25), Vector3(0.7, 1.75, -0.2)]
-	var string_mat := flat_material(Color.WHITE, false)
-	for k in 3:
-		var ball: Node3D = load("res://assets/props/platformer/%s.gltf" % colors[k]).instantiate()
-		ball.scale = Vector3(0.42, 0.5, 0.42)
-		ball.position = spots[k]
-		balloons.add_child(ball)
-		var bottom: Vector3 = spots[k] - Vector3(0, 0.5, 0)
-		var cord := MeshInstance3D.new()
-		var cyl := CylinderMesh.new()
-		cyl.top_radius = 0.015
-		cyl.bottom_radius = 0.015
-		cyl.height = bottom.length()
-		cyl.material = string_mat
-		cord.mesh = cyl
-		cord.transform = Transform3D(Basis(Quaternion(Vector3.UP, bottom.normalized())), bottom * 0.5)
-		balloons.add_child(cord)
 	var world := node.get_parent()
 	var tw := node.create_tween()
 	tw.tween_property(balloons, "scale", Vector3.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -215,6 +195,123 @@ static func balloon_away(node: Node3D, ap: AnimationPlayer, head_height := 2.6) 
 	tw.tween_callback(func() -> void:
 		confetti(world, node.global_position + Vector3.UP * 4.0, 30, 3.0)
 		node.queue_free())
+
+
+## Três balões coloridos (bolas do Platformer Pack, um pouco esticadas) com cordinhas até um nó acima da
+## cabeça (head_height). Devolve o nó, ainda solto.
+static func balloons(head_height := 2.6) -> Node3D:
+	var node := Node3D.new()
+	node.name = "Baloes"
+	node.position.y = head_height
+	var colors := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
+	colors.shuffle()
+	var spots := [Vector3(0, 2.2, 0), Vector3(-0.7, 1.7, 0.25), Vector3(0.7, 1.75, -0.2)]
+	var string_mat := flat_material(Color.WHITE, false)
+	for k in 3:
+		var ball: Node3D = load("res://assets/props/platformer/%s.gltf" % colors[k]).instantiate()
+		ball.scale = Vector3(0.42, 0.5, 0.42)
+		ball.position = spots[k]
+		node.add_child(ball)
+		var bottom: Vector3 = spots[k] - Vector3(0, 0.5, 0)
+		var cord := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.015
+		cyl.bottom_radius = 0.015
+		cyl.height = bottom.length()
+		cyl.material = string_mat
+		cord.mesh = cyl
+		cord.transform = Transform3D(Basis(Quaternion(Vector3.UP, bottom.normalized())), bottom * 0.5)
+		node.add_child(cord)
+	return node
+
+
+## Fogos de artifício (epílogo à noite): um rojão sobe com rastro e estoura numa esfera de faíscas
+## coloridas que caem devagar, com um clarão que pinta a praça da cor do estouro.
+static func firework(parent: Node, from: Vector3, height: float, color: Color) -> void:
+	var rocket := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.12
+	sphere.height = 0.24
+	sphere.material = glow_material(Color(1.0, 0.9, 0.7), 4.0)
+	rocket.mesh = sphere
+	rocket.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(rocket)
+	rocket.global_position = from
+	var trail := CPUParticles3D.new()
+	trail.amount = 24
+	trail.lifetime = 0.5
+	trail.local_coords = false
+	trail.direction = Vector3.DOWN
+	trail.spread = 12.0
+	trail.initial_velocity_min = 0.5
+	trail.initial_velocity_max = 1.5
+	trail.gravity = Vector3(0, -2.0, 0)
+	trail.scale_amount_min = 0.5
+	trail.scale_amount_max = 1.0
+	var spark := SphereMesh.new()
+	spark.radius = 0.05
+	spark.height = 0.1
+	spark.material = glow_material(Color(1.0, 0.8, 0.5), 3.0)
+	trail.mesh = spark
+	rocket.add_child(trail)
+	var top := from + Vector3(randf_range(-2.0, 2.0), height, randf_range(-2.0, 2.0))
+	var tw := rocket.create_tween()
+	tw.tween_property(rocket, "global_position", top, 1.1).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_callback(func() -> void:
+		_burst(parent, rocket.global_position, color)
+		rocket.queue_free())
+
+
+static func _burst(parent: Node, pos: Vector3, color: Color) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = false
+	p.amount = 120
+	p.lifetime = 1.9
+	p.explosiveness = 1.0
+	p.direction = Vector3.UP
+	p.spread = 180.0
+	p.initial_velocity_min = 9.0
+	p.initial_velocity_max = 12.0
+	p.damping_min = 2.5
+	p.damping_max = 3.5
+	p.gravity = Vector3(0, -2.5, 0)
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 1.0))
+	curve.add_point(Vector2(0.7, 0.8))
+	curve.add_point(Vector2(1.0, 0.0))
+	p.scale_amount_curve = curve
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.2
+	mesh.height = 0.4
+	mesh.radial_segments = 6
+	mesh.rings = 3
+	mesh.material = glow_material(color, 2.6)
+	p.mesh = mesh
+	parent.add_child(p)
+	p.global_position = pos
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+	var flash := OmniLight3D.new()
+	flash.light_color = color
+	flash.light_energy = 5.0
+	flash.omni_range = 45.0
+	flash.shadow_enabled = false
+	parent.add_child(flash)
+	flash.global_position = pos
+	var tw := flash.create_tween()
+	tw.tween_property(flash, "light_energy", 0.0, 0.9).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(flash.queue_free)
+	Sfx.play_at(parent, "estouro", pos, 2.0, 0.2)
+
+
+static func glow_material(color: Color, energy: float) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = energy
+	return mat
 
 
 ## Onda da explosão da granada: uma bolha cor-de-rosa que cresce até o raio e some.

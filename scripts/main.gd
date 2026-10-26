@@ -67,9 +67,12 @@ const MENU_GAMEPAD := "Direcional para escolher, A para confirmar"
 var player: Player
 var enemies: Array[SkeletonEnemy] = []
 var crosshair: Crosshair
-## Menus: "escolha" (personagem; na abertura e pela pausa), "pausa" e "comandos". Com menu aberto o
-## jogo fica pausado; a interface e a música continuam rodando.
+## Menus: "inicio" (Continuar, Nova campanha, Sair), "escolha" (personagem; ao começar e pela pausa),
+## "pausa", "comandos" e "confirmar" (apagar a campanha). Com menu aberto o jogo fica pausado; a interface
+## e a música continuam rodando.
 var ui_layer: CanvasLayer
+var start_panel: Control
+var confirm_panel: Control
 var select_panel: Control
 var pause_panel: Control
 var controls_panel: Control
@@ -80,6 +83,12 @@ var _menu_hints: Array[Label] = []
 var _buttons: Array[Button] = []
 var _pause_buttons: Array[Button] = []
 var _controls_back: Button
+var _start_buttons: Array[Button] = []
+var _continue_button: Button
+var _confirm_text: Label
+var _confirm_buttons: Array[Button] = []
+var _confirm_action: Callable
+var _confirm_return := ""
 var _show_regions := false
 var _game_started := false
 var checkpoints: Array[Checkpoint] = []
@@ -87,6 +96,13 @@ var current_checkpoint: Checkpoint
 var hearts_bar: HeartsBar
 var ammo_hud: WeaponHud
 var gallery: ShootingGallery
+## Céu, ambiente e sol (o epílogo vira noite e o pós-jogo volta ao dia).
+var environment: Environment
+var sky_material: ProceduralSkyMaterial
+var sun_light: DirectionalLight3D
+var ending: Ending
+## Brincadeira "Defender a festa" (só no pós-jogo).
+var party_mode: PartyDefense
 var message_label: Label
 var _message_tween: Tween
 ## Chance de um esqueleto desmontado deixar cair uma caixa de munição (sempre cai se a munição estiver no fim).
@@ -201,6 +217,8 @@ func _ready() -> void:
 	music.process_mode = Node.PROCESS_MODE_ALWAYS
 	var args := OS.get_cmdline_user_args()
 	arena = TEST_MODES.any(func(m: String) -> bool: return m in args)
+	# Os testes automáticos nunca mexem na campanha de quem joga (o de salvar usa outro arquivo).
+	SaveGame.enabled = not Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
 	_build_environment()
 	var world := _build_arena() if arena else _load_island()
 	player = Player.new()
@@ -278,6 +296,10 @@ func _ready() -> void:
 		story.setup(self, island)
 		story.objective_changed.connect(func(text: String) -> void: pause_objective.text = "Objetivo: " + text)
 		pause_objective.text = "Objetivo: " + story.objective_text
+		ending = Ending.new()
+		ending.name = "Desfecho"
+		add_child(ending)
+		ending.setup(self)
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -343,6 +365,24 @@ func _ready() -> void:
 	elif "--extras-captura" in args:
 		select_panel.hide()
 		_run_extras_capture()
+	elif "--final" in args:
+		select_panel.hide()
+		_run_ending_test()
+	elif "--final-captura" in args:
+		select_panel.hide()
+		_run_ending_capture()
+	elif "--festa-modo" in args:
+		select_panel.hide()
+		_run_party_mode_test()
+	elif "--salvar" in args:
+		select_panel.hide()
+		_run_save_test()
+	elif SaveGame.go_new:
+		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
+		SaveGame.go_new = false
+		open_menu("escolha")
+	elif story:
+		open_menu("inicio")
 	else:
 		open_menu("escolha")
 
@@ -507,16 +547,20 @@ func _menu_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	match menu_state:
 		"":
-			if event.is_action_pressed("menu") and not player.dizzy:
+			if event.is_action_pressed("menu") and not player.dizzy and not (ending and ending.busy()):
 				open_menu("pausa")
 		"pausa":
 			close_menus()
 		"comandos":
 			open_menu("pausa")
+		"confirmar":
+			open_menu(_confirm_return)
 		"escolha":
-			# Na abertura do jogo é preciso escolher; vindo da pausa, voltar leva à pausa.
+			# Na abertura do jogo voltar leva ao menu inicial; vindo da pausa, à pausa.
 			if _game_started:
 				open_menu("pausa")
+			elif story:
+				open_menu("inicio")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -531,6 +575,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func open_menu(state: String) -> void:
 	menu_state = state
+	start_panel.visible = state == "inicio"
+	confirm_panel.visible = state == "confirmar"
 	select_panel.visible = state == "escolha"
 	pause_panel.visible = state == "pausa"
 	controls_panel.visible = state == "comandos"
@@ -540,10 +586,20 @@ func open_menu(state: String) -> void:
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	match state:
+		"inicio":
+			var has_save := SaveGame.exists()
+			_continue_button.visible = has_save
+			if has_save:
+				_continue_button.text = "Continuar · %s" % SaveGame.stage_label(SaveGame.read().get("etapa", "prologo"))
+			(_start_buttons[0] if has_save else _start_buttons[1]).grab_focus.call_deferred()
+		"confirmar":
+			_confirm_buttons[1].grab_focus.call_deferred()
 		"escolha":
 			var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
 			_buttons[i].grab_focus.call_deferred()
 		"pausa":
+			if story:
+				story.save()
 			_pause_buttons[0].grab_focus.call_deferred()
 		"comandos":
 			_controls_back.grab_focus.call_deferred()
@@ -551,6 +607,8 @@ func open_menu(state: String) -> void:
 
 func close_menus() -> void:
 	menu_state = ""
+	start_panel.hide()
+	confirm_panel.hide()
 	select_panel.hide()
 	pause_panel.hide()
 	controls_panel.hide()
@@ -564,6 +622,67 @@ func close_menus() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo.
 	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = true)
+
+
+# --- campanha: continuar e começar de novo ------------------------------------
+
+func _continue_campaign() -> void:
+	var data := SaveGame.read()
+	if data.is_empty():
+		open_menu("escolha")
+		return
+	story.restore(data)
+	close_menus()
+
+
+## Nova campanha pelo menu inicial: com campanha salva, pede confirmação antes de apagar.
+func _new_campaign_from_start() -> void:
+	if not SaveGame.exists():
+		open_menu("escolha")
+		return
+	_ask("Começar uma campanha nova? A campanha salva e as fotos do álbum serão apagadas.", "inicio", func() -> void:
+		SaveGame.erase()
+		open_menu("escolha"))
+
+
+## Nova campanha pela pausa: apaga, recarrega a ilha do zero e vai para a escolha de personagem.
+func _new_campaign_from_pause() -> void:
+	_ask("Começar uma campanha nova? Todo o progresso e as fotos do álbum serão apagados.", "pausa", func() -> void:
+		SaveGame.erase()
+		SaveGame.go_new = true
+		get_tree().paused = false
+		get_tree().reload_current_scene())
+
+
+func _ask(text: String, back_to: String, action: Callable) -> void:
+	_confirm_text.text = text
+	_confirm_return = back_to
+	_confirm_action = action
+	open_menu("confirmar")
+
+
+func _quit_game() -> void:
+	if story and _game_started:
+		story.save()
+	get_tree().quit()
+
+
+## Foto do álbum: a tela do jogo sem a interface (sem tela, nos testes, devolve null).
+func capture_view() -> Image:
+	if DisplayServer.get_name() == "headless":
+		return null
+	ui_layer.visible = false
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	var image := get_viewport().get_texture().get_image()
+	ui_layer.visible = true
+	return image
+
+
+## Esconde a mira, os corações, os blasters e a seta do objetivo (cena final e créditos).
+func set_hud_visible(on: bool) -> void:
+	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, wave_label]:
+		(node as CanvasItem).visible = on
 
 
 func _toggle_regions() -> void:
@@ -599,6 +718,8 @@ func _build_environment() -> void:
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
 	add_child(world_env)
+	environment = env
+	sky_material = sky_mat
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55, -35, 0)
 	sun.light_color = Color("#fff4e0")
@@ -606,6 +727,7 @@ func _build_environment() -> void:
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 70.0 if arena else 110.0
 	add_child(sun)
+	sun_light = sun
 
 
 ## Caiu no mar ou no rio: "tchibum", sem perder coração, e volta na última bandeira.
@@ -785,13 +907,6 @@ func _build_ui() -> void:
 	menu_dim.modulate.a = 0.45
 	menu_dim.hide()
 
-	var box := _menu_box(layer, "Escolha quem vai jogar")
-	select_panel = box.get_parent().get_parent()
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	box.add_child(grid)
 	# Foco bem visível: quem joga de controle precisa enxergar de longe qual botão está marcado.
 	var focus_style := StyleBoxFlat.new()
 	focus_style.draw_center = false
@@ -799,6 +914,52 @@ func _build_ui() -> void:
 	focus_style.border_color = Color("#ffd23f")
 	focus_style.set_corner_radius_all(6)
 	focus_style.set_expand_margin_all(3)
+
+	# Menu inicial: continuar a campanha salva, começar uma nova ou sair.
+	var sbox := _menu_box(layer, "Ilha Cafuné")
+	start_panel = sbox.get_parent().get_parent()
+	(sbox.get_child(0) as Label).add_theme_font_size_override("font_size", 44)
+	(sbox.get_child(0) as Label).add_theme_color_override("font_color", Color("#ffd23f"))
+	var tagline := Label.new()
+	tagline.text = "A véspera da Festa do Cafuné"
+	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tagline.add_theme_font_size_override("font_size", 18)
+	tagline.add_theme_color_override("font_color", Color("#d9a8ff"))
+	sbox.add_child(tagline)
+	for spec in [["Continuar", _continue_campaign], ["Nova campanha", _new_campaign_from_start], ["Sair do jogo", _quit_game]]:
+		var b := _menu_button(spec[0], focus_style)
+		b.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			spec[1].call())
+		sbox.add_child(b)
+		_start_buttons.append(b)
+	_continue_button = _start_buttons[0]
+	_add_menu_hint(sbox)
+
+	# Confirmação antes de apagar a campanha.
+	var qbox := _menu_box(layer, "Nova campanha")
+	confirm_panel = qbox.get_parent().get_parent()
+	_confirm_text = Label.new()
+	_confirm_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_confirm_text.custom_minimum_size = Vector2(380, 0)
+	_confirm_text.add_theme_font_size_override("font_size", 19)
+	qbox.add_child(_confirm_text)
+	for spec in [["Sim, começar do zero", func() -> void: _confirm_action.call()], ["Voltar", func() -> void: open_menu(_confirm_return)]]:
+		var b := _menu_button(spec[0], focus_style)
+		b.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			spec[1].call())
+		qbox.add_child(b)
+		_confirm_buttons.append(b)
+
+	var box := _menu_box(layer, "Escolha quem vai jogar")
+	select_panel = box.get_parent().get_parent()
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	box.add_child(grid)
 	for i in CHARACTER_ORDER.size():
 		var key: String = CHARACTER_ORDER[i]
 		var button := Button.new()
@@ -812,7 +973,7 @@ func _build_ui() -> void:
 		_buttons.append(button)
 	_add_menu_hint(box)
 
-	# Pausa: continuar, trocar de personagem, ver os comandos ou sair.
+	# Pausa: continuar, trocar de personagem, ver os comandos, começar de novo ou sair.
 	var pbox := _menu_box(layer, "Pausa")
 	pause_panel = pbox.get_parent().get_parent()
 	pause_objective = Label.new()
@@ -822,8 +983,11 @@ func _build_ui() -> void:
 	pause_objective.add_theme_font_size_override("font_size", 18)
 	pause_objective.add_theme_color_override("font_color", Color("#d9a8ff"))
 	pbox.add_child(pause_objective)
-	for spec in [["Continuar", close_menus], ["Trocar de personagem", open_menu.bind("escolha")],
-			["Comandos", open_menu.bind("comandos")], ["Sair do jogo", get_tree().quit]]:
+	var pause_specs := [["Continuar", close_menus], ["Trocar de personagem", open_menu.bind("escolha")],
+			["Comandos", open_menu.bind("comandos")], ["Nova campanha", _new_campaign_from_pause], ["Sair do jogo", _quit_game]]
+	if arena:
+		pause_specs.remove_at(3)
+	for spec in pause_specs:
 		var b := _menu_button(spec[0], focus_style)
 		b.pressed.connect(func() -> void:
 			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
@@ -843,7 +1007,7 @@ func _build_ui() -> void:
 		Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 		open_menu("pausa"))
 	cbox.add_child(_controls_back)
-	for panel_root in [select_panel, pause_panel, controls_panel]:
+	for panel_root in [start_panel, confirm_panel, select_panel, pause_panel, controls_panel]:
 		panel_root.hide()
 
 
@@ -937,6 +1101,10 @@ func spawn_townsperson(spec: Dictionary, pos: Vector3, yaw: float) -> Townsperso
 	var t := Townsperson.new()
 	t.name = spec.get("nome", "Morador")
 	t.model_name = spec.get("modelo", "Farmer_A")
+	t.model_path = spec.get("modelo_caminho", "")
+	t.model_scale = spec.get("escala", 1.0)
+	t.hide_meshes = spec.get("esconder", PackedStringArray())
+	t.item_scale = spec.get("item_escala", 1.0)
 	t.activity = spec.get("atividade", "parado")
 	t.variant = spec.get("variante", "")
 	t.item = spec.get("item", "")
@@ -1035,6 +1203,8 @@ func _on_checkpoint_activated(cp: Checkpoint) -> void:
 	current_checkpoint = cp
 	cp.set_active(true)
 	player.rumble(0.3, 0.1, 0.15)
+	if story and _game_started:
+		story.save()
 
 
 func _on_enemy_defeated(e: SkeletonEnemy) -> void:
@@ -1085,19 +1255,22 @@ func _process(_delta: float) -> void:
 		ammo_hud.refresh(player)
 	if story and is_instance_valid(player):
 		var d := story.running_defense()
-		wave_label.text = d.hud_text() if d else ""
+		wave_label.text = d.hud_text() if d else (party_mode.hud_text() if is_instance_valid(party_mode) and party_mode.running() else "")
 		var view := get_viewport().get_visible_rect().size
 		var top := 96.0 if boss_bar.visible else 24.0
 		wave_label.position = Vector2(view.x * 0.5 - wave_label.size.x * 0.5, top)
 		banner_title.position = Vector2(view.x * 0.5 - banner_title.size.x * 0.5, view.y * 0.2)
 		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
-		objective_marker.update_marker(player.camera, story.objective_target if menu_state == "" else Vector3.INF, player.global_position)
+		var show_target := menu_state == "" and not (ending and ending.busy())
+		objective_marker.update_marker(player.camera, story.objective_target if show_target else Vector3.INF, player.global_position)
 
 
 func _choose_character(key: String) -> void:
 	player.set_character(key)
 	Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 	close_menus()
+	if story and story.stage != "antes":
+		story.save()
 
 
 func _on_input_device_changed(gamepad: bool) -> void:
@@ -2548,9 +2721,280 @@ func _run_cemetery_test() -> void:
 	await _clear_wave(cemiterio, false)
 	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.VENCIDA, 5.0)
 	await get_tree().physics_frame
-	all_ok = _check("defesa final vencida: fim da história e convite entregue", cemiterio.state == Defense.State.VENCIDA and story.stage == "fim",
+	all_ok = _check("defesa final vencida: começa o desfecho em cena", cemiterio.state == Defense.State.VENCIDA and ending.in_cutscene,
 			"(\"%s\")" % story.objective_text) and all_ok
 	print("CEMITERIO OK" if all_ok else "CEMITERIO COM FALHAS")
+	get_tree().quit()
+
+
+## Fim do jogo: desfecho em cena no cemitério, festa à noite com os convidados, créditos ao subir no
+## palco e o pós-jogo de dia. Uso: godot --headless --path . -- --final
+func _run_ending_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	story.skip_to_cemetery()
+	var cemiterio: Defense = story.defenses.cemiterio
+	await _stand(cemiterio.center + Vector3(0, 0, 2))
+	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	for k in 2:
+		await _clear_wave(cemiterio, false)
+		await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return is_instance_valid(cemiterio.boss) and cemiterio.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mestre := cemiterio.boss as BossMestre
+	await _wait_until(func() -> bool: return _wave_enemies().all(func(e: SkeletonEnemy) -> bool: return e.state != SkeletonEnemy.State.ACORDANDO), 4.0)
+	for e in _wave_enemies():
+		e.take_hit(99.0, e.global_position + Vector3.UP, e.hurtboxes[0])
+	mestre.take_hit(999.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await _wait_until(func() -> bool: return ending.in_cutscene, 12.0)
+	var cam := get_viewport().get_camera_3d()
+	all_ok = _check("Mestre vencido: desfecho em cena, sem controle e sem interface", ending.in_cutscene and not player.input_enabled
+			and cam != null and cam.name == "CameraDoDesfecho" and not hearts_bar.visible and not crosshair.visible,
+			"(câmera %s)" % (cam.name if cam else "nenhuma")) and all_ok
+	await _wait(1.0)
+	var friends := get_tree().get_nodes_in_group(&"convidados").filter(func(n: Node) -> bool:
+		return String(n.name).begins_with("AmigoDoCemiterio") and (n as Node3D).global_position.distance_to(mestre.global_position) < 12.0)
+	all_ok = _check("convite entregue: esqueletos saem do chão comemorando", friends.size() >= 4, "(%d)" % friends.size()) and all_ok
+	await _wait_until(func() -> bool: return story.stage == "festa", 10.0)
+	all_ok = _check("na noite seguinte: festa na praça, à noite", story.stage == "festa" and ending.night
+			and sky_material.sky_top_color.v < 0.4 and player.global_position.distance_to(Ending.PLAZA) < 20.0
+			and current_checkpoint.name == "Praca", "(etapa %s)" % story.stage) and all_ok
+	all_ok = _check("foto do desfecho no álbum", story.photos.size() == 1 and story.photos[0].legenda == "O Mestre Ossinho tirou a coroa",
+			"(%d fotos)" % story.photos.size()) and all_ok
+	var guests := get_tree().get_nodes_in_group(&"convidados").filter(func(n: Node) -> bool:
+		return (n as Node3D).global_position.distance_to(Ending.PLAZA) < 45.0 and not n.is_queued_for_deletion())
+	all_ok = _check("convidados esqueletos chegam de balão na praça", guests.size() >= 12, "(%d)" % guests.size()) and all_ok
+	var island_skeletons := enemies.filter(func(e: SkeletonEnemy) -> bool:
+		return is_instance_valid(e) and not e.is_queued_for_deletion() and not e.has_meta("onda"))
+	all_ok = _check("os esqueletos da ilha viraram amigos (sem luta)", island_skeletons.is_empty()
+			and get_tree().get_nodes_in_group(&"convidados").any(func(n: Node) -> bool: return String(n.name).begins_with("Amigo")),
+			"(%d inimigos: %s)" % [island_skeletons.size(), ", ".join(island_skeletons.map(func(e: SkeletonEnemy) -> String: return e.name))]) and all_ok
+	await _wait_until(func() -> bool: return not ending.in_cutscene, 6.0)
+	await _wait_until(func() -> bool: return get_tree().get_nodes_in_group(&"convidados").all(func(n: Node) -> bool:
+		return not (n is Townsperson) or not (n as Townsperson).is_dropping()), 6.0)
+	var landed := guests.filter(func(n: Node) -> bool:
+		return n is Townsperson and absf((n as Node3D).global_position.y - _ground_point((n as Node3D).global_position).y) < 0.6)
+	all_ok = _check("todos pousaram e a interface voltou", landed.size() == guests.filter(func(n: Node) -> bool: return n is Townsperson).size()
+			and player.input_enabled and hearts_bar.visible, "(%d de %d)" % [landed.size(), guests.size()]) and all_ok
+	var bench := get_node_or_null("ConvidadoMestre") as Townsperson
+	var crown := bench.find_child("Necromancer_Crown", true, false) as Node3D if bench else null
+	all_ok = _check("Mestre sem coroa sentado com o vovô", bench != null and bench.activity == "sentado_banco" and crown != null and not crown.visible
+			and bench.global_position.distance_to(get_node("Vovo").global_position) < 2.0) and all_ok
+	await _wait(1.0)
+	all_ok = _check("foto da festa no álbum e objetivo aponta o palco", story.photos.size() == 2 and "palco" in story.objective_text
+			and story.objective_target.distance_to(Ending.STAGE_TOP) < 3.0, "(%d fotos, \"%s\")" % [story.photos.size(), story.objective_text]) and all_ok
+	await _stand(Ending.STAGE_TOP + Vector3(0, 0.3, 0))
+	await _wait_until(func() -> bool: return ending.credits_running, 3.0)
+	all_ok = _check("subir no palco abre os créditos com o álbum", ending.credits_running and get_tree().paused
+			and get_children().any(func(n: Node) -> bool: return n is Credits)) and all_ok
+	await _wait_until(func() -> bool: return story.stage == "fim", 20.0)
+	await _wait(0.5)
+	var orb: StandardMaterial3D = story.lanterns.Oeste.orb.material_override
+	all_ok = _check("pós-jogo: de dia, lanternas de festa e a brincadeira na praia", story.stage == "fim" and not ending.night
+			and not get_tree().paused and sky_material.sky_top_color == Color("#4f9cf0") and orb.emission != Color("#b06cff")
+			and is_instance_valid(party_mode) and get_node_or_null("MestreDaBrincadeira") != null and get_node_or_null("ConvidadoMestre") == null) and all_ok
+	all_ok = _check("objetivo do pós-jogo chama para a praia", "praia" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
+	print("FINAL OK" if all_ok else "FINAL COM FALHAS")
+	get_tree().quit()
+
+
+## Atalho dos testes e fotos: tudo vencido, direto para o pós-jogo.
+func _skip_to_post_game() -> void:
+	story.skip_to_cemetery()
+	var cemiterio: Defense = story.defenses.cemiterio
+	cemiterio.state = Defense.State.VENCIDA
+	cemiterio.active = false
+	ending.post_game(false)
+
+
+## "Defender a festa": ladrões que não atacam, enfeite que volta, enfeites perdidos e recorde.
+## Uso: godot --headless --path . -- --festa-modo
+func _run_party_mode_test() -> void:
+	var all_ok := true
+	story.fast = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(0.3)
+	var pd := party_mode
+	all_ok = _check("pós-jogo: cinco enfeites nos pódios e o Mestre na praia", is_instance_valid(pd) and pd.state == PartyDefense.State.PARADA
+			and pd.left_count() == 5 and pd.slots.all(func(s: Dictionary) -> bool: return s.estado == "podio") and is_instance_valid(pd.host)) and all_ok
+	await _stand(pd.center)
+	await _wait_until(func() -> bool: return pd.running(), 3.0)
+	all_ok = _check("ficar no círculo começa a brincadeira", pd.running()) and all_ok
+	await _wait_until(func() -> bool: return pd.state == PartyDefense.State.ONDA and pd.thieves.size() >= 2, 6.0)
+	all_ok = _check("primeira onda: ladrões saem das rachaduras", pd.wave == 1 and pd.thieves.size() >= 2, "(%d)" % pd.thieves.size()) and all_ok
+	var hearts_before := player.hearts
+	await _wait_until(func() -> bool: return pd.slots.any(func(s: Dictionary) -> bool: return s.estado == "levando"), 20.0)
+	var slot: Dictionary = {}
+	for s in pd.slots:
+		if s.estado == "levando":
+			slot = s
+	all_ok = _check("um esqueleto pega um enfeite e foge (sem atacar)", not slot.is_empty() and player.hearts == hearts_before
+			and is_instance_valid(slot.ladrao) and (slot.enfeite as Node).get_parent() == slot.ladrao) and all_ok
+	if not slot.is_empty():
+		var carrier: SkeletonEnemy = slot.ladrao
+		carrier.take_hit(99.0, carrier.global_position + Vector3.UP, carrier.hurtboxes[0])
+		await _wait(1.2)
+		all_ok = _check("derrubado, o enfeite volta para o pódio", slot.estado == "podio"
+				and (slot.enfeite as Node3D).global_position.distance_to(slot.casa) < 0.3 and (slot.enfeite as Node).get_parent() == pd) and all_ok
+	await _wait_until(func() -> bool: return pd.left_count() < 5, 30.0)
+	all_ok = _check("quem chega na rachadura leva o enfeite", pd.left_count() < 5, "(%d de 5)" % pd.left_count()) and all_ok
+	await _wait_until(func() -> bool: return pd.state == PartyDefense.State.FIM, 90.0)
+	all_ok = _check("sem enfeites, a brincadeira acaba e guarda o recorde", pd.state == PartyDefense.State.FIM and pd.cleared >= 1
+			and story.records.festa == pd.cleared and pd.thieves.is_empty(), "(%d ondas, recorde %d)" % [pd.cleared, story.records.festa]) and all_ok
+	await _wait_until(func() -> bool: return pd.state == PartyDefense.State.PARADA, 5.0)
+	all_ok = _check("depois, os enfeites voltam e dá para jogar de novo", pd.left_count() == 5 and "Recorde: %d" % pd.cleared in pd._board.text) and all_ok
+	await _stand(pd.center + Vector3(0, 0, -8))
+	print("FESTA-MODO OK" if all_ok else "FESTA-MODO COM FALHAS")
+	get_tree().quit()
+
+
+## Salvar e continuar: vence o prólogo, recarrega a ilha, continua do mesmo ponto e testa a "Nova campanha"
+## da pausa. Usa outro arquivo de campanha. Uso: godot --headless --path . -- --salvar
+func _run_save_test() -> void:
+	SaveGame.path = "user://teste_campanha.json"
+	SaveGame.enabled = true
+	story.fast = true
+	await _wait(0.4)
+	match SaveGame.test_phase:
+		0:
+			SaveGame.erase()
+			SaveGame.test_ok = true
+			player.god_mode = true
+			player.set_character("menina")
+			close_menus()
+			await _wait(0.3)
+			_save_check("começar a campanha já salva o prólogo", SaveGame.read().get("etapa", "") == "prologo")
+			var praca: Defense = story.defenses.praca
+			await _stand(praca.center + Vector3(0, 0, -6))
+			var t := 0.0
+			while praca.state != Defense.State.VENCIDA and t < 60.0:
+				await _wait_until(func() -> bool: return praca.state in [Defense.State.ONDA, Defense.State.VENCIDA], 6.0)
+				if praca.state == Defense.State.ONDA:
+					await _clear_wave(praca)
+				t += 1.0
+			await _wait(0.5)
+			player.unlock_weapon("granulado")
+			player.add_max_heart()
+			story.records.festa = 3
+			story.save()
+			var data := SaveGame.read()
+			_save_check("vencer a praia salva a etapa, a defesa, o personagem e a bandeira", data.get("etapa", "") == "cidade"
+					and "praca" in data.get("vencidas", []) and data.get("personagem", "") == "menina" and data.get("bandeira", "") == "Praca",
+					"(%s)" % JSON.stringify(data).left(160))
+			SaveGame.test_phase = 1
+			get_tree().reload_current_scene()
+		1:
+			open_menu("inicio")
+			_save_check("menu inicial oferece Continuar com a etapa salva", start_panel.visible and _continue_button.visible
+					and "Lanternas da cidade" in _continue_button.text, "(\"%s\")" % _continue_button.text)
+			_continue_campaign()
+			await _wait(0.5)
+			_save_check("continuar volta na cidade, com a praia vencida e as lanternas acesas", story.stage == "cidade"
+					and story.defenses.praca.state == Defense.State.VENCIDA and story.defenses.oeste.active and story.defenses.leste.active
+					and story.lanterns.Oeste.lit and menu_state == "")
+			_save_check("continuar mantém blasters, corações, personagem e recordes", player.has_weapon("granulado")
+					and player.max_hearts == 6 and player.character_name == "menina" and story.records.festa == 3,
+					"(%d corações, %s)" % [player.max_hearts, player.character_name])
+			open_menu("pausa")
+			await get_tree().process_frame
+			_pause_buttons[3].pressed.emit()
+			await get_tree().process_frame
+			_save_check("Nova campanha na pausa pede confirmação", menu_state == "confirmar" and confirm_panel.visible
+					and _pause_buttons[3].text == "Nova campanha")
+			SaveGame.test_phase = 2
+			_confirm_buttons[0].pressed.emit()
+		2:
+			_save_check("nova campanha: apaga o salvo e volta do começo", not SaveGame.exists() and SaveGame.go_new
+					and story.stage == "antes" and story.defenses.praca.state != Defense.State.VENCIDA)
+			SaveGame.go_new = false
+			# Campanha salva já na festa (depois do desfecho): continuar volta na praça, à noite.
+			SaveGame.write({"etapa": "festa", "vencidas": Story.REGIONS.keys(), "blasters": ["pacoca", "granulado", "pipoqueira", "pe_de_moleque"],
+				"coracoes": 7, "personagem": "menino", "bandeira": "TopoDoMorro", "recompensas": [], "fotos": [{"legenda": "Teste", "arquivo": ""}],
+				"recordes": {"festa": 2, "tiro": 7}})
+			SaveGame.test_phase = 3
+			get_tree().reload_current_scene()
+		3:
+			_continue_campaign()
+			await _wait(0.5)
+			var guests := get_tree().get_nodes_in_group(&"convidados").filter(func(n: Node) -> bool: return (n as Node3D).global_position.distance_to(Ending.PLAZA) < 45.0)
+			_save_check("continuar na festa: praça à noite, convidados e recordes", story.stage == "festa" and ending.night and guests.size() >= 12
+					and player.global_position.distance_to(Ending.PLAZA) < 20.0 and gallery.hits == 7 and story.photos.size() == 1
+					and story.defenses.values().all(func(d: Defense) -> bool: return d.state == Defense.State.VENCIDA and not d.active),
+					"(%s, %d convidados, %d acertos)" % [story.stage, guests.size(), gallery.hits])
+			SaveGame.erase()
+			print("SALVAR OK" if SaveGame.test_ok else "SALVAR COM FALHAS")
+			get_tree().quit()
+
+
+func _save_check(label: String, ok: bool, detail := "") -> void:
+	SaveGame.test_ok = _check(label, ok, detail) and SaveGame.test_ok
+
+
+## Fotos do fim (precisa de janela): desfecho, festa à noite, créditos, pós-jogo e "Defender a festa".
+## Uso: godot --path . -- --final-captura
+func _run_ending_capture() -> void:
+	player.god_mode = true
+	story.fast = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var out := "res://tools/capturas/"
+	var size := Vector2i(1280, 720)
+	await _wait(0.6)
+	story.skip_to_cemetery()
+	var cemiterio: Defense = story.defenses.cemiterio
+	story.fast = true
+	await _stand(cemiterio.center + Vector3(0, 0, 2))
+	await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	for k in 2:
+		await _clear_wave(cemiterio, false)
+		await _wait_until(func() -> bool: return cemiterio.state == Defense.State.ONDA, 6.0)
+	await _wait_until(func() -> bool: return is_instance_valid(cemiterio.boss) and cemiterio.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mestre := cemiterio.boss as BossMestre
+	await _wait_until(func() -> bool: return _wave_enemies().all(func(e: SkeletonEnemy) -> bool: return e.state != SkeletonEnemy.State.ACORDANDO), 4.0)
+	for e in _wave_enemies():
+		e.take_hit(99.0, e.global_position + Vector3.UP, e.hurtboxes[0])
+	story.fast = false
+	for d in story.defenses.values():
+		d.fast = true
+	mestre.take_hit(999.0, mestre.global_position + Vector3.UP * 2.0, mestre.hurtboxes[1])
+	await _wait_until(func() -> bool: return ending.in_cutscene, 12.0)
+	await _wait(3.4)
+	await _shot("f01_desfecho_convite.png")
+	await _wait(2.6)
+	await _shot("f02_desfecho_amigos.png")
+	await _wait_until(func() -> bool: return story.stage == "festa", 14.0)
+	await _wait(1.5)
+	await _shot("f03_noite_seguinte.png")
+	await _wait(5.0)
+	await _shot("f04_festa_chegando.png")
+	await _wait(5.0)
+	await _art_shot(out + "f05_festa_praca.png", size, Ending.PLAZA + Vector3(10.0, 7.0, 16.0), Ending.PLAZA + Vector3(-1.0, 1.5, -4.0), 60.0)
+	await _art_shot(out + "f06_festa_palco.png", size, Ending.PLAZA + Vector3(-3.0, 3.0, -3.0), Ending.STAGE_TOP + Vector3(0, 1.5, 0), 60.0)
+	var vovo := get_node("Vovo") as Townsperson
+	var vb := vovo.visual.global_basis
+	await _art_shot(out + "f07_mestre_e_vovo.png", size, vovo.global_position + vb.z * 4.0 + vb.x * 0.5 + Vector3.UP * 1.8,
+			vovo.global_position + vb.x * 0.5 + Vector3.UP * 0.8, 55.0)
+	await _art_shot(out + "f08_torre_e_palhaco.png", size, Ending.PLAZA + Vector3(1.0, 4.0, 4.0), Ending.PLAZA + Vector3(Ending.TOWER_SPOT.x, 3.0, Ending.TOWER_SPOT.y), 60.0)
+	if is_instance_valid(gallery):
+		await _art_shot(out + "f09_mira_torta_tiro.png", size, gallery.global_transform * Vector3(-0.5, 2.4, 2.2), gallery.global_transform * Vector3(-3.5, 1.2, -1.8), 60.0)
+	await _art_shot(out + "f10_fogos_ceu.png", size, Ending.PLAZA + Vector3(0, 2.0, 20.0), Ending.PLAZA + Vector3(0, 18.0, -20.0), 70.0)
+	await _stand(Ending.STAGE_TOP + Vector3(0, 0.3, 0))
+	await _wait_until(func() -> bool: return ending.credits_running, 3.0)
+	await _wait(1.6)
+	await _shot("f11_creditos_album.png")
+	var c: Credits = get_children().filter(func(n: Node) -> bool: return n is Credits)[0]
+	c._skip = true
+	await _wait_until(func() -> bool: return story.stage == "fim", 10.0)
+	await _wait(2.0)
+	await _art_shot(out + "f12_pos_jogo_praca.png", size, Ending.PLAZA + Vector3(10.0, 7.0, 16.0), Ending.PLAZA + Vector3(-1.0, 1.5, -4.0), 60.0)
+	var pd := party_mode
+	await _art_shot(out + "f13_defender_a_festa.png", size, pd.center + Vector3(9.0, 6.0, -9.0), pd.center + Vector3(0, 1.0, 0), 60.0)
+	await _stand(pd.center)
+	await _wait_until(func() -> bool: return pd.slots.any(func(s: Dictionary) -> bool: return s.estado == "levando"), 30.0)
+	await _wait(0.5)
+	await _art_shot(out + "f14_ladrao_de_enfeite.png", size, pd.center + Vector3(-7.0, 5.0, -10.0), pd.center + Vector3(0, 1.0, 0), 65.0)
+	print("capturas do fim em tools/capturas/")
 	get_tree().quit()
 
 
