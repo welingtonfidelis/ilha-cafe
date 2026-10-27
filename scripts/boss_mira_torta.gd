@@ -109,7 +109,7 @@ func _fire_fan(dir: Vector3) -> void:
 	if not is_instance_valid(target):
 		return
 	var from := hand_r.global_position + Vector3.UP * 0.3 + forward() * 1.0
-	var aim := (target.global_position + Vector3.UP * 1.2 - from).normalized()
+	var aim := (Projectile.aim_at(target) - from).normalized()
 	for k in FAN_ARROWS:
 		var angle := deg_to_rad((k - (FAN_ARROWS - 1) / 2.0) * FAN_SPREAD_DEG)
 		var p := Projectile.create(Projectile.Kind.FLECHA, from, target)

@@ -146,7 +146,8 @@ var _skate_speed := 0.0
 var _rider: SkateRider
 ## Tempo desde que o jogador mexeu a câmera (no skate, ela só volta para trás depois de um tempinho).
 var _look_idle := 10.0
-## Dirigindo um veículo (kart): o aventureiro fica escondido, acompanhando o veículo, e não leva golpe.
+## Dirigindo um veículo (kart): o aventureiro fica escondido, acompanhando o veículo. Leva golpe do mesmo
+## jeito (quem pisca é o piloto no banco); sem corações, fica tonto e desce.
 var in_vehicle := false
 ## Pirulitão na mão (só aparece durante o golpe; o blaster some nesse instante).
 var _lollipop: Node3D
@@ -1112,19 +1113,35 @@ func is_dizzy() -> bool:
 	return dizzy
 
 
+## Para onde os esqueletos miram: o peito do aventureiro ou, dirigindo, o piloto no banco do veículo (o
+## aventureiro escondido acompanha o veículo um pouco acima dele).
+func aim_point() -> Vector3:
+	return global_position + Vector3.UP * (0.4 if in_vehicle else 1.2)
+
+
+## Dirigindo, a física do aventureiro fica parada: quem dirige chama isto a cada quadro para o tempo
+## invulnerável depois de um golpe continuar correndo.
+func ride_tick(delta: float) -> void:
+	_update_invulnerability(delta)
+
+
 ## Recebe um golpe de esqueleto, flecha ou bolha. Tira um coração, empurra para longe de quem
 ## bateu e deixa um tempo invulnerável. Sem corações, fica tonto (nunca morre).
 func take_damage(amount: int, from: Vector3, source := "") -> void:
-	if god_mode or dizzy or _invulnerable > 0.0 or in_vehicle:
+	if god_mode or dizzy or _invulnerable > 0.0:
 		return
 	hearts = maxi(hearts - amount, 0)
 	last_hit_by = source
 	_invulnerable = invulnerable_time
-	var away := global_position - from
-	away.y = 0.0
-	away = away.normalized() if away.length() > 0.01 else -visual.global_basis.z
-	_knockback = away * 7.0
-	velocity.y = maxf(velocity.y, 3.5)
+	if skating:
+		# No skate não tem empurrão: perde o embalo (no veículo, quem dá o tranco é ele).
+		_skate_speed *= 0.4
+	elif not in_vehicle:
+		var away := global_position - from
+		away.y = 0.0
+		away = away.normalized() if away.length() > 0.01 else -visual.global_basis.z
+		_knockback = away * 7.0
+		velocity.y = maxf(velocity.y, 3.5)
 	if is_instance_valid(anim_tree):
 		anim_tree.set("parameters/golpe/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	rumble(0.7, 0.6, 0.25)

@@ -8,7 +8,9 @@ extends Node3D
 ## meio das retas). Na chegada mostra o tempo, guarda o recorde e dá moedas (15, mais 10 com recorde novo).
 ## Descer (B ou E): dentro da pista, o aventureiro vai para fora dela e o veículo volta para a vaga; fora da
 ## pista, o veículo fica onde parou e volta sozinho para a vaga quando o aventureiro se afasta 50 m. Cair no
-## mar também manda o veículo de volta.
+## mar também manda o veículo de volta. Dirigindo, os esqueletos atacam do mesmo jeito: cada golpe tira um
+## coração e dá um tranco no veículo; sem corações, o aventureiro fica tonto, desce e o veículo volta para a
+## vaga.
 
 const LAPS := 3
 const GATE_RADIUS := 7.0
@@ -94,6 +96,13 @@ func _ready() -> void:
 	add_child(_prompt)
 	_prompt.global_position = paddock + Vector3(-6.0, 6.0, 4.0)
 	_build_entry_mark()
+	var player: Player = game.player
+	player.damaged.connect(func() -> void:
+		if driving() and is_instance_valid(kart):
+			kart.jolt())
+	player.dizzy_started.connect(func() -> void:
+		if driving():
+			leave(true))
 
 
 ## A abertura da pista: faixa dourada no asfalto e a placa "LARGADA" em cima.
@@ -172,7 +181,11 @@ func _physics_process(delta: float) -> void:
 						best = d
 						nearest = v
 		"dirigindo", "contagem", "correndo":
+			# Um pouco acima do veículo: o "tchibum" do jogo (que olha o aventureiro) só vem depois que o
+			# veículo afunda e ele desce.
 			player.global_position = kart.global_position + Vector3.UP * 0.6
+			player.ride_tick(delta)
+			kart.show_driver(player.visual.visible)
 			if kart.global_position.y < SEA_LEVEL - 0.9:
 				# Caiu no mar: o veículo volta para a vaga e o aventureiro faz o "tchibum" de sempre.
 				leave(true)
@@ -205,7 +218,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func enter(v: Kart) -> void:
 	kart = v
 	nearest = null
-	v.drive(game.player.model_path())
+	v.drive(game.player)
 	v.input_enabled = true
 	v.camera.make_current()
 	game.enter_vehicle()
@@ -214,19 +227,20 @@ func enter(v: Kart) -> void:
 	game.show_message("%s! Entre na LARGADA para correr." % v.display_name, Color("#ffd23f"), 2.6)
 
 
-## Desce do veículo. Na pista (ou caindo no mar), o veículo volta para a vaga e o aventureiro fica fora da
-## pista; pela ilha, o veículo fica onde parou.
-func leave(sank := false) -> void:
+## Desce do veículo. Na pista, o veículo volta para a vaga e o aventureiro fica fora da pista; pela ilha, o
+## veículo fica onde parou. send_home (caiu no mar ou ficou tonto): o veículo volta para a vaga e o
+## aventureiro fica ali mesmo.
+func leave(send_home := false) -> void:
 	var v := kart
 	kart = null
-	if state in ["contagem", "correndo"] and not sank:
+	if state in ["contagem", "correndo"] and not send_home:
 		game.show_message("Corrida cancelada", Color(1, 1, 1, 0.9), 1.4)
 	state = "a_pe"
 	if not is_instance_valid(v):
 		game.exit_vehicle(paddock + Vector3.UP * 0.5)
 		return
 	var where := v.global_position
-	if sank:
+	if send_home:
 		v.go_home()
 		game.exit_vehicle(where)
 	elif on_track(where):

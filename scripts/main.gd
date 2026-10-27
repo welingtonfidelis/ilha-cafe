@@ -3137,6 +3137,44 @@ func _run_activities_test() -> void:
 	await _stand(meadow + Vector3(0, 0, 60))
 	await _wait(0.3)
 	all_ok = _check("a mais de 50 m o carro volta para a vaga", formula.is_home()) and all_ok
+	# Golpes dentro do carrinho (passeando pelo campo): tira coração, dá tranco e o piloto pisca; a flecha que
+	# acerta o carrinho vale; sem corações, fica tonto, desce e o carrinho volta para a vaga.
+	var hit_car := cars[3]
+	await _stand(hit_car.global_position + hit_car.global_basis.z * 2.6)
+	await _wait(0.2)
+	await _press_key(KEY_E)
+	await _wait(0.2)
+	hit_car.global_position = meadow + Vector3.UP * 0.5
+	await _wait(0.4)
+	player.god_mode = false
+	hit_car.speed = 10.0
+	var h0 := player.hearts
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0), "teste")
+	var jolted := hit_car.speed < 5.0
+	var blinked := false
+	var hit_t := 0.0
+	while hit_t < 0.4:
+		await get_tree().process_frame
+		hit_t += get_process_delta_time()
+		blinked = blinked or not hit_car._head.visible
+	all_ok = _check("no kart, golpe tira coração, dá tranco e o piloto pisca", player.hearts == h0 - 1 and jolted and blinked
+			and kart_race.state == "dirigindo", "(%d -> %d corações, tranco %s, piscou %s, %s)" % [h0, player.hearts, jolted, blinked, kart_race.state]) and all_ok
+	await _wait(player.invulnerable_time)
+	all_ok = _check("no kart, o tempo invulnerável passa e o piloto para de piscar", player._invulnerable <= 0.0 and hit_car._head.visible) and all_ok
+	var h1 := player.hearts
+	var behind := hit_car.global_position - hit_car.global_basis.z * 8.0 + Vector3.UP * 1.6
+	add_child(Projectile.create(Projectile.Kind.FLECHA, behind, player))
+	await _wait_until(func() -> bool: return player.hearts < h1, 2.0)
+	all_ok = _check("flecha que acerta o kart tira coração de quem dirige", player.hearts == h1 - 1, "(%d -> %d)" % [h1, player.hearts]) and all_ok
+	player._invulnerable = 0.0
+	player.hearts = 1
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0), "teste")
+	await _wait(0.1)
+	all_ok = _check("sem corações no kart: fica tonto, desce e o kart volta para a vaga", player.dizzy and kart_race.state == "a_pe"
+			and hit_car.is_home() and player.visible and get_viewport().get_camera_3d() == player.camera,
+			"(tonto %s, %s, na vaga %s, visível %s)" % [player.dizzy, kart_race.state, hit_car.is_home(), player.visible]) and all_ok
+	await _wait_until(func() -> bool: return not player.dizzy, 6.0)
+	player.god_mode = true
 	# Cair no mar com o carrinho.
 	var blue := cars[1]
 	await _stand(blue.global_position + blue.global_basis.z * 2.6)
@@ -3173,6 +3211,13 @@ func _run_activities_test() -> void:
 	Input.action_release("frente")
 	all_ok = _check("dar impulso: o pé direito desce até o chão e o skate anda", player._skate_speed > 3.0
 			and lowest < -Player.SKATE_LIFT * 0.6, "(%.1f m/s, pé %.2f abaixo da tábua)" % [player._skate_speed, -lowest]) and all_ok
+	player.god_mode = false
+	var skate_h := player.hearts
+	var skate_v := player._skate_speed
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0), "teste")
+	player.god_mode = true
+	all_ok = _check("no skate, golpe tira coração e o skate perde o embalo (sem empurrão)", player.hearts == skate_h - 1 and player.skating
+			and player._skate_speed < skate_v * 0.5 and player._knockback == Vector3.ZERO, "(%.1f -> %.1f m/s)" % [skate_v, player._skate_speed]) and all_ok
 	var yaw0 := player.get_yaw()
 	Input.action_press("olhar_direita")
 	await _wait(0.4)
@@ -3247,7 +3292,7 @@ func _run_vehicles_capture() -> void:
 		player.set_character(who)
 		for k in [0, 2, 3]:
 			var v: Kart = row[k]
-			v.drive(player.model_path())
+			v.drive(player)
 			v.set_physics_process(false)
 			var f := v.global_basis.z
 			var side := v.global_basis.x

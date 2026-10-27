@@ -22,13 +22,17 @@ static func create(p_kind: Kind, from: Vector3, p_target: Node3D) -> Projectile:
 	p.kind = p_kind
 	p.target = p_target
 	p.position = from
-	var aim := p_target.global_position + Vector3.UP * 1.2
-	p.direction = (aim - from).normalized()
+	p.direction = (aim_at(p_target) - from).normalized()
 	if p_kind == Kind.BOLHA:
 		p.speed = 4.5
 		p.turn_rate = 1.1
 		p.life = 6.0
 	return p
+
+
+## Ponto onde mirar: o peito do aventureiro (ou o piloto, se ele está dirigindo).
+static func aim_at(t: Node3D) -> Vector3:
+	return (t as Player).aim_point() if t is Player else t.global_position + Vector3.UP * 1.2
 
 
 func _ready() -> void:
@@ -114,7 +118,7 @@ func _physics_process(delta: float) -> void:
 		pop()
 		return
 	if turn_rate > 0.0 and is_instance_valid(target):
-		var desired := (target.global_position + Vector3.UP * 1.2 - global_position).normalized()
+		var desired := (aim_at(target) - global_position).normalized()
 		direction = direction.slerp(desired, minf(1.0, turn_rate * delta)).normalized()
 	global_position += direction * speed * delta
 	if kind == Kind.FLECHA:
@@ -127,8 +131,13 @@ func _physics_process(delta: float) -> void:
 func _on_body_entered(body: Node) -> void:
 	if _popped:
 		return
-	if body is Player:
-		(body as Player).take_damage(damage, global_position - direction, "flecha" if kind == Kind.FLECHA else "bolha")
+	var hit: Player = body as Player
+	# Dirigindo, o aventureiro fica escondido sem colisão: quem leva a flecha é o veículo, e o golpe vai para
+	# quem está nele.
+	if body is Kart:
+		hit = (body as Kart).driver
+	if is_instance_valid(hit):
+		hit.take_damage(damage, global_position - direction, "flecha" if kind == Kind.FLECHA else "bolha")
 	pop()
 
 

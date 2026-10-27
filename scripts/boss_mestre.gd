@@ -337,7 +337,7 @@ class GiantBubble:
 		g.kind = Projectile.Kind.BOLHA
 		g.target = p_target
 		g.position = from
-		g.direction = (p_target.global_position + Vector3.UP * 1.2 - from).normalized()
+		g.direction = (Projectile.aim_at(p_target) - from).normalized()
 		g.speed = 2.6
 		g.turn_rate = 0.6
 		g.life = 9.0

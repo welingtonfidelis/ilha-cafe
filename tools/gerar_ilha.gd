@@ -1191,16 +1191,17 @@ func _clear_activity_areas() -> void:
 
 ## Pista oval de kart: retas de 48 m nas laterais, 16 m em cima e embaixo e curvas de 12 m de raio
 ## (uns 200 m por volta). Peças do City Kit Roads: a peça "-barrier" é só a mureta, então cada pedaço leva
-## o asfalto (com colisão, o kart anda nele) e a mureta por cima. A reta corre norte-sul; a curva grande (2x2)
-## liga sul e oeste e, girada +90°, leste e sul. O kart corre no sentido horário visto de cima: sobe a reta
-## da esquerda (para o norte), passa pela largada e faz a volta.
+## o asfalto (com colisão, o kart anda nele) e a mureta por cima. A mureta reta corre norte-sul, mas o asfalto
+## reto (e a faixa de pedestre) corre leste-oeste: ele vai girado 90° a mais. A curva grande (2x2) liga sul e
+## oeste e, girada +90°, leste e sul (asfalto e mureta da curva batem). O kart corre no sentido horário visto
+## de cima: sobe a reta da esquerda (para o norte), passa pela largada e faz a volta.
 func _kart_track() -> void:
 	var group := _group(ilha, "PistaDeKart")
 	var o := Vector3(KART.x - KART_W * KART_TILE * 0.5, KART_Y, KART.y - KART_L * KART_TILE * 0.5)
 	var at := func(i: float, j: float) -> Vector3:
 		return o + Vector3(i * KART_TILE, 0, j * KART_TILE)
 	var piece := func(road: String, pos: Vector3, rot: float) -> void:
-		_prop(group, PISTA % road, pos, rot, KART_TILE, "malha")
+		_prop(group, PISTA % road, pos, rot + (0.0 if road == "road-curve" else 90.0), KART_TILE, "malha")
 		var rail := road.replace("-crossing", "-straight") + "-barrier"
 		_prop(group, PISTA % rail, pos, rot, KART_TILE, "malha")
 	for spec in [[0, 0, 90.0], [KART_W - 2, 0, 0.0], [KART_W - 2, KART_L - 2, -90.0], [0, KART_L - 2, 180.0]]:
@@ -1210,7 +1211,7 @@ func _kart_track() -> void:
 			if i == 0 and j == KART_ENTRY:
 				# Entrada: só o asfalto e a mureta de dentro (a peça do pacote tem as duas muretas juntas).
 				var ep: Vector3 = at.call(i + 0.5, j + 0.5)
-				_prop(group, PISTA % "road-straight", ep, 0.0, KART_TILE, "malha")
+				_prop(group, PISTA % "road-straight", ep, 90.0, KART_TILE, "malha")
 				_box_body(group, "MuretaDaEntrada", Vector3(0.18, 0.64, KART_TILE),
 					Transform3D(Basis.IDENTITY, ep + Vector3(0.47 * KART_TILE, 0.32, 0)), Color("#a6aad8"))
 				continue

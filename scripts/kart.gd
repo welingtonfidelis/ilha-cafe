@@ -29,6 +29,8 @@ const TURN := 2.3
 var speed := 0.0
 var camera: Camera3D
 var driving := false
+## Quem está dirigindo (nulo estacionado): as flechas que acertam o veículo vão para ele.
+var driver: Player
 ## Lugar no box; volta para cá quando o aventureiro desce longe ou sai da pista.
 var home := Transform3D.IDENTITY
 var input_enabled := true
@@ -101,6 +103,7 @@ func forward() -> Vector3:
 ## Estaciona: sem piloto, parado e na camada do mundo (o aventureiro esbarra).
 func park() -> void:
 	driving = false
+	driver = null
 	speed = 0.0
 	velocity = Vector3.ZERO
 	collision_layer = 1
@@ -112,13 +115,14 @@ func park() -> void:
 	_pose_wheels()
 
 
-## Começa a dirigir, com o aventureiro (char_path: o .glb do personagem) no lugar do piloto.
-func drive(char_path: String) -> void:
+## Começa a dirigir, com o aventureiro (o mesmo personagem dele) no lugar do piloto.
+func drive(who: Player) -> void:
 	driving = true
+	driver = who
 	speed = 0.0
 	collision_layer = 1 << 1
 	set_physics_process(true)
-	_head = load(char_path).instantiate()
+	_head = load(who.model_path()).instantiate()
 	_head.name = "PilotoNoBanco"
 	for m in _head.find_children("*", "MeshInstance3D", true, false):
 		var n := String(m.name)
@@ -132,6 +136,18 @@ func drive(char_path: String) -> void:
 	_cam_yaw = 0.0
 	_cam_pitch = 0.0
 	_place_camera(1.0)
+
+
+## Quem dirige levou um golpe: o veículo perde o embalo e dá um tranco (o bico afunda, como numa freada).
+func jolt() -> void:
+	speed *= 0.4
+	_visual.rotation.x = 0.16
+
+
+## O piloto no banco pisca junto com o aventureiro enquanto ele está invulnerável depois de um golpe.
+func show_driver(on: bool) -> void:
+	if is_instance_valid(_head):
+		_head.visible = on
 
 
 func go_home() -> void:
