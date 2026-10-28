@@ -16,8 +16,8 @@ esqueletos só queriam ser convidados para a festa.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/imagens/01_praca_onda.jpg" alt="Primeira onda na praça"><br><sub>Véspera da festa: a primeira onda chega na praça.</sub></td>
-    <td width="50%"><img src="docs/imagens/02_ossao.jpg" alt="Luta contra o Ossão"><br><sub>Ossão, o guardião do escudo, e a onda de choque no chão.</sub></td>
+    <td width="50%"><img src="docs/imagens/01_praca_onda.jpg" alt="Primeira onda na praia"><br><sub>Véspera da festa: a primeira onda chega pela praia do cais.</sub></td>
+    <td width="50%"><img src="docs/imagens/02_ossao.jpg" alt="Luta contra o Ossão"><br><sub>Ossão, o guardião do escudo e do martelinho, e a onda de choque no chão.</sub></td>
   </tr>
   <tr>
     <td><img src="docs/imagens/03_esqueleto_de_balao.jpg" alt="Esqueleto indo embora de balão"><br><sub>Lanterna apagada: o guardião vai embora de balão.</sub></td>
@@ -25,19 +25,27 @@ esqueletos só queriam ser convidados para a festa.
   </tr>
   <tr>
     <td><img src="docs/imagens/05_mestre_ossinho.jpg" alt="Mestre Ossinho no cemitério do Morro"><br><sub>A luta final contra o Mestre Ossinho, no cemitério do Morro.</sub></td>
-    <td><img src="docs/imagens/06_festa_a_noite.jpg" alt="Festa do Cafuné à noite na praça"><br><sub>A Festa do Cafuné, com os esqueletos convidados.</sub></td>
+    <td><img src="docs/imagens/06_amigos_do_morro.jpg" alt="Inimigos novos com brinquedos e doces"><br><sub>Pistoleiro, Lobinho, Conde, Grandalhão e Golem de Gelo, com brinquedos e doces nas mãos.</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/imagens/07_banda_no_palco.jpg" alt="Banda tocando no palco"><br><sub>A banda no palco, com o urso do violão.</sub></td>
-    <td><img src="docs/imagens/08_lojinha.jpg" alt="Lojinha de Blasters"><br><sub>Lojinha de Blasters: moedas das lutas viram blasters novos.</sub></td>
+    <td><img src="docs/imagens/07_duas_pistolas.jpg" alt="Aventureiro com duas pistolas"><br><sub>Duas pistolas, uma em cada mão: atira mais, mas espalha e tira menos.</sub></td>
+    <td><img src="docs/imagens/08_dardos_de_espuma.jpg" alt="Dardos de espuma voando"><br><sub>Os blasters soltam dardos de espuma coloridos.</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/imagens/09_previa_do_blaster.jpg" alt="Prévia de um blaster na lojinha"><br><sub>Prévia do blaster girando, com dano e tipo.</sub></td>
-    <td><img src="docs/imagens/10_corrida_de_kart.jpg" alt="Corrida de kart"><br><sub>Pista de kart: três voltas contra o relógio.</sub></td>
+    <td><img src="docs/imagens/09_lojinha_no_celular.jpg" alt="Lojinha no celular"><br><sub>Lojinha no celular: as moedas das lutas viram blasters, munição e corações.</sub></td>
+    <td><img src="docs/imagens/10_entrega_de_balao.jpg" alt="Entrega descendo de balão"><br><sub>O que se compra desce do céu de balão, na frente do aventureiro.</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/imagens/11_kart_com_piloto.jpg" alt="Menina dirigindo um kart"><br><sub>Os karts também passeiam pela ilha inteira.</sub></td>
-    <td><img src="docs/imagens/12_skate_half_pipe.jpg" alt="Skate no half-pipe"><br><sub>Pista de skate com half-pipe, rampas e manobras.</sub></td>
+    <td><img src="docs/imagens/11_festa_a_noite.jpg" alt="Festa do Cafuné à noite na praça"><br><sub>A Festa do Cafuné, com os esqueletos convidados.</sub></td>
+    <td><img src="docs/imagens/12_banda_e_creditos.jpg" alt="Banda no palco e o círculo dos créditos"><br><sub>A banda no palco; o círculo dourado na frente dele abre os créditos.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/imagens/13_festa_sem_fim.jpg" alt="Festa sem fim no cemitério"><br><sub>Depois da história, a Festa sem fim: ondas sem fim valendo recorde.</sub></td>
+    <td><img src="docs/imagens/14_corrida_de_kart.jpg" alt="Corrida de kart"><br><sub>Pista de kart: três voltas contra o relógio.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/imagens/15_kart_com_piloto.jpg" alt="Menina dirigindo um kart"><br><sub>Os karts também passeiam pela ilha inteira.</sub></td>
+    <td><img src="docs/imagens/16_skate_half_pipe.jpg" alt="Skate no half-pipe"><br><sub>Pista de skate com half-pipe, rampas e manobras.</sub></td>
   </tr>
 </table>
 
@@ -45,16 +53,19 @@ esqueletos só queriam ser convidados para a festa.
 
 - **História completa:** prólogo na praia do cais, duas defesas na cidade (Ossão e Mira-Torta), duas na mata
   (Torre de Ossinhos e Minionzão) e a luta final contra o Mestre Ossinho em três fases. Depois vêm o desfecho, a
-  festa à noite com fogos e os créditos com um álbum de fotos da partida.
+  festa à noite com fogos e, no círculo dourado na frente do palco, os créditos com um álbum de fotos da partida.
 - **Depois da história:** a ilha fica em festa, com os esqueletos amigos, e a "Festa sem fim" no cemitério traz
   ondas sem fim valendo recorde e moedas.
-- **Blasters de doce:** 12 blasters (pistola, metralhadora, escopeta e rifle), com pente, recarga e estoque.
-  Também tem granada e o Pirulitão para o golpe de perto. A Paçoca vem de início e o resto sai na Lojinha de
-  Blasters, com as moedas das lutas.
+- **Blasters de doce:** 18 blasters (pistola, metralhadora, escopeta e rifle) que soltam dardos de espuma, com
+  pente, recarga e estoque. Com duas pistolas dá para usar uma em cada mão. Também tem granada e o Pirulitão
+  para o golpe de perto. A Paçoca vem de início e o resto sai na lojinha do celular, com as moedas das lutas,
+  junto com munição e corações; tudo chega de balão.
+- **Esqueletos e amigos do Morro:** Minion, Guerreiro, Arqueiro, Mago, Golem, Pistoleiro, Lobinho, Conde,
+  Grandalhão e Golem de Gelo, cada um atacando do seu jeito, com brinquedos e doces nas mãos, e seis guardiões.
 - **Ilha para explorar:** cidade, praça, cais, mata, rio, Morro dos Ventos, fazenda e o Bosque das Copas, com o
   desafio opcional do Guerreiro Planta. São 22 moradores que conversam, torcem nas ondas e comemoram, além de
   animais e peixes.
-- **Diversões:** barraca de tiro ao alvo, molas, pista de kart com 5 karts, pista de skate e barcos no mar. O
+- **Diversões:** barraca de tiro ao alvo, pista de kart com 5 karts, pista de skate e barcos no mar. O
   kart e o skate também andam pela ilha inteira, e os esqueletos atacam quem está neles.
 - **Feito para criança:** controle com auxílio de mira e vibração, menus que funcionam no controle, interface
   visual com pouco texto e nada assustador.
@@ -73,6 +84,8 @@ esqueletos só queriam ser convidados para a festa.
 | Pirulitão (golpe de perto) | F | R3 |
 | Entrar e sair do kart ou do skate | E | B / círculo |
 | Trocar de blaster | 1 a 4 ou rodinha | direcional ou Y |
+| Duas pistolas (com duas compradas) | 1 de novo | direcional para cima de novo |
+| Lojinha no celular (fora de luta) | C | Select / Share |
 | Pausa e comandos | Esc | Start / Options |
 
 ## Como rodar
@@ -103,7 +116,7 @@ godot --headless --path . -- --atividades
 ```
 
 Os outros modos são `--salvar`, `--ilha`, `--smoke`, `--controle`, `--loja`, `--combate`, `--som`, `--historia`,
-`--final`, `--mata`, `--cemiterio`, `--extras`, `--festa-sem-fim` e `--armas`.
+`--final`, `--mata`, `--cemiterio`, `--extras`, `--festa-sem-fim`, `--armas`, `--inimigos` e `--minionzao`.
 
 ## Como o projeto é organizado
 
