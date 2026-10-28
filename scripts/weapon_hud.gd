@@ -73,14 +73,16 @@ func refresh(p: Player) -> void:
 		"i": i, "mag": p.mag(), "reserve": p.reserve(), "others": others,
 		"grenades": p.grenades, "reload": snappedf(p.reload_progress(), 0.01), "pad": p.using_gamepad,
 		"ids": p.equipped.duplicate(),
+		# Duas pistolas: a da esquerda e o pente dela.
+		"left": p.left_pistol_id() if p.dual and i == 0 else "", "mag_l": p.mag_left(),
 	}
 	if i != _last_weapon:
 		if _last_weapon != -1:
 			_switch = 1.0
 		_last_weapon = i
-	elif s.mag < _last_mag:
+	elif s.mag + maxi(s.mag_l, 0) < _last_mag:
 		_pulse = 1.0
-	_last_mag = s.mag
+	_last_mag = s.mag + maxi(s.mag_l, 0)
 	if s != _state:
 		_state = s
 		queue_redraw()
@@ -230,9 +232,12 @@ func _draw_main() -> void:
 	var slide := 36.0 * _switch
 	var glow := 1.0 - 0.6 * _switch
 	_binding(Vector2(x + 143 + slide, y + 19), _state.i, 24, glow, _flash.get(def.id, 0.0))
-	var mag_size := int(round(42 * (1.0 + 0.12 * _pulse)))
-	var mag_text := str(_state.mag)
-	var mag_color := _mag_color(_state.mag, def.pente)
+	var dual: bool = _state.left != ""
+	var left_def: Dictionary = Weapons.find(_state.left) if dual else {}
+	var mag_size := int(round((34 if dual else 42) * (1.0 + 0.12 * _pulse)))
+	# Duas pistolas: os dois pentes, o da esquerda primeiro ("12 · 16").
+	var mag_text := "%d · %d" % [_state.mag_l, _state.mag] if dual else str(_state.mag)
+	var mag_color := _mag_color(mini(_state.mag, _state.mag_l) if dual else _state.mag, def.pente)
 	var nx := x + 124 + slide
 	_text(Vector2(nx, y + 62), mag_text, mag_size, Color(mag_color, glow))
 	var reserve_text := _reserve_text(_state.reserve)
@@ -241,7 +246,12 @@ func _draw_main() -> void:
 	_text(Vector2(nx, y + 98), reserve_text, 30, Color(GREY, glow))
 	var reloading: bool = _state.reload >= 0.0
 	var icon_area := Rect2(x + 205 + slide, y + 14, 160, h - 28)
-	_icon(def.id, icon_area, (0.3 if reloading else 0.95) * glow)
+	if dual:
+		# As duas silhuetas, a da esquerda um pouco atrás e mais acima.
+		_icon(left_def.id, Rect2(icon_area.position + Vector2(-34, -8), icon_area.size * 0.8), (0.2 if reloading else 0.6) * glow)
+		_icon(def.id, Rect2(icon_area.position + Vector2(0, 12), icon_area.size * 0.8), (0.3 if reloading else 0.95) * glow)
+	else:
+		_icon(def.id, icon_area, (0.3 if reloading else 0.95) * glow)
 	if reloading:
 		var bar_x := x + 100.0
 		var bar_w := 400.0 - 100.0 - h * SLANT - 10.0

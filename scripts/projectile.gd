@@ -3,8 +3,12 @@ extends Area3D
 ## Ataques à distância dos esqueletos.
 ## - Flecha de ventosa (Skeleton_Rogue): reta e rápida; dá para desviar andando de lado.
 ## - Bolha mágica (Skeleton_Mage): lenta, persegue de leve e estoura com um tiro.
+## - Dardo de espuma (Esqueleto Pistoleiro): o projétil do Blaster Kit, reto e mais rápido que a flecha, em
+##   rajadas de três.
 
-enum Kind { FLECHA, BOLHA }
+enum Kind { FLECHA, BOLHA, DARDO }
+
+const DART := "res://assets/weapons/bullet-foam-tip.glb"
 
 var kind := Kind.FLECHA
 var direction := Vector3.FORWARD
@@ -27,6 +31,9 @@ static func create(p_kind: Kind, from: Vector3, p_target: Node3D) -> Projectile:
 		p.speed = 4.5
 		p.turn_rate = 1.1
 		p.life = 6.0
+	elif p_kind == Kind.DARDO:
+		p.speed = 17.0
+		p.life = 2.5
 	return p
 
 
@@ -41,13 +48,20 @@ func _ready() -> void:
 	monitoring = true
 	var shape := CollisionShape3D.new()
 	var sphere := SphereShape3D.new()
-	sphere.radius = 0.22 if kind == Kind.FLECHA else 0.4
+	sphere.radius = 0.4 if kind == Kind.BOLHA else 0.22
 	shape.shape = sphere
 	add_child(shape)
-	if kind == Kind.FLECHA:
-		_build_arrow()
-	else:
-		_build_bubble()
+	match kind:
+		Kind.FLECHA:
+			_build_arrow()
+		Kind.BOLHA:
+			_build_bubble()
+		Kind.DARDO:
+			# O dardo do Blaster Kit é pequenino e em pé (+Y): deitado para a frente (-Z) e bem maior.
+			var dart: Node3D = load(DART).instantiate()
+			dart.scale = Vector3.ONE * 6.0
+			dart.rotation_degrees.x = -90.0
+			add_child(dart)
 	body_entered.connect(_on_body_entered)
 
 
@@ -121,7 +135,7 @@ func _physics_process(delta: float) -> void:
 		var desired := (aim_at(target) - global_position).normalized()
 		direction = direction.slerp(desired, minf(1.0, turn_rate * delta)).normalized()
 	global_position += direction * speed * delta
-	if kind == Kind.FLECHA:
+	if kind != Kind.BOLHA:
 		var up := Vector3.UP if absf(direction.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
 		look_at(global_position + direction, up)
 	else:
@@ -137,7 +151,7 @@ func _on_body_entered(body: Node) -> void:
 	if body is Kart:
 		hit = (body as Kart).driver
 	if is_instance_valid(hit):
-		hit.take_damage(damage, global_position - direction, "flecha" if kind == Kind.FLECHA else "bolha")
+		hit.take_damage(damage, global_position - direction, ["flecha", "bolha", "dardo"][kind])
 	pop()
 
 

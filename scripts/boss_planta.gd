@@ -102,7 +102,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 				restart(&"luta/Melee_1H_Attack_Stab", 1.2)
 				Sfx.play_at(get_parent(), "golpe_ar", global_position + Vector3.UP * 2.0, 3.0)
 		Move.INVESTIDA:
-			move(_dash_dir * DASH_SPEED)
+			move(_dash_dir * DASH_SPEED, false)
 			face(_dash_dir, delta, 10.0)
 			if not _struck and is_instance_valid(target):
 				var rel := target.global_position - global_position

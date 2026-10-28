@@ -72,7 +72,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 				_show_stripe(dir)
 			else:
 				move(dir * speed)
-				face(dir, delta)
+				face(velocity if _detour.detouring() else dir, delta)
 				play(&"especial/Skeletons_Walking", 0.6)
 		Move.SOCO:
 			move(Vector3.ZERO)
@@ -101,7 +101,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 				restart(&"mov/Running_A", 1.5)
 				Sfx.play_at(get_parent(), "golpe_ar", global_position + Vector3.UP * 3.0, 4.0)
 		Move.INVESTIDA:
-			move(_charge_dir * CHARGE_SPEED)
+			move(_charge_dir * CHARGE_SPEED, false)
 			face(_charge_dir, delta, 10.0)
 			if not _struck and is_instance_valid(target):
 				var rel := target.global_position - global_position

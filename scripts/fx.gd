@@ -1,12 +1,21 @@
 class_name Fx
 extends RefCounted
-## Efeitos rápidos criados por código: confete, rastro do tiro, clarão e texto flutuante.
+## Efeitos rápidos criados por código: confete, dardo do tiro, clarão e texto flutuante.
 ## Seguem as regras de tom: impacto vira confete e faísca, nunca ferimento.
 
 const CONFETTI_COLORS := [
 	Color("#ff5d8f"), Color("#ffd23f"), Color("#3bceac"),
 	Color("#5e9cff"), Color("#b18cff"), Color("#ff8c42"),
 ]
+## Dardo do tiro do aventureiro: tamanho (o mesmo do dardo do Esqueleto Pistoleiro), rastro e voo. A rapidez
+## é a do desenho; o tempo de voo fica entre o mínimo e o máximo para o dardo aparecer de perto e não chegar
+## muito depois do acerto de longe.
+const DART_LENGTH := 0.36
+const DART_RADIUS := 0.055
+const DART_TRAIL := 1.6
+const DART_SPEED := 60.0
+const DART_MIN_TIME := 0.05
+const DART_MAX_TIME := 0.18
 
 
 static func confetti(parent: Node, pos: Vector3, amount: int = 24, strength: float = 4.0) -> void:
@@ -76,28 +85,63 @@ static func dust(parent: Node, pos: Vector3) -> void:
 	p.finished.connect(p.queue_free)
 
 
-static func tracer(parent: Node, from: Vector3, to: Vector3, color: Color) -> void:
+## Dardo de espuma do tiro do aventureiro (pedido do usuário em 2026-10-28, no lugar do risco colorido): o
+## acerto continua instantâneo na mira (Player._shoot_ray) e o dardo é só o desenho do tiro, voando do cano até
+## onde a mira acertou, na cor da arma mais forte e com a ponta mais escura, puxando um rastrinho na cor da arma. `impact` roda quando ele
+## chega (o confete ou a poeira), para o estouro sair junto com o dardo.
+static func foam_dart(parent: Node, from: Vector3, to: Vector3, color: Color, impact := Callable()) -> void:
 	var length := from.distance_to(to)
-	if length < 0.05:
+	if length < 0.6:
+		if impact.is_valid():
+			impact.call()
 		return
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.05, 0.05, length)
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var dart := Node3D.new()
+	# O dardo aponta para -Z (frente da Godot), porque o nó vira com look_at.
+	var body := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = DART_RADIUS
+	cyl.bottom_radius = DART_RADIUS
+	cyl.height = DART_LENGTH
+	cyl.radial_segments = 10
+	cyl.material = flat_material(Color.from_hsv(color.h, minf(color.s + 0.3, 1.0), color.v))
+	body.mesh = cyl
+	body.rotation_degrees.x = 90.0
+	dart.add_child(body)
+	var tip := MeshInstance3D.new()
+	var ball := SphereMesh.new()
+	ball.radius = DART_RADIUS * 1.25
+	ball.height = DART_RADIUS * 2.5
+	ball.radial_segments = 10
+	ball.rings = 5
+	ball.material = flat_material(Color.from_hsv(color.h, minf(color.s + 0.55, 1.0), color.v * 0.78))
+	tip.mesh = ball
+	tip.position.z = -DART_LENGTH * 0.5
+	dart.add_child(tip)
+	var trail := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(DART_RADIUS * 0.8, DART_RADIUS * 0.8, 1.0)
+	var mat := flat_material(Color(color, 0.55))
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = color
-	mesh.material = mat
-	var mi := MeshInstance3D.new()
-	mi.mesh = mesh
-	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	parent.add_child(mi)
-	mi.global_position = (from + to) * 0.5
+	box.material = mat
+	trail.mesh = box
+	trail.scale.z = 0.001
+	dart.add_child(trail)
+	for mi: MeshInstance3D in [body, tip, trail]:
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(dart)
+	dart.global_position = from
 	var dir := (to - from).normalized()
-	var up := Vector3.UP if absf(dir.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT
-	mi.look_at(to, up)
-	var tw := mi.create_tween()
-	tw.tween_property(mat, "albedo_color:a", 0.0, 0.12)
-	tw.tween_callback(mi.queue_free)
+	dart.look_at(to, Vector3.UP if absf(dir.dot(Vector3.UP)) < 0.99 else Vector3.RIGHT)
+	var fly := func(t: float) -> void:
+		dart.global_position = from.lerp(to, t)
+		var tail := minf(length * t, DART_TRAIL)
+		trail.scale.z = maxf(tail, 0.001)
+		trail.position.z = DART_LENGTH * 0.5 + tail * 0.5
+	var tw := dart.create_tween()
+	tw.tween_method(fly, 0.0, 1.0, clampf(length / DART_SPEED, DART_MIN_TIME, DART_MAX_TIME))
+	if impact.is_valid():
+		tw.tween_callback(impact)
+	tw.tween_callback(dart.queue_free)
 
 
 static func muzzle_flash(at: Node3D) -> void:

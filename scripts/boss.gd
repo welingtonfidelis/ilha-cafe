@@ -46,6 +46,9 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") 
 var _balloons: Node3D
 var _drift := Vector3.ZERO
 var _start_y := 0.0
+## Contorna o pilar da lanterna, troncos e pedras em vez de empacar empurrando de frente.
+var _detour := Detour.new()
+var _want := Vector3.ZERO
 
 
 # --- a preencher nos guardiões ----------------------------------------------
@@ -147,7 +150,7 @@ func _attach(sk: Skeleton3D, bone: String, weapon: String, weapon_fmt := WEAPONS
 	attachment.bone_name = bone
 	sk.add_child(attachment)
 	if weapon != "":
-		attachment.add_child(load(weapon_fmt % weapon).instantiate())
+		attachment.add_child(SkeletonEnemy.held_item(weapon, weapon_fmt))
 	return attachment
 
 
@@ -228,9 +231,15 @@ func _physics_process(delta: float) -> void:
 				phase = Phase.LUTANDO
 				_phase_time = 0.0
 	move_and_slide()
+	_detour.update(self, _want, delta)
 
 
-func move(v: Vector3) -> void:
+## Anda nesta velocidade. steer = false para investidas e saltos, que devem bater no obstáculo (o
+## Minionzão fica tonto ao bater numa parede) em vez de contornar.
+func move(v: Vector3, steer := true) -> void:
+	_want = v if steer else Vector3.ZERO
+	if steer:
+		v = _detour.steer(v)
 	velocity.x = v.x
 	velocity.z = v.z
 

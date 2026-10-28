@@ -15,19 +15,19 @@ const REGIONS := {
 	},
 	"oeste": {
 		"nome": "Lanterna Oeste", "titulo": "Lanterna Oeste", "lanterna": "Oeste", "guardiao": "ossao", "recompensa": "", "bandeira": "CidadeOeste",
-		"ondas": [[["Skeleton_Minion", 5]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 2]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 1]]],
+		"ondas": [[["Skeleton_Minion", 5]], [["Skeleton_Minion", 3], ["Skeleton_Warrior", 2], ["Skeleton_Pistoleiro", 1]], [["Skeleton_Minion", 4], ["Skeleton_Warrior", 1]]],
 	},
 	"leste": {
 		"nome": "Lanterna Leste", "titulo": "Lanterna Leste", "lanterna": "Leste", "guardiao": "mira_torta", "recompensa": "", "bandeira": "CidadeLeste",
-		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]], [["Skeleton_Minion", 3], ["Skeleton_Rogue", 3]], [["Skeleton_Minion", 3], ["Skeleton_Rogue", 2]]],
+		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1]], [["Skeleton_Minion", 2], ["Skeleton_Rogue", 2], ["Skeleton_Pistoleiro", 2]], [["Skeleton_Minion", 3], ["Skeleton_Pistoleiro", 2]]],
 	},
 	"clareira": {
 		"nome": "Clareira da Jabuticabeira", "titulo": "Lanterna da Clareira", "lanterna": "Clareira", "guardiao": "torre", "recompensa": "coracao", "bandeira": "Clareira",
-		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Mage", 1]], [["Skeleton_Golem", 1], ["Skeleton_Minion", 2], ["Skeleton_Mage", 2], ["Skeleton_Rogue", 1]], [["Skeleton_Mage", 2]]],
+		"ondas": [[["Skeleton_Minion", 3], ["Lobinho", 2], ["Skeleton_Mage", 1]], [["Skeleton_Golem", 1], ["Skeleton_Minion", 2], ["Skeleton_Mage", 2], ["Skeleton_Rogue", 1]], [["Skeleton_Mage", 2], ["Lobinho", 1]]],
 	},
 	"ventos": {
 		"nome": "Morro dos Ventos", "titulo": "Lanterna do Morro dos Ventos", "lanterna": "Ventos", "guardiao": "minionzao", "recompensa": "", "bandeira": "MorroDosVentos",
-		"ondas": [[["Skeleton_Minion", 5], ["Skeleton_Warrior", 1]], [["Skeleton_Golem", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 2], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
+		"ondas": [[["Skeleton_Minion", 4], ["Lobinho", 2], ["Skeleton_Warrior", 1]], [["GolemDeGelo", 1], ["Skeleton_Warrior", 1], ["Skeleton_Rogue", 1], ["Skeleton_Pistoleiro", 1], ["Skeleton_Mage", 1]], [["Skeleton_Minion", 3]]],
 	},
 	# Desafio opcional no Bosque das Copas (clareira de árvores gigantes): só o Guerreiro Planta, sem ondas. Não conta para a história.
 	"vila": {
@@ -37,8 +37,8 @@ const REGIONS := {
 	# Defesa final, no meio do cemitério do Morro (abre quando a cúpula cai): todos os tipos e o Mestre Ossinho.
 	"cemiterio": {
 		"nome": "Cemitério dos Ossinhos", "titulo": "cemitério", "lanterna": "", "guardiao": "mestre", "recompensa": "", "bandeira": "TopoDoMorro",
-		"ondas": [[["Skeleton_Minion", 4], ["Skeleton_Rogue", 1], ["Skeleton_Mage", 1]], [["Skeleton_Warrior", 2], ["Skeleton_Rogue", 2], ["Skeleton_Minion", 2]],
-			[["Skeleton_Golem", 1], ["Skeleton_Mage", 1]]],
+		"ondas": [[["Skeleton_Minion", 3], ["Conde", 1], ["Skeleton_Rogue", 1], ["Skeleton_Mage", 1]], [["Grandalhao", 1], ["Skeleton_Warrior", 1], ["Conde", 1], ["Skeleton_Pistoleiro", 1], ["Skeleton_Minion", 2]],
+			[["Skeleton_Golem", 1], ["Skeleton_Mage", 1], ["Lobinho", 1]]],
 	},
 }
 const CITY := ["oeste", "leste"]
@@ -87,11 +87,16 @@ var photos: Array = []
 ## são 200 moedas (250 com o Guerreiro Planta), o bastante para os três da história (150) ou para juntar e
 ## levar um melhor.
 var coins := 0
-## Já teve moedas alguma vez (o contador aparece) e já abriu a lojinha (até lá, a seta dourada mostra o caminho).
+## Já teve moedas alguma vez (o contador aparece) e já abriu a lojinha do celular (até lá, um aviso embaixo
+## ensina o botão).
 var coins_ever := false
 var shop_visited := false
 ## Melhorias compradas (ids de Weapons.UPGRADES).
 var upgrades: Array = []
+## Lojinha no celular (pedido do usuário em 2026-10-27): o que foi comprado desde que o celular abriu (sai
+## num balão quando ele fecha) e as entregas descendo ou esperando no chão.
+var order: Array = []
+var deliveries: Array[Delivery] = []
 const GUARDIAN_COINS := {"oeste": 50, "leste": 50, "clareira": 50, "ventos": 50, "vila": 50, "cemiterio": 100}
 ## Recordes: ondas na "Festa sem fim" e acertos na barraca de tiro.
 var records := {"festa": 0, "tiro": 0}
@@ -525,8 +530,8 @@ func _refresh_objective() -> void:
 				text = "Suba o Morro até o cemitério"
 				target = CEMETERY + Vector3.UP * 2.0
 			"festa":
-				text = "Aproveite a festa! Suba no palco para ver o álbum"
-				target = Ending.STAGE_TOP + Vector3.UP * 1.5
+				text = "Aproveite a festa! Fique no círculo dourado na frente do palco para ver o álbum"
+				target = Ending.CREDITS_SPOT + Vector3.UP * 1.5
 			"fim":
 				if is_instance_valid(game.party_mode) and game.party_mode.running():
 					text = game.party_mode.objective_text()
@@ -555,9 +560,22 @@ func snapshot() -> Dictionary:
 		"etapa": stage, "vencidas": won, "blasters": weapons, "coracoes": player.max_hearts,
 		"personagem": player.character_name, "bandeira": String(game.current_checkpoint.name),
 		"recompensas": pending, "recordes": _records_now(), "moedas": coins, "moedas_ja": coins_ever,
-		"loja_visitada": shop_visited, "melhorias": upgrades, "equipados": player.equipped,
+		"loja_visitada": shop_visited, "melhorias": upgrades, "equipados": player.equipped, "entregas": _deliveries_now(),
+		"segunda_pistola": player.second_pistol,
 		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
 	}
+
+
+## Entregas para o salvamento: [itens, x, y, z]. O pedido que ainda não saiu fica no lugar do aventureiro.
+func _deliveries_now() -> Array:
+	var out := []
+	for d in deliveries:
+		if is_instance_valid(d) and not d.is_queued_for_deletion():
+			out.append([d.items, d.global_position.x, d.global_position.y, d.global_position.z])
+	if not order.is_empty():
+		var p: Vector3 = game.player.global_position
+		out.append([order.duplicate(), p.x, p.y, p.z])
+	return out
 
 
 ## Ganha moedas (guardião vencido, onda da Festa sem fim). A primeira vez avisa da lojinha.
@@ -569,7 +587,7 @@ func add_coins(n: int, at: Vector3) -> void:
 	Sfx.play(game, "municao", 0.0, 0.0)
 	coins_changed.emit(coins)
 	if first and not shop_visited:
-		game.banner("Você ganhou moedas!", "Gaste na Lojinha de Blasters, na beira da praia. Siga a moeda dourada!", Color("#ffd23f"), 4.5)
+		game.banner("Você ganhou moedas!", "Abra a lojinha no celular: %s." % game.phone_button(), Color("#ffd23f"), 4.5)
 
 
 func spend_coins(n: int) -> bool:
@@ -580,11 +598,93 @@ func spend_coins(n: int) -> bool:
 	return true
 
 
-## Para onde aponta a seta dourada da lojinha (só até a primeira visita).
+## Para onde aponta a seta dourada: a entrega de balão mais perto que ainda não foi pega.
 func shop_target() -> Vector3:
-	if coins_ever and not shop_visited and is_instance_valid(game.shop) and stage not in ["festa"]:
-		return game.shop.marker_point()
-	return Vector3.INF
+	var best := Vector3.INF
+	var best_d := INF
+	for d in deliveries:
+		if is_instance_valid(d) and not d.is_queued_for_deletion():
+			var dist: float = d.global_position.distance_to(game.player.global_position)
+			if dist < best_d:
+				best_d = dist
+				best = d.marker_point()
+	return best
+
+
+## Já comprou e está chegando (no pedido aberto ou numa entrega que ainda não foi pega).
+func on_the_way(id: String) -> bool:
+	if id in order:
+		return true
+	for d in deliveries:
+		if is_instance_valid(d) and id in d.items:
+			return true
+	return false
+
+
+## O celular fechou: o que foi comprado desce do céu num balão, na frente do aventureiro.
+func send_order() -> Delivery:
+	if order.is_empty():
+		return null
+	var d := _spawn_delivery(order.duplicate(), Delivery.spot(game.player), false)
+	order.clear()
+	return d
+
+
+func _spawn_delivery(items: Array, pos: Vector3, landed: bool) -> Delivery:
+	var d := Delivery.new()
+	d.name = "Entrega"
+	d.items = items
+	d.start_landed = landed
+	d.collected.connect(_on_delivery_collected)
+	d.tree_exiting.connect(func() -> void: deliveries.erase(d))
+	# Posição antes de entrar na árvore: o _ready já toca o som do balão no lugar certo.
+	d.position = pos
+	game.add_child(d)
+	deliveries.append(d)
+	return d
+
+
+## Pegou a entrega: cada coisa vai para o aventureiro (blaster na mão, melhoria, munição).
+func _on_delivery_collected(d: Delivery) -> void:
+	var names := []
+	for id in d.items:
+		grant(id)
+		names.append(Delivery.item_name(id))
+	game.banner("Chegou a entrega!", " + ".join(names), Color("#ffd23f"), 3.0)
+	save()
+
+
+## Entrega de verdade do que foi comprado. Testes: entregam o pedido na hora com deliver_now().
+func grant(id: String) -> void:
+	var player: Player = game.player
+	match id:
+		"municao":
+			player.refill_all_ammo()
+		"granada_extra":
+			if not id in upgrades:
+				upgrades.append(id)
+			player.grenade_max = Weapons.GRENADE.max + 1
+			player.grenades = player.grenade_max
+			player.ammo_changed.emit()
+		"coracao_extra":
+			if not id in upgrades:
+				upgrades.append(id)
+			player.add_max_heart()
+		_:
+			player.unlock_weapon(id)
+
+
+## Testes: entrega na hora tudo o que foi comprado (o pedido aberto e as caixas no chão ou no ar).
+func deliver_now() -> void:
+	for id in order:
+		grant(id)
+	order.clear()
+	for d in deliveries.duplicate():
+		if is_instance_valid(d):
+			for id in d.items:
+				grant(id)
+			d.queue_free()
+	deliveries.clear()
 
 
 func _records_now() -> Dictionary:
@@ -650,6 +750,7 @@ func restore(data: Dictionary) -> void:
 	for id in data.get("equipados", []):
 		if player.has_weapon(id):
 			player.equip(id)
+	player.second_pistol = data.get("segunda_pistola", "")
 	player.switch_weapon(0)
 	coins = int(data.get("moedas", 0))
 	coins_ever = data.get("moedas_ja", coins > 0)
@@ -676,6 +777,8 @@ func restore(data: Dictionary) -> void:
 	player.health_changed.emit(player.hearts, player.max_hearts)
 	for r in data.get("recompensas", []):
 		_spawn_reward(r[0], Vector3(r[1], r[2], r[3]))
+	for e in data.get("entregas", []):
+		_spawn_delivery(e[0], Vector3(e[1], e[2], e[3]), true)
 	photos.clear()
 	for p in data.get("fotos", []):
 		photos.append({"legenda": p.legenda, "arquivo": p.arquivo, "imagem": SaveGame.load_photo(p.arquivo)})
@@ -697,6 +800,10 @@ func restore(data: Dictionary) -> void:
 
 ## Do lado da cidade (sul) do rio, que faz curva: perto da ponte vale até o meio da água.
 func south_of_river(p: Vector3) -> bool:
+	return south_of_river_static(p)
+
+
+static func south_of_river_static(p: Vector3) -> bool:
 	return p.z > RIVER_Z + 9.0 * sin(p.x / 38.0) + RIVER_HALF
 
 

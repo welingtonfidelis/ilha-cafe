@@ -19,6 +19,8 @@ signal reload_started(duration: float)
 signal out_of_ammo
 ## Apertou a tecla ou seta de um blaster que ainda não ganhou.
 signal weapon_locked(id: String)
+## Apertou a seta da pistola de novo, mas só tem uma pistola (para usar duas, precisa comprar outra).
+signal dual_locked
 ## Skate: pousou de um pulo (tempo no ar, quanto girou em radianos, se pousou de pé).
 signal skate_landed(air_time: float, spin: float, clean: bool)
 
@@ -36,6 +38,20 @@ const CAMERA_LENGTH_SCOPE := 2.6
 ## na de uma mão o braço fica erguido de 0,36 a 0,98 s; na de duas, de 0,27 a 1,47 s.
 const AIM_POSE_1H := 0.6
 const AIM_POSE_2H := 0.8
+## Duas pistolas: graus a mais de espalhamento em cada tiro (pedido do usuário em 2026-10-28, para as duas
+## não deixarem o jogo fácil demais). Com 3°, a 12 m os tiros caem num círculo de uns 60 cm: o corpo do
+## esqueleto quase sempre leva, a cabeça bem menos.
+const DUAL_SPREAD := 3.0
+## E cada tiro tira 75% do dano da pistola (pedido do usuário no mesmo dia: "ainda tá fácil com duas"). Com
+## quase o dobro de tiros, as duas juntas tiram uns 35% a mais que uma só quando todos acertam; com o
+## espalhamento e a cabeça mais difícil, fica perto de uma só, só que mais solta.
+const DUAL_DAMAGE := 0.75
+## Celular da lojinha: segura com as duas mãos na frente do peito (Holding_B do KayKit), com a tela virada
+## para o rosto. O encaixe no osso handslot.r saiu do meio das duas mãos nessa pose (conferido em
+## tools/foto_celular.gd).
+const PHONE_POSE := "Holding_B"
+const PHONE_OFFSET := Vector3(0.052, 0.243, -0.021)
+const PHONE_ROTATION := Vector3(-18.0, -34.8, -71.3)
 const PITCH_MIN := -1.1345  # -65°
 const PITCH_MAX := 0.6981  # 40°
 
@@ -92,6 +108,13 @@ var last_hit_by := ""
 var weapon_index := 0
 ## Blaster equipado em cada seta: começa com os quatro da história; a lojinha troca pelos comprados.
 var equipped: Array[String] = ["pacoca", "granulado", "pipoqueira", "pe_de_moleque"]
+## Duas pistolas (pedido do usuário em 2026-10-27): com duas ou mais pistolas, apertar a seta de cima (ou 1)
+## de novo com a pistola na mão puxa a segunda para a mão esquerda; mais uma vez, volta a uma só. Os tiros
+## alternam entre as mãos, cada pistola com o seu pente. A segunda é a escolhida na lojinha ("Na outra mão"); sem
+## escolha, a Paçoca (ou a pistola mais cara que tiver, se a Paçoca já está na direita).
+var dual := false
+var second_pistol := ""
+var muzzle_l: Marker3D
 ## Granadas que cabem no bolso (a lojinha vende +1).
 var grenade_max: int = Weapons.GRENADE.max
 ## Blasters que o aventureiro já tem (id -> true). Na arena dos testes, todos; na história, ganhos aos poucos.
@@ -128,6 +151,10 @@ var _head: BoneAttachment3D
 var _hand: BoneAttachment3D
 var _stars: Node3D
 var _reload_left := 0.0
+## Duas pistolas recarregam uma depois da outra: os segundos do fim que são da pistola da esquerda e se a da
+## direita ainda falta encher.
+var _reload_second := 0.0
+var _reload_right_pending := false
 var _auto_reload_delay := 0.0
 var _switch_left := 0.0
 var _throw_cooldown := 0.0
@@ -151,11 +178,19 @@ var _look_idle := 10.0
 var in_vehicle := false
 ## Pirulitão na mão (só aparece durante o golpe; o blaster some nesse instante).
 var _lollipop: Node3D
+## Lojinha no celular: puxou o celular do bolso (o blaster some e ele segura o celular na frente).
+var using_phone := false
+var _phone: Node3D
 var _node_melee_speed: AnimationNodeTimeScale
 var _node_aim: AnimationNodeAnimation
 var _shake := 0.0
 var _recoil: Node3D
 var _kick := 0.0
+var _kick_l := 0.0
+var _recoil_l: Node3D
+var _left_hand: BoneAttachment3D
+## A próxima bala das duas pistolas sai da mão esquerda.
+var _next_left := false
 var _node_reload: AnimationNodeAnimation
 var _node_run: AnimationNodeAnimation
 
@@ -246,7 +281,8 @@ func set_character(char_name: String) -> void:
 				mi.visible = false
 	AnimUtil.add_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_1H")
 	AnimUtil.add_pose("tiro", "Ranged_2H_Aiming", AIM_POSE_2H, "Pose_2H")
-	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro", "luta"])
+	AnimUtil.add_mirrored_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_Dual", model.find_child("Skeleton3D", true, false))
+	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro", "luta", "ferramentas"])
 	anim_tree = _build_anim_tree(model, ap)
 	_air_state = ""
 	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
@@ -254,11 +290,16 @@ func set_character(char_name: String) -> void:
 	_hand.name = "MaoDireita"
 	_hand.bone_name = "handslot.r"
 	sk.add_child(_hand)
+	_left_hand = BoneAttachment3D.new()
+	_left_hand.name = "MaoEsquerda"
+	_left_hand.bone_name = "handslot.l"
+	sk.add_child(_left_hand)
 	_head = BoneAttachment3D.new()
 	_head.name = "Cabeca"
 	_head.bone_name = "head"
 	sk.add_child(_head)
 	_equip_model()
+	_equip_left_model()
 	_lollipop = load(Weapons.MELEE.modelo).instantiate()
 	_lollipop.name = "Pirulitao"
 	_lollipop.scale = Vector3.ONE * Weapons.MELEE.escala
@@ -267,7 +308,19 @@ func set_character(char_name: String) -> void:
 	melee_hand.bone_name = "handslot.r"
 	sk.add_child(melee_hand)
 	melee_hand.add_child(_lollipop)
+	var phone_hand := BoneAttachment3D.new()
+	phone_hand.bone_name = "handslot.r"
+	sk.add_child(phone_hand)
+	_phone = phone_model()
+	_phone.name = "Celular"
+	_phone.position = PHONE_OFFSET
+	_phone.rotation_degrees = PHONE_ROTATION
+	_phone.visible = using_phone
+	phone_hand.add_child(_phone)
 	_apply_weapon_animations()
+	if using_phone:
+		anim_tree.set("parameters/celular/blend_amount", 1.0)
+		_show_blasters(false)
 	if dizzy:
 		anim_tree.set("parameters/estado/transition_request", "tonto")
 	reloading = false
@@ -359,12 +412,22 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	bt.connect_node(&"pancada", 0, &"arremesso")
 	bt.connect_node(&"pancada", 1, &"ritmo_pancada")
 
+	# Celular da lojinha: segura com as duas mãos na frente do peito (só o tronco).
+	var phone_blend := AnimationNodeBlend2.new()
+	phone_blend.filter_enabled = true
+	for path in AnimUtil.upper_body_paths():
+		phone_blend.set_filter_path(path, true)
+	bt.add_node(&"celular", phone_blend, Vector2(1440, 100))
+	bt.add_node(&"pose_celular", _anim("ferramentas/" + PHONE_POSE), Vector2(1250, 600))
+	bt.connect_node(&"celular", 0, &"pancada")
+	bt.connect_node(&"celular", 1, &"pose_celular")
+
 	var hit := AnimationNodeOneShot.new()
 	hit.fadein_time = 0.05
 	hit.fadeout_time = 0.15
 	bt.add_node(&"golpe", hit, Vector2(1500, 100))
 	bt.add_node(&"anim_golpe", _anim("geral/Hit_A"), Vector2(1250, 300))
-	bt.connect_node(&"golpe", 0, &"pancada")
+	bt.connect_node(&"golpe", 0, &"celular")
 	bt.connect_node(&"golpe", 1, &"anim_golpe")
 
 	var dizzy_state := AnimationNodeTransition.new()
@@ -408,9 +471,56 @@ func _equip_model() -> void:
 	holder.add_child(muzzle)
 
 
+## A pistola da mão esquerda (só com as duas pistolas na mão).
+func _equip_left_model() -> void:
+	if not is_instance_valid(_left_hand):
+		return
+	for c in _left_hand.get_children():
+		_left_hand.remove_child(c)
+		c.queue_free()
+	_recoil_l = null
+	muzzle_l = null
+	if not dual:
+		return
+	var def := Weapons.find(left_pistol_id())
+	_recoil_l = Node3D.new()
+	_recoil_l.name = "Coice"
+	_recoil_l.visible = is_instance_valid(_recoil) and _recoil.visible
+	_left_hand.add_child(_recoil_l)
+	var holder := Node3D.new()
+	holder.name = "Blaster"
+	holder.transform = left_grip(_left_hand.get_parent() as Skeleton3D, def)
+	_recoil_l.add_child(holder)
+	holder.add_child(load(Weapons.MODEL_DIR % def.modelo).instantiate())
+	muzzle_l = Marker3D.new()
+	muzzle_l.name = "BocaDoCano"
+	muzzle_l.position = def.boca
+	holder.add_child(muzzle_l)
+
+
+## Encaixe da pistola da mão esquerda: o espelho exato do encaixe da direita (Weapons.ROTATION e pos). Os eixos
+## do osso handslot.l não são o espelho simples dos do handslot.r, então a conta sai do descanso dos dois ossos,
+## como na pose espelhada (AnimUtil.add_mirrored_pose). Conferido em tools/foto_duas_pistolas.gd.
+static func left_grip(sk: Skeleton3D, def: Dictionary) -> Transform3D:
+	var flip := Basis(Vector3(-1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1))
+	var rest_r := sk.get_bone_global_rest(sk.find_bone("handslot.r")).basis.orthonormalized()
+	var rest_l := sk.get_bone_global_rest(sk.find_bone("handslot.l")).basis.orthonormalized()
+	var back := ((flip * rest_r).inverse() * rest_l).inverse()
+	var right := Basis.from_euler(Weapons.ROTATION * PI / 180.0)
+	return Transform3D((back * right * flip).scaled(Vector3.ONE * def.escala), back * def.pos)
+
+
+## Mostra ou esconde os blasters das mãos (Pirulitão, skate, celular).
+func _show_blasters(on: bool) -> void:
+	if is_instance_valid(_recoil):
+		_recoil.visible = on
+	if is_instance_valid(_recoil_l):
+		_recoil_l.visible = on
+
+
 func _apply_weapon_animations() -> void:
 	var hands := "2H" if current_weapon().maos == 2 else "1H"
-	_node_aim.animation = StringName("tiro/Pose_%s" % hands)
+	_node_aim.animation = &"tiro/Pose_Dual" if dual and weapon_index == 0 else StringName("tiro/Pose_%s" % hands)
 	_node_reload.animation = StringName("tiro/Ranged_%s_Reload" % hands)
 	_node_run.animation = &"mov2/Running_HoldingRifle" if hands == "2H" else &"mov/Running_A"
 
@@ -461,7 +571,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	else:
 		for i in Weapons.count():
 			if event.is_action_pressed("arma_%d" % (i + 1)):
-				if has_slot(i):
+				if i == 0 and weapon_index == 0:
+					toggle_dual()
+				elif has_slot(i):
 					switch_weapon(i)
 				else:
 					weapon_locked.emit(equipped[i])
@@ -563,14 +675,85 @@ func _update_shake(delta: float) -> void:
 ## X é a frente e Y é para cima, então girar em Z levanta o cano.
 func _update_recoil(delta: float) -> void:
 	_kick = move_toward(_kick, 0.0, delta * 9.0)
+	_kick_l = move_toward(_kick_l, 0.0, delta * 9.0)
 	if is_instance_valid(_recoil):
 		var k := ease(minf(_kick, 1.0), 0.6)
 		_recoil.position = Vector3(-0.09, 0.02, 0.0) * k
 		_recoil.rotation = Vector3(0.0, 0.0, 0.32 * k)
+	# Na esquerda o coice é o espelho do da direita, nos eixos do osso de lá.
+	if is_instance_valid(_recoil_l):
+		var k := ease(minf(_kick_l, 1.0), 0.6)
+		var back := (_recoil_l.get_child(0) as Node3D).transform.basis.orthonormalized() if _recoil_l.get_child_count() > 0 else Basis.IDENTITY
+		var right_back := Basis.from_euler(Weapons.ROTATION * PI / 180.0)
+		var to_left := back * right_back.inverse()
+		_recoil_l.position = to_left * (Vector3(-0.09, 0.02, 0.0) * k)
+		_recoil_l.rotation = Vector3.ZERO
+		_recoil_l.basis = to_left * Basis(Vector3(0, 0, 1), 0.32 * k) * to_left.inverse()
 
 
 func _can_control() -> bool:
-	return input_enabled and not dizzy
+	return input_enabled and not dizzy and not using_phone
+
+
+## Celular da lojinha, feito por código (os pacotes não têm): capinha rosa e a tela acesa com uma moedinha.
+## A tela fica do lado +Z.
+static func phone_model() -> Node3D:
+	var phone := Node3D.new()
+	var case := MeshInstance3D.new()
+	var body := BoxMesh.new()
+	body.size = Vector3(0.22, 0.4, 0.05)
+	body.material = Fx.flat_material(Color("#ff5d8f"), false)
+	case.mesh = body
+	phone.add_child(case)
+	var screen := MeshInstance3D.new()
+	var glass := BoxMesh.new()
+	glass.size = Vector3(0.18, 0.33, 0.01)
+	glass.material = Fx.glow_material(Color("#9fdcff"), 0.9)
+	screen.mesh = glass
+	screen.position.z = 0.026
+	phone.add_child(screen)
+	var coin := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = 0.05
+	disc.bottom_radius = 0.05
+	disc.height = 0.01
+	disc.material = Fx.glow_material(Color("#ffd23f"), 0.7)
+	coin.mesh = disc
+	coin.rotation_degrees.x = 90.0
+	coin.position = Vector3(0, 0.04, 0.033)
+	phone.add_child(coin)
+	return phone
+
+
+## Puxa o celular do bolso: para de andar, o blaster some e ele segura o celular na frente.
+func pull_phone() -> void:
+	using_phone = true
+	_cancel_reload()
+	aiming = false
+	velocity.x = 0.0
+	velocity.z = 0.0
+	_sprint_toggle = false
+	if is_instance_valid(_phone):
+		_phone.visible = true
+	_show_blasters(false)
+	if is_instance_valid(anim_tree):
+		var tw := create_tween()
+		tw.tween_property(anim_tree, "parameters/celular/blend_amount", 1.0, 0.25)
+	Sfx.play(get_parent(), "troca_arma", 0.0, 0.0)
+
+
+## Guarda o celular e volta o blaster para a mão.
+func put_phone_away() -> void:
+	if not using_phone:
+		return
+	using_phone = false
+	if is_instance_valid(anim_tree):
+		var tw := create_tween()
+		tw.tween_property(anim_tree, "parameters/celular/blend_amount", 0.0, 0.2)
+	if is_instance_valid(_phone):
+		_phone.visible = false
+	if not skating:
+		_show_blasters(true)
 
 
 # --- blasters ----------------------------------------------------------------
@@ -665,12 +848,84 @@ func equip(id: String) -> void:
 	if slot < 0 or equipped[slot] == id:
 		return
 	equipped[slot] = id
+	if slot == 0 and dual and left_pistol_id() == "":
+		dual = false
 	if slot == weapon_index:
 		_cancel_reload()
 		_equip_model()
+		_equip_left_model()
 		_apply_weapon_animations()
 		weapon_changed.emit(slot)
 	ammo_changed.emit()
+
+
+## Pistolas que o aventureiro tem (a Paçoca e as compradas).
+func pistols_owned() -> Array:
+	return Weapons.all().filter(func(def: Dictionary) -> bool: return Weapons.index_of(def.id) == 0 and has_weapon(def.id)).map(
+			func(def: Dictionary) -> String: return def.id)
+
+
+## Espalhamento a mais do jeito que está (duas pistolas na mão), em graus; 0 com uma arma só.
+func dual_spread() -> float:
+	return DUAL_SPREAD if dual and weapon_index == 0 else 0.0
+
+
+## Quanto do dano da arma cada tiro tira do jeito que está: menos com duas pistolas, tudo com uma arma só.
+func dual_damage() -> float:
+	return DUAL_DAMAGE if dual and weapon_index == 0 else 1.0
+
+
+## A pistola da mão esquerda: a escolhida na lojinha ou, sem escolha, a Paçoca (ou a mais cara que tiver, se a
+## Paçoca já está na direita). "" se só tem uma pistola.
+func left_pistol_id() -> String:
+	var main: String = equipped[0]
+	if second_pistol != "" and second_pistol != main and has_weapon(second_pistol):
+		return second_pistol
+	if main != "pacoca" and has_weapon("pacoca"):
+		return "pacoca"
+	var best := ""
+	for id in pistols_owned():
+		if id != main and (best == "" or Weapons.price(id) > Weapons.price(best)):
+			best = id
+	return best
+
+
+## Seta de cima com a pistola na mão: puxa a segunda pistola (ou guarda). Só com duas pistolas ou mais.
+func toggle_dual() -> bool:
+	if dizzy or weapon_index != 0:
+		return false
+	if not dual and left_pistol_id() == "":
+		dual_locked.emit()
+		return false
+	set_dual(not dual)
+	Sfx.play(get_parent(), "troca_arma", 0.0, 0.0)
+	return true
+
+
+func set_dual(on: bool) -> void:
+	if on == dual:
+		return
+	dual = on
+	_next_left = false
+	_cancel_reload()
+	_switch_left = 0.2
+	_equip_left_model()
+	_apply_weapon_animations()
+	weapon_changed.emit(weapon_index)
+	ammo_changed.emit()
+
+
+## Escolhe a pistola da mão esquerda (lojinha). Com as duas na mão, troca na hora.
+func set_second_pistol(id: String) -> void:
+	second_pistol = id
+	if dual:
+		_equip_left_model()
+		ammo_changed.emit()
+
+
+## Pente da pistola da esquerda (-1 sem as duas pistolas).
+func mag_left() -> int:
+	return ammo[left_pistol_id()].mag if dual else -1
 
 
 ## Um coração a mais no máximo, e cheio.
@@ -686,6 +941,9 @@ func switch_weapon(index: int) -> void:
 		return
 	_cancel_reload()
 	weapon_index = index
+	# Saindo da pistola, a segunda volta para o bolso: voltando, vem uma só (a seta de novo puxa a outra).
+	dual = false
+	_equip_left_model()
 	_switch_left = 0.3
 	_fire_cooldown = maxf(_fire_cooldown, 0.3)
 	_equip_model()
@@ -699,6 +957,8 @@ func switch_weapon(index: int) -> void:
 func fire() -> bool:
 	if dizzy or reloading or _switch_left > 0.0:
 		return false
+	if dual and weapon_index == 0:
+		return _fire_dual()
 	var def := current_weapon()
 	var a: Dictionary = ammo[def.id]
 	if a.mag <= 0:
@@ -711,24 +971,54 @@ func fire() -> bool:
 		return false
 	a.mag -= 1
 	_fire_cooldown = def.intervalo
+	_discharge(def, muzzle, false)
+	if a.mag == 0 and a.reserve != 0:
+		_auto_reload_delay = 0.25
+	return true
+
+
+## Duas pistolas: as balas alternam entre as mãos, cada uma no ritmo da sua pistola (juntas, atiram quase o
+## dobro). Se uma esvaziou, a outra continua; com as duas vazias, recarrega as duas.
+func _fire_dual() -> bool:
+	var defs := [current_weapon(), Weapons.find(left_pistol_id())]
+	var hand := 1 if _next_left else 0
+	if ammo[defs[hand].id].mag <= 0:
+		hand = 1 - hand
+	var def: Dictionary = defs[hand]
+	var a: Dictionary = ammo[def.id]
+	if a.mag <= 0:
+		_fire_cooldown = 0.35
+		reload()
+		return false
+	a.mag -= 1
+	_next_left = hand == 0
+	_fire_cooldown = def.intervalo * 0.55
+	_discharge(def, muzzle_l if hand == 1 else muzzle, hand == 1)
+	if ammo[defs[0].id].mag == 0 and ammo[defs[1].id].mag == 0:
+		_auto_reload_delay = 0.25
+	return true
+
+
+## O disparo em si: coice, raios, faísca na boca do cano, som e vibração.
+func _discharge(def: Dictionary, from: Marker3D, left: bool) -> void:
 	_aim_hold = 0.6
-	_kick = minf(_kick + def.coice, 1.5)
+	if left:
+		_kick_l = minf(_kick_l + def.coice, 1.5)
+	else:
+		_kick = minf(_kick + def.coice, 1.5)
 	# Um pouquinho de subida na câmera nos tiros fortes, para dar peso sem atrapalhar a mira.
 	_pitch = clampf(_pitch + 0.004 * def.coice, PITCH_MIN, PITCH_MAX)
 	var hit_target := false
 	for k in def.tiros:
-		hit_target = _shoot_ray(_spread_dir(def.espalha), def) or hit_target
-	if is_instance_valid(muzzle):
-		Fx.muzzle_flash(muzzle)
+		hit_target = _shoot_ray(_spread_dir(def.espalha + dual_spread()), def, from) or hit_target
+	if is_instance_valid(from):
+		Fx.muzzle_flash(from)
 	Sfx.play(get_parent(), def.som, -3.0)
 	if hit_target:
 		rumble(0.45, 0.25, 0.12)
 	else:
 		rumble(0.2 if def.tiros == 1 else 0.4, 0.0 if def.tiros == 1 else 0.3, 0.07)
 	ammo_changed.emit()
-	if a.mag == 0 and a.reserve != 0:
-		_auto_reload_delay = 0.25
-	return true
 
 
 ## Direção do tiro: o centro da tela, com um sorteio dentro de um cone para escopeta e rajada.
@@ -742,7 +1032,7 @@ func _spread_dir(degrees: float) -> Vector3:
 
 
 ## O tiro sai do centro da tela (a mira), não do cano: assim a mira nunca mente.
-func _shoot_ray(dir: Vector3, def: Dictionary) -> bool:
+func _shoot_ray(dir: Vector3, def: Dictionary, from_muzzle: Marker3D) -> bool:
 	var from := camera.global_position
 	var reach: float = def.alcance
 	var to := from + dir * reach
@@ -753,19 +1043,25 @@ func _shoot_ray(dir: Vector3, def: Dictionary) -> bool:
 	var world := get_parent()
 	var end := to
 	var hit_target := false
+	var impact := Callable()
 	if hit:
 		end = hit.position
 		var collider: Object = hit.collider
 		if collider is Hurtbox:
 			var hb := collider as Hurtbox
-			hb.receive_hit(def.dano, end)
-			hit_confirmed.emit(hb.region, def.dano * hb.multiplier)
-			Fx.confetti(world, end, (30 if hb.multiplier > 1.0 else 16) / def.tiros + 4, 5.0)
+			var damage: float = def.dano * dual_damage()
+			hb.receive_hit(damage, end)
+			hit_confirmed.emit(hb.region, damage * hb.multiplier)
+			var amount: int = (30 if hb.multiplier > 1.0 else 16) / def.tiros + 4
+			impact = func() -> void: Fx.confetti(world, end, amount, 5.0)
 			hit_target = true
 		else:
-			Fx.dust(world, end)
-	if is_instance_valid(muzzle):
-		Fx.tracer(world, muzzle.global_position, end, def.cor)
+			impact = func() -> void: Fx.dust(world, end)
+	# O acerto já foi; o dardo de espuma só desenha o tiro e solta o confete (ou a poeira) quando chega.
+	if is_instance_valid(from_muzzle):
+		Fx.foam_dart(world, from_muzzle.global_position, end, def.cor, impact)
+	elif impact.is_valid():
+		impact.call()
 	return hit_target
 
 
@@ -775,16 +1071,24 @@ func reload() -> bool:
 		return false
 	var def := current_weapon()
 	var a: Dictionary = ammo[def.id]
-	if a.mag >= def.pente or a.reserve == 0:
+	var left: Dictionary = Weapons.find(left_pistol_id()) if dual and weapon_index == 0 else {}
+	var right_needs: bool = a.mag < def.pente and a.reserve != 0
+	var left_needs: bool = not left.is_empty() and ammo[left.id].mag < left.pente
+	if not right_needs and not left_needs:
 		return false
 	reloading = true
-	reload_total = def.recarga
-	_reload_left = def.recarga
+	# Com duas pistolas, uma depois da outra (pedido do usuário em 2026-10-28: com as duas na mão, a recarga
+	# tem que demorar mais): primeiro a da direita, depois a da esquerda, cada uma no seu tempo; a que já está
+	# cheia não entra na conta.
+	_reload_right_pending = right_needs
+	_reload_second = left.recarga if left_needs else 0.0
+	reload_total = (def.recarga if right_needs else 0.0) + _reload_second
+	_reload_left = reload_total
 	_auto_reload_delay = 0.0
 	if is_instance_valid(anim_tree):
 		anim_tree.set("parameters/recarga/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	Sfx.play(get_parent(), "recarga", 0.0, 0.0)
-	reload_started.emit(def.recarga)
+	reload_started.emit(reload_total)
 	return true
 
 
@@ -801,9 +1105,25 @@ func _update_reload(delta: float) -> void:
 	if not reloading:
 		return
 	_reload_left -= delta
+	if _reload_right_pending and _reload_left <= _reload_second:
+		_reload_right_pending = false
+		_fill_right()
+		if _reload_left > 0.0:
+			# Agora a da esquerda: a recarga de novo, com o som.
+			if is_instance_valid(anim_tree):
+				anim_tree.set("parameters/recarga/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+			Sfx.play(get_parent(), "recarga", 0.0, 0.0)
 	if _reload_left > 0.0:
 		return
 	reloading = false
+	# Duas pistolas: a da esquerda enche por último (pistola tem estoque infinito).
+	if _reload_second > 0.0 and dual and weapon_index == 0:
+		var left := Weapons.find(left_pistol_id())
+		ammo[left.id].mag = left.pente
+		ammo_changed.emit()
+
+
+func _fill_right() -> void:
 	var def := current_weapon()
 	var a: Dictionary = ammo[def.id]
 	var need: int = def.pente - a.mag
@@ -872,12 +1192,12 @@ func start_skating() -> void:
 	_board.scale = Vector3.ONE * 1.5
 	visual.add_child(_board)
 	model.position.y = SKATE_LIFT
+	set_dual(false)
 	_rider = SkateRider.new()
 	_rider.lift = SKATE_LIFT
 	(model.find_child("Skeleton3D", true, false) as Skeleton3D).add_child(_rider)
 	_cancel_reload()
-	if is_instance_valid(_recoil):
-		_recoil.visible = false
+	_show_blasters(false)
 
 
 func stop_skating() -> void:
@@ -895,8 +1215,7 @@ func stop_skating() -> void:
 	_rider = null
 	model.position.y = 0.0
 	visual.rotation = Vector3(0, visual.rotation.y, 0)
-	if is_instance_valid(_recoil):
-		_recoil.visible = true
+	_show_blasters(true)
 
 
 func _skate_physics(delta: float) -> void:
@@ -1026,8 +1345,7 @@ func melee() -> bool:
 func _show_lollipop(on: bool) -> void:
 	if is_instance_valid(_lollipop):
 		_lollipop.visible = on
-	if is_instance_valid(_recoil):
-		_recoil.visible = not on
+	_show_blasters(not on)
 
 
 ## Quem está na frente leva o golpe (uma vez cada, de preferência no corpo); bolhas perto estouram.
@@ -1070,6 +1388,34 @@ func _melee_strike() -> int:
 		Sfx.play(world, "bonk", -2.0)
 		rumble(0.5, 0.4, 0.12)
 	return chosen.size()
+
+
+## Munição da lojinha: enche o pente e o estoque de todos os blasters que tem, e as granadas.
+## Devolve false se já estava tudo cheio.
+func refill_all_ammo() -> bool:
+	if ammo_full():
+		return false
+	for def in Weapons.all():
+		if not has_weapon(def.id):
+			continue
+		var a: Dictionary = ammo[def.id]
+		a.mag = def.pente
+		if not Weapons.infinite(def):
+			a.reserve = def.estoque_max
+	grenades = grenade_max
+	rumble(0.3, 0.1, 0.12)
+	ammo_changed.emit()
+	return true
+
+
+## Nada para encher: todos os blasters com estoque limitado cheios e o bolso de granadas cheio.
+func ammo_full() -> bool:
+	if grenades < grenade_max:
+		return false
+	for def in Weapons.all():
+		if has_weapon(def.id) and not Weapons.infinite(def) and ammo[def.id].reserve < def.estoque_max:
+			return false
+	return true
 
 
 ## Caixa de munição: um pente de reserva de cada blaster equipado com estoque limitado e uma granada.

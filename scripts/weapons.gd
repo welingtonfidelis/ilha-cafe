@@ -130,10 +130,62 @@ const SHOP := [
 		"pos": Vector3(0.27, 0.094, 0.0), "escala": 0.85, "boca": Vector3(0, 0.08, -0.65),
 		"som": "pe_de_moleque", "cor": Color("#f2b8ff"), "coice": 1.5,
 	},
+	# Os seis que sobravam no Blaster Kit (pedido do usuário em 2026-10-27: "tem mais blasters não usados?").
+	# Cabo e boca medidos nas malhas como os de cima (o cabo um pouco mais para trás, como ficou nos outros).
+	{
+		"id": "algodao_doce", "slot": 0, "preco": 80, "nome": "Algodão-Doce", "modelo": "blaster-b", "maos": 1,
+		"descricao": "Pistola de tufos: 3 grãos de uma vez, ótima de pertinho. Estoque infinito.",
+		"pente": 8, "estoque": -1, "estoque_max": -1, "recarga": 1.1, "intervalo": 0.4,
+		"dano": 0.7, "tiros": 3, "espalha": 3.0, "alcance": 45.0, "zoom": 0.0,
+		"pos": Vector3(0.07, 0.11, 0.0), "escala": 1.0, "boca": Vector3(0, 0.03, -0.26),
+		"som": "pipoqueira", "cor": Color("#ffd1ec"), "coice": 1.0,
+	},
+	{
+		"id": "quindim", "slot": 0, "preco": 100, "nome": "Quindim", "modelo": "blaster-i", "maos": 1,
+		"descricao": "Pistola certeira com miniluneta: 10 tiros de 1,6 de dano. Estoque infinito.",
+		"pente": 10, "estoque": -1, "estoque_max": -1, "recarga": 1.2, "intervalo": 0.35,
+		"dano": 1.6, "tiros": 1, "espalha": 0.0, "alcance": 160.0, "zoom": 40.0,
+		"pos": Vector3(0.05, 0.08, 0.0), "escala": 1.0, "boca": Vector3(0, 0.02, -0.26),
+		"som": "tiro", "cor": Color("#ffe66b"), "coice": 0.9,
+	},
+	{
+		"id": "pudim", "slot": 1, "preco": 120, "nome": "Pudim", "modelo": "blaster-m", "maos": 2,
+		"descricao": "Rajada equilibrada: 36 balas de 0,6, rápida e certeira.",
+		"pente": 36, "estoque": 72, "estoque_max": 180, "recarga": 1.7, "intervalo": 0.1,
+		"dano": 0.6, "tiros": 1, "espalha": 2.0, "alcance": 95.0, "zoom": 0.0,
+		"pos": Vector3(0.22, 0.09, 0.0), "escala": 1.0, "boca": Vector3(0, 0.07, -0.31),
+		"som": "granulado", "cor": Color("#ffe3a3"), "coice": 0.4,
+	},
+	{
+		"id": "goiabada", "slot": 1, "preco": 190, "nome": "Goiabada", "modelo": "blaster-n", "maos": 2,
+		"descricao": "Rajada gigante: 60 balas de 0,7 sem parar. Demora para recarregar.",
+		"pente": 60, "estoque": 120, "estoque_max": 300, "recarga": 2.6, "intervalo": 0.1,
+		"dano": 0.7, "tiros": 1, "espalha": 3.0, "alcance": 90.0, "zoom": 0.0,
+		"pos": Vector3(0.17, 0.09, 0.0), "escala": 1.0, "boca": Vector3(0, 0.08, -0.32),
+		"som": "granulado", "cor": Color("#ff9d9d"), "coice": 0.45,
+	},
+	{
+		"id": "cajuzinho", "slot": 2, "preco": 130, "nome": "Cajuzinho", "modelo": "blaster-o", "maos": 2,
+		"descricao": "Escopeta compacta: 9 grãos de 0,7 e atira mais rápido que as outras.",
+		"pente": 6, "estoque": 12, "estoque_max": 36, "recarga": 1.6, "intervalo": 0.5,
+		"dano": 0.7, "tiros": 9, "espalha": 6.0, "alcance": 26.0, "zoom": 0.0,
+		"pos": Vector3(0.11, 0.08, 0.0), "escala": 1.0, "boca": Vector3(0, 0.03, -0.19),
+		"som": "pipoqueira", "cor": Color("#c9ffb0"), "coice": 1.3,
+	},
+	{
+		"id": "doce_de_leite", "slot": 3, "preco": 150, "nome": "Doce de Leite", "modelo": "blaster-r", "maos": 2,
+		"descricao": "Rifle de luneta: 6 tiros de 4 de dano. Na cabeça, derruba quase todo mundo.",
+		"pente": 6, "estoque": 12, "estoque_max": 30, "recarga": 2.1, "intervalo": 0.8,
+		"dano": 4.0, "tiros": 1, "espalha": 0.0, "alcance": 230.0, "zoom": 24.0,
+		"pos": Vector3(0.12, 0.09, 0.0), "escala": 1.0, "boca": Vector3(0, 0.14, -0.42),
+		"som": "pe_de_moleque", "cor": Color("#d8b3ff"), "coice": 1.4,
+	},
 ]
 
-## Melhorias da lojinha (compradas uma vez).
+## Extras da lojinha. As melhorias se compram uma vez; a munição ("repete") quantas vezes quiser, sempre que
+## faltar alguma coisa (pedido do usuário em 2026-10-27: encher as armas pela lojinha do celular).
 const UPGRADES := [
+	{"id": "municao", "preco": 20, "repete": true, "nome": "Munição", "descricao": "Enche todos os seus blasters e as granadas."},
 	{"id": "granada_extra", "preco": 70, "nome": "+1 Brigadeiro", "descricao": "Cabe uma granada a mais: até 4 no bolso."},
 	{"id": "coracao_extra", "preco": 250, "nome": "+1 Coração", "descricao": "Um coração a mais de vida, para sempre."},
 ]

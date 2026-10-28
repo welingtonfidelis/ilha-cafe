@@ -1,6 +1,6 @@
 class_name BossOssao
 extends Boss
-## Ossão, guardião da Lanterna Oeste: guerreiro esqueleto gigante de machado e escudo grande.
+## Ossão, guardião da Lanterna Oeste: guerreiro esqueleto gigante de martelinho de brinquedo e escudo grande.
 ## - Salto: pula e bate no chão, soltando uma onda que corre pelo chão; pular por cima escapa.
 ## - Machadada: de perto, golpe na frente dele.
 ## - O escudo bloqueia tiro no corpo pela frente, menos quando ele está atacando; cabeça e costas valem.
@@ -36,7 +36,8 @@ func _setup() -> void:
 
 
 func _build() -> void:
-	_skeleton("Skeleton_Warrior", "Skeleton_Axe", "Skeleton_Shield_Large_A")
+	# Martelinho de brinquedo (até 2026-10-28, o machado do pacote; o tema ficou mais infantil).
+	_skeleton("Skeleton_Warrior", "Martelinho", "Skeleton_Shield_Large_A")
 
 
 func _fight(delta: float, to_target: Vector3, dist: float) -> void:

@@ -153,8 +153,20 @@ func _spawn_guardian() -> void:
 		_add_enemy(game.spawn_wave_enemy(type_name, pos))
 		changed.emit(self))
 	boss.gone.connect(func(_b: Boss) -> void: guardian_left.emit(self))
-	game.add_boss(boss, center)
+	game.add_boss(boss, _guardian_spot())
 	guardian_spawned.emit(self, boss)
+
+
+## O guardião sobe a uns metros do centro, do lado do aventureiro: no centro fica o pilar da lanterna, e
+## o corpo gigante nascia por dentro dele (o Minionzão empacava ali).
+func _guardian_spot() -> Vector3:
+	var away: Vector3 = game.player.global_position - center
+	away.y = 0.0
+	if away.length() < 0.5:
+		away = Vector3.BACK
+	var p: Vector3 = center + away.normalized() * minf(4.5, radius * 0.4)
+	p.y = game.ground_y(p)
+	return p
 
 
 func _on_defeated(_who: Node) -> void:

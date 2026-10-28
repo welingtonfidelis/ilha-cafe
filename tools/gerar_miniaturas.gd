@@ -1,6 +1,6 @@
 extends SceneTree
-## Gera as miniaturas coloridas da Lojinha de Blasters: cada blaster (e a granada e o coração das melhorias)
-## em três quartos, com luz, fundo transparente, em assets/ui/loja/<id>.png. O cano aponta para a direita.
+## Gera as miniaturas coloridas da Lojinha de Blasters: cada blaster (e a munição, a granada e o coração dos
+## extras) em três quartos, com luz, fundo transparente, em assets/ui/loja/<id>.png. O cano aponta para a direita.
 ## Uso (precisa de janela): godot --path . -s res://tools/gerar_miniaturas.gd
 
 const OUT := "res://assets/ui/loja/"
@@ -36,6 +36,7 @@ func _init() -> void:
 	var items := []
 	for def in Weapons.all():
 		items.append([def.id, Weapons.MODEL_DIR % def.modelo])
+	items.append(["municao", "caixote"])
 	items.append(["granada_extra", Weapons.MODEL_DIR % Weapons.GRENADE.modelo])
 	items.append(["coracao_extra", ""])
 	for item in items:
@@ -48,11 +49,13 @@ func _init() -> void:
 			mi.material_override = mat
 			model = Node3D.new()
 			model.add_child(mi)
+		elif item[1] == "caixote":
+			model = ShopMenu.ammo_model()
 		else:
 			model = load(item[1]).instantiate()
 		# Três quartos: gira para o cano ir para a esquerda e um pouco para o fundo, e inclina de leve.
 		var holder := Node3D.new()
-		holder.rotation_degrees = Vector3(12, -62, 0) if item[1] != "" else Vector3(0, 0, 0)
+		holder.rotation_degrees = Vector3(0, 0, 0) if item[1] == "" else (Vector3(18, -35, 0) if item[1] == "caixote" else Vector3(12, -62, 0))
 		vp.add_child(holder)
 		holder.add_child(model)
 		await process_frame

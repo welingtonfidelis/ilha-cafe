@@ -174,25 +174,31 @@ func _next_wave() -> void:
 	story._refresh_objective()
 
 
-## Esqueletos da onda n: mais a cada onda (até 14), com Rogue a partir da 2ª, Mage da 3ª, Warrior da 4ª e
-## Golem a cada 3 ondas a partir da 6ª. Onda de guardião vem com metade.
+## Esqueletos da onda n: mais a cada onda (até 14), com Rogue a partir da 2ª, Pistoleiro e Mage da 3ª, Lobinho
+## e Warrior da 4ª, Conde da 5ª e um grandão a cada 3 ondas a partir da 6ª (Golem de Ossos, Grandalhão e Golem
+## de Gelo, revezando). Onda de guardião vem com metade.
 static func wave_list(n: int) -> Array[String]:
 	var count := mini(3 + n, 14)
 	if n % 5 == 0:
 		count = maxi(count / 2, 2)
 	var list: Array[String] = []
 	for k in count:
-		if n >= 4 and k % 4 == 3:
-			list.append("Skeleton_Warrior")
+		if n >= 5 and k % 7 == 5:
+			list.append("Conde")
+		elif n >= 4 and k % 4 == 3:
+			list.append("Skeleton_Warrior" if k % 8 == 3 else "Lobinho")
 		elif n >= 3 and k % 5 == 2:
 			list.append("Skeleton_Mage")
+		elif n >= 3 and k % 6 == 4:
+			list.append("Skeleton_Pistoleiro")
 		elif n >= 2 and k % 3 == 1:
 			list.append("Skeleton_Rogue")
 		else:
 			list.append("Skeleton_Minion")
 	if n >= 6 and n % 3 == 0:
+		var big := ["Skeleton_Golem", "Grandalhao", "GolemDeGelo"]
 		for k in mini(n / 6, 3):
-			list.append("Skeleton_Golem")
+			list.append(big[(n / 3 + k) % big.size()])
 	list.shuffle()
 	return list
 

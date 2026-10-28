@@ -53,13 +53,16 @@ var _splashing := false
 const CONTROLS_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
 	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"], ["Kart e skate", "E (entrar e sair)"],
-	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
+	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Duas pistolas", "1 de novo (com duas pistolas)"],
+	["Lojinha no celular", "C (fora de luta)"],
+	["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
 	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart e skate", "B (entrar e sair)"],
 	["Blasters", "↑ Paçoca · → Granulado · ↓ Pipoqueira · ← Pé-de-Moleque (Y passa para o próximo)"],
-	["Pausa", "Start"], ["Regiões de impacto", "Back"],
+	["Duas pistolas", "↑ de novo (com duas pistolas)"],
+	["Lojinha no celular", "Select (fora de luta)"], ["Pausa", "Start"],
 ]
 const MENU_KEYBOARD := "Clique, ou use as setas e Enter"
 const MENU_GAMEPAD := "Direcional para escolher, A para confirmar"
@@ -103,8 +106,7 @@ var sun_light: DirectionalLight3D
 var ending: Ending
 ## "Festa sem fim" no cemitério (só no pós-jogo).
 var party_mode: EndlessParty
-## Lojinha de Blasters (barraca na praia), o menu dela, a seta dourada e o contador de moedas.
-var shop: Shop
+## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
 var shop_menu: ShopMenu
 var shop_marker: ObjectiveMarker
 var coins_bar: CoinsBar
@@ -115,6 +117,8 @@ var message_label: Label
 ## Aviso fixo embaixo, quando dá para fazer algo com o B (ou E): correr de kart, andar de skate.
 var hint_label: Label
 var _shop_back_time := -1.0
+## Puxando o celular do bolso (meio segundo antes do menu abrir).
+var _phone_opening := false
 var _message_tween: Tween
 ## Chance de um esqueleto desmontado deixar cair uma caixa de munição (sempre cai se a munição estiver no fim).
 const AMMO_DROP_CHANCE := 0.5
@@ -211,19 +215,23 @@ class HeartsBar:
 
 
 ## Mira no centro da tela. Recarregando, ganha um anel que vai se completando;
-## com a luneta do Pé-de-Moleque, vira um círculo fino com cruz.
+## com a luneta do Pé-de-Moleque, vira um círculo fino com cruz. Com duas pistolas, as perninhas se afastam
+## e um círculo fino mostra onde os tiros podem cair (`spread_px`, o raio na tela).
 class Crosshair:
 	extends Control
 	var color := Color.WHITE
 	var reload_progress := -1.0
 	var scoped := false
+	var spread_px := 0.0
+	var _spread_shown := 0.0
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	func _process(_delta: float) -> void:
+	func _process(delta: float) -> void:
 		# Filho direto de CanvasLayer: posiciona pelo tamanho da tela em vez de âncoras.
 		position = get_viewport_rect().size * 0.5
+		_spread_shown = lerpf(_spread_shown, spread_px, 1.0 - exp(-12.0 * delta))
 		queue_redraw()
 
 	func _draw() -> void:
@@ -234,15 +242,20 @@ class Crosshair:
 			for d in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
 				draw_line(d * 10.0, d * 60.0, color, 1.5)
 		else:
+			var gap := _spread_shown
+			if gap > 1.0:
+				draw_arc(Vector2.ZERO, gap, 0.0, TAU, 48, Color(0, 0, 0, 0.35), 3.0, true)
+				draw_arc(Vector2.ZERO, gap, 0.0, TAU, 48, Color(color, 0.7), 1.5, true)
 			for c in [[shadow, 2.0], [color, 0.0]]:
 				var col: Color = c[0]
 				var w: float = 4.0 + c[1]
 				for d in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
-					draw_line(d * 6.0, d * 16.0, col, w)
+					draw_line(d * (6.0 + gap), d * (16.0 + gap), col, w)
 				draw_circle(Vector2.ZERO, 2.0 + c[1] * 0.5, col)
 		if reload_progress >= 0.0:
-			draw_arc(Vector2.ZERO, 28.0, 0.0, TAU, 48, Color(0, 0, 0, 0.45), 7.0, true)
-			draw_arc(Vector2.ZERO, 28.0, -PI / 2.0, -PI / 2.0 + TAU * reload_progress, 48, Color("#9fdcff"), 5.0, true)
+			var r := maxf(28.0, _spread_shown + 20.0) if not scoped else 28.0
+			draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(0, 0, 0, 0.45), 7.0, true)
+			draw_arc(Vector2.ZERO, r, -PI / 2.0, -PI / 2.0 + TAU * reload_progress, 48, Color("#9fdcff"), 5.0, true)
 
 	func flash(c: Color) -> void:
 		color = c
@@ -258,7 +271,7 @@ var music: AudioStreamPlayer
 
 
 ## Os testes automáticos rodam na arena plana (previsível); o jogo de verdade, na ilha.
-const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som", "--armas"]
+const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som", "--armas", "--inimigos", "--inimigos-captura", "--pistolas-captura", "--dardo-captura", "--brinquedos-captura"]
 
 
 func _ready() -> void:
@@ -285,6 +298,9 @@ func _ready() -> void:
 	player.ammo_changed.connect(_update_ammo_hud)
 	player.out_of_ammo.connect(func() -> void: show_message("Sem munição! Procure uma caixa ou troque de blaster", Color("#ff9d9d"), 1.6))
 	player.weapon_locked.connect(_on_weapon_locked)
+	player.dual_locked.connect(func() -> void:
+		show_message("Duas pistolas: compre outra pistola na lojinha do celular" if story else "Duas pistolas: precisa de outra pistola",
+				Color(1, 1, 1, 0.9), 1.8))
 	for spawn in world.enemies:
 		var e := SkeletonEnemy.new()
 		e.type_name = spawn[0]
@@ -351,10 +367,6 @@ func _ready() -> void:
 		ending.name = "Desfecho"
 		add_child(ending)
 		ending.setup(self)
-		shop = Shop.new()
-		shop.name = "Lojinha"
-		shop.game = self
-		add_child(shop)
 		var sea := SeaTraffic.new()
 		sea.name = "Barcos"
 		sea.game = self
@@ -482,6 +494,24 @@ func _ready() -> void:
 	elif "--salvar" in args:
 		select_panel.hide()
 		_run_save_test()
+	elif "--minionzao" in args:
+		select_panel.hide()
+		_run_minionzao_test()
+	elif "--inimigos" in args:
+		select_panel.hide()
+		_run_enemies_test()
+	elif "--inimigos-captura" in args:
+		select_panel.hide()
+		_run_enemies_capture()
+	elif "--pistolas-captura" in args:
+		select_panel.hide()
+		_run_pistols_capture()
+	elif "--dardo-captura" in args:
+		select_panel.hide()
+		_run_dart_capture()
+	elif "--brinquedos-captura" in args:
+		select_panel.hide()
+		_run_toys_capture()
 	elif SaveGame.go_new:
 		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
 		SaveGame.go_new = false
@@ -513,8 +543,16 @@ func _load_island() -> Dictionary:
 	add_child(island)
 	var start: Marker3D = island.get_node("Marcadores/Inicio")
 	var spawns := []
+	var minions := 0
 	for m in island.get_node("Marcadores/Esqueletos").get_children():
-		spawns.append([m.get_meta("tipo", "Skeleton_Minion"), m.global_position, m.name])
+		var kind: String = m.get_meta("tipo", "Skeleton_Minion")
+		# Um em cada três Minions soltos vira Pistoleiro na cidade e Lobinho na mata (2026-10-27), sem mexer nos
+		# marcadores da ilha gerada.
+		if kind == "Skeleton_Minion":
+			minions += 1
+			if minions % 3 == 0:
+				kind = "Skeleton_Pistoleiro" if Story.south_of_river_static(m.global_position) else "Lobinho"
+		spawns.append([kind, m.global_position, m.name])
 	var cps := []
 	for m in island.get_node("Marcadores/PontosDeRetorno").get_children():
 		cps.append([m.global_position, m.name])
@@ -591,7 +629,9 @@ func _setup_input() -> void:
 	InputMap.action_set_deadzone("mirar", 0.3)
 
 	_bind_key("regioes", [KEY_F3])
-	_bind_button("regioes", JOY_BUTTON_BACK)
+	# Lojinha no celular (pedido do usuário: o botão Select; no controle de PlayStation, Share/Create).
+	_bind_key("celular", [KEY_C])
+	_bind_button("celular", JOY_BUTTON_BACK)
 	_bind_key("menu", [KEY_TAB, KEY_ESCAPE])
 	_bind_button("menu", JOY_BUTTON_START)
 	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
@@ -651,6 +691,11 @@ class MenuInput:
 func _menu_input(event: InputEvent) -> void:
 	if get_tree().paused:
 		player.detect_device(event)
+	# Select (ou C) de novo guarda o celular, de qualquer tela da lojinha.
+	if menu_state == "loja" and event.is_action_pressed("celular"):
+		get_viewport().set_input_as_handled()
+		close_menus()
+		return
 	var back := event.is_action_pressed("menu") or (menu_state != "" and event.is_action_pressed("ui_cancel"))
 	if not back:
 		return
@@ -690,6 +735,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif event.is_action_pressed("regioes"):
 		_toggle_regions()
+	elif event.is_action_pressed("celular"):
+		open_phone()
 
 
 func open_menu(state: String) -> void:
@@ -702,6 +749,8 @@ func open_menu(state: String) -> void:
 	controls_panel.visible = state == "comandos"
 	menu_dim.visible = true
 	crosshair.hide()
+	# Com o jogo pausado o _process não roda: o aviso de baixo some aqui.
+	hint_label.hide()
 	player.input_enabled = false
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -717,6 +766,7 @@ func open_menu(state: String) -> void:
 		"loja":
 			story.shop_visited = true
 			shop_menu.open()
+			shop_menu.slide_in.call_deferred()
 		"escolha":
 			var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
 			_buttons[i].grab_focus.call_deferred()
@@ -729,6 +779,7 @@ func open_menu(state: String) -> void:
 
 
 func close_menus() -> void:
+	var was := menu_state
 	menu_state = ""
 	start_panel.hide()
 	confirm_panel.hide()
@@ -740,6 +791,10 @@ func close_menus() -> void:
 	crosshair.show()
 	get_tree().paused = false
 	_game_started = true
+	if was == "loja":
+		# Guardou o celular: o que foi comprado desce de balão na frente do aventureiro.
+		player.put_phone_away()
+		story.send_order()
 	if story and story.stage == "antes":
 		story.start()
 	if not player.using_gamepad:
@@ -753,6 +808,53 @@ func close_menus() -> void:
 func open_shop() -> void:
 	if story and menu_state == "":
 		open_menu("loja")
+
+
+## Select (ou C): puxa o celular do bolso e, meio segundo depois, abre a lojinha. Só fora de luta, a pé.
+func open_phone() -> bool:
+	if story == null or menu_state != "" or _phone_opening or player.dizzy or (ending and ending.busy()):
+		return false
+	if player.in_vehicle or player.skating:
+		show_message("Desça primeiro para usar o celular", Color("#ff9d9d"), 1.6)
+		return false
+	if in_combat():
+		show_message("Agora não! Tem esqueleto por perto.", Color("#ff9d9d"), 1.6)
+		Sfx.play(ui_layer, "sem_municao", 0.0, 0.0)
+		return false
+	_phone_opening = true
+	player.pull_phone()
+	await get_tree().create_timer(0.5).timeout
+	_phone_opening = false
+	if menu_state == "" and not player.dizzy and not in_combat():
+		open_menu("loja")
+	else:
+		player.put_phone_away()
+	return true
+
+
+## Em luta: uma onda saindo das rachaduras ou brigando, a Festa sem fim, um guardião lutando ou um esqueleto
+## acordado atrás do aventureiro a menos de 30 m. No intervalo entre as ondas dá para usar o celular.
+func in_combat() -> bool:
+	if story:
+		var d := story.running_defense()
+		if d and d.state != Defense.State.INTERVALO:
+			return true
+	if is_instance_valid(party_mode) and party_mode.running():
+		return true
+	var awake := [SkeletonEnemy.State.PERSEGUINDO, SkeletonEnemy.State.ESPERANDO, SkeletonEnemy.State.PREPARANDO,
+			SkeletonEnemy.State.ATACANDO, SkeletonEnemy.State.ATINGIDO]
+	for e in enemies:
+		if is_instance_valid(e) and e.state in awake and e.global_position.distance_to(player.global_position) < 30.0:
+			return true
+	for node in get_children():
+		if node is Boss and (node as Boss).is_fighting():
+			return true
+	return false
+
+
+## Nome do botão do celular no aparelho em uso.
+func phone_button() -> String:
+	return "aperte Select" if player.using_gamepad else "aperte C"
 
 
 func _continue_campaign() -> void:
@@ -1235,7 +1337,7 @@ func _next_banner() -> void:
 func _on_weapon_locked(id: String) -> void:
 	var def := Weapons.find(id)
 	var price := Weapons.price(id)
-	var text := "%s: compre na Lojinha de Blasters, na beira da praia (%d moedas)" % [def.nome, price] if story and price > 0 \
+	var text := "%s: compre na lojinha do celular (%d moedas)" % [def.nome, price] if story and price > 0 \
 			else "%s: ainda não é seu" % def.nome
 	show_message(text, Color(1, 1, 1, 0.9), 1.8)
 	Sfx.play(self, "sem_municao", 0.0, 0.0)
@@ -1431,6 +1533,9 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(player) and crosshair:
 		crosshair.reload_progress = player.reload_progress()
 		crosshair.scoped = player.is_zoomed()
+		# O cone do espalhamento das duas pistolas na tela (a câmera mede o campo de visão na vertical).
+		var half := deg_to_rad(player.camera.fov) * 0.5
+		crosshair.spread_px = tan(deg_to_rad(player.dual_spread())) / tan(half) * crosshair.get_viewport_rect().size.y * 0.5
 		ammo_hud.refresh(player)
 	if story and is_instance_valid(player):
 		var d := story.running_defense()
@@ -1450,6 +1555,9 @@ func _process(_delta: float) -> void:
 			hint = "Aperte %s para dirigir: %s" % [button, kart_race.nearest.display_name]
 		elif menu_state == "" and skate_park and skate_park.state == "a_pe" and skate_park.near:
 			hint = "Aperte %s para pegar o skate" % button
+		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat():
+			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
+			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
 		hint_label.text = hint
 		hint_label.visible = hint != ""
 		var view := get_viewport().get_visible_rect().size
@@ -1809,6 +1917,16 @@ func _run_gamepad_test() -> void:
 		await _wait(0.35)
 	all_ok = _check("direcional: → Granulado, ↓ Pipoqueira, ← Pé-de-Moleque, ↑ Paçoca",
 			picked == ["granulado", "pipoqueira", "pe_de_moleque", "pacoca"] and player.character_name == c0, "(%s)" % ", ".join(picked)) and all_ok
+	# Com duas pistolas, ↑ de novo puxa a segunda; mais uma vez, guarda.
+	player.unlock_weapon("jujuba")
+	await _wait(0.4)
+	await _joy_button(JOY_BUTTON_DPAD_UP)
+	var dual_on := player.dual
+	await _wait(0.3)
+	await _joy_button(JOY_BUTTON_DPAD_UP)
+	all_ok = _check("↑ de novo com duas pistolas: duas pistolas na mão; outra vez, uma só", dual_on and not player.dual) and all_ok
+	player.equip("pacoca")
+	await _wait(0.3)
 
 	# X recarrega, Y troca de blaster, RB joga granada.
 	player.fire()
@@ -1828,10 +1946,10 @@ func _run_gamepad_test() -> void:
 	all_ok = _check("R3 dá o golpe do Pirulitão", player._melee_cooldown > 0.0 and player._lollipop.visible) and all_ok
 	await _wait(1.0)
 
-	# Back mostra as regiões; Start abre e fecha o menu.
+	# Select é o celular da lojinha (na arena não tem lojinha: nada acontece) e não mexe mais nas regiões.
 	await _joy_button(JOY_BUTTON_BACK)
-	all_ok = _check("Back mostra as regiões de impacto", _show_regions) and all_ok
-	await _joy_button(JOY_BUTTON_BACK)
+	await _wait(0.6)
+	all_ok = _check("Select não abre menu fora da ilha nem mostra as regiões", menu_state == "" and not _show_regions and not player.using_phone) and all_ok
 	await _joy_button(JOY_BUTTON_START)
 	all_ok = _check("Start abre a pausa e pausa o jogo", pause_panel.visible and get_tree().paused and not player.input_enabled
 			and get_viewport().gui_get_focus_owner() == _pause_buttons[0]) and all_ok
@@ -2440,6 +2558,84 @@ func _run_weapons_test() -> void:
 	await _wait(0.4)
 	all_ok = _check("Pirulitão estoura bolha mágica", not is_instance_valid(bubble) or bubble._popped) and all_ok
 
+	# Duas pistolas: com uma pistola só, a tecla 1 de novo avisa; com duas, puxa a segunda para a mão esquerda.
+	await _wait(0.6)
+	player.switch_weapon(0)
+	await _wait(0.4)
+	await _press_key(KEY_1)
+	all_ok = _check("com uma pistola só, 1 de novo não puxa outra", not player.dual and "outra pistola" in message_label.text) and all_ok
+	player.unlock_weapon("jujuba")
+	await _wait(0.4)
+	await _press_key(KEY_1)
+	await _wait(0.3)
+	all_ok = _check("com duas pistolas, 1 de novo puxa a Paçoca para a mão esquerda", player.dual and player.left_pistol_id() == "pacoca"
+			and is_instance_valid(player._recoil_l) and is_instance_valid(player.muzzle_l) and player._node_aim.animation == &"tiro/Pose_Dual") and all_ok
+	var lh: Node3D = player._left_hand.get_node("Coice/Blaster").get_child(0)
+	all_ok = _check("a pistola da esquerda é o modelo da Paçoca, na mão esquerda", lh.scene_file_path.get_file() == "blaster-a.glb"
+			and player.muzzle_l.global_position.distance_to(player.muzzle.global_position) > 0.3, "(%s)" % lh.scene_file_path.get_file()) and all_ok
+	player.ammo.pacoca.mag = 12
+	player.ammo.jujuba.mag = 16
+	player._fire_cooldown = 0.0
+	player.fire()
+	player._fire_cooldown = 0.0
+	player.fire()
+	player._fire_cooldown = 0.0
+	player.fire()
+	all_ok = _check("os tiros alternam entre as mãos, cada pistola com o seu pente", player.mag() == 14 and player.mag_left() == 11,
+			"(direita %d, esquerda %d)" % [player.mag(), player.mag_left()]) and all_ok
+	var widest := 0.0
+	var forward := -player.camera.global_basis.z
+	for k in 200:
+		widest = maxf(widest, rad_to_deg(forward.angle_to(player._spread_dir(Player.DUAL_SPREAD + Weapons.find("jujuba").espalha))))
+	# Acertando o corpo de um esqueleto pertinho: cada tiro tira 75% do dano da pistola que atirou.
+	var ahead := -player.camera_pivot.global_basis.z
+	ahead.y = 0.0
+	var dummy_target := spawn_wave_enemy("Skeleton_Minion", player.global_position + ahead.normalized() * 3.0)
+	await _wait_until(func() -> bool: return dummy_target.state != SkeletonEnemy.State.ACORDANDO, 6.0)
+	dummy_target.set_physics_process(false)
+	dummy_target.health = 99.0
+	await _aim_for(dummy_target.hurtboxes[1], 0.0, 0.5)
+	var body_hits: Array[float] = []
+	var count_body := func(region: String, d: float) -> void:
+		if region == "corpo":
+			body_hits.append(d)
+	player.hit_confirmed.connect(count_body)
+	for k in 4:
+		player._fire_cooldown = 0.0
+		player.fire()
+		await get_tree().physics_frame
+	player.hit_confirmed.disconnect(count_body)
+	var expected_hits := [Weapons.find("jujuba").dano * Player.DUAL_DAMAGE, Weapons.find("pacoca").dano * Player.DUAL_DAMAGE]
+	all_ok = _check("com duas pistolas, cada tiro tira 75% do dano", not body_hits.is_empty()
+			and body_hits.all(func(d: float) -> bool: return expected_hits.any(func(e: float) -> bool: return is_equal_approx(d, e))),
+			"(%s)" % ", ".join(body_hits.map(func(d: float) -> String: return "%.3f" % d))) and all_ok
+	dummy_target.queue_free()
+	# Os pentes de antes dos tiros, para a conferência da recarga logo abaixo.
+	player.ammo.jujuba.mag = 14
+	player.ammo.pacoca.mag = 11
+	all_ok = _check("com duas pistolas os tiros espalham mais e a mira abre", player.dual_spread() == Player.DUAL_SPREAD
+			and widest > 1.5 and crosshair.spread_px > crosshair.get_viewport_rect().size.y * 0.03,
+			"(até %.1f°, círculo de %.0f px)" % [widest, crosshair.spread_px]) and all_ok
+	player.reload()
+	var both: float = Weapons.find("jujuba").recarga + Weapons.find("pacoca").recarga
+	all_ok = _check("com duas pistolas, a recarga soma as duas", is_equal_approx(player.reload_total, both), "(%.1f s)" % player.reload_total) and all_ok
+	await _wait_until(func() -> bool: return player.mag() == 16, 3.0)
+	all_ok = _check("enche primeiro a da direita, depois a da esquerda", player.reloading and player.mag_left() == 11) and all_ok
+	await _wait_until(func() -> bool: return not player.reloading, 3.0)
+	all_ok = _check("recarregar enche as duas", player.mag() == 16 and player.mag_left() == 12) and all_ok
+	player.ammo.pacoca.mag = 3
+	player.reload()
+	all_ok = _check("só a da esquerda vazia: recarga só no tempo dela", is_equal_approx(player.reload_total, Weapons.find("pacoca").recarga)) and all_ok
+	await _wait_until(func() -> bool: return not player.reloading, 3.0)
+	await _press_key(KEY_2)
+	await _wait(0.4)
+	all_ok = _check("trocar de blaster guarda a segunda pistola", not player.dual and not is_instance_valid(player._recoil_l)) and all_ok
+	all_ok = _check("sem as duas pistolas, a mira volta a fechar e o dano volta inteiro", player.dual_spread() == 0.0 and crosshair.spread_px == 0.0
+			and player.dual_damage() == 1.0) and all_ok
+	await _press_key(KEY_1)
+	await _wait(0.4)
+	all_ok = _check("voltando para a pistola, vem uma só", player.weapon_index == 0 and not player.dual) and all_ok
+
 	print("ARMAS OK" if all_ok else "ARMAS COM FALHAS")
 	get_tree().quit()
 
@@ -2500,7 +2696,7 @@ func _run_story_test() -> void:
 	player.using_gamepad = true
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
 	all_ok = _check("seta de blaster ainda não comprado avisa onde comprar", player.current_weapon().id == "pacoca"
-			and message_label.modulate.a > 0.5 and "Lojinha" in message_label.text, "(\"%s\")" % message_label.text) and all_ok
+			and message_label.modulate.a > 0.5 and "lojinha do celular" in message_label.text, "(\"%s\")" % message_label.text) and all_ok
 	all_ok = _check("antes do prólogo: lanternas apagadas, ponte aberta e cúpula fechada",
 			story.lanterns.values().all(func(l: Dictionary) -> bool: return not l.lit) and story.bridge_open() and not story.dome_open()) and all_ok
 
@@ -2584,12 +2780,12 @@ func _run_story_test() -> void:
 	await _clear_wave(oeste)
 	await _wait_until(func() -> bool: return oeste.state == Defense.State.VENCIDA, 3.0)
 	await get_tree().physics_frame
-	all_ok = _check("Oeste vencida: lanterna apagada, bandeira e 50 moedas (sem blaster de presente)", not story.lanterns.Oeste.lit
-			and current_checkpoint.name == "CidadeOeste" and story.rewards.is_empty() and story.coins == 50 and story.shop_target() != Vector3.INF,
-			"(%d moedas)" % story.coins) and all_ok
+	all_ok = _check("Oeste vencida: lanterna apagada, bandeira e 50 moedas (sem blaster de presente) e o aviso do celular", not story.lanterns.Oeste.lit
+			and current_checkpoint.name == "CidadeOeste" and story.rewards.is_empty() and story.coins == 50 and hint_label.visible
+			and "celular" in hint_label.text, "(%d moedas, aviso \"%s\")" % [story.coins, hint_label.text]) and all_ok
 	all_ok = _check("convidados chegam para festejar na Oeste", _townsfolk_near(oeste.center, 12.0).size() >= 3,
 			"(%d)" % _townsfolk_near(oeste.center, 12.0).size()) and all_ok
-	all_ok = _check("comprar o Granulado na lojinha (40) põe ele na mão", shop_menu.buy("granulado") == "comprou" and player.has_weapon("granulado")
+	all_ok = _check("comprar o Granulado na lojinha (40) põe ele na mão", _buy_now("granulado") == "comprou" and player.has_weapon("granulado")
 			and player.current_weapon().id == "granulado" and story.coins == 10) and all_ok
 	var ossao_ref: WeakRef = weakref(ossao)
 	await _wait_until(func() -> bool: return ossao_ref.get_ref() == null, 12.0)
@@ -2637,7 +2833,7 @@ func _run_story_test() -> void:
 	await _wait_until(func() -> bool: return leste.state == Defense.State.VENCIDA, 3.0)
 	await get_tree().physics_frame
 	all_ok = _check("cidade vencida: as defesas da mata começam", story.stage == "mata" and story.defenses.clareira.active and story.defenses.ventos.active) and all_ok
-	all_ok = _check("com as moedas da Leste dá para comprar a Pipoqueira", story.coins == 60 and shop_menu.buy("pipoqueira") == "comprou"
+	all_ok = _check("com as moedas da Leste dá para comprar a Pipoqueira", story.coins == 60 and _buy_now("pipoqueira") == "comprou"
 			and player.has_weapon("pipoqueira") and story.coins == 10, "(%d moedas)" % story.coins) and all_ok
 	await _stand(Vector3(0, 0.5, 60))
 	await _wait(0.2)
@@ -2702,7 +2898,7 @@ func _run_story_capture() -> void:
 	await _wait(1.0)
 	await _wait(0.2)
 	await _shot("h08_moedas_e_festa.png")
-	shop_menu.buy("granulado")
+	_buy_now("granulado")
 	await _wait(1.2)
 	await _shot("h09_novo_blaster.png")
 	var leste: Defense = story.defenses.leste
@@ -2852,7 +3048,7 @@ func _run_forest_test() -> void:
 	await _wait(2.6)
 	all_ok = _check("o portão do cemitério abre", story.gate_open()) and all_ok
 	all_ok = _check("Morro dos Ventos dá moedas, sem blaster de presente", story.coins == 100 and not player.has_weapon("pe_de_moleque")
-			and shop_menu.buy("pe_de_moleque") == "comprou" and story.coins == 40, "(%d moedas)" % story.coins) and all_ok
+			and _buy_now("pe_de_moleque") == "comprou" and story.coins == 40, "(%d moedas)" % story.coins) and all_ok
 	all_ok = _check("objetivo manda subir até o cemitério", "cemitério" in story.objective_text, "(\"%s\")" % story.objective_text) and all_ok
 	await _stand(Vector3(9, 27, 0))
 	await _wait(0.5)
@@ -2860,6 +3056,367 @@ func _run_forest_test() -> void:
 			"(%s)" % Defense.State.keys()[story.defenses.cemiterio.state]) and all_ok
 
 	print("MATA OK" if all_ok else "MATA COM FALHAS")
+	get_tree().quit()
+
+
+## Inimigos novos de 2026-10-27, um de cada vez na arena, com o aventureiro parado levando os golpes:
+## Pistoleiro (rajada de dardos, anda de lado), Lobinho (bote), Conde (some e reaparece do lado), Grandalhão
+## (escudo de porta e investida) e Golem de Gelo (bola de neve). Uso: godot --headless --path . -- --inimigos
+func _run_enemies_test() -> void:
+	var all_ok := true
+	await _wait(0.3)
+	for e in enemies.duplicate():
+		e.queue_free()
+	await _wait(0.2)
+	player.max_hearts = 30
+	player.hearts = 30
+	var home := Vector3(0, 0, 0)
+	var fwd := Vector3(0, 0, -1)
+
+	# Pistoleiro: rajada de três dardos de espuma e anda de lado enquanto espera.
+	await _stand(home)
+	var pist := spawn_wave_enemy("Skeleton_Pistoleiro", home + fwd * 10.0)
+	var h0 := player.hearts
+	var darts := 0
+	var t := 0.0
+	var strafe_from := Vector3.INF
+	var strafed := 0.0
+	while t < 7.0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		darts = maxi(darts, _projectiles(Projectile.Kind.DARDO).size())
+		if pist.state == SkeletonEnemy.State.ESPERANDO:
+			if strafe_from == Vector3.INF:
+				strafe_from = pist.global_position
+			strafed = maxf(strafed, pist.global_position.distance_to(strafe_from))
+	all_ok = _check("Pistoleiro solta rajada de 3 dardos de espuma e acerta quem fica parado", darts >= 3 and player.hearts < h0,
+			"(%d dardos no ar, %d corações a menos)" % [darts, h0 - player.hearts]) and all_ok
+	all_ok = _check("Pistoleiro anda de lado enquanto espera e mantém distância", strafed > 1.0 and pist.global_position.distance_to(player.global_position) > 5.0,
+			"(andou %.1f m de lado, a %.1f m)" % [strafed, pist.global_position.distance_to(player.global_position)]) and all_ok
+	pist.take_hit(99.0, pist.global_position + Vector3.UP, pist.hurtboxes[0])
+
+	# Arqueiro: na hora do tiro, a besta aponta para o aventureiro (até 2026-10-28 ficava virada de lado).
+	await _wait(0.5)
+	var rogue := spawn_wave_enemy("Skeleton_Rogue", home + fwd * 9.0)
+	var best_aim := -1.0
+	t = 0.0
+	while t < 7.0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		if rogue.state == SkeletonEnemy.State.ATACANDO:
+			var bow: Node3D = rogue._hand_r.get_child(0)
+			var to_player := player.global_position - rogue.global_position
+			to_player.y = 0.0
+			var points := bow.global_basis.z
+			points.y = 0.0
+			best_aim = maxf(best_aim, points.normalized().dot(to_player.normalized()))
+	all_ok = _check("Arqueiro atira com a besta apontando para o aventureiro", best_aim > 0.85, "(alinhamento %.2f)" % best_aim) and all_ok
+	rogue.take_hit(99.0, rogue.global_position + Vector3.UP, rogue.hurtboxes[0])
+
+	# Lobinho: corre e dá o bote.
+	await _wait(0.5)
+	player._invulnerable = 0.0
+	var wolf := spawn_wave_enemy("Lobinho", home + fwd * 14.0)
+	h0 = player.hearts
+	var leapt := [false]
+	t = 0.0
+	while t < 7.0 and player.hearts == h0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		if wolf.state == SkeletonEnemy.State.ATACANDO and not wolf.is_on_floor():
+			leapt[0] = true
+	all_ok = _check("Lobinho corre, pula em cima e acerta quem fica parado", leapt[0] and player.hearts < h0, "(%.1f s)" % t) and all_ok
+	wolf.take_hit(99.0, wolf.global_position + Vector3.UP, wolf.hurtboxes[0])
+
+	# Conde: some, o círculo roxo avisa e ele reaparece do lado.
+	await _wait(0.5)
+	player._invulnerable = 0.0
+	var conde := spawn_wave_enemy("Conde", home + fwd * 16.0)
+	var vanished := false
+	var marked := false
+	t = 0.0
+	while t < 8.0 and conde.state != SkeletonEnemy.State.PREPARANDO:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		if conde.state == SkeletonEnemy.State.SUMIDO:
+			vanished = vanished or not conde.visual.visible
+			marked = marked or (is_instance_valid(conde._blink_mark) and conde._blink_mark.visible)
+	var near := conde.global_position.distance_to(player.global_position)
+	all_ok = _check("Conde some, um círculo roxo avisa e ele reaparece do lado de quem joga", vanished and marked and near < 3.6,
+			"(sumiu %s, círculo %s, a %.1f m)" % [vanished, marked, near]) and all_ok
+	h0 = player.hearts
+	await _wait(1.0)
+	all_ok = _check("o golpe do Conde acerta quem não saiu do lugar", player.hearts < h0) and all_ok
+	conde.take_hit(99.0, conde.global_position + Vector3.UP, conde.hurtboxes[0])
+
+	# Grandalhão: escudo de porta segura tiro de frente (até na cabeça); investida avisada; depois fica tonto.
+	await _wait(0.5)
+	player._invulnerable = 0.0
+	var big := spawn_wave_enemy("Grandalhao", home + fwd * 7.0)
+	await _wait_until(func() -> bool: return big.state == SkeletonEnemy.State.PERSEGUINDO, 4.0)
+	big.set_physics_process(false)
+	big.visual.rotation.y = 0.0
+	var front := big.global_position + Vector3(0, 2.5, 1.5)
+	var hb_head: Hurtbox = big.hurtboxes[0]
+	var hp := big.health
+	big.take_hit(2.0, front, hb_head)
+	big.take_hit(2.0, front, big.hurtboxes[1])
+	all_ok = _check("a porta do Grandalhão segura tiro de frente, na cabeça e no corpo", big.health == hp, "(%.0f -> %.0f)" % [hp, big.health]) and all_ok
+	big.take_hit(2.0, big.global_position + Vector3(0, 2.5, -1.5), big.hurtboxes[1])
+	all_ok = _check("pelas costas o tiro passa", big.health < hp) and all_ok
+	big.set_physics_process(true)
+	h0 = player.hearts
+	var striped := [false]
+	t = 0.0
+	while t < 8.0 and big._dazed <= 0.0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		if is_instance_valid(big._stripe) and big._stripe.visible:
+			striped[0] = true
+	all_ok = _check("investida do Grandalhão: faixa no chão, acerta quem fica no caminho e depois fica tonto", striped[0] and player.hearts < h0 and big._dazed > 0.0,
+			"(faixa %s, %d corações a menos)" % [striped[0], h0 - player.hearts]) and all_ok
+	hp = big.health
+	var to_player := player.global_position - big.global_position
+	to_player.y = 0.0
+	big.take_hit(2.0, big.global_position + to_player.normalized() * 1.5 + Vector3.UP * 2.0, big.hurtboxes[1])
+	all_ok = _check("tonto, de escudo baixo, o tiro de frente passa", big.health < hp) and all_ok
+	big.take_hit(99.0, big.global_position + Vector3.UP, big.hurtboxes[0])
+
+	# Golem de Gelo: bola de neve em arco com círculo de aviso.
+	await _wait(0.5)
+	player._invulnerable = 0.0
+	var frost := spawn_wave_enemy("GolemDeGelo", home + fwd * 14.0)
+	h0 = player.hearts
+	var balls := 0
+	t = 0.0
+	while t < 9.0 and player.hearts == h0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		balls = maxi(balls, _children_of(Snowball).size())
+	all_ok = _check("Golem de Gelo joga bola de neve com círculo no chão e acerta quem fica parado", balls >= 1 and player.hearts < h0,
+			"(%.1f s)" % t) and all_ok
+	frost.take_hit(99.0, frost.global_position + Vector3.UP, frost.hurtboxes[0])
+	await _wait(0.5)
+	all_ok = _check("os novos têm nome e modelo", SkeletonEnemy.NAMES.size() == SkeletonEnemy.TYPES.size()
+			and SkeletonEnemy.TYPES.keys().all(func(k: String) -> bool: return ResourceLoader.exists(SkeletonEnemy.model_path(k)))) and all_ok
+	var wave_types := []
+	for id in Story.REGIONS:
+		for w in Story.REGIONS[id].ondas:
+			for g in w:
+				wave_types.append(g[0])
+	all_ok = _check("os novos aparecem nas ondas da história", ["Skeleton_Pistoleiro", "Lobinho", "Conde", "Grandalhao", "GolemDeGelo"].all(
+			func(k: String) -> bool: return k in wave_types)) and all_ok
+	var endless := []
+	for n in range(1, 13):
+		endless.append_array(EndlessParty.wave_list(n))
+	all_ok = _check("e na Festa sem fim", ["Skeleton_Pistoleiro", "Lobinho", "Conde", "Grandalhao", "GolemDeGelo"].all(
+			func(k: String) -> bool: return k in endless)) and all_ok
+	print("INIMIGOS OK" if all_ok else "INIMIGOS COM FALHAS")
+	get_tree().quit()
+
+
+## Foto de cada inimigo novo atacando (tools/capturas/i0*.png). Uso: godot --path . -- --inimigos-captura
+func _run_enemies_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.3)
+	for e in enemies.duplicate():
+		e.queue_free()
+	var specs := [["Skeleton_Pistoleiro", 9.0, 2.6, "i01_pistoleiro.png"], ["Lobinho", 12.0, 1.6, "i02_lobinho.png"],
+		["Conde", 15.0, 3.3, "i03_conde.png"], ["Grandalhao", 9.0, 1.2, "i04_grandalhao.png"], ["GolemDeGelo", 15.0, 2.9, "i05_golem_de_gelo.png"]]
+	for spec in specs:
+		await _stand(Vector3.ZERO)
+		var e := spawn_wave_enemy(spec[0], Vector3(0, 0, -spec[1]))
+		await _wait(spec[2] + 1.8)
+		var c := player.global_position
+		var mid := (c + e.global_position) * 0.5
+		var side := Vector3(1, 0, 0)
+		await _art_shot("res://tools/capturas/" + spec[3], Vector2i(1280, 720), mid + side * 9.0 + Vector3.UP * 4.0, mid + Vector3.UP * 1.5, 50.0)
+		e.queue_free()
+		for n in get_children():
+			if n is Projectile or n is Snowball:
+				n.queue_free()
+	# Os cinco lado a lado, de frente.
+	var row := []
+	for k in specs.size():
+		var e := spawn_wave_enemy(specs[k][0], Vector3((k - 2) * 3.4, 0, -8.0))
+		e.set_physics_process(false)
+		row.append(e)
+	await _wait(2.5)
+	for e in row:
+		e.ap.play(e._anim("especial/Skeletons_Idle"))
+		e.visual.rotation.y = 0.0
+	await _wait(0.3)
+	await _art_shot("res://tools/capturas/i00_novos_inimigos.png", Vector2i(1280, 720), Vector3(0, 3.0, 4.0), Vector3(0, 1.8, -8.0), 60.0)
+	print("capturas dos inimigos em tools/capturas/")
+	get_tree().quit()
+
+
+## Fotos das duas pistolas (Jujuba na direita, Paçoca na esquerda): de frente, de lado e atirando, mais a
+## tela do jogo com o painel dos dois pentes. Uso: godot --path . -- --pistolas-captura
+func _run_pistols_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.4)
+	player.unlock_weapon("jujuba")
+	await _wait(0.4)
+	player.toggle_dual()
+	player.force_aim = true
+	await _wait(0.8)
+	var p := player.global_position
+	var f := -player.camera_pivot.global_basis.z
+	f.y = 0.0
+	f = f.normalized()
+	var r := f.cross(Vector3.UP)
+	await _art_shot("res://tools/capturas/d01_duas_pistolas_frente.png", Vector2i(1280, 720), p + f * 3.2 + r * 0.6 + Vector3.UP * 1.8, p + Vector3.UP * 1.4, 45.0)
+	await _art_shot("res://tools/capturas/d02_duas_pistolas_lado.png", Vector2i(1280, 720), p + r * 3.4 + f * 0.8 + Vector3.UP * 1.7, p + f * 0.6 + Vector3.UP * 1.4, 45.0)
+	player.force_fire = true
+	await _wait(0.5)
+	await _shot("d03_atirando.png")
+	player.force_fire = false
+	await _wait(0.3)
+	await _shot("d04_painel_dois_pentes.png")
+	print("capturas das duas pistolas em tools/capturas/")
+	get_tree().quit()
+
+
+## Os brinquedos no lugar das armas cortantes (2026-10-28): Guerreiro, Ossão, Conde, Grandalhão e Golem de Gelo,
+## mais o Arqueiro e a Mira-Torta com a besta, lado a lado de frente (`k01`) e cada um no meio do golpe (ou do
+## tiro), de frente e de lado (`k02` a `k08`, `k02b` a `k08b`).
+## Uso (precisa de janela): godot --path . -- --brinquedos-captura
+func _run_toys_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	await _wait(0.3)
+	for e in enemies.duplicate():
+		e.queue_free()
+	await _stand(Vector3(0, 0, 6))
+	var row: Array[Node3D] = []
+	var types := ["Skeleton_Warrior", "Ossao", "Conde", "Grandalhao", "GolemDeGelo", "Skeleton_Rogue", "MiraTorta"]
+	for k in types.size():
+		var pos := Vector3((k - 3) * 3.4, 0, -8.0)
+		if types[k] == "Ossao" or types[k] == "MiraTorta":
+			var boss: Boss = BossOssao.new() if types[k] == "Ossao" else BossMiraTorta.new()
+			add_boss(boss, pos)
+			row.append(boss)
+		else:
+			row.append(spawn_wave_enemy(types[k], pos))
+	await _wait(3.0)
+	for n in row:
+		n.set_physics_process(false)
+		n.set_process(false)
+		n.visual.rotation.y = 0.0
+		n.global_position.y = _ground_point(n.global_position).y
+		var idle: StringName = n._anim("especial/Skeletons_Idle") if n is SkeletonEnemy else &"geral/Idle_A"
+		n.ap.play(idle)
+	await _wait(0.4)
+	await _art_shot("res://tools/capturas/k01_brinquedos_de_frente.png", Vector2i(1280, 720), Vector3(0, 3.4, 7.0), Vector3(0, 2.0, -8.0), 66.0)
+	var attacks := {"Ossao": "luta/Melee_1H_Attack_Chop", "MiraTorta": "tiro/Ranged_2H_Shoot"}
+	for k in row.size():
+		var n: Node3D = row[k]
+		for other in row:
+			other.visible = other == n
+		var attack: StringName = n._anim(n.config.attack) if n is SkeletonEnemy else StringName(attacks[types[k]])
+		n.ap.play(attack)
+		n.ap.seek(n.ap.current_animation_length * 0.42, true)
+		n.ap.pause()
+		var size: float = n.config.get("size", 1.0) if n is SkeletonEnemy else 1.7
+		var at := n.global_position + Vector3.UP * 1.1 * size
+		await _art_shot("res://tools/capturas/k%02d_%s_golpe.png" % [k + 2, String(types[k]).to_lower()], Vector2i(960, 720),
+				at + Vector3(2.0, 0.5, 3.4) * size, at, 50.0)
+		await _art_shot("res://tools/capturas/k%02db_%s_golpe_lado.png" % [k + 2, String(types[k]).to_lower()], Vector2i(960, 720),
+				at + Vector3(-4.0, 0.8, 0.3) * size, at, 50.0)
+	print("capturas dos brinquedos em tools/capturas/")
+	get_tree().quit()
+
+
+## O dardo de espuma do tiro do aventureiro voando até o esqueleto: atrás do ombro em três instantes do voo e
+## de lado, com a Paçoca e com a Pipoqueira (vários dardos de uma vez).
+## Uso (precisa de janela): godot --path . -- --dardo-captura
+func _run_dart_capture() -> void:
+	player.god_mode = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var minion := enemies[0]
+	for e in enemies:
+		if e != minion:
+			e.visible = false
+	await _wait(1.0)
+	player.force_aim = true
+	await _aim_for(minion, 1.0, 0.8)
+	for k in 3:
+		player.fire()
+		await _wait(0.02 + 0.04 * k)
+		await _shot("t0%d_dardo_voando.png" % (k + 1))
+		await _wait(0.7)
+		await _aim_for(minion, 1.0, 0.2)
+	# De lado: o esqueleto parado a 12 m na frente, para o dardo cruzar a tela.
+	var ahead := -player.camera_pivot.global_basis.z
+	ahead.y = 0.0
+	ahead = ahead.normalized()
+	minion.set_physics_process(false)
+	minion.global_position = _ground_point(player.global_position + ahead * 12.0)
+	await _aim_for(minion, 1.0, 0.5)
+	var side := Camera3D.new()
+	add_child(side)
+	var mid := player.global_position + ahead * 6.0
+	side.global_position = mid + ahead.cross(Vector3.UP) * 6.0 + Vector3.UP * 1.5
+	side.look_at(mid + Vector3.UP * 1.3)
+	side.current = true
+	await _wait(0.2)
+	await _aim_for(minion, 1.0, 0.2)
+	player.fire()
+	await _wait(0.06)
+	await _shot("t04_dardo_de_lado.png")
+	minion.set_physics_process(true)
+	side.queue_free()
+	player.camera.current = true
+	player.switch_weapon(2)
+	await _wait(0.8)
+	await _aim_for(minion, 1.0, 0.4)
+	player.fire()
+	await _wait(0.05)
+	await _shot("t05_pipoqueira.png")
+	print("capturas do dardo em tools/capturas/")
+	get_tree().quit()
+
+
+## Minionzão na luta de verdade: anda até o aventureiro, faz a investida e não fica preso no lugar.
+## Uso: godot --headless --path . -- --minionzao
+func _run_minionzao_test() -> void:
+	var all_ok := true
+	player.god_mode = true
+	story.fast = true
+	await _wait(0.5)
+	story.skip_to_forest()
+	await _wait(0.3)
+	var ventos: Defense = story.defenses.ventos
+	await _stand(ventos.center + Vector3(0, 0, 9))
+	for k in 2:
+		await _wait_until(func() -> bool: return ventos.state == Defense.State.ONDA, 6.0)
+		await _clear_wave(ventos)
+	await _wait_until(func() -> bool: return is_instance_valid(ventos.boss) and ventos.boss.phase == Boss.Phase.LUTANDO, 8.0)
+	var mz := ventos.boss as BossMinionzao
+	all_ok = _check("o guardião sobe fora do pilar da lanterna", Vector2(mz.global_position.x - ventos.center.x, mz.global_position.z - ventos.center.z).length() > 3.0) and all_ok
+	for e in _wave_enemies():
+		e.take_hit(99.0, e.global_position + Vector3.UP * 2.0, e.hurtboxes[0])
+	for dir in [Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 0, -1), Vector3(-1, 0, 0)]:
+		await _stand(_ground_point(ventos.center + dir * 15.0))
+		var p0 := mz.global_position
+		await _wait(5.0)
+		var moved := mz.global_position.distance_to(p0)
+		all_ok = _check("Minionzão sai do lugar (lado %s)" % dir, moved > 3.0, "(andou %.1f m)" % moved) and all_ok
+	# Pilar da lanterna bem entre ele e o aventureiro: tem que contornar, não empacar.
+	mz._charge_cooldown = 999.0
+	mz._rest()
+	mz.global_position = ventos.center + Vector3(-6, 0.2, 0)
+	await _stand(_ground_point(ventos.center + Vector3(9, 0, 0)))
+	var q0 := mz.global_position
+	for k in 28:
+		await _wait(0.5)
+		mz._charge_cooldown = 999.0
+	all_ok = _check("Minionzão contorna o pilar da lanterna", mz.global_position.distance_to(player.global_position) < 7.0,
+			"(a %.1f m do aventureiro, andou %.1f m)" % [mz.global_position.distance_to(player.global_position), mz.global_position.distance_to(q0)]) and all_ok
+	print("MINIONZAO OK" if all_ok else "MINIONZAO COM FALHAS")
 	get_tree().quit()
 
 
@@ -2996,43 +3553,38 @@ func _run_shop_capture() -> void:
 	await _wait(0.6)
 	close_menus()
 	story.add_coins(140, player.global_position)
-	var out := "res://tools/capturas/"
-	var size := Vector2i(1280, 720)
-	var s := shop.global_position
-	await _art_shot(out + "l01_lojinha.png", size, s + Vector3(-3.5, 2.6, -7.5), s + Vector3(0, 1.3, 0), 55.0)
-	await _stand(_ground_point(Ending.PLAZA + Vector3(4.0, 0, 8.0)))
-	var to := s - player.global_position
-	player.set_yaw(atan2(-to.x, -to.z))
+	await _stand(_ground_point(Vector3(14, 0, 204)))
+	player.set_yaw(-PI / 2.0)
 	await _wait(3.5)
-	if menu_state != "":
-		close_menus()
-		await _wait(0.4)
-	await _shot("l02_seta_da_lojinha.png")
-	if menu_state != "":
-		close_menus()
-	await _stand(shop._mat_point)
+	await _shot("l01_aviso_do_celular.png")
+	open_phone()
+	await _wait(0.35)
+	# Foto do celular na mão, de frente para o aventureiro.
+	var p := player.global_position
+	var front := player.visual.global_basis.z
+	await _art_shot("res://tools/capturas/l02_celular_na_mao.png", Vector2i(1280, 720), p + Vector3.UP * 1.8 + front * 2.4 + front.cross(Vector3.UP) * 0.7,
+			p + Vector3.UP * 1.4, 45.0)
 	await _wait_until(func() -> bool: return menu_state == "loja", 2.0)
-	if menu_state != "loja":
-		close_menus()
-		open_shop()
-	await _wait(0.3)
-	await _shot("l03_menu_da_lojinha.png")
+	await _wait(0.4)
+	await _shot("l03_lojinha_no_celular.png")
 	shop_menu.open_preview("granulado")
 	await _wait(1.0)
 	await _shot("l04_previa_granulado.png")
 	shop_menu.buy("granulado")
 	await _wait(0.6)
-	await _shot("l05_comprou.png")
+	await _shot("l05_pedido_feito.png")
 	shop_menu.back()
-	shop_menu.open_preview("bombom")
-	await _wait(1.3)
-	await _shot("l06_previa_bombom.png")
-	shop_menu.back()
-	await _wait(0.2)
-	await _shot("l07_cartoes_depois.png")
+	await _wait(0.3)
+	await _shot("l06_cartao_a_caminho.png")
 	close_menus()
-	await _wait(0.6)
-	await _shot("l08_granulado_na_mao.png")
+	await _wait(1.2)
+	await _shot("l07_balao_descendo.png")
+	await _wait_until(func() -> bool: return not story.deliveries.is_empty() and story.deliveries[0].landed, 5.0)
+	await _wait(0.8)
+	await _shot("l08_entrega_no_chao.png")
+	await _stand(story.deliveries[0].global_position)
+	await _wait(1.0)
+	await _shot("l09_granulado_na_mao.png")
 	print("capturas da lojinha em tools/capturas/")
 	get_tree().quit()
 
@@ -3481,11 +4033,20 @@ func _run_ending_test() -> void:
 	all_ok = _check("Mestre sem coroa sentado com o vovô", bench != null and bench.activity == "sentado_banco" and crown != null and not crown.visible
 			and bench.global_position.distance_to(get_node("Vovo").global_position) < 2.0) and all_ok
 	await _wait(1.0)
-	all_ok = _check("foto da festa no álbum e objetivo aponta o palco", story.photos.size() == 2 and "palco" in story.objective_text
-			and story.objective_target.distance_to(Ending.STAGE_TOP) < 3.0, "(%d fotos, \"%s\")" % [story.photos.size(), story.objective_text]) and all_ok
+	all_ok = _check("foto da festa no álbum e objetivo aponta o círculo dos créditos", story.photos.size() == 2 and "círculo" in story.objective_text
+			and story.objective_target.distance_to(Ending.CREDITS_SPOT) < 3.0, "(%d fotos, \"%s\")" % [story.photos.size(), story.objective_text]) and all_ok
+	# Desde 2026-10-28 os créditos abrem no círculo dourado na frente do palco, e subir no palco não abre mais.
 	await _stand(Ending.STAGE_TOP + Vector3(0, 0.3, 0))
+	await _wait(Ending.CREDITS_HOLD + 0.5)
+	var ring := get_node_or_null("CirculoCreditos") as Node3D
+	all_ok = _check("círculo dourado na frente do palco; subir no palco não abre os créditos", not ending.credits_running and ring != null
+			and Vector2(ring.global_position.x, ring.global_position.z).distance_to(Vector2(Ending.CREDITS_SPOT.x, Ending.CREDITS_SPOT.z)) < 0.1) and all_ok
+	await _stand(_ground_point(Ending.CREDITS_SPOT) + Vector3.UP * 0.3)
+	await _wait(1.5)
+	all_ok = _check("no círculo, o disco vai enchendo e a placa conta", not ending.credits_running and ending._credits_fill.visible
+			and "Créditos em" in ending._credits_board.text, "(%s)" % ending._credits_board.text.replace("\n", " ")) and all_ok
 	await _wait_until(func() -> bool: return ending.credits_running, 3.0)
-	all_ok = _check("subir no palco abre os créditos com o álbum", ending.credits_running and get_tree().paused
+	all_ok = _check("3 s no círculo abrem os créditos com o álbum", ending.credits_running and get_tree().paused
 			and get_children().any(func(n: Node) -> bool: return n is Credits)) and all_ok
 	await _wait_until(func() -> bool: return story.stage == "fim", 20.0)
 	await _wait(0.5)
@@ -3563,31 +4124,108 @@ func _run_shop_test() -> void:
 	await _wait(0.5)
 	close_menus()
 	await _wait(0.3)
-	all_ok = _check("lojinha montada na praia, sem seta antes da primeira moeda", is_instance_valid(shop)
+	all_ok = _check("sem barraca na praia e sem seta antes da primeira moeda", not has_node("Lojinha")
 			and story.shop_target() == Vector3.INF and not coins_bar.visible) and all_ok
+	# Areia aberta a leste do cais, olhando para o leste.
+	await _stand(_ground_point(Vector3(14, 0, 204)))
+	player.set_yaw(-PI / 2.0)
+	player.grenades = player.grenade_max
 	story.add_coins(100, player.global_position)
 	await _wait(0.2)
-	all_ok = _check("primeira moeda: contador e seta dourada para a lojinha", story.coins == 100 and coins_bar.visible
-			and story.shop_target() != Vector3.INF and shop_marker.visible and "Lojinha" in banner_subtitle.text + banner_title.text + str(_banners)) and all_ok
-	await _stand(shop._mat_point)
+	all_ok = _check("primeira moeda: contador e aviso do botão do celular", story.coins == 100 and coins_bar.visible
+			and hint_label.visible and "celular" in hint_label.text, "(\"%s\")" % hint_label.text) and all_ok
+	# Select puxa o celular; meio segundo depois abre a lojinha.
+	player.using_gamepad = true
+	await _joy_button(JOY_BUTTON_BACK)
+	all_ok = _check("Select puxa o celular do bolso (o blaster some)", player.using_phone and player._phone.visible
+			and not player._recoil.visible and menu_state == "") and all_ok
 	await _wait_until(func() -> bool: return menu_state == "loja", 2.0)
-	all_ok = _check("parar no tapete abre a lojinha e apaga a seta", menu_state == "loja" and shop_menu.visible and story.shop_visited
-			and story.shop_target() == Vector3.INF and get_tree().paused) and all_ok
-	var r := shop_menu.buy("bombom")
-	all_ok = _check("sem moedas não compra", r == "sem_moedas" and story.coins == 100 and not player.has_weapon("bombom")) and all_ok
-	r = shop_menu.buy("jujuba")
-	await get_tree().process_frame
-	all_ok = _check("comprar a Jujuba: desconta, equipa na seta de cima e vai para a mão", r == "comprou" and story.coins == 40
-			and player.has_weapon("jujuba") and player.equipped[0] == "jujuba" and player.current_weapon().id == "jujuba" and _hand_model() == "blaster-k.glb",
-			"(%s, %d moedas, %s)" % [r, story.coins, _hand_model()]) and all_ok
-	r = shop_menu.buy("pacoca")
-	all_ok = _check("usar a Paçoca de volta", r == "equipou" and player.equipped[0] == "pacoca" and player.has_weapon("jujuba")) and all_ok
-	r = shop_menu.buy("granulado")
-	all_ok = _check("o blaster da história também se compra (Granulado, 40)", r == "comprou" and player.has_weapon("granulado") and story.coins == 0) and all_ok
+	all_ok = _check("meio segundo depois abre a lojinha no celular, com o jogo pausado", menu_state == "loja" and shop_menu.visible
+			and story.shop_visited and get_tree().paused and not hint_label.visible) and all_ok
+	var focused := get_viewport().gui_get_focus_owner()
+	all_ok = _check("foco no mais barato que dá para pedir (munição cheia fica de fora): Granulado", focused == shop_menu._cards.granulado.botao,
+			"(%s)" % (focused.name if focused else "nada")) and all_ok
+	# A abre a prévia, A de novo compra: vira pedido, ainda não está na mão.
+	await _joy_button(JOY_BUTTON_A)
+	await _joy_button(JOY_BUTTON_A)
+	all_ok = _check("comprar o Granulado no celular: desconta e vira pedido (ainda não está na mão)", story.coins == 60
+			and story.order == ["granulado"] and not player.has_weapon("granulado") and shop_menu._p_action.text == "A caminho!",
+			"(%d moedas, pedido %s, botão %s)" % [story.coins, story.order, shop_menu._p_action.text]) and all_ok
+	all_ok = _check("o que está a caminho não se compra de novo", shop_menu.buy("granulado") == "a_caminho" and story.coins == 60) and all_ok
+	all_ok = _check("sem moedas não compra", shop_menu.buy("bombom") == "sem_moedas" and story.coins == 60) and all_ok
+	all_ok = _check("munição com tudo cheio não se compra", shop_menu.buy("municao") == "cheio" and story.coins == 60) and all_ok
+	# Select de novo guarda o celular e o pedido desce de balão na frente dele.
+	await _joy_button(JOY_BUTTON_BACK)
+	await _wait(0.3)
+	all_ok = _check("Select guarda o celular e volta ao jogo", menu_state == "" and not get_tree().paused and not player.using_phone
+			and player._recoil.visible and story.order.is_empty()) and all_ok
+	var box: Delivery = story.deliveries[0] if story.deliveries.size() == 1 else null
+	var ahead := -player.camera_pivot.global_basis.z
+	var rel := (box.global_position - player.global_position) if box else Vector3.ZERO
+	all_ok = _check("a entrega desce do céu na frente do aventureiro, num lugar livre", box != null and not box.landed
+			and box._visual.position.y > 5.0 and rel.length() < 5.0 and Vector2(rel.x, rel.z).normalized().dot(Vector2(ahead.x, ahead.z).normalized()) > 0.5
+			and Delivery._free_spot(player, box.global_position) != Vector3.INF,
+			"(a %.1f m)" % rel.length()) and all_ok
+	await _wait_until(func() -> bool: return box.landed, 5.0)
+	all_ok = _check("pousa com o nome do que veio e a seta dourada aponta para ela", box.landed and box._label.text == "Granulado"
+			and story.shop_target() != Vector3.INF) and all_ok
+	await _stand(box.global_position)
+	await _wait(0.3)
+	all_ok = _check("encostar pega a entrega: o Granulado vai para a mão", player.has_weapon("granulado") and player.current_weapon().id == "granulado"
+			and story.deliveries.is_empty() and story.shop_target() == Vector3.INF) and all_ok
+	# Munição pela lojinha: gasta um pouco e compra para encher tudo.
+	player._switch_left = 0.0
+	player._fire_cooldown = 0.0
+	player.fire()
+	player.ammo.granulado.reserve = 10
+	player.grenades = 0
+	open_shop()
+	all_ok = _check("com munição faltando, a munição se compra (20)", shop_menu.buy("municao") == "comprou" and story.coins == 40) and all_ok
+	close_menus()
+	await _wait_until(func() -> bool: return not story.deliveries.is_empty() and story.deliveries[0].landed, 5.0)
+	await _stand(story.deliveries[0].global_position)
+	await _wait(0.3)
+	all_ok = _check("a caixa de munição enche pente, estoque e granadas", player.mag() == 30 and player.ammo.granulado.reserve == 150
+			and player.grenades == player.grenade_max, "(%d / %d, %d granadas)" % [player.mag(), player.ammo.granulado.reserve, player.grenades]) and all_ok
+	# Um obstáculo bem na frente: a entrega procura outro lugar.
+	var wall := StaticBody3D.new()
+	var wall_shape := CollisionShape3D.new()
+	var wall_box := BoxShape3D.new()
+	wall_box.size = Vector3(4, 4, 4)
+	wall_shape.shape = wall_box
+	wall.add_child(wall_shape)
+	add_child(wall)
+	var fwd := -player.camera_pivot.global_basis.z
+	fwd.y = 0.0
+	wall.global_position = player.global_position + fwd.normalized() * 4.0 + Vector3.UP * 2.0
+	await get_tree().physics_frame
+	var spot := Delivery.spot(player)
+	var clear := absf(spot.x - wall.global_position.x) > 2.6 or absf(spot.z - wall.global_position.z) > 2.6
+	all_ok = _check("com obstáculo na frente, a entrega cai do lado, longe dele", clear and spot.distance_to(player.global_position) < 6.0,
+			"(%.1f m do aventureiro)" % spot.distance_to(player.global_position)) and all_ok
+	wall.queue_free()
+	# Em luta o celular não abre.
+	var minion := spawn_wave_enemy("Skeleton_Minion", player.global_position + Vector3(6, 0, 0))
+	await _wait_until(func() -> bool: return minion.state == SkeletonEnemy.State.PERSEGUINDO, 4.0)
+	await _joy_button(JOY_BUTTON_BACK)
+	await _wait(0.7)
+	all_ok = _check("com esqueleto por perto o celular não abre", menu_state == "" and not player.using_phone and "esqueleto" in message_label.text) and all_ok
+	minion.take_hit(99.0, minion.global_position + Vector3.UP, minion.hurtboxes[0])
+	await _wait(1.0)
+	# Melhoria: +1 Brigadeiro.
 	story.add_coins(70, player.global_position)
-	r = shop_menu.buy("granada_extra")
-	all_ok = _check("+1 Brigadeiro: cabem 4 granadas", r == "comprou" and player.grenade_max == 4 and player.grenades == 4 and story.coins == 0) and all_ok
-	all_ok = _check("melhoria comprada não se compra de novo", shop_menu.buy("granada_extra") == "nada" and story.coins == 0) and all_ok
+	open_shop()
+	var r := shop_menu.buy("granada_extra")
+	close_menus()
+	await _wait_until(func() -> bool: return not story.deliveries.is_empty() and story.deliveries[0].landed, 5.0)
+	var snap := story.snapshot()
+	all_ok = _check("salvamento guarda a entrega no chão", snap.entregas.size() == 1 and snap.entregas[0][0] == ["granada_extra"]) and all_ok
+	await _stand(story.deliveries[0].global_position)
+	await _wait(0.3)
+	all_ok = _check("+1 Brigadeiro chega de balão: cabem 4 granadas", r == "comprou" and player.grenade_max == 4 and player.grenades == 4
+			and "granada_extra" in story.upgrades) and all_ok
+	all_ok = _check("melhoria comprada não se compra de novo", shop_menu.buy("granada_extra") == "nada" and story.coins == 40) and all_ok
+	open_shop()
 	shop_menu.open_preview("pipoqueira")
 	await get_tree().process_frame
 	all_ok = _check("prévia mostra o blaster girando, o tipo, o dano e as barras", shop_menu.in_preview() and shop_menu._turntable.get_child_count() >= 1
@@ -3597,23 +4235,22 @@ func _run_shop_test() -> void:
 	all_ok = _check("voltar da prévia mostra os cartões", not shop_menu.in_preview() and shop_menu._grid.visible) and all_ok
 	close_menus()
 	await _wait(0.3)
-	shop_menu.buy("jujuba")
-	player._fire_cooldown = 0.0
-	player._switch_left = 0.0
-	player.fire()
-	all_ok = _check("a Jujuba atira com o pente dela", player.current_weapon().id == "jujuba" and player.mag() == 15 and player.reserve() == -1,
-			"(%s %d / %d)" % [player.current_weapon().id, player.mag(), player.reserve()]) and all_ok
-	story.add_coins(90, player.global_position)
-	shop_menu.buy("beijinho")
-	player.ammo.beijinho.reserve = 0
-	player.add_ammo_crate()
-	all_ok = _check("caixa de munição completa o blaster comprado equipado", player.equipped[1] == "beijinho" and player.ammo.beijinho.reserve == 45,
-			"(%d)" % player.ammo.beijinho.reserve) and all_ok
-	var snap := story.snapshot()
-	all_ok = _check("salvamento guarda moedas, equipados, compras e melhorias", snap.moedas == story.coins and "jujuba" in snap.equipados
-			and "beijinho" in snap.blasters and "granada_extra" in snap.melhorias and snap.loja_visitada) and all_ok
+	story.add_coins(100, player.global_position)
+	all_ok = _check("comprar a Jujuba equipa na seta de cima", _buy_now("jujuba") == "comprou" and player.equipped[0] == "jujuba"
+			and player.current_weapon().id == "jujuba" and _hand_model() == "blaster-k.glb", "(%s)" % _hand_model()) and all_ok
+	all_ok = _check("usar a Paçoca de volta", shop_menu.buy("pacoca") == "equipou" and player.equipped[0] == "pacoca") and all_ok
+	snap = story.snapshot()
+	all_ok = _check("salvamento guarda moedas, equipados, compras e melhorias", snap.moedas == story.coins and "pacoca" in snap.equipados
+			and "jujuba" in snap.blasters and "granada_extra" in snap.melhorias and snap.loja_visitada) and all_ok
 	print("LOJA OK" if all_ok else "LOJA COM FALHAS")
 	get_tree().quit()
+
+
+## Compra pela lojinha e entrega na hora, sem esperar o balão (testes).
+func _buy_now(id: String) -> String:
+	var r := shop_menu.buy(id)
+	story.deliver_now()
+	return r
 
 
 ## Derruba os esqueletos da onda atual da Festa sem fim, conforme saem do chão.
@@ -3657,7 +4294,7 @@ func _run_save_test() -> void:
 			player.add_max_heart()
 			story.records.festa = 3
 			story.add_coins(150, player.global_position)
-			shop_menu.buy("jujuba")
+			_buy_now("jujuba")
 			story.save()
 			var data := SaveGame.read()
 			_save_check("vencer a praia salva a etapa, a defesa, o personagem e a bandeira", data.get("etapa", "") == "cidade"
@@ -3765,8 +4402,10 @@ func _run_ending_capture() -> void:
 	if is_instance_valid(gallery):
 		await _art_shot(out + "f09_mira_torta_tiro.png", size, gallery.global_transform * Vector3(-0.5, 2.4, 2.2), gallery.global_transform * Vector3(-3.5, 1.2, -1.8), 60.0)
 	await _art_shot(out + "f10_fogos_ceu.png", size, Ending.PLAZA + Vector3(0, 2.0, 20.0), Ending.PLAZA + Vector3(0, 18.0, -20.0), 70.0)
-	await _stand(Ending.STAGE_TOP + Vector3(0, 0.3, 0))
-	await _wait_until(func() -> bool: return ending.credits_running, 3.0)
+	await _stand(_ground_point(Ending.CREDITS_SPOT) + Vector3.UP * 0.3)
+	await _wait(1.6)
+	await _shot("f10b_circulo_creditos.png")
+	await _wait_until(func() -> bool: return ending.credits_running, 4.0)
 	await _wait(1.6)
 	await _shot("f11_creditos_album.png")
 	var c: Credits = get_children().filter(func(n: Node) -> bool: return n is Credits)[0]
@@ -4227,7 +4866,8 @@ func _run_steam_art() -> void:
 	await _stand(boy_pos)
 	girl.global_position = girl_pos + Vector3.UP
 	# Esqueletos descendo o Morro (congelados no meio da corrida) e outros subindo de balão.
-	var ground := [["Minion", 13.0, -0.6], ["Warrior", 15.5, -3.2], ["Mage", 17.0, 1.8], ["Rogue", 20.0, -6.0]]
+	# Desde 2026-10-28 com o Pistoleiro e o Conde (bengala de doce) no lugar do Minion e do Mago do chão.
+	var ground := [["Pistoleiro", 13.0, -0.6], ["Warrior", 15.5, -3.2], ["Conde", 17.0, 1.8], ["Rogue", 20.0, -6.0]]
 	var sky := [["Minion", 16.0, -2.0, 6.0], ["Mage", 22.0, -7.5, 9.0], ["Rogue", 19.0, 3.5, 10.5]]
 	var walkers: Array[SkeletonEnemy] = []
 	for spec in ground:
@@ -4262,6 +4902,11 @@ func _run_steam_art() -> void:
 			flyers[i].global_position = at.call(spots[i][0], spots[i][1]) + Vector3.UP * spots[i][2]
 	var out := "res://build/arte_steam/"
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out))
+	# Letreiros 3D (a placa da pista de kart, ao fundo desde 2026-10-26) não entram na arte. Ficam
+	# transparentes em vez de escondidos, porque a pista liga a placa de novo a cada quadro.
+	for label in find_children("*", "Label3D", true, false):
+		(label as Label3D).modulate.a = 0.0
+		(label as Label3D).outline_modulate.a = 0.0
 	var look := cam + fwd * 20.0 + Vector3.UP * 2.6
 	place.call([[20.0, -4.0, 1.8], [27.0, -11.0, 3.2], [21.0, 9.5, 3.4]])
 	await _wait(0.1)
@@ -4285,7 +4930,7 @@ func _run_steam_art() -> void:
 
 func _art_skeleton(type_name: String, pos: Vector3) -> SkeletonEnemy:
 	var e := SkeletonEnemy.new()
-	e.type_name = "Skeleton_" + type_name
+	e.type_name = type_name if SkeletonEnemy.TYPES.has(type_name) else "Skeleton_" + type_name
 	e.start_awake = true
 	e.aggro_radius = 999.0
 	e.leash_radius = 999.0

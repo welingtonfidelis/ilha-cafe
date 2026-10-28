@@ -5,15 +5,20 @@ extends Node
 ##   das mãos do aventureiro; os esqueletos saem do chão comemorando e a tela escurece ("Na noite seguinte...");
 ## - epílogo: a Festa do Cafuné à noite na praça, com luzinhas, lua, estrelas e fogos; os esqueletos que
 ##   foram embora de balão descem de balão como convidados (dançam, tocam na banda, servem doces);
-## - créditos: subir no palco abre o álbum de fotos da partida e os créditos (scripts/credits.gd);
+## - créditos: ficar 3 s no círculo dourado na frente do palco abre o álbum de fotos da partida e os créditos
+##   (scripts/credits.gd);
 ## - pós-jogo: a ilha de dia, em festa, com os esqueletos amigos e a "Festa sem fim" no cemitério
 ##   (scripts/endless_party.gd).
 
 ## Centro da praça da festa (o quarteirão PLAZA de tools/gerar_ilha.gd).
 const PLAZA := Vector3(0, 0, 170)
-## Em cima do palco (as duas plataformas de 4x4 atrás da banda); o retângulo é a área em x e z.
+## Em cima do palco (as duas plataformas de 4x4 atrás da banda).
 const STAGE_TOP := Vector3(0, 1.0, 158.5)
-const STAGE_RECT := Rect2(-4.2, 155.8, 8.4, 4.4)
+## Círculo dourado na frente do palco que abre os créditos (pedido do usuário em 2026-10-28, igual ao da
+## Festa sem fim; até então era subir no palco): ficar CREDITS_HOLD segundos dentro dele, que vai enchendo.
+const CREDITS_SPOT := Vector3(0, 0, 163.6)
+const CREDITS_RADIUS := 2.2
+const CREDITS_HOLD := 3.0
 const SKELETONS := "res://assets/characters/skeletons/%s.glb"
 const WEAPONS := "res://assets/weapons/skeleton/%s.gltf"
 const FESTA := "res://assets/props/festa/%s.gltf"
@@ -39,6 +44,12 @@ const GUESTS := [
 		["Essa comida é muito melhor que osso!", "Desculpa pelo susto na Lanterna Oeste!"]],
 	["Sorvete", "Skeleton_Rogue", 1.0, "parado", "festa/comida/icecream_cone_stacked", Vector3.ZERO, 0.5, Vector2(10.8, -6.0), 120.0,
 		["Sorvete! Eu nunca tinha tomado sorvete!"]],
+	# Os amigos do Morro que vieram nas ondas (2026-10-27).
+	["Conde", "Conde", 1.0, "parado", "festa/comida/icecream_bowl_decorated_A", Vector3.ZERO, 0.5, Vector2(6.5, -1.5), 200.0,
+		["Que festa elegante! Sumir e aparecer cansa, sabia?", "Prometo não aparecer de surpresa nunca mais."]],
+	["Lobinho", "Lobinho", 1.0, "dancando", "", Vector3.ZERO, 1.0, Vector2(-5.5, 1.8), 120.0, ["Auuu! Que música boa!"]],
+	["Pistoleiro", "Skeleton_Pistoleiro", 1.0, "torcendo", "", Vector3.ZERO, 1.0, Vector2(4.5, 6.0), 210.0,
+		["Agora eu só atiro confete!"]],
 ]
 const MESTRE_LINES := ["Melhor festa de todas!", "O vovô está me contando histórias da ilha."]
 const MESTRE_PARTY_LINES := ["Vamos brincar de Festa sem fim? É luta de brincadeira, mas vale de verdade!",
@@ -60,6 +71,10 @@ var _party: Node3D
 var _night_nodes: Node3D
 var _fireworks := 0.0
 var _day := {}
+var _credits_ring: Node3D
+var _credits_fill: MeshInstance3D
+var _credits_board: Label3D
+var _credits_hold := 0.0
 
 
 func setup(p_game: Node) -> void:
@@ -170,7 +185,7 @@ func start_cutscene(mestre: BossMestre) -> void:
 	in_cutscene = false
 	game.set_hud_visible(true)
 	player.input_enabled = true
-	game.banner("A Festa do Cafuné!", "Os esqueletos chegaram de balão. Aproveite a festa e suba no palco quando quiser!", Color("#ffd23f"), 4.0)
+	game.banner("A Festa do Cafuné!", "Os esqueletos chegaram de balão. Aproveite a festa e, quando quiser, fique no círculo dourado na frente do palco!", Color("#ffd23f"), 4.0)
 
 
 ## Esqueletos saem do chão comemorando, no lado oposto ao da câmera: também foram convidados.
@@ -232,7 +247,7 @@ func start_epilogue(animate: bool) -> void:
 	var spot: Vector3 = game._ground_point(PLAZA + Vector3(ARRIVAL.x, 0, ARRIVAL.y))
 	player.global_position = spot + Vector3.UP * 0.2
 	player.velocity = Vector3.ZERO
-	var dir := STAGE_TOP - spot
+	var dir := CREDITS_SPOT - spot
 	dir.y = 0.0
 	dir = dir.normalized()
 	player.set_yaw(atan2(-dir.x, -dir.z))
@@ -385,10 +400,70 @@ func _physics_process(delta: float) -> void:
 			_fireworks = randf_range(0.9, 2.0)
 			var from := PLAZA + Vector3(randf_range(-20.0, 20.0), 0.5, randf_range(-26.0, -16.0))
 			Fx.firework(game, from, randf_range(24.0, 32.0), Fx.CONFETTI_COLORS[randi() % Fx.CONFETTI_COLORS.size()])
-	if story.stage == "festa" and not busy():
-		var p: Vector3 = game.player.global_position
-		if STAGE_RECT.has_point(Vector2(p.x, p.z)) and p.y > STAGE_TOP.y - 0.3 and game.menu_state == "":
-			start_credits()
+	_update_credits_ring(delta)
+
+
+## O círculo dourado dos créditos só existe na festa à noite; ficar dentro dele vai enchendo o disco do
+## meio e contando "3, 2, 1" na placa, e cheio abre os créditos. Sair do círculo (ou ficar tonto) zera.
+func _update_credits_ring(delta: float) -> void:
+	if story.stage != "festa":
+		if is_instance_valid(_credits_ring):
+			_credits_ring.queue_free()
+		return
+	if not is_instance_valid(_credits_ring):
+		_build_credits_ring()
+	if busy():
+		return
+	var player: Player = game.player
+	var spot := _credits_ring.global_position
+	var flat := Vector2(player.global_position.x - spot.x, player.global_position.z - spot.z).length()
+	var inside := flat < CREDITS_RADIUS and absf(player.global_position.y - spot.y) < 1.5 and not player.dizzy
+	_credits_hold = _credits_hold + delta if inside and game.menu_state == "" else 0.0
+	var k := clampf(_credits_hold / CREDITS_HOLD, 0.0, 1.0)
+	_credits_fill.visible = k > 0.0
+	_credits_fill.scale = Vector3(maxf(k, 0.01), 1.0, maxf(k, 0.01))
+	_credits_board.text = "Créditos em %d..." % ceili(CREDITS_HOLD - _credits_hold) if k > 0.0 else "CRÉDITOS\nFique no círculo"
+	if _credits_hold >= CREDITS_HOLD:
+		_credits_hold = 0.0
+		_credits_fill.visible = false
+		start_credits()
+
+
+func _build_credits_ring() -> void:
+	_credits_ring = Node3D.new()
+	_credits_ring.name = "CirculoCreditos"
+	game.add_child(_credits_ring)
+	_credits_ring.global_position = game._ground_point(CREDITS_SPOT) + Vector3.UP * 0.05
+	var ring := MeshInstance3D.new()
+	var disc := CylinderMesh.new()
+	disc.top_radius = CREDITS_RADIUS
+	disc.bottom_radius = CREDITS_RADIUS
+	disc.height = 0.04
+	disc.material = Defense.glow(Color(1.0, 0.82, 0.25, 0.5))
+	ring.mesh = disc
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_credits_ring.add_child(ring)
+	_credits_fill = MeshInstance3D.new()
+	var fill := CylinderMesh.new()
+	fill.top_radius = CREDITS_RADIUS
+	fill.bottom_radius = CREDITS_RADIUS
+	fill.height = 0.05
+	fill.material = Defense.glow(Color(1.0, 0.9, 0.45, 0.85))
+	_credits_fill.mesh = fill
+	_credits_fill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_credits_fill.position.y = 0.01
+	_credits_fill.visible = false
+	_credits_ring.add_child(_credits_fill)
+	_credits_board = Label3D.new()
+	_credits_board.font_size = 48
+	_credits_board.outline_size = 12
+	_credits_board.outline_modulate = Color(0.15, 0.08, 0.25)
+	_credits_board.modulate = Color("#ffd23f")
+	_credits_board.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_credits_board.pixel_size = 0.007
+	# Acima da cabeça de quem está no círculo, para a contagem aparecer com a câmera atrás do aventureiro.
+	_credits_board.position.y = 2.5
+	_credits_ring.add_child(_credits_board)
 
 
 # --- convidados e enfeites da festa -------------------------------------------------------
@@ -405,8 +480,11 @@ func _build_party(animate: bool, with_mestre_on_bench: bool) -> void:
 	for spec in GUESTS:
 		var off: Vector2 = spec[7]
 		var pos: Vector3 = game._ground_point(PLAZA + Vector3(off.x, 0, off.y))
-		var data := {"nome": "Convidado" + spec[0], "modelo_caminho": SKELETONS % spec[1], "escala": spec[2],
+		var data := {"nome": "Convidado" + spec[0], "modelo_caminho": SkeletonEnemy.model_path(spec[1]), "escala": spec[2],
 			"atividade": spec[3], "item": spec[4], "item_rot": spec[5], "item_escala": spec[6], "falas": PackedStringArray(spec[9])}
+		var skin: String = SkeletonEnemy.TYPES.get(spec[1], {}).get("skin", "")
+		if skin != "":
+			data.variante = skin.get_file().get_basename()
 		if spec.size() > 10:
 			var dest: Vector2 = spec[10]
 			data.destino = game._ground_point(PLAZA + Vector3(dest.x, 0, dest.y))
@@ -510,11 +588,12 @@ func _befriend_skeletons() -> void:
 		var type_name: String = e.type_name
 		var pos: Vector3 = e.global_position
 		e.queue_free()
-		if type_name == "Skeleton_Golem":
+		if SkeletonEnemy.TYPES[type_name].get("rig", "Medium") == "Large":
 			continue
 		var sits := k % 3 == 0
-		_spawn({"nome": "Amigo%d" % k, "modelo_caminho": SKELETONS % type_name, "atividade": "sentado_chao" if sits else "parado",
-			"falas": PackedStringArray([FRIEND_LINES[k % FRIEND_LINES.size()]])}, pos, randf() * TAU)
+		var skin: String = SkeletonEnemy.TYPES[type_name].get("skin", "")
+		_spawn({"nome": "Amigo%d" % k, "modelo_caminho": SkeletonEnemy.model_path(type_name), "atividade": "sentado_chao" if sits else "parado",
+			"variante": skin.get_file().get_basename(), "falas": PackedStringArray([FRIEND_LINES[k % FRIEND_LINES.size()]])}, pos, randf() * TAU)
 		k += 1
 
 
