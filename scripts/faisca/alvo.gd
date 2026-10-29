@@ -246,6 +246,8 @@ func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
 	_imune = 0.25
 	_piscar = 0.12
 	_amasso = 0.35
+	if vida > 0:
+		Sfx.play_at(get_parent(), "bolota_ai", global_position, -4.0, 0.15)
 	if vida > 0 and tonta <= 0.0 and randf() < chance_tontura * dano:
 		ficar_tonta()
 	var dir := global_position - de
@@ -259,6 +261,7 @@ func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
 
 func _derrotar() -> void:
 	_sarar()
+	Sfx.play_at(get_parent(), "bolota_estoura", global_position, 0.0, 0.08)
 	derrotado = true
 	collision_layer = 0
 	_estrelinhas()

@@ -154,6 +154,7 @@ func _rodar_smoke() -> void:
 ## e confere cada comando. Uso: godot --headless --path . -- --controle
 func _rodar_teste_controle() -> void:
 	var ok := true
+	Sfx.logging = true
 	await _esperar(0.6)
 	ok = _conferir("começa no chão", jogador.is_on_floor()) and ok
 
@@ -187,9 +188,12 @@ func _rodar_teste_controle() -> void:
 	ok = _conferir("segurando A na descida flutua", jogador.flutuando and absf(jogador.velocity.y) < 2.0,
 			"(vel. vertical %.2f)" % jogador.velocity.y) and ok
 	ok = _conferir("flutuando, o laser liga e o jato de fogo não", jogador._feixes[0].visible and not jogador.robo._jatos[0].visible) and ok
+	ok = _conferir("flutuando, o zumbido do laser toca (e repete)", jogador._som_laser.playing
+			and (jogador._som_laser.stream as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD) and ok
 	_botao(JOY_BUTTON_A, false)
 	await _esperar(1.5)
 	ok = _conferir("solta A e pousa", jogador.is_on_floor() and not jogador.flutuando) and ok
+	ok = _conferir("pousado, o zumbido do laser para", not jogador._som_laser.playing) and ok
 
 	# Analógico direito gira a câmera.
 	var yaw0 := jogador.yaw
@@ -329,6 +333,11 @@ func _rodar_teste_controle() -> void:
 	ok = _conferir("cair em cima do inimigo é um pisão", vida_no_quique == a3.vida_max - 2, "(vida %d)" % vida_no_quique) and ok
 	ok = _conferir("o pisão quica para o alto", quicou) and ok
 	ok = await _movimentos_do_astro() and ok
+	# Sons do Faísca (pedido do usuário em 2026-10-29: "faltam sons novos pro faisca lutando, voando, etc").
+	var faltando := ["faisca_pulo", "faisca_pouso", "faisca_laser_liga", "faisca_soco", "faisca_soco_forte", "faisca_acerto",
+			"faisca_giro", "faisca_pisao", "faisca_carga", "faisca_piao", "faisca_agarra", "faisca_arremesso", "faisca_danca",
+			"bolota_ai", "bolota_estoura", "estrelinha"].filter(func(n: String) -> bool: return not n in Sfx.played)
+	ok = _conferir("cada ação do Faísca tem o seu som", faltando.is_empty(), "(faltando: %s)" % ", ".join(faltando)) and ok
 	_terminar(ok)
 
 

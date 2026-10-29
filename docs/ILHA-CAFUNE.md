@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26). Em 2026-10-28 começou a Parte 2 (seção 11):** depois dos créditos, o Faísca (o robozinho do projeto Faísca) entra na troca de personagem e entra no farol da ponta sudeste, o hub das fases de plataforma. A primeira rodada está no branch `parte-2-faisca`: o farol, a abertura, o hub e a fase 1-1. Em 2026-10-29 o hub virou uma torre de quatro andares com escada em espiral, com as portas das fases que ainda vão ser feitas, e a fase 1-2 Túneis do Morro ficou pronta. No mesmo dia, o voo do Faísca passou a mostrar só o laser, durar 1 s e acertar num círculo em volta dele. Os menus foram refeitos para criança (cartões com o boneco 3D na escolha de personagem e botões com ícone na pausa). O Faísca passou a andar de kart e de skate e a lutar na Festa sem fim (só não compra), e a porta do farol passou a pedir o Faísca na escolha de personagem. A pista de kart virou um 8 com ponte, subidas e descidas. O Faísca ganhou um visual mais caprichado: tela de vidro com olhos de LED que mudam de cara, friso laranja na tela, LEDs de voo nas costas e o corpo no jeito do Astro Bot (feijão branco, braços e coxas gordinhos, mão de luva, pernas com ponta), em branco e laranja. Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
+**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26). Em 2026-10-28 começou a Parte 2 (seção 11):** depois dos créditos, o Faísca (o robozinho do projeto Faísca) entra na troca de personagem e entra no farol da ponta sudeste, o hub das fases de plataforma. A primeira rodada está no branch `parte-2-faisca`: o farol, a abertura, o hub e a fase 1-1. Em 2026-10-29 o hub virou uma torre de quatro andares com escada em espiral, com as portas das fases que ainda vão ser feitas, e a fase 1-2 Túneis do Morro ficou pronta. No mesmo dia, o voo do Faísca passou a mostrar só o laser, durar 1 s e acertar num círculo em volta dele. Os menus foram refeitos para criança (cartões com o boneco 3D na escolha de personagem e botões com ícone na pausa). O Faísca passou a andar de kart e de skate e a lutar na Festa sem fim (só não compra), e a porta do farol passou a pedir o Faísca na escolha de personagem. A pista de kart virou um 8 com ponte, subidas e descidas. O Faísca ganhou um visual mais caprichado: tela de vidro com olhos de LED que mudam de cara, friso laranja na tela, LEDs de voo nas costas e o corpo no jeito do Astro Bot (feijão branco, braços e coxas gordinhos, mão de luva, pernas com ponta), em branco e laranja. Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 52 efeitos sonoros (21 deles do Faísca, desde 2026-10-29) e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
 
 ## Índice
 
@@ -1175,6 +1175,55 @@ O usuário mandou a tabela de movimentos do Astro Bot e pediu os três que mais 
   - O `--faisca-controle` confere os socos alternados e os movimentos novos. São a carga, o giro, o acerto em volta e o tontinho; não agarrar sem tontura e ficar tonta com o golpe; agarrar, girar, arremessar e acertar; a dancinha e parar andando.
   - O `--faisca-fase` confere que a Bolota tonta não vem atrás do Faísca.
   - O `--faisca-captura` tira de `10_carregando` a `17_dica_giro_forte` (com `12a_bolota_tonta`), e o `tools/foto_faisca.gd` tira o soco esquerdo e dois momentos da dança.
+
+### Sons do Faísca (pedido do usuário em 2026-10-29: "faltam sons novos pro faisca lutando, voando, etc")
+
+O Faísca usava só uns poucos sons emprestados das crianças, e pegar estrelinha nem tinha som.
+
+- **De onde vêm:** os sons novos saem do `tools/gerar_sons.py` (função `make_faisca`), no mesmo jeito de desenho dos outros: servo, bipes e "boing".
+  - Têm semente própria e são gerados depois da música, então regerar não muda nenhum som antigo.
+  - Estão na lista `Sfx.ALL`, e o `--som` confere que os 52 carregam.
+- **Lutando:**
+
+  | Som | Quando toca |
+  |---|---|
+  | `faisca_soco` | os dois primeiros socos |
+  | `faisca_soco_forte` | o terceiro soco |
+  | `faisca_acerto` | o golpe pega alguém (também no giro e no giro forte) |
+  | `faisca_giro` | o giro no ar |
+  | `faisca_carga` | carregando o giro forte (motor subindo e um "plim"; para se ele desistir) |
+  | `faisca_piao` | o giro forte |
+  | `faisca_pisao` | o pisão |
+  | `faisca_agarra` | agarrar a Bolota |
+  | `faisca_arremesso` | arremessar a Bolota |
+  | `bolota_ai` | a Bolota apanhando |
+  | `bolota_estoura` | a Bolota estourando em estrelinhas |
+
+- **Voando e andando:**
+
+  | Som | Quando toca |
+  |---|---|
+  | `faisca_pulo` | o pulo |
+  | `faisca_pouso` | o pouso (só depois de 0,35 s no ar) |
+  | `faisca_laser_liga` | o laser ligando |
+  | `faisca_laser` | zumbido em repetição enquanto flutua |
+  | `faisca_mola` | a mola |
+
+- **O resto:**
+
+  | Som | Quando toca |
+  |---|---|
+  | `faisca_dor` | bipe de "ô-ou" ao perder coração, nas fases e na ilha |
+  | `faisca_curto` | o curto sem corações |
+  | `coracao` | o coração extra (já existia) |
+  | `estrelinha` | pegar estrelinha, nas fases, no hub e na cena de treino |
+  | `vaga_lume` | achar vaga-lume |
+  | `faisca_danca` | os 4 s de música da dancinha, a 120 batidas por minuto como a dança (para se ela parar) |
+
+- **O zumbido do laser:** o arquivo dura 1 s e fecha ciclos inteiros de todas as ondas, então emenda sem estalo. O `Jogador` liga a repetição na hora (`AudioStreamWAV.LOOP_FORWARD`).
+- **Testes e prévia:**
+  - O `--faisca-controle` confere que o zumbido toca e para com o voo, e que cada ação tocou o seu som (`Sfx.logging`).
+  - Uma prévia com todos os sons em sequência fica em `tools/capturas/faisca/sons_do_faisca.wav` (fora do git).
 
 ### Em aberto
 

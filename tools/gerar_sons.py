@@ -260,6 +260,130 @@ def make_sfx():
     sfx("ui_ok", mix(0.16, (envelope(osc(880, 880, 0.08, "tri"), 0.001, 0.03), 0, 0.8), (envelope(osc(1320, 1320, 0.1, "tri"), 0.001, 0.04), 0.05, 0.8)), -8)
 
 
+# --- Faísca (Parte 2) ------------------------------------------------------
+
+def am(sig, rate, depth):
+    """Tremolo: o volume sobe e desce `rate` vezes por segundo (profundidade 0 a 1)."""
+    return [x * (1.0 - depth * (0.5 + 0.5 * math.cos(2 * math.pi * rate * i / SR))) for i, x in enumerate(sig)]
+
+
+def sweep_lowpass(sig, f0, f1):
+    """Passa-baixa cujo corte vai de f0 a f1 ao longo do som (ar girando, motor subindo)."""
+    out = [0.0] * len(sig)
+    y = 0.0
+    n = max(len(sig) - 1, 1)
+    for i, x in enumerate(sig):
+        cutoff = f0 * (f1 / f0) ** (i / n)
+        rc = 1.0 / (2 * math.pi * cutoff)
+        alpha = (1.0 / SR) / (rc + 1.0 / SR)
+        y += alpha * (x - y)
+        out[i] = y
+    return out
+
+
+def sfx_loop(name, sig, peak_db=-3.0):
+    """Som que repete sem emenda: sem o esmaecer das bordas (o tamanho tem de fechar ciclos inteiros)."""
+    save(f"sfx/{name}.wav", normalize(sig, peak_db))
+
+
+def make_faisca():
+    """Sons do Faísca: robozinho de desenho (servo, bipes, "boing"), pedido do usuário em 2026-10-29:
+    "faltam sons novos pro faisca lutando, voando, etc". Têm semente própria para não mudar os outros."""
+    random.seed(7)
+    air = lambda dur, lo, hi: lowpass(highpass(noise(dur), lo), hi)
+    beep = lambda f, d, shape="square": lowpass(envelope(osc(f, f, d, shape), 0.002, d * 0.7, 0.5, 0.02), 4500)
+
+    # Soco: "fup" de ar curtinho e um "zip" de servo. Soco forte: ar mais grave e um "vrum".
+    zip_ = lowpass(envelope(osc(600, 950, 0.06, "square"), 0.002, 0.03), 3000)
+    sfx("faisca_soco", mix(0.16, (envelope(air(0.14, 800, 3200), 0.02, 0.04), 0, 0.9), (zip_, 0, 0.25)), -9)
+    vrum = lowpass(envelope(osc(230, 110, 0.18, "saw"), 0.003, 0.07), 1200)
+    sfx("faisca_soco_forte", mix(0.26, (envelope(air(0.22, 400, 2400), 0.03, 0.07), 0, 0.9), (vrum, 0.02, 0.6), (zip_, 0, 0.25)), -6)
+
+    # Acertou: "pof" macio com um "tin" de mão de robô.
+    pof = envelope(osc(320, 110, 0.09, "sine"), 0.001, 0.035)
+    tin = envelope(mix(0.1, (osc(2400, 2400, 0.1), 0, 1.0), (osc(3610, 3610, 0.1), 0, 0.4)), 0.001, 0.03)
+    sfx("faisca_acerto", mix(0.12, (pof, 0, 1.0), (tin, 0, 0.35), (envelope(highpass(noise(0.02), 2500), 0.001, 0.006), 0, 0.4)), -5)
+
+    # Bolota apanhando: "ui!" de borracha. Bolota estourando: "pop" com brilho subindo.
+    sfx("bolota_ai", envelope(osc(650, 1150, 0.16, "tri", vibrato=0.06, vib_rate=30), 0.005, 0.07), -10)
+    glitter = [(envelope(osc(f, f, 0.15, "sine"), 0.002, 0.05), t, 0.35) for f, t in [(1760, 0.05), (2349, 0.1), (2960, 0.15), (3520, 0.2)]]
+    pop = mix(0.1, (envelope(osc(1300, 450, 0.07), 0.001, 0.018), 0, 1.0), (envelope(highpass(noise(0.04), 3000), 0.001, 0.01), 0, 0.5))
+    sfx("bolota_estoura", mix(0.45, (pop, 0, 1.0), *glitter), -5)
+
+    # Giro no ar: ar rodando (o corte do filtro sobe) com um assobio subindo.
+    swirl = am(sweep_lowpass(highpass(noise(0.42), 300), 700, 3800), 14, 0.6)
+    sfx("faisca_giro", mix(0.45, (envelope(swirl, 0.05, 0.3, 0.3, 0.06), 0, 1.0), (envelope(osc(500, 1100, 0.4, "tri"), 0.04, 0.25), 0, 0.15)), -7)
+
+    # Carregando o giro forte: motor subindo e tremendo cada vez mais rápido, e um "plim" de pronto.
+    n = n_samples(0.5)
+    motor = [math.sin(2 * math.pi * (120 * (i / SR) + 480 * (i / SR) ** 2)) for i in range(n)]
+    motor = [x * (0.7 + 0.3 * math.sin(2 * math.pi * (8 + 40 * i / n) * i / SR)) for i, x in enumerate(motor)]
+    whine = lowpass(osc(240, 1300, 0.5, "saw"), 2500)
+    ready = envelope(mix(0.2, (osc(1568, 1568, 0.2), 0, 1.0), (osc(2349, 2349, 0.2), 0, 0.4)), 0.002, 0.06)
+    sfx("faisca_carga", mix(0.68, (envelope(motor, 0.05, 1.0, 1.0), 0, 0.6), (envelope(whine, 0.05, 1.0, 1.0), 0, 0.15), (ready, 0.48, 0.6)), -8)
+
+    # Pião (giro forte): "vush-vush" de hélice por 1 s, com zumbido de motor.
+    blades = am(lowpass(highpass(noise(1.0), 250), 2600), 11, 0.85)
+    hum = lowpass(osc(160, 200, 1.0, "saw"), 700)
+    sfx("faisca_piao", envelope(mix(1.0, (blades, 0, 1.0), (hum, 0, 0.35)), 0.03, 1.0, 1.0, 0.15), -5)
+
+    # Pisão: "boing" descendo e a pancadinha embaixo.
+    sfx("faisca_pisao", mix(0.25, (envelope(osc(620, 210, 0.16, "tri"), 0.002, 0.06), 0, 0.7), (envelope(osc(160, 55, 0.18, "sine"), 0.001, 0.06), 0.03, 1.0)), -4)
+
+    # Agarrar: "tchup" e a bolota reclamando ("iiih" subindo).
+    sfx("faisca_agarra", mix(0.3, (envelope(osc(450, 950, 0.05, "sine"), 0.001, 0.02), 0, 1.0),
+                            (envelope(osc(900, 1500, 0.22, "tri", vibrato=0.05, vib_rate=24), 0.01, 0.12), 0.05, 0.5)), -6)
+    # Arremesso: ar forte e a bolota voando com um "uiii" descendo.
+    sfx("faisca_arremesso", mix(0.5, (envelope(air(0.25, 500, 3000), 0.03, 0.08), 0, 0.9),
+                               (envelope(osc(1700, 650, 0.45, "sine", vibrato=0.04, vib_rate=18), 0.01, 0.25), 0.04, 0.35)), -5)
+
+    # Pulo: "bwip" de robô. Pouso: "toc" macio.
+    sfx("faisca_pulo", mix(0.14, (lowpass(envelope(osc(320, 760, 0.1, "square"), 0.002, 0.05), 3500), 0, 0.6), (envelope(osc(260, 520, 0.12, "sine"), 0.002, 0.06), 0, 0.6)), -11)
+    sfx("faisca_pouso", mix(0.1, (envelope(osc(210, 90, 0.08, "sine"), 0.001, 0.025), 0, 1.0), (envelope(highpass(noise(0.015), 3000), 0.001, 0.004), 0, 0.3)), -13)
+
+    # Laser dos pés: "zing" ao ligar e um zumbido com brilho que repete enquanto flutua (1 s fecha ciclos
+    # inteiros de 110, 220, 880 e 30 Hz, então emenda sem estalo).
+    sfx("faisca_laser_liga", mix(0.2, (envelope(osc(900, 1900, 0.13, "sine"), 0.002, 0.06), 0, 0.8), (envelope(highpass(noise(0.1), 4000), 0.002, 0.03), 0, 0.3)), -9)
+    n = n_samples(1.0)
+    loop = []
+    for i in range(n):
+        t = i / SR
+        x = 0.45 * math.sin(2 * math.pi * 110 * t) + 0.25 * math.sin(2 * math.pi * 220 * t)
+        x += 0.22 * math.sin(2 * math.pi * 880 * t) * (0.5 + 0.5 * math.sin(2 * math.pi * 30 * t))
+        x += 0.08 * math.sin(2 * math.pi * 1760 * t) * (0.5 + 0.5 * math.sin(2 * math.pi * 7 * t))
+        loop.append(x)
+    sfx_loop("faisca_laser", loop, -14)
+
+    # Mola: "boiiing" de desenho.
+    sfx("faisca_mola", envelope(osc(170, 640, 0.55, "sine", vibrato=0.08, vib_rate=17), 0.003, 0.25), -6)
+
+    # Machucou: bipe de "ô-ou" descendo. Sem corações: curto (estalos elétricos e um apito caindo).
+    sfx("faisca_dor", mix(0.32, (beep(880, 0.11), 0, 0.8), (beep(587, 0.17), 0.12, 0.8)), -8)
+    crackle = [x if random.random() < 0.18 else 0.0 for x in highpass(noise(0.7), 1500)]
+    sfx("faisca_curto", mix(0.9, (envelope(crackle, 0.002, 0.35), 0, 0.7),
+                           (envelope(osc(1300, 160, 0.8, "square", vibrato=0.05, vib_rate=11), 0.005, 0.5), 0.05, 0.3)), -6)
+
+    # Estrelinha: "plim" brilhante. Vaga-lume achado: arpejo mágico com tremidinha.
+    sfx("estrelinha", mix(0.3, (envelope(mix(0.25, (osc(1319, 1319, 0.25), 0, 1.0), (osc(2637, 2637, 0.25), 0, 0.3)), 0.002, 0.06), 0, 0.8),
+                         (envelope(mix(0.25, (osc(1976, 1976, 0.25), 0, 1.0), (osc(3951, 3951, 0.25), 0, 0.2)), 0.002, 0.08), 0.05, 0.8)), -9)
+    twinkle = [(am(envelope(osc(midi(m), midi(m), 0.4, "sine"), 0.005, 0.18), 18, 0.4), i * 0.08, 0.6) for i, m in enumerate([84, 88, 91, 96, 100])]
+    sfx("vaga_lume", mix(0.85, *twinkle), -6)
+
+    # Dancinha: 4 s a 120 batidas por minuto, como a dança do Robo (bumbo, palma, baixo e bipes de robô).
+    beat = 0.5
+    parts = []
+    for b in range(8):
+        parts.append((envelope(osc(140, 45, 0.15, "sine"), 0.001, 0.05), b * beat, 0.9))
+        if b % 2 == 1:
+            parts.append((envelope(highpass(noise(0.12), 1200), 0.001, 0.04), b * beat, 0.35))
+        bass_note = [45, 45, 48, 50][b % 4]
+        parts.append((lowpass(envelope(osc(midi(bass_note), midi(bass_note), 0.4, "saw"), 0.005, 0.18), 900), b * beat, 0.35))
+    for k, m in enumerate([76, None, 79, 76, 81, 79, 76, None, 76, None, 79, 81, 84, 81, 79, 76]):
+        if m:
+            parts.append((beep(midi(m), 0.18), k * beat / 2, 0.22))
+    sfx("faisca_danca", mix(4.1, *parts), -7)
+
+
 # --- música -----------------------------------------------------------------
 
 def make_music():
@@ -321,3 +445,4 @@ def make_music():
 if __name__ == "__main__":
     make_sfx()
     make_music()
+    make_faisca()

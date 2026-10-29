@@ -83,6 +83,7 @@ func _encostou(corpo: Node3D) -> void:
 	encontrado = true
 	set_deferred("monitoring", false)
 	(corpo as Jogador).robo.expressao("coracao", 1.2)
+	Sfx.play(get_parent(), "vaga_lume")
 	achado.emit(self)
 	var tw := create_tween().set_parallel()
 	tw.tween_property(_corpo, "position", Vector3(0, 6.0, 0), 1.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

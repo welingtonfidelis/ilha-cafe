@@ -134,6 +134,7 @@ func _pegar(corpo: Node3D, area: Area3D) -> void:
 	area.set_deferred("monitoring", false)
 	pegas += 1
 	estrela_pega.emit(pegas, estrelas.size())
+	Sfx.play(self, "estrelinha", 0.0, 0.1)
 	var tw := create_tween()
 	tw.tween_property(area, "scale", Vector3.ONE * 1.6, 0.12)
 	tw.tween_property(area, "scale", Vector3.ONE * 0.01, 0.15)

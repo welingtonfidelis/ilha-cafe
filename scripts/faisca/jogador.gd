@@ -153,6 +153,12 @@ var _arremessando := 0.0
 var _nota := 0.0
 var _anel_carga: MeshInstance3D
 var _redemoinho: MeshInstance3D
+## Sons (tools/gerar_sons.py, make_faisca; pedido do usuário em 2026-10-29): o zumbido do laser repete enquanto
+## ele flutua; a carga e a dancinha param se ele desistir no meio.
+var _som_laser: AudioStreamPlayer
+var _som_carga: AudioStreamPlayer
+var _som_danca: AudioStreamPlayer
+var _tempo_no_ar := 0.0
 
 
 func _ready() -> void:
@@ -177,6 +183,14 @@ func _ready() -> void:
 	_montar_camera()
 	_montar_lasers()
 	_montar_giro_forte()
+	_som_laser = AudioStreamPlayer.new()
+	var zumbido := Sfx.stream("faisca_laser").duplicate() as AudioStreamWAV
+	zumbido.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	zumbido.loop_begin = 0
+	zumbido.loop_end = int(zumbido.get_length() * zumbido.mix_rate)
+	_som_laser.stream = zumbido
+	_som_laser.bus = Sfx.BUS_SFX
+	add_child(_som_laser)
 	ponto_retorno = global_position
 
 
@@ -334,6 +348,7 @@ func _physics_process(delta: float) -> void:
 	flutuando = false
 	if _memoria_pulo > 0.0 and _coiote > 0.0:
 		velocity.y = forca_pulo
+		Sfx.play(self, "faisca_pulo", 0.0, 0.08)
 		_memoria_pulo = 0.0
 		_coiote = 0.0
 		_pulou = true
@@ -350,6 +365,7 @@ func _physics_process(delta: float) -> void:
 			if not _impulso_usado:
 				_impulso_usado = true
 				velocity.y = maxf(velocity.y, impulso_laser)
+				Sfx.play(self, "faisca_laser_liga", 0.0, 0.05)
 			velocity.y = lerpf(velocity.y, 0.4, 1.0 - exp(-12.0 * delta))
 		else:
 			var g := gravidade * (gravidade_queda if velocity.y < 0.0 else 1.0)
@@ -367,6 +383,10 @@ func _physics_process(delta: float) -> void:
 	var no_ar := not is_on_floor()
 	if _estava_no_ar and not no_ar:
 		_pousando = 0.18
+		# Só nos pousos de verdade (descer um degrau ou uma rampa não faz "toc").
+		if _tempo_no_ar > 0.35:
+			Sfx.play(self, "faisca_pouso", 0.0, 0.1)
+	_tempo_no_ar = _tempo_no_ar + delta if no_ar else 0.0
 	_estava_no_ar = no_ar
 	if dir.length() > 0.1 and golpe_atual < 0 and girando <= 0.0 and giro_forte <= 0.0 and agarrada == null and _carga <= 0.0:
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-12.0 * delta))
@@ -422,6 +442,7 @@ func levar_golpe_na_ilha(de: Vector3, tempo: float) -> void:
 	golpe_atual = -1
 	_invencivel = tempo
 	robo.expressao("dor", 0.9)
+	Sfx.play(self, "faisca_dor")
 	_tremer(0.6, 0.8, 0.25)
 
 
@@ -432,6 +453,7 @@ func curar() -> bool:
 	vida += 1
 	vida_mudou.emit(vida)
 	robo.expressao("coracao", 1.0)
+	Sfx.play(self, "coracao")
 	return true
 
 
@@ -447,9 +469,11 @@ func lancar(forca: float) -> void:
 	_decolando = 0.2
 	_tremer(0.3, 0.3, 0.1)
 	robo.expressao("surpreso", 0.7)
+	Sfx.play(self, "faisca_mola", 0.0, 0.08)
 
 
 func _perder_coracao() -> void:
+	Sfx.play(self, "faisca_dor")
 	vida -= 1
 	_invencivel = TEMPO_INVENCIVEL
 	vida_mudou.emit(vida)
@@ -482,6 +506,7 @@ func _dar_curto() -> void:
 	golpe_atual = -1
 	girando = 0.0
 	robo.expressao("tonto", 1.8)
+	Sfx.play(self, "faisca_curto")
 	_fumacinha()
 	await get_tree().create_timer(1.3).timeout
 	voltar_ao_inicio()
@@ -543,6 +568,7 @@ func _golpear(no_chao: bool, dir: Vector3) -> void:
 			_giro_acertou = false
 			velocity.y = maxf(velocity.y, 3.0)
 			robo.expressao("bravo", 0.6)
+			Sfx.play(self, "faisca_giro", 0.0, 0.08)
 		return
 	if golpe_atual >= 0 and _golpe_tempo < GOLPES[golpe_atual].duracao * 0.6:
 		_golpe_guardado = true
@@ -568,6 +594,7 @@ func _iniciar_golpe(i: int, dir: Vector3) -> void:
 	var g: Dictionary = GOLPES[i]
 	robo.animar_desde(g.anim, g.inicio, 0.05, g.ritmo)
 	robo.expressao("bravo", g.duracao + 0.4)
+	Sfx.play(self, "faisca_soco_forte" if i == GOLPES.size() - 1 else "faisca_soco", 0.0, 0.1)
 
 
 func _atualizar_golpes(delta: float, dir: Vector3) -> void:
@@ -613,6 +640,7 @@ func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao:
 			acertou = true
 	if acertou:
 		_tremer(0.3, 0.6, 0.12)
+		Sfx.play(self, "faisca_acerto", 0.0, 0.1)
 	return acertou
 
 
@@ -641,6 +669,7 @@ func _pisao() -> void:
 		var alvo := col.get_collider()
 		if _inimigo(alvo) and col.get_normal().y > 0.6:
 			if alvo.receber_golpe(2, global_position + Vector3.UP * 2.0, 3.0):
+				Sfx.play(self, "faisca_pisao", 0.0, 0.08)
 				velocity.y = forca_pulo * 0.8
 				_pulou = true
 				_cortou_pulo = true
@@ -721,8 +750,11 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 			_carga = 0.0
 			_anel_carga.visible = false
 			visual.position = Vector3.ZERO
+			_parar_som(_som_carga)
 		return
 	_parar_danca()
+	if _carga <= 0.0:
+		_som_carga = Sfx.play(self, "faisca_carga", 0.0, 0.0)
 	_carga += delta
 	var cheia := minf(_carga / TEMPO_CARGA, 1.0)
 	robo.animar("luta/Melee_Unarmed_Idle", 0.1)
@@ -743,7 +775,7 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 		# De braços abertos, como um pião.
 		robo.tpose()
 		robo.expressao("bravo", TEMPO_GIRO_FORTE)
-		Sfx.play(self, "golpe_ar")
+		Sfx.play(self, "faisca_piao", 0.0, 0.0)
 		_tremer(0.4, 0.6, 0.2)
 
 
@@ -772,7 +804,7 @@ func _atualizar_agarrar(delta: float, no_chao: bool, dir: Vector3) -> void:
 		visual.rotation.y = atan2(d.x, d.z) - PI / 2.0
 		robo.tpose()
 		robo.expressao("feliz", 0.6)
-		Sfx.play(self, "pancada", -6.0)
+		Sfx.play(self, "faisca_agarra")
 		_tremer(0.2, 0.3, 0.1)
 	if not is_instance_valid(agarrada) or agarrada.derrotado:
 		agarrada = null
@@ -824,7 +856,7 @@ func _arremessar(dir: Vector3) -> void:
 	robo.animar_desde("geral/Throw", 0.35, 0.05, 1.6)
 	_arremessando = 0.4
 	robo.expressao("bravo", 0.6)
-	Sfx.play(self, "arremesso")
+	Sfx.play(self, "faisca_arremesso")
 	_tremer(0.3, 0.5, 0.12)
 
 
@@ -863,6 +895,8 @@ func _atualizar_danca(delta: float, entrada: Vector2) -> void:
 			and giro_forte <= 0.0 and _carga <= 0.0 and golpe_atual < 0:
 		dancando = TEMPO_DANCA
 		_nota = 0.0
+		_parar_som(_som_danca)
+		_som_danca = Sfx.play(self, "faisca_danca", -2.0, 0.0)
 		robo.dancar(true)
 		robo.expressao("feliz", TEMPO_DANCA)
 		return
@@ -884,6 +918,14 @@ func _parar_danca() -> void:
 	dancando = 0.0
 	robo.dancar(false)
 	robo.expressao("normal")
+	_parar_som(_som_danca)
+
+
+## Para um som que ainda está tocando (a carga largada no meio, a dancinha interrompida).
+func _parar_som(som: AudioStreamPlayer) -> void:
+	if som and is_instance_valid(som) and som.playing:
+		som.stop()
+		som.queue_free()
 
 
 ## Notinha musical que sobe de um lado da cabeça e some (bolinha, haste e bandeirinha).
@@ -932,6 +974,11 @@ func _soltar_nota() -> void:
 ## pés até o chão: inimigos levam dano (a imunidade curta deles dá o ritmo), flores e tochas acendem.
 func _atualizar_lasers() -> void:
 	_anel_laser.visible = flutuando
+	if flutuando != _som_laser.playing:
+		if flutuando:
+			_som_laser.play()
+		else:
+			_som_laser.stop()
 	# Os olhos acompanham o laser lá embaixo, e os LEDs das costas mostram o voo que resta.
 	robo.olhando = Vector2(0, -0.035) if flutuando and not pouso_suave else Vector2.ZERO
 	robo.carga(_flutuar_restante / tempo_flutuar)

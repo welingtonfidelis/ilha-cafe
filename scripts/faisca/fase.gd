@@ -252,6 +252,7 @@ func _pegar(corpo: Node3D, area: Area3D) -> void:
 		pegas += 1
 	estrela_pega.emit(pegas, total_estrelas())
 	(corpo as Jogador).robo.expressao("feliz", 0.8)
+	Sfx.play(self, "estrelinha", 0.0, 0.1)
 	var tw := create_tween()
 	tw.tween_property(area, "scale", Vector3.ONE * 1.6, 0.1)
 	tw.tween_property(area, "scale", Vector3.ONE * 0.01, 0.12)
