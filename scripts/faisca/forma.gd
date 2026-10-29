@@ -118,36 +118,31 @@ static func ovo(raios: Vector3, afina := 0.15, aneis := 28, gomos := 48) -> Arra
 	return st.commit()
 
 
-## Dedo de garra: tubo que sai da origem em +X e curva para -Y (um arco de `curva` radianos no
-## comprimento todo), afinando da base para a ponta, que é arredondada. `de` e `ate` (0 a 1)
-## recortam um trecho, para pintar a ponta de outra cor; a base fica aberta (vai escondida
-## dentro da mão) e a ponta só fecha quando `ate` = 1.
-static func garra(comprimento: float, raio_base: float, raio_ponta: float, curva: float, de := 0.0, ate := 1.0, aneis := 14, gomos := 20) -> ArrayMesh:
-	var aneis_tampa := 6 if ate >= 1.0 else 0
-	var grade := []
-	for i in aneis + aneis_tampa + 1:
-		var t := lerpf(de, ate, minf(float(i) / aneis, 1.0))
-		var a := curva * t
-		var centro := Vector3(sin(a), cos(a) - 1.0, 0) * (comprimento / curva) if curva > 0.0001 else Vector3(comprimento * t, 0, 0)
-		var frente := Vector3(cos(a), -sin(a), 0)
-		var dentro := Vector3(sin(a), cos(a), 0)
-		var raio := lerpf(raio_base, raio_ponta, t)
-		var tampa := 0.0
-		if i > aneis:
-			tampa = PI / 2.0 * (i - aneis) / aneis_tampa
-			centro += frente * raio * sin(tampa)
-			raio *= cos(tampa)
+## Tubo fechado de raio `raio` que passa pelos `pontos` (um laço, sem repetir o primeiro no fim). O anel
+## de cada ponto fica de frente para a tangente; o "para cima" de cada anel vem do anterior, para o tubo
+## não torcer.
+static func tubo_fechado(pontos: PackedVector3Array, raio: float, gomos := 16) -> ArrayMesh:
+	var n := pontos.size()
+	var aneis := []
+	var cima := Vector3.ZERO
+	for i in n + 1:
+		var k := i % n
+		var tangente := (pontos[(k + 1) % n] - pontos[(k - 1 + n) % n]).normalized()
+		if cima == Vector3.ZERO:
+			cima = Vector3(0, 0, 1) if absf(tangente.z) < 0.9 else Vector3(1, 0, 0)
+		var lado := tangente.cross(cima).normalized()
+		cima = lado.cross(tangente).normalized()
 		var anel := []
 		for j in gomos + 1:
-			var phi := TAU * j / gomos
-			var radial := dentro * cos(phi) + Vector3(0, 0, 1) * sin(phi)
-			anel.append([centro + radial * raio, (radial * cos(tampa) + frente * sin(tampa)).normalized()])
-		grade.append(anel)
+			var a := TAU * j / gomos
+			var radial := cima * cos(a) + lado * sin(a)
+			anel.append([pontos[k] + radial * raio, radial])
+		aneis.append(anel)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in grade.size() - 1:
+	for i in n:
 		for j in gomos:
-			var q: Array = [grade[i][j], grade[i + 1][j], grade[i + 1][j + 1], grade[i][j + 1]]
+			var q: Array = [aneis[i][j], aneis[i + 1][j], aneis[i + 1][j + 1], aneis[i][j + 1]]
 			for tri in [[q[0], q[1], q[2]], [q[0], q[2], q[3]]]:
 				var fora: Vector3 = tri[0][1] + tri[1][1] + tri[2][1]
 				# Na Godot a face da frente é a de giro horário visto de fora.

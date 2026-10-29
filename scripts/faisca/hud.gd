@@ -24,31 +24,49 @@ var _tempo_dica := 0.0
 
 func _ready() -> void:
 	layer = 5
+	# Corações, estrelinhas e vaga-lumes no canto de cima à direita, no mesmo lugar e tamanho dos corações e
+	# das moedas das crianças (pedido do usuário em 2026-10-29: "padronizar o hud entre os personagens").
+	var canto := VBoxContainer.new()
+	canto.anchor_left = 1.0
+	canto.anchor_right = 1.0
+	# O coração da direita fica com o meio a 36 px da borda e a 34 px do topo, como o das crianças.
+	canto.offset_right = -17
+	canto.offset_top = 14
+	canto.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	canto.add_theme_constant_override("separation", 4)
+	canto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(canto)
 	var linha := HBoxContainer.new()
-	linha.position = Vector2(28, 22)
-	linha.add_theme_constant_override("separation", 10)
-	add_child(linha)
+	linha.size_flags_horizontal = Control.SIZE_SHRINK_END
+	linha.add_theme_constant_override("separation", 8)
+	# Na ilha os corações dele somem (ficam os das crianças, no mesmo lugar): a linha guarda a altura para as
+	# estrelinhas não subirem por cima deles.
+	linha.custom_minimum_size = Vector2(0, 38)
+	canto.add_child(linha)
 	for i in Jogador.VIDA_MAX:
 		var c := IconeCoracao.new()
-		c.custom_minimum_size = Vector2(48, 48)
+		c.custom_minimum_size = Vector2(38, 38)
 		linha.add_child(c)
 		_coracoes.append(c)
-	var vao := Control.new()
-	vao.custom_minimum_size = Vector2(18, 0)
-	linha.add_child(vao)
+	# O número fica à esquerda da estrela, como o das moedas.
+	var estrelas := HBoxContainer.new()
+	estrelas.size_flags_horizontal = Control.SIZE_SHRINK_END
+	estrelas.add_theme_constant_override("separation", 8)
+	canto.add_child(estrelas)
+	_contador = _rotulo(32)
+	estrelas.add_child(_contador)
 	var estrela := IconeEstrela.new()
-	estrela.custom_minimum_size = Vector2(48, 48)
-	linha.add_child(estrela)
-	_contador = _rotulo(38)
-	linha.add_child(_contador)
+	estrela.custom_minimum_size = Vector2(38, 38)
+	estrela.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	estrelas.add_child(estrela)
 
 	var luzes := HBoxContainer.new()
+	luzes.size_flags_horizontal = Control.SIZE_SHRINK_END
 	luzes.add_theme_constant_override("separation", 6)
-	luzes.position = Vector2(28, 82)
-	add_child(luzes)
+	canto.add_child(luzes)
 	for i in 3:
 		var v := IconeVagaLume.new()
-		v.custom_minimum_size = Vector2(34, 34)
+		v.custom_minimum_size = Vector2(32, 32)
 		luzes.add_child(v)
 		_luzes.append(v)
 	_montar_balao()

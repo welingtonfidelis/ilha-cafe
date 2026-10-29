@@ -24,6 +24,9 @@ signal vida_mudou(vida: int)
 @export var tempo_memoria_pulo := 0.12
 ## Era 0,75 s; o usuário pediu um voo um pouco mais longo em 2026-10-29.
 @export var tempo_flutuar := 1.0
+## Empurrãozinho para cima quando o laser dos pés liga (pedido do usuário em 2026-10-29: "um pequeno impulso pra
+## cima, sem exageros"): uns 30 cm, uma vez só por pulo (soltar e apertar de novo não dá outro).
+@export var impulso_laser := 4.0
 @export var sensibilidade_mouse := 0.0025
 @export var velocidade_analogico := Vector2(3.0, 2.0)
 @export var vibracao := true
@@ -89,6 +92,7 @@ var forcar_golpe := false
 var _coiote := 0.0
 var _memoria_pulo := 0.0
 var _flutuar_restante := 0.0
+var _impulso_usado := false
 var _pulou := false
 var _cortou_pulo := false
 var _decolando := 0.0
@@ -268,6 +272,7 @@ func _physics_process(delta: float) -> void:
 		_pulou = false
 		_flutuar_restante = tempo_flutuar
 		_giro_usado = false
+		_impulso_usado = false
 	else:
 		_coiote -= delta
 	_memoria_pulo -= delta
@@ -290,6 +295,9 @@ func _physics_process(delta: float) -> void:
 		if pode_flutuar:
 			flutuando = true
 			_flutuar_restante -= delta
+			if not _impulso_usado:
+				_impulso_usado = true
+				velocity.y = maxf(velocity.y, impulso_laser)
 			velocity.y = lerpf(velocity.y, 0.4, 1.0 - exp(-12.0 * delta))
 		else:
 			var g := gravidade * (gravidade_queda if velocity.y < 0.0 else 1.0)
@@ -337,6 +345,7 @@ func teleportar(pos: Vector3) -> void:
 func receber_dano(de: Vector3) -> bool:
 	if _invencivel > 0.0 or _no_curto or not controle_ligado:
 		return false
+	robo.expressao("dor", 0.9)
 	_perder_coracao()
 	var empurrao := global_position - de
 	empurrao.y = 0.0
@@ -356,6 +365,7 @@ func levar_golpe_na_ilha(de: Vector3, tempo: float) -> void:
 	velocity = empurrao * 7.0 + Vector3.UP * 5.0
 	golpe_atual = -1
 	_invencivel = tempo
+	robo.expressao("dor", 0.9)
 	_tremer(0.6, 0.8, 0.25)
 
 
@@ -365,6 +375,7 @@ func curar() -> bool:
 		return false
 	vida += 1
 	vida_mudou.emit(vida)
+	robo.expressao("coracao", 1.0)
 	return true
 
 
@@ -379,6 +390,7 @@ func lancar(forca: float) -> void:
 	_giro_usado = false
 	_decolando = 0.2
 	_tremer(0.3, 0.3, 0.1)
+	robo.expressao("surpreso", 0.7)
 
 
 func _perder_coracao() -> void:
@@ -402,6 +414,7 @@ func cair() -> void:
 ## Caiu nas nuvens: volta no último posto e perde um coração (se for o último, o curto é lá).
 func _caiu() -> void:
 	voltar_ao_inicio()
+	robo.expressao("surpreso", 1.0)
 	_perder_coracao()
 
 
@@ -412,6 +425,7 @@ func _dar_curto() -> void:
 	velocity = Vector3.ZERO
 	golpe_atual = -1
 	girando = 0.0
+	robo.expressao("tonto", 1.8)
 	_fumacinha()
 	await get_tree().create_timer(1.3).timeout
 	voltar_ao_inicio()
@@ -470,6 +484,7 @@ func _golpear(no_chao: bool, dir: Vector3) -> void:
 			_giro_usado = true
 			_giro_acertou = false
 			velocity.y = maxf(velocity.y, 3.0)
+			robo.expressao("bravo", 0.6)
 		return
 	if golpe_atual >= 0 and _golpe_tempo < GOLPES[golpe_atual].duracao * 0.6:
 		_golpe_guardado = true
@@ -494,6 +509,7 @@ func _iniciar_golpe(i: int, dir: Vector3) -> void:
 		visual.rotation.y = atan2(dir.x, dir.z)
 	var g: Dictionary = GOLPES[i]
 	robo.animar_desde(g.anim, g.inicio, 0.05, g.ritmo)
+	robo.expressao("bravo", g.duracao + 0.4)
 
 
 func _atualizar_golpes(delta: float, dir: Vector3) -> void:
@@ -596,6 +612,9 @@ func _frente() -> Vector3:
 ## pés até o chão: inimigos levam dano (a imunidade curta deles dá o ritmo), flores e tochas acendem.
 func _atualizar_lasers() -> void:
 	_anel_laser.visible = flutuando
+	# Os olhos acompanham o laser lá embaixo, e os LEDs das costas mostram o voo que resta.
+	robo.olhando = Vector2(0, -0.035) if flutuando and not pouso_suave else Vector2.ZERO
+	robo.carga(_flutuar_restante / tempo_flutuar)
 	if not flutuando:
 		for i in 2:
 			_feixes[i].visible = false

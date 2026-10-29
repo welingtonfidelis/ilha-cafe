@@ -1,19 +1,34 @@
 class_name Robo
 extends Node3D
-## Faísca: robozinho minimalista montado por código no esqueleto Rig_Medium do KayKit (o mesmo
-## dos Protagonists). Cada peça fica presa a um osso, então as animações do KayKit servem nele.
-## Capacete branco quadrado e arredondado com tela preta e olhos de LED, orelhas laranja,
-## tronco em forma de ovo laranja com a barriga branca, braços e pernas finos e brancos com
-## juntas cinza, garrinhas de três pontas e botas brancas de sola laranja. As medidas abaixo
-## estão no espaço do esqueleto em T-pose, olhando para +Z, com o chão em y = 0.
+## Faísca: robozinho montado por código no esqueleto Rig_Medium do KayKit (o mesmo dos
+## Protagonists). Cada peça fica presa a um osso, então as animações do KayKit servem nele.
+## Capacete branco quadrado e arredondado com a tela de vidro e olhos de LED, friso e orelhas
+## laranja. Desde 2026-10-29 o corpo segue o jeito do Astro Bot (pedido do usuário), com as cores e
+## os detalhes do Faísca: tronco em feijão branco com placa laranja e estrela no peito, braços e
+## coxas gordinhos e redondos, antebraço com anel prateado e faixa laranja, mão de luva e pernas que
+## afinam até uma ponta laranja, sem bota. As medidas abaixo estão no espaço do esqueleto em T-pose,
+## olhando para +Z, com o chão em y = 0.
+## A tela usa o shader `rosto_led.gdshader` (pedido do usuário: "viseira brilhante com olhos de LED
+## que mudam de expressão"): o Faísca pisca, dá olhadinhas parado e muda de cara (ver `expressao`).
 
 const RIG := "res://assets/characters/protagonists/Protagonist_B.glb"
 
 ## Mão relaxada: um pouquinho dobrada. Golpes e comemoração fecham o punho (1.0).
 const PUNHO_SOLTO := 0.1
-## Garrinhas: quanto as pontas abrem com a mão solta e quanto passam do reto ao fechar (graus).
-const PINCA_ABERTA := 22.0
-const PINCA_FECHADA := 16.0
+## Dedos da luva: quanto dobram com a mão solta e com o punho fechado (graus).
+const DEDO_SOLTO := 12.0
+const DEDO_FECHADO := 105.0
+const POLEGAR_FECHADO := 70.0
+## Tronco: a Forma.ovo branca (raios, afina e altura do meio). As placas do peito e das costas seguem a curva dele.
+const TRONCO := Vector3(0.31, 0.34, 0.27)
+const TRONCO_AFINA := -0.13
+const TRONCO_Y := 0.86
+## Caras da tela (o número é a `forma` do shader). "piscando" é a normal de olhos fechados.
+const EXPRESSOES := {"normal": 0, "piscando": 0, "feliz": 1, "surpreso": 2, "bravo": 3, "dor": 4, "tonto": 5, "coracao": 6}
+const COR_LED := Color("8ff3ff")
+const COR_CORACAO := Color("ff7eb6")
+## Duração de uma piscada (fecha e abre). A troca de cara acontece no meio, de olho fechado.
+const PISCADA := 0.16
 
 var esqueleto: Skeleton3D
 var mat := {}
@@ -21,9 +36,24 @@ var _rig: Node3D
 var _anexos := {}
 var _ap: AnimationPlayer
 var _jatos: Array[MeshInstance3D] = []
-## Pontas das garrinhas: [nó que gira, +1 nas de cima, -1 na de baixo].
-var _pincas := []
+## Dedos da luva: [nó que gira, eixo (espaço da T-pose), ângulo solto, ângulo fechado].
+var _dedos := []
 var _punho := PUNHO_SOLTO
+## LEDs das costas (o voo que resta).
+var _carga: Array[MeshInstance3D] = []
+## Para onde os olhos olham na tela (metros); quem controla o Faísca pode mandar (o laser olha para baixo).
+var olhando := Vector2.ZERO
+## Sem piscadas e olhadinhas sozinhas (fotos do estúdio).
+var rosto_parado := false
+var _expr := "normal"
+var _expr_pedida := "normal"
+var _expr_resta := 0.0
+var _piscada := -1.0
+var _prox_piscada := 2.0
+var _olhar := Vector2.ZERO
+var _olhar_alvo := Vector2.ZERO
+var _prox_olhada := 2.5
+var _feliz_da_festa := false
 
 
 func _ready() -> void:
@@ -34,6 +64,7 @@ func _ready() -> void:
 		m.queue_free()
 	_criar_materiais()
 	_montar()
+	_aplicar_expressao("normal")
 
 
 ## Raiz do .glb do esqueleto, onde as animações ligam (o Player vestido de Faísca usa a árvore de animação dele).
@@ -41,7 +72,7 @@ func rig() -> Node3D:
 	return _rig
 
 
-## Sentado no kart só aparece da cintura para cima: as pernas e as botas somem.
+## Sentado no kart só aparece da cintura para cima: as pernas e as pontas dos pés somem.
 func esconder_pernas() -> void:
 	for chave: String in _anexos:
 		if chave.contains("leg") or chave.contains("foot"):
@@ -63,9 +94,14 @@ func posar(anim: String, tempo: float) -> void:
 
 
 ## Toca uma animação, misturando com a anterior. Repetir o pedido a cada quadro não recomeça.
+## As de festa (comemorar, acenar) deixam a cara feliz enquanto duram.
 func animar(anim: String, mistura := 0.15, ritmo := 1.0) -> void:
 	var ap := _player()
 	ap.speed_scale = ritmo
+	var festa := anim.begins_with("festa/")
+	if festa != _feliz_da_festa:
+		_feliz_da_festa = festa
+		expressao("feliz" if festa else "normal")
 	if ap.current_animation != anim or not ap.is_playing():
 		ap.play(anim, mistura)
 
@@ -85,6 +121,32 @@ func ponta_do_pe(i: int) -> Vector3:
 
 func animacao_atual() -> String:
 	return _ap.current_animation if _ap else ""
+
+
+## Quanto voo ainda resta (0 a 1): os três LEDs das costas apagam um a um enquanto ele flutua.
+func carga(v: float) -> void:
+	for i in _carga.size():
+		_carga[i].material_override = mat.led_costas if v > i / 3.0 + 0.001 else mat.led_apagado
+
+
+## Muda a cara da tela (ver EXPRESSOES). Com `duracao`, volta para a normal depois desse tempo.
+## A troca vem com uma piscada; `ja` troca na hora, sem piscar.
+func expressao(nome: String, duracao := 0.0, ja := false) -> void:
+	_expr_resta = duracao
+	if ja:
+		_expr_pedida = nome
+		_piscada = -1.0
+		_aplicar_expressao(nome)
+		return
+	if nome == _expr_pedida:
+		return
+	_expr_pedida = nome
+	if _piscada < 0.0:
+		_piscada = 0.0
+
+
+func expressao_atual() -> String:
+	return _expr_pedida
 
 
 ## Jatos de luz debaixo dos tênis. Desde 2026-10-29 o voo mostra só o laser (pedido do usuário) e o
@@ -109,12 +171,63 @@ func _process(delta: float) -> void:
 	# Mão fechada nos golpes e na comemoração.
 	var fechado: bool = anim.begins_with("luta/") or anim == "festa/Cheering"
 	_punho = move_toward(_punho, 1.0 if fechado else PUNHO_SOLTO, delta * 10.0)
-	for p in _pincas:
-		p[0].rotation.z = p[1] * deg_to_rad(lerpf(PINCA_ABERTA, -PINCA_FECHADA, _punho))
+	for d in _dedos:
+		d[0].basis = Basis(d[1], lerpf(d[2], d[3], _punho))
+	_rosto(delta)
 	if _jatos.size() > 0 and _jatos[0].visible:
 		mat.jato.emission_energy_multiplier = 3.0 + randf() * 1.5
 		for j in _jatos:
 			j.scale = Vector3(1.0, 0.85 + randf() * 0.3, 1.0)
+
+
+## Piscadas, a volta para a cara normal e as olhadinhas para os lados quando está parado.
+func _rosto(delta: float) -> void:
+	if _expr_resta > 0.0:
+		_expr_resta -= delta
+		if _expr_resta <= 0.0:
+			expressao("feliz" if _feliz_da_festa else "normal")
+	var abertura := 1.0
+	if _piscada >= 0.0:
+		_piscada += delta
+		var t := _piscada / PISCADA
+		if t >= 0.5 and _expr != _expr_pedida:
+			_aplicar_expressao(_expr_pedida)
+		abertura = absf(1.0 - 2.0 * minf(t, 1.0))
+		if t >= 1.0:
+			_piscada = -1.0
+	elif not rosto_parado and _expr in ["normal", "bravo", "surpreso"]:
+		_prox_piscada -= delta
+		if _prox_piscada <= 0.0:
+			_piscada = 0.0
+			_prox_piscada = randf_range(2.0, 5.0)
+	if _expr == "piscando":
+		abertura = 0.0
+	if olhando != Vector2.ZERO:
+		_olhar_alvo = olhando
+	elif rosto_parado or _expr != "normal" or not animacao_atual().begins_with("geral/Idle"):
+		_olhar_alvo = Vector2.ZERO
+	else:
+		_prox_olhada -= delta
+		if _prox_olhada <= 0.0:
+			_prox_olhada = randf_range(1.2, 3.5)
+			_olhar_alvo = Vector2.ZERO if randf() < 0.4 else Vector2(randf_range(-0.04, 0.04), randf_range(-0.015, 0.02))
+	# Olho mexe rápido, como olhadinha de verdade.
+	_olhar = _olhar.lerp(_olhar_alvo, 1.0 - exp(-18.0 * delta))
+	mat.rosto.set_shader_parameter("abertura", maxf(abertura, 0.06))
+	mat.rosto.set_shader_parameter("olhar", _olhar)
+	mat.led_orelha.emission_energy_multiplier = 1.4 + 0.7 * sin(Time.get_ticks_msec() * 0.003)
+
+
+func _aplicar_expressao(nome: String) -> void:
+	_expr = nome
+	mat.rosto.set_shader_parameter("forma", EXPRESSOES.get(nome, 0))
+	var cor := COR_CORACAO if nome == "coracao" else COR_LED
+	mat.rosto.set_shader_parameter("cor_led", cor)
+	for m: StandardMaterial3D in [mat.led_orelha, mat.led_costas]:
+		m.albedo_color = cor
+		m.emission = cor
+	if nome == "piscando":
+		mat.rosto.set_shader_parameter("abertura", 0.06)
 
 
 func _player() -> AnimationPlayer:
@@ -124,34 +237,61 @@ func _player() -> AnimationPlayer:
 	return _ap
 
 
-## Garrinha de três pontas: duas em cima (frente e trás) e uma embaixo, curvadas umas para as
-## outras, brancas com a ponta laranja. `boca` é onde as pontas nascem, `d` para onde a mão
-## aponta na T-pose e `tamanho` o raio da mão. Cada ponta gira numa dobradiça presa ao osso, e
-## `_punho` abre e fecha (ver _process).
-func _garra(osso: String, sk: Skeleton3D, boca: Vector3, d: Vector3, tamanho: float) -> void:
-	var eixos := Basis(d, Vector3.UP, d.cross(Vector3.UP))
-	var comprimento := tamanho * 1.7
-	var branco := Forma.garra(comprimento, tamanho * 0.4, tamanho * 0.3, 0.85, 0.0, 0.62)
-	var ponta := Forma.garra(comprimento, tamanho * 0.4, tamanho * 0.3, 0.85, 0.6, 1.0)
-	for p in [[Vector3(0, 0.42, 0.38), 1.0], [Vector3(0, 0.42, -0.38), 1.0], [Vector3(0, -0.45, 0), -1.0]]:
-		var dobradica := _no_preso(osso, Transform3D(eixos, boca + eixos * (p[0] * tamanho)), sk)
+## Ponto do tronco na altura `y`, no meio (x = 0), na frente (`frente` = 1) ou nas costas (-1), com a
+## normal da superfície ali e o giro em X que deita uma placa como ela. O tronco é a Forma.ovo de
+## TRONCO: na altura y, o raio para a frente é TRONCO.z (1 + afina sen) cos.
+func _no_tronco(y: float, frente: float) -> Array:
+	var fundo := func(yy: float) -> float:
+		var sn := clampf((yy - TRONCO_Y) / TRONCO.y, -1.0, 1.0)
+		return TRONCO.z * (1.0 + TRONCO_AFINA * sn) * sqrt(1.0 - sn * sn)
+	var inclinacao: float = (fundo.call(y + 0.01) - fundo.call(y - 0.01)) / 0.02
+	var normal := Vector3(0, -inclinacao, frente).normalized()
+	return [Vector3(0, y, fundo.call(y) * frente), normal, atan2(-normal.y * frente, normal.z * frente)]
+
+
+## Placa laranja deitada no tronco (ver _no_tronco), saindo 2 cm para fora no meio.
+func _placa(no: Array, raios: Vector3) -> void:
+	_peca("chest", Forma.superelipsoide(raios, 0.8, 0.8), mat.laranja, no[0] + no[1] * (0.02 - raios.z), Vector3(no[2], 0, 0))
+
+
+## Mão de luva: palma redonda, três dedos gordinhos e o polegar na frente. Cada dedo gira numa dobradiça
+## presa ao osso da mão; `_punho` dobra os dedos para baixo da palma (as palmas ficam para baixo na
+## T-pose) e o polegar por baixo (ver _process).
+func _mao(osso: String, lado: float) -> void:
+	_peca(osso, Forma.superelipsoide(Vector3(0.07, 0.062, 0.088), 0.75, 0.75), mat.branco, Vector3(0.845 * lado, 1.107, 0))
+	for z in [-0.052, 0.0, 0.052]:
+		var dobradica := _no_preso(osso, Transform3D(Basis.IDENTITY, Vector3(0.895 * lado, 1.1, z)), esqueleto)
 		var giro := Node3D.new()
 		dobradica.add_child(giro)
-		_pincas.append([giro, p[1]])
-		# A de baixo é a mesma ponta virada de cabeça para baixo, curvando para cima.
-		var rot := Vector3(PI, 0, 0) if p[1] < 0.0 else Vector3.ZERO
-		_filho(giro, branco, mat.branco, Vector3.ZERO, rot)
-		_filho(giro, ponta, mat.laranja, Vector3.ZERO, rot)
+		_dedos.append([giro, Vector3(0, 0, -lado), deg_to_rad(DEDO_SOLTO), deg_to_rad(DEDO_FECHADO)])
+		_filho(giro, _capsula(0.03, 0.115 if z == 0.0 else 0.1), mat.branco, Vector3(0.035 * lado, 0, 0), Vector3(0, 0, PI / 2))
+	var base := _no_preso(osso, Transform3D(Basis.IDENTITY, Vector3(0.83 * lado, 1.095, 0.07)), esqueleto)
+	var polegar := Node3D.new()
+	base.add_child(polegar)
+	_dedos.append([polegar, Vector3(1, 0, 0), deg_to_rad(DEDO_SOLTO), deg_to_rad(POLEGAR_FECHADO)])
+	# Aponta para a frente e um pouco para o lado dos dedos.
+	_filho(polegar, _capsula(0.032, 0.1), mat.branco, Vector3(0.019 * lado, 0, 0.035), Vector3(PI / 2, 0.5 * lado, 0))
 
 
 func _criar_materiais() -> void:
 	mat.branco = _plastico(Color("f4f5f9"), 0.32, 0.7)
-	mat.visor = _plastico(Color("0c0e16"), 0.08, 1.0)
-	mat.visor.metallic = 0.25
 	mat.cinza = _plastico(Color("3e4352"), 0.35, 0.4)
 	mat.cinza.metallic = 0.3
 	mat.laranja = _plastico(Color("ff7a22"), 0.45, 0.5)
-	mat.olho = _led(Color("8ff3ff"), 2.2)
+	# Prata meio metálica: bem metálico, sem céu para refletir (estúdio, sala escura), fica preto.
+	mat.cromo = _plastico(Color("dfe3ec"), 0.24, 0.8)
+	mat.cromo.metallic = 0.55
+	mat.rosto = ShaderMaterial.new()
+	mat.rosto.shader = preload("res://scripts/faisca/rosto_led.gdshader")
+	mat.led_orelha = _led(COR_LED, 1.6)
+	mat.led_costas = _led(COR_LED, 1.8)
+	mat.led_apagado = _plastico(Color("2a3140"), 0.3, 0.6)
+	mat.estrela = _plastico(Color("ffc93a"), 0.3, 0.8)
+	mat.estrela.emission_enabled = true
+	mat.estrela.emission = Color("ffb21a")
+	mat.estrela.emission_energy_multiplier = 0.55
+	# A Forma.estrela tem as faces viradas para dentro; sem isso, na barriga só aparece o contorno.
+	mat.estrela.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.jato = _led(Color("8ff3ff"), 3.5)
 	mat.jato.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.jato.albedo_color.a = 0.75
@@ -160,43 +300,97 @@ func _criar_materiais() -> void:
 func _montar() -> void:
 	# ----- cabeça: capacete branco quadrado e arredondado, tela preta, olhos e orelhas -----
 	_peca("head", Forma.superelipsoide(Vector3(0.56, 0.47, 0.5), 0.72, 0.72), mat.branco, Vector3(0, 1.72, 0))
-	_peca("head", Forma.superelipsoide(Vector3(0.44, 0.29, 0.24), 0.6, 0.6), mat.visor, Vector3(0, 1.68, 0.3))
+	# A tela desenha os olhos (rosto_led.gdshader); a moldura laranja aparece só como um friso em volta.
+	_peca("head", Forma.superelipsoide(Vector3(0.44, 0.29, 0.24), 0.6, 0.6, -PI / 2.0, 40, 96), mat.rosto, Vector3(0, 1.68, 0.3))
+	_peca("head", Forma.tubo_fechado(_borda_da_tela(), 0.02), mat.laranja, Vector3.ZERO)
 	for lado in [-1.0, 1.0]:
-		_peca("head", _capsula(0.058, 0.21), mat.olho, Vector3(0.14 * lado, 1.69, 0.535), Vector3.ZERO, Vector3(1, 1, 0.35))
-		_peca("head", _cilindro(0.14, 0.14, 0.1), mat.laranja, Vector3(0.555 * lado, 1.7, 0), Vector3(0, 0, PI / 2))
-		_peca("head", _cilindro(0.07, 0.07, 0.04), mat.branco, Vector3(0.61 * lado, 1.7, 0), Vector3(0, 0, PI / 2))
+		# Orelhas: disco laranja de quina redonda, tampa branca e um LED que respira no meio.
+		_peca("head", _disco(0.14, 0.11), mat.laranja, Vector3(0.555 * lado, 1.7, 0), Vector3(0, 0, PI / 2))
+		_peca("head", _disco(0.08, 0.05), mat.branco, Vector3(0.615 * lado, 1.7, 0), Vector3(0, 0, PI / 2))
+		_peca("head", _disco(0.032, 0.03), mat.led_orelha, Vector3(0.638 * lado, 1.7, 0), Vector3(0, 0, PI / 2))
+	# Grade de ventilação atrás do capacete (a câmera fica atrás dele quase o tempo todo).
+	for i in 3:
+		_peca("head", _capsula(0.02, 0.2), mat.cinza, Vector3(0, 1.62 + i * 0.065, -0.494), Vector3(0, 0, PI / 2))
 
-	# ----- tronco: ovo laranja com a barriga branca; pescoço e quadril de junta cinza -----
-	_peca("chest", _cilindro(0.1, 0.1, 0.14), mat.cinza, Vector3(0, 1.22, 0))
-	_peca("chest", Forma.ovo(Vector3(0.29, 0.31, 0.24), 0.12), mat.laranja, Vector3(0, 0.88, 0))
-	_peca("chest", Forma.superelipsoide(Vector3(0.17, 0.19, 0.08)), mat.branco, Vector3(0, 0.83, 0.17))
-	_peca("hips", _esfera(0.11), mat.cinza, Vector3(0, 0.63, 0))
+	# ----- tronco: feijão branco mais largo embaixo, placa laranja com a estrela na frente e a das
+	# luzes de voo atrás; pescoço cromado. O quadril branco tapa a emenda quando o tronco dobra. -----
+	_peca("chest", _disco(0.09, 0.09), mat.cromo, Vector3(0, 1.215, 0))
+	_peca("chest", Forma.ovo(TRONCO, TRONCO_AFINA), mat.branco, Vector3(0, TRONCO_Y, 0))
+	_peca("hips", Forma.superelipsoide(Vector3(0.25, 0.14, 0.21)), mat.branco, Vector3(0, 0.6, 0))
+	# As placas deitam como a superfície do tronco na altura delas: ele é mais largo embaixo, então
+	# a frente vai para trás conforme sobe, e uma placa reta afundava na parte de baixo.
+	var peito := _no_tronco(0.975, 1.0)
+	_placa(peito, Vector3(0.18, 0.14, 0.1))
+	# A marca dele: uma estrelinha dourada acesa no peito (é o acendedor de estrelas).
+	_peca("chest", Forma.estrela(0.08, 0.036, 0.04), mat.estrela, peito[0] + peito[1] * 0.014, Vector3(peito[2], 0, 0))
+	# Costas: placa laranja com três LEDs que mostram quanto voo ainda resta (ver `carga`).
+	var costas := _no_tronco(0.95, -1.0)
+	_placa(costas, Vector3(0.15, 0.14, 0.1))
+	for i in 3:
+		var led: Vector3 = costas[0] + costas[1] * 0.017 + Vector3((i - 1) * 0.06, 0, 0)
+		_carga.append(_peca("chest", _disco(0.024, 0.02), mat.led_costas, led, Vector3(costas[2] + PI / 2, 0, 0)))
 
 	for lado in [-1.0, 1.0]:
 		var s := ".l" if lado > 0 else ".r"
-		# ----- braços finos: ombro, cotovelo e pulso cinza, punho branco e a garrinha -----
-		# O osso "wrist" não gira nas animações; quem gira é o "hand", em torno de x = 0,787.
-		# Por isso o antebraço vai até lá e a junta cinza fica bem no centro do giro: o punho
-		# gira em volta dela sem descolar do braço.
-		_peca("upperarm" + s, _esfera(0.075), mat.cinza, Vector3(0.235 * lado, 1.107, 0))
-		_peca("upperarm" + s, _capsula(0.062, 0.25), mat.branco, Vector3(0.345 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
-		_peca("lowerarm" + s, _esfera(0.062), mat.cinza, Vector3(0.454 * lado, 1.107, 0))
-		_peca("lowerarm" + s, _capsula(0.066, 0.26), mat.branco, Vector3(0.6 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
-		_peca("lowerarm" + s, _cilindro(0.07, 0.07, 0.04), mat.cinza, Vector3(0.735 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
-		_peca("hand" + s, _esfera(0.06), mat.cinza, Vector3(0.787 * lado, 1.107, 0))
-		_peca("hand" + s, Forma.superelipsoide(Vector3(0.075, 0.092, 0.092), 0.7, 0.7), mat.branco, Vector3(0.86 * lado, 1.107, 0))
-		_garra("hand" + s, esqueleto, Vector3(0.905 * lado, 1.107, 0), Vector3(lado, 0, 0), 0.1)
-		# ----- pernas finas e botas brancas de sola laranja -----
-		_peca("upperleg" + s, _esfera(0.07), mat.cinza, Vector3(0.171 * lado, 0.52, 0))
-		_peca("upperleg" + s, _capsula(0.066, 0.24), mat.branco, Vector3(0.171 * lado, 0.405, 0))
-		_peca("lowerleg" + s, _esfera(0.064), mat.cinza, Vector3(0.171 * lado, 0.292, 0.005))
-		_peca("lowerleg" + s, _capsula(0.068, 0.2), mat.branco, Vector3(0.171 * lado, 0.2, 0))
-		_peca("foot" + s, Forma.superelipsoide(Vector3(0.13, 0.1, 0.2), 0.65, 0.7), mat.branco, Vector3(0.171 * lado, 0.13, 0.04))
-		_peca("foot" + s, Forma.superelipsoide(Vector3(0.138, 0.034, 0.208), 0.6, 0.6), mat.laranja, Vector3(0.171 * lado, 0.034, 0.04))
-		var jato := _peca("foot" + s, _cilindro(0.11, 0.0, 0.4), mat.jato, Vector3(0.171 * lado, -0.2, 0.04))
+		# ----- braços gordinhos: ombro redondo, antebraço com anel cromado e faixa laranja, mão de luva -----
+		# O osso "wrist" não gira nas animações; quem gira é o "hand", em torno de x = 0,787. A faixa
+		# laranja vai até perto dali e a bola branca da mão fica no centro do giro.
+		_peca("upperarm" + s, _esfera(0.088), mat.branco, Vector3(0.22 * lado, 1.107, 0))
+		_peca("upperarm" + s, Forma.superelipsoide(Vector3(0.14, 0.085, 0.085)), mat.branco, Vector3(0.33 * lado, 1.107, 0))
+		_peca("lowerarm" + s, _esfera(0.074), mat.branco, Vector3(0.454 * lado, 1.107, 0))
+		_peca("lowerarm" + s, Forma.superelipsoide(Vector3(0.13, 0.078, 0.078)), mat.branco, Vector3(0.575 * lado, 1.107, 0))
+		_peca("lowerarm" + s, _disco(0.086, 0.035), mat.cromo, Vector3(0.635 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
+		_peca("lowerarm" + s, _disco(0.102, 0.085), mat.laranja, Vector3(0.7 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
+		_peca("hand" + s, _esfera(0.06), mat.branco, Vector3(0.787 * lado, 1.107, 0))
+		_mao("hand" + s, lado)
+		# ----- pernas: coxa redonda, canela que afina com faixa laranja e anel cromado, e a ponta
+		# laranja de onde sai o laser (sem bota). -----
+		_peca("upperleg" + s, _disco(0.07, 0.03), mat.cromo, Vector3(0.285 * lado, 0.47, 0), Vector3(0, 0, PI / 2))
+		_peca("upperleg" + s, Forma.ovo(Vector3(0.124, 0.155, 0.124), 0.12), mat.branco, Vector3(0.171 * lado, 0.41, 0))
+		_peca("lowerleg" + s, _esfera(0.085), mat.branco, Vector3(0.171 * lado, 0.292, 0.004))
+		_peca("lowerleg" + s, Forma.ovo(Vector3(0.094, 0.12, 0.094), 0.1), mat.branco, Vector3(0.171 * lado, 0.24, 0))
+		_peca("lowerleg" + s, _disco(0.084, 0.055), mat.laranja, Vector3(0.171 * lado, 0.165, -0.005))
+		_peca("foot" + s, _disco(0.074, 0.04), mat.cromo, Vector3(0.171 * lado, 0.122, -0.005))
+		_peca("foot" + s, Forma.ovo(Vector3(0.072, 0.07, 0.08), 0.22), mat.laranja, Vector3(0.171 * lado, 0.07, 0.008))
+		_peca("foot" + s, _disco(0.04, 0.012), mat.led_orelha, Vector3(0.171 * lado, 0.006, 0.008))
+		var jato := _peca("foot" + s, _cilindro(0.11, 0.0, 0.4), mat.jato, Vector3(0.171 * lado, -0.2, 0.008))
 		jato.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		jato.visible = false
 		_jatos.append(jato)
+
+
+## Emenda entre a tela e o capacete (onde a tela some dentro dele), para o friso laranja. As duas peças
+## são superelipsoides de expoentes iguais, então cada uma é |x/a|^n + |y/b|^n + |z/c|^n = 1. Para cada
+## direção na tela, anda do meio para fora pela frente dela até entrar no capacete.
+func _borda_da_tela() -> PackedVector3Array:
+	var tela := Vector3(0.44, 0.29, 0.24)
+	var nt := 2.0 / 0.6
+	var centro_tela := Vector3(0, 1.68, 0.3)
+	var capacete := Vector3(0.56, 0.47, 0.5)
+	var nc := 2.0 / 0.72
+	var centro_capacete := Vector3(0, 1.72, 0)
+	var frente := func(x: float, y: float) -> Vector3:
+		var resto := 1.0 - pow(absf(x / tela.x), nt) - pow(absf(y / tela.y), nt)
+		return centro_tela + Vector3(x, y, tela.z * pow(maxf(resto, 0.0), 1.0 / nt))
+	var dentro := func(p: Vector3) -> bool:
+		var d := (p - centro_capacete) / capacete
+		return pow(absf(d.x), nc) + pow(absf(d.y), nc) + pow(absf(d.z), nc) < 1.0
+	var pontos := PackedVector3Array()
+	for i in 120:
+		var a := TAU * i / 120.0
+		var dir := Vector2(cos(a), sin(a))
+		# Até onde a tela vai nessa direção (a borda da superelipse).
+		var limite := 1.0 / pow(pow(absf(dir.x / tela.x), nt) + pow(absf(dir.y / tela.y), nt), 1.0 / nt)
+		var fora := 0.0
+		var em := limite
+		for _k in 30:
+			var meio := (fora + em) / 2.0
+			if dentro.call(frente.call(dir.x * meio, dir.y * meio)):
+				em = meio
+			else:
+				fora = meio
+		pontos.append(frente.call(dir.x * fora, dir.y * fora))
+	return pontos
 
 
 ## Cria a peça já na posição da T-pose (espaço do Robo) e a prende no osso de `sk`
@@ -280,6 +474,11 @@ func _cilindro(raio_cima: float, raio_baixo: float, altura: float) -> CylinderMe
 	c.height = altura
 	c.radial_segments = 32
 	return c
+
+
+## Cilindro de quina redonda (em pé, no eixo Y): superelipsoide quase reta em cima e embaixo.
+func _disco(raio: float, altura: float) -> ArrayMesh:
+	return Forma.superelipsoide(Vector3(raio, altura / 2.0, raio), 0.3, 1.0, -PI / 2.0, 16, 32)
 
 
 func _esfera(raio: float) -> SphereMesh:
