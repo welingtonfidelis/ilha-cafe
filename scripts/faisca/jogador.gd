@@ -103,6 +103,7 @@ var _combo_janela := 0.0
 var _giro_usado := false
 var _giro_acertou := false
 var _invencivel := 0.0
+var _ultima_queda := -10000
 var _no_curto := false
 var _feixes: Array[Node3D] = []
 var _impactos: Array[MeshInstance3D] = []
@@ -386,6 +387,16 @@ func _perder_coracao() -> void:
 	vida_mudou.emit(vida)
 	if vida <= 0:
 		_dar_curto()
+
+
+## Caiu na água da pia (ou em outra coisa que conta como cair): o mesmo que cair nas nuvens.
+func cair() -> void:
+	# A água às vezes avisa duas vezes no mesmo mergulho: uma queda só por vez.
+	var agora := Time.get_ticks_msec()
+	if _no_curto or agora - _ultima_queda < 600:
+		return
+	_ultima_queda = agora
+	_caiu()
 
 
 ## Caiu nas nuvens: volta no último posto e perde um coração (se for o último, o curto é lá).

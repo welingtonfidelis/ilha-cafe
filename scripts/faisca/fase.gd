@@ -20,6 +20,8 @@ const PLATAFORMA := "res://assets/faisca/plataforma/"
 const FLORESTA := "res://assets/faisca/floresta/"
 ## Peças do Dungeon Pack (Túneis do Morro).
 const MASMORRA := "res://assets/faisca/masmorra/"
+## Peças do Restaurant Bits (a 2-1 Cozinha Gigante, ampliadas 8 vezes).
+const COZINHA := "res://assets/faisca/cozinha/"
 const CAMADA_JOGADOR := 1 << 1
 ## Camada do que o laser dos pés acende (flores de luz). O Faísca não esbarra nela. Na Ilha a camada 4
 ## é a dos pontos de impacto dos esqueletos e a 5 a dos moradores; esta é a 6.
@@ -74,6 +76,12 @@ var alavancas: Array[Alavanca] = []
 var grades: Array[Grade] = []
 var cristais: Array[Area3D] = []
 var bolotonas: Array[Bolotona] = []
+## E as da 2-1: tampas que pulam, rolos de macarrão, a pizza que gira, as bocas do fogão e a água da pia.
+var tampas: Array[TampaQuePula] = []
+var rolos: Array[RoloDeMassa] = []
+var pizzas: Array[PizzaGiratoria] = []
+var bocas: Array[BocaDoFogao] = []
+var aguas: Array[Area3D] = []
 
 var _moveis := []  # [corpo, origem, caminho, período, atraso]
 var _tempo := 0.0
@@ -279,22 +287,18 @@ func posto(pos: Vector3, giro := 0.0) -> Posto:
 ## Mola amarela: quem cai em cima vai lá para o alto (`forca` em m/s; 17 dá uns 6 m).
 func mola(pos: Vector3, forca := 17.0) -> Area3D:
 	var modelo := peca("spring_pad_yellow", pos, 0.0, 1.2)
-	var area := Area3D.new()
+	var area := AreaDeMola.new()
+	area.forca = forca
+	area.visual = modelo
+	area.escala_normal = Vector3.ONE * 1.2
+	area.amassado = Vector3(1.4, 0.7, 1.4)
 	area.position = pos + Vector3(0, 1.25, 0)
-	area.collision_layer = 0
-	area.collision_mask = CAMADA_JOGADOR
 	var cs := CollisionShape3D.new()
 	var caixa := BoxShape3D.new()
 	caixa.size = Vector3(1.6, 0.7, 1.6)
 	cs.shape = caixa
 	area.add_child(cs)
 	add_child(area)
-	area.body_entered.connect(func(corpo: Node3D):
-		if corpo is Jogador and corpo.velocity.y <= 1.0:
-			corpo.lancar(forca)
-			var tw := modelo.create_tween()
-			tw.tween_property(modelo, "scale", Vector3(1.4, 0.7, 1.4), 0.06)
-			tw.tween_property(modelo, "scale", Vector3.ONE * 1.2, 0.25).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT))
 	molas.append(area)
 	return area
 
@@ -449,10 +453,12 @@ func ponte_dos_botoes_pronta() -> bool:
 		return c.visible and c.position.distance_to(c.get_meta("lugar")) < 0.05)
 
 
-## Nuvem lilás que some um instante depois de pisada e volta depois de 3 s (`topo` em cima).
-func nuvem_que_some(topo: Vector3, raio := 1.6) -> NuvemQueSome:
+## Nuvem lilás que some um instante depois de pisada e volta depois de 3 s (`topo` em cima). Com `bolha`, é
+## uma bolha de sabão (a pia da 2-1).
+func nuvem_que_some(topo: Vector3, raio := 1.6, bolha := false) -> NuvemQueSome:
 	var n := NuvemQueSome.new()
 	n.raio = raio
+	n.bolha = bolha
 	n.position = topo
 	add_child(n)
 	nuvens_que_somem.append(n)
@@ -568,22 +574,17 @@ func mola_de_cristal(pos: Vector3, forca := 19.0) -> Area3D:
 	cs0.position.y = 0.25
 	corpo.add_child(cs0)
 	visual.add_child(corpo)
-	var area := Area3D.new()
+	var area := AreaDeMola.new()
+	area.forca = forca
+	area.visual = visual
+	area.amassado = Vector3(1.2, 0.75, 1.2)
 	area.position = pos + Vector3(0, 0.9, 0)
-	area.collision_layer = 0
-	area.collision_mask = CAMADA_JOGADOR
 	var cs := CollisionShape3D.new()
 	var caixa := BoxShape3D.new()
 	caixa.size = Vector3(1.8, 1.0, 1.8)
 	cs.shape = caixa
 	area.add_child(cs)
 	add_child(area)
-	area.body_entered.connect(func(corpo_que_entrou: Node3D):
-		if corpo_que_entrou is Jogador and corpo_que_entrou.velocity.y <= 1.0:
-			corpo_que_entrou.lancar(forca)
-			var tw := visual.create_tween()
-			tw.tween_property(visual, "scale", Vector3(1.2, 0.75, 1.2), 0.06)
-			tw.tween_property(visual, "scale", Vector3.ONE, 0.3).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT))
 	cristais.append(area)
 	molas.append(area)
 	return area
@@ -608,6 +609,160 @@ func bolotona(pos: Vector3) -> Bolotona:
 ## A Bolotona e as filhas já foram todas derrotadas.
 func bolotona_vencida(b: Bolotona) -> bool:
 	return b.derrotado and b.filhas.all(func(f: Bolota) -> bool: return f.derrotado)
+
+
+## Como `movel`, com uma peça qualquer de `pasta` (o prato que boia, a frigideira): `tamanho` é a caixa de
+## colisão (ou o cilindro, com `redondo`), com o topo em `topo`.
+func movel_peca(pasta: String, arquivo: String, escala: float, topo: Vector3, tamanho: Vector3, caminho: Vector3,
+		periodo := 4.0, atraso := 0.0, redondo := false) -> AnimatableBody3D:
+	var corpo := AnimatableBody3D.new()
+	corpo.position = topo - Vector3(0, tamanho.y, 0)
+	var modelo: Node3D = _cena(pasta + arquivo + ".gltf").instantiate()
+	modelo.scale = Vector3.ONE * escala
+	corpo.add_child(modelo)
+	var cs := CollisionShape3D.new()
+	if redondo:
+		var cil := CylinderShape3D.new()
+		cil.radius = tamanho.x * 0.5
+		cil.height = tamanho.y
+		cs.shape = cil
+	else:
+		var caixa := BoxShape3D.new()
+		caixa.size = tamanho
+		cs.shape = caixa
+	cs.position.y = tamanho.y / 2.0
+	corpo.add_child(cs)
+	add_child(corpo)
+	_moveis.append([corpo, corpo.position, caminho, periodo, atraso])
+	moveis.append(corpo)
+	return corpo
+
+
+## Peça da cozinha (Restaurant Bits), 8 vezes maior se não disser outra escala.
+func cozinha(arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 8.0, solida := true) -> Node3D:
+	return peca_de(COZINHA, arquivo, pos, giro, escala, solida)
+
+
+## Panela no fogo com a tampa que pula: a panela fica em `pos` (no tampo), a tampa em cima dela.
+func panela_com_tampa(pos: Vector3, forca := 21.0, atraso := 0.0, escala := 6.0) -> TampaQuePula:
+	cozinha("pot_A", pos, 0.0, escala)
+	var t := TampaQuePula.new()
+	t.forca = forca
+	t.atraso = atraso
+	t.escala = escala
+	t.position = pos + Vector3.UP * 0.5 * escala
+	add_child(t)
+	tampas.append(t)
+	return t
+
+
+## Rolo de macarrão rolando `caminho` metros e voltando, a partir de `pos` (no tampo).
+func rolo(pos: Vector3, caminho: Vector3, periodo := 4.0, atraso := 0.0) -> RoloDeMassa:
+	var r := RoloDeMassa.new()
+	r.caminho = caminho
+	r.periodo = periodo
+	r.atraso = atraso
+	r.position = pos
+	add_child(r)
+	rolos.append(r)
+	return r
+
+
+## Pizza gigante girando, com o meio de baixo em `pos`.
+func pizza(pos: Vector3, velocidade := 0.35) -> PizzaGiratoria:
+	var p := PizzaGiratoria.new()
+	p.velocidade = velocidade
+	p.position = pos
+	add_child(p)
+	pizzas.append(p)
+	return p
+
+
+## Boca do fogão que acende e apaga, com o meio em `pos` (no tampo).
+func boca(pos: Vector3, raio := 2.6, atraso := 0.0) -> BocaDoFogao:
+	var b := BocaDoFogao.new()
+	b.raio = raio
+	b.atraso = atraso
+	b.position = pos
+	add_child(b)
+	bocas.append(b)
+	return b
+
+
+## Água com espuma (a pia da 2-1): a superfície em `centro`, do `tamanho` no plano. Encostar nela é cair.
+func agua(centro: Vector3, tamanho: Vector2) -> Area3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.55, 0.82, 1.0, 0.75)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.roughness = 0.1
+	m.metallic = 0.2
+	var plano := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = tamanho
+	plano.mesh = pm
+	plano.material_override = m
+	plano.position = centro
+	add_child(plano)
+	# Espuma: bolinhas brancas boiando.
+	var espuma := StandardMaterial3D.new()
+	espuma.albedo_color = Color("f4fbff")
+	espuma.roughness = 0.9
+	var gerador := RandomNumberGenerator.new()
+	gerador.seed = int(centro.z * 10.0)
+	for i in int(tamanho.x * tamanho.y / 6.0):
+		var bola := MeshInstance3D.new()
+		var esfera := SphereMesh.new()
+		esfera.radius = gerador.randf_range(0.3, 0.8)
+		esfera.height = esfera.radius * 1.2
+		bola.mesh = esfera
+		bola.material_override = espuma
+		bola.position = centro + Vector3(gerador.randf_range(-0.5, 0.5) * tamanho.x, 0.05, gerador.randf_range(-0.5, 0.5) * tamanho.y)
+		add_child(bola)
+	var area := Area3D.new()
+	area.collision_layer = 0
+	area.collision_mask = CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(tamanho.x, 1.2, tamanho.y)
+	cs.shape = caixa
+	cs.position = centro + Vector3.DOWN * 0.7
+	area.add_child(cs)
+	add_child(area)
+	area.body_entered.connect(func(corpo: Node3D) -> void:
+		if corpo is Jogador:
+			Fx.confetti(self, corpo.global_position, 20, 3.0)
+			(corpo as Jogador).cair())
+	aguas.append(area)
+	return area
+
+
+## Sorvete de casquinha que joga para o alto, como a mola: a bola de cima é o que se pisa. Fica baixinho
+## (2,1 m), para dar para subir nele com um pulo.
+func mola_de_sorvete(pos: Vector3, forca := 19.0, sabor := "strawberry") -> Area3D:
+	var visual := cozinha("food_icecream_cone_" + sabor, pos, 0.0, 2.0, false)
+	var corpo := StaticBody3D.new()
+	var cs0 := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = 0.5
+	cil.height = 1.3
+	cs0.shape = cil
+	cs0.position = pos + Vector3.UP * 0.65
+	corpo.add_child(cs0)
+	add_child(corpo)
+	var area := AreaDeMola.new()
+	area.forca = forca
+	area.visual = visual
+	area.escala_normal = Vector3.ONE * 2.0
+	area.amassado = Vector3(2.4, 1.6, 2.4)
+	area.position = pos + Vector3(0, 1.9, 0)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(1.8, 1.0, 1.8)
+	cs.shape = caixa
+	area.add_child(cs)
+	add_child(area)
+	molas.append(area)
+	return area
 
 
 ## Nuvenzinha firme para pisar (segunda chance no meio de um vão), com `topo` em cima.

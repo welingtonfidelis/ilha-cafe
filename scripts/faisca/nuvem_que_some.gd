@@ -8,6 +8,8 @@ const ANTES := 0.8
 const FORA := 3.0
 
 var raio := 1.6
+## Bolha de sabão (a pia da 2-1) em vez de nuvem: a mesma coisa, só o desenho muda.
+var bolha := false
 var sumida := false
 var _visual: Node3D
 var _forma: CollisionShape3D
@@ -19,11 +21,27 @@ func _ready() -> void:
 	collision_mask = 0
 	_visual = Node3D.new()
 	add_child(_visual)
+	if bolha:
+		var b := StandardMaterial3D.new()
+		b.albedo_color = Color(0.85, 0.95, 1.0, 0.45)
+		b.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		b.metallic = 0.3
+		b.roughness = 0.05
+		b.rim_enabled = true
+		b.rim = 1.0
+		b.emission_enabled = true
+		b.emission = Color("b8f0ff")
+		b.emission_energy_multiplier = 0.25
+		var esfera := MeshInstance3D.new()
+		esfera.mesh = Forma.superelipsoide(Vector3(raio, raio * 0.55, raio), 1.0, 1.0)
+		esfera.material_override = b
+		esfera.position.y = -raio * 0.5
+		_visual.add_child(esfera)
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color("d9c2ff")
 	m.roughness = 1.0
-	for bola in [[Vector3(0, -0.35, 0), Vector3(raio, 0.5, raio)], [Vector3(raio * 0.5, -0.2, raio * 0.3), Vector3(raio * 0.6, 0.55, raio * 0.6)],
-			[Vector3(-raio * 0.45, -0.25, -raio * 0.35), Vector3(raio * 0.65, 0.5, raio * 0.6)], [Vector3(-raio * 0.2, -0.3, raio * 0.5), Vector3(raio * 0.5, 0.45, raio * 0.5)]]:
+	for bola in ([] if bolha else [[Vector3(0, -0.35, 0), Vector3(raio, 0.5, raio)], [Vector3(raio * 0.5, -0.2, raio * 0.3), Vector3(raio * 0.6, 0.55, raio * 0.6)],
+			[Vector3(-raio * 0.45, -0.25, -raio * 0.35), Vector3(raio * 0.65, 0.5, raio * 0.6)], [Vector3(-raio * 0.2, -0.3, raio * 0.5), Vector3(raio * 0.5, 0.45, raio * 0.5)]]):
 		var mi := MeshInstance3D.new()
 		mi.mesh = Forma.superelipsoide(bola[1], 1.0, 1.0)
 		mi.material_override = m

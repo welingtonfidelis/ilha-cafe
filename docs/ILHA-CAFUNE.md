@@ -726,7 +726,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 |---|---|---|---|---|---|
 | 1 Ilhas Fofas | 1 Pulinhos nas Nuvens | céu | Platformer, Forest, nuvens do Medieval | pular, flutuar, golpes, laser (pronta no projeto Faísca) | 0 |
 | 1 | 2 Túneis do Morro | chão | Dungeon Pack | por baixo do Morro dos esqueletos; o laser acende tochas para clarear o caminho | 30 |
-| 2 Doces e Brinquedos | 3 Cozinha Gigante | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
+| 2 Doces e Brinquedos | 3 Cozinha Gigante (pronta em 2026-10-29) | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
 | 2 | 4 Nuvens de Algodão-Doce | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), Platformer | bengalas e balas como plataformas, nuvens que quicam | 90 |
 | 2 | 5 Quarto de Brinquedos | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que rolam, peões e cartas, carona no trenzinho | 120 |
 | 3 Frio e Vento | 6 Pico Gelado | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | chão escorregadio e bolas de neve | 150 |
@@ -1046,6 +1046,35 @@ As duas fases tinham uns 130 m (1-1) e 200 m (1-2): quem já sabe jogar passava 
 - `--faisca-fase` confere 38 pontos, 11 a mais: os trechos novos, a esteira levando até a plataforma, a mureta segurando, argolas e prêmio, botões e ponte, nuvem sumindo e voltando, e o canhão pousando com as estrelinhas do voo.
 - `--faisca-fase-1-2` confere 49 pontos, 15 a mais: carrinho, P3, sala escura, alavancas e grades, cristal, Bolotona e grade da arena. Ele acha as tochas da porta pela própria porta, não pela ordem.
 - `--faisca-fase-captura` ganhou as fotos `03b`, `07b`, `09b`, `09c` e `10b` a `10d`. O `--faisca-fase-1-2-captura` ganhou `09b` a `09e` e `12b` a `12d`.
+
+### Fase 2-1: Cozinha Gigante (feita em 2026-10-29, pedido do usuário: "pode fazer a próxima fase")
+
+A porta do 2º andar do farol, que pede 60 estrelinhas. `scripts/faisca/fases/fase_2_1.gd`, com as peças do Restaurant Bits (em `assets/faisca/cozinha/`) ampliadas 8 vezes: a bancada tem 8 m, o prato 7,6 m e a geladeira 20 m. A faca ficou de fora (tema infantil).
+- **O caminho:**
+  - vai por cima dos móveis, de uns 230 m;
+  - o chão xadrez fica lá embaixo, e cair nele conta como cair (`limite_queda` 3 m, volta no posto);
+  - a sala tem paredes creme, uma janela grande com a luz do dia e a parede de azulejo atrás da bancada.
+- **A novidade, as tampas que pulam** (`TampaQuePula`): a panela ferve e a tampa fica 2 s quieta (dá para ficar em pé nela), treme 0,8 s soltando vapor e pula. Quem estiver em cima vai lá para o alto, como na mola, só que no tempo dela. A dica do Vovô desenha isso.
+- **Os trechos:**
+  1. **Mesa do Café:** pratos de degrau, uma tigela com estrelinhas dentro, uma Bolota dormindo e o V1 escondido atrás do pote grande, no canto.
+  2. **Tábua de Cortar:** a ponte até a bancada.
+  3. **Bancada das Panelas (P1):** uma pilha de pratinhos sobe até a primeira tampa. As duas primeiras levam às estrelinhas do alto, e a terceira joga o Faísca até a prateleira, a 19 m.
+  4. **Prateleira dos Potes:** potes gigantes em zigue-zague. O V2 fica em cima do pote mais alto, e a tampa de uma panelinha ali do lado leva até ele.
+  5. **Fogão:** quatro bocas que acendem e apagam (`BocaDoFogao`). O anel fica laranja um instante antes de acender. Acesa, encostar tira um coração e dá um pulinho para fora.
+  6. **Pia (P2):** a cuba comprida de água com espuma (`Fase.agua`; encostar é cair). Para atravessar, há dois pratos boiando, que sobem e descem, e duas bolhas de sabão, que estouram e voltam (a nuvem que some, com o desenho de bolha). Esponjas altas nas bordas não deixam ir andando por cima.
+  7. **Bancada da Massa:** dois rolos de macarrão (`RoloDeMassa`) rolando de um lado para o outro, com 1,9 m de altura para dar para pular. Encostar tira um coração.
+  8. **Pizza Giratória (P3):** a pizza de 16 m girando devagar na mesa redonda (`PizzaGiratoria`), levando o Faísca e as Bolotas. Ketchup e mostarda fecham as beiradas dos lados.
+  9. **Geladeira:** um sorvete de casquinha na beirada da mesa joga o Faísca lá para cima. No alto ficam o baú, duas Bolotas e o V3, atrás da caixa do canto.
+- **Números:** 3 postos, 3 vaga-lumes, 10 Bolotas e umas 80 estrelinhas.
+- **Correção que vale para todas as fases:** as molas (a mola, o cristal da 1-2 e o sorvete) passaram a usar `AreaDeMola`, que confere a cada quadro quem está dentro. Antes, quem pulava em cima entrava na área subindo, pousava já dentro e ficava parado sem ser jogado.
+- **Outras correções:**
+  - a água às vezes avisava duas vezes no mesmo mergulho, e agora conta uma queda só a cada 0,6 s (`Jogador.cair`);
+  - o fundo da cuba fica abaixo do limite da queda, para ninguém ficar preso lá.
+- **Porta e testes:**
+  - a foto da porta, `assets/faisca/portas/fase_2_1.jpg`, é a da pizza;
+  - `--faisca-fase-2-1` confere 20 pontos: contagens, descida na mesa, V1, as tampas (para o alto e até a prateleira), a boca acesa, P2, o prato boiando, a bolha, a água, o rolo, P3, a pizza levando, o sorvete até a geladeira, baú, Estrela Grande e fim;
+  - `--faisca-fase-2-1-captura` tira 11 fotos em `tools/capturas/faisca/fase_2_1/`;
+  - `--faisca-jogar-2-1` abre a fase direto.
 
 ### O laser e o voo do Faísca (pedido do usuário em 2026-10-29)
 

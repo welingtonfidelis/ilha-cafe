@@ -356,6 +356,18 @@ class DesenhoDica extends Control:
 					var chama := 1.0 + sin(tempo * 14.0) * 0.12
 					draw_colored_polygon(PackedVector2Array([f + Vector2(-9, 26), f + Vector2(9, 26), f + Vector2(0, 26 - 22 * chama)]), Color("ff9a2e"))
 					draw_colored_polygon(PackedVector2Array([f + Vector2(-5, 26), f + Vector2(5, 26), f + Vector2(0, 26 - 13 * chama)]), Color("ffe066"))
+			"tampa":
+				# Em cima da tampa da panela, que treme e pula levando o Faísca lá para o alto.
+				var ciclo := fmod(tempo, 2.0)
+				var sobe := 0.0 if ciclo < 1.2 else sin((ciclo - 1.2) / 0.8 * PI) * 50.0
+				var treme := sin(tempo * 40.0) * 2.0 if ciclo > 0.8 and ciclo < 1.2 else 0.0
+				draw_rect(Rect2(f + Vector2(-30, 36), Vector2(60, 20)), Color("8a8fa8"))
+				draw_rect(Rect2(f + Vector2(-34 + treme, 30 - sobe * 0.15), Vector2(68, 7)), Color("c9cede"))
+				draw_circle(f + Vector2(treme, 28 - sobe * 0.15), 5, Color("6a6478"))
+				_faisca(f + Vector2(0, 4 - sobe))
+				if ciclo > 0.8:
+					for i in 3:
+						draw_circle(f + Vector2(-26 + i * 26, 22 - fmod(tempo * 30.0 + i * 7.0, 24.0)), 5, Color(1, 1, 1, 0.7))
 			"botao":
 				# Pula e cai em cima do botão vermelho, que afunda.
 				var pulo := absf(sin(tempo * 3.0))

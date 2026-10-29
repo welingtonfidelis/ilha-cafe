@@ -14,10 +14,14 @@ extends Node3D
 ##   --faisca-fase-1-2       1-2: confere a fase de ponta a ponta (ver scripts/faisca/teste_fase_1_2.gd)
 ##   --faisca-fase-1-2-captura  1-2: fotos de cada trecho em tools/capturas/faisca/fase_1_2/
 ##   --faisca-jogar-1-2      1-2 para jogar direto, sem o farol (para conferir de olho)
+##   --faisca-fase-2-1       2-1: confere a fase de ponta a ponta (ver scripts/faisca/teste_fase_2_1.gd)
+##   --faisca-fase-2-1-captura  2-1: fotos de cada trecho em tools/capturas/faisca/fase_2_1/
+##   --faisca-jogar-2-1      2-1 para jogar direto, sem o farol
 ## As ações de controle (pular, golpe, recomecar...) vêm do _setup_input do main.
 
 const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--faisca-captura", "--faisca-fase", "--faisca-fase-captura",
-		"--faisca-fase-1-2", "--faisca-fase-1-2-captura", "--faisca-jogar-1-2"]
+		"--faisca-fase-1-2", "--faisca-fase-1-2-captura", "--faisca-jogar-1-2", "--faisca-fase-2-1", "--faisca-fase-2-1-captura",
+		"--faisca-jogar-2-1"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -30,6 +34,7 @@ var hud: Hud
 var testando := false
 var _teste: TesteFase
 var _teste12: TesteFase12
+var _teste21: TesteFase21
 
 
 func _ready() -> void:
@@ -47,7 +52,8 @@ func _ready() -> void:
 		hud.mostrar_vaga_lumes(0, 0)
 	else:
 		var a_1_2 := "--faisca-fase-1-2" in args or "--faisca-fase-1-2-captura" in args or "--faisca-jogar-1-2" in args
-		nivel = Fase12.new() if a_1_2 else Fase11.new()
+		var a_2_1 := "--faisca-fase-2-1" in args or "--faisca-fase-2-1-captura" in args or "--faisca-jogar-2-1" in args
+		nivel = Fase12.new() if a_1_2 else (Fase21.new() if a_2_1 else Fase11.new())
 		add_child(nivel)
 		jogador.position = nivel.inicio
 		jogador.limite_queda = nivel.limite_queda
@@ -83,6 +89,12 @@ func _ready() -> void:
 	elif "--faisca-fase-1-2-captura" in args:
 		_teste12 = TesteFase12.new(self)
 		_teste12.capturar()
+	elif "--faisca-fase-2-1" in args:
+		_teste21 = TesteFase21.new(self)
+		_teste21.rodar()
+	elif "--faisca-fase-2-1-captura" in args:
+		_teste21 = TesteFase21.new(self)
+		_teste21.capturar()
 	elif nivel:
 		_comecar_fase()
 
