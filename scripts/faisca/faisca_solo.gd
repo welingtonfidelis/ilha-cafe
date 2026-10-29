@@ -11,9 +11,13 @@ extends Node3D
 ##   --faisca-captura        cena de teste: fotos em tools/capturas/faisca/ (precisa de janela)
 ##   --faisca-fase           1-1: confere a fase de ponta a ponta (ver scripts/faisca/teste_fase.gd)
 ##   --faisca-fase-captura   1-1: fotos de cada trecho em tools/capturas/faisca/fase/ (precisa de janela)
+##   --faisca-fase-1-2       1-2: confere a fase de ponta a ponta (ver scripts/faisca/teste_fase_1_2.gd)
+##   --faisca-fase-1-2-captura  1-2: fotos de cada trecho em tools/capturas/faisca/fase_1_2/
+##   --faisca-jogar-1-2      1-2 para jogar direto, sem o farol (para conferir de olho)
 ## As ações de controle (pular, golpe, recomecar...) vêm do _setup_input do main.
 
-const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--faisca-captura", "--faisca-fase", "--faisca-fase-captura"]
+const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--faisca-captura", "--faisca-fase", "--faisca-fase-captura",
+		"--faisca-fase-1-2", "--faisca-fase-1-2-captura", "--faisca-jogar-1-2"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -25,6 +29,7 @@ var hud: Hud
 ## Nos testes da fase, o A da tela de fim não recarrega a cena.
 var testando := false
 var _teste: TesteFase
+var _teste12: TesteFase12
 
 
 func _ready() -> void:
@@ -41,7 +46,8 @@ func _ready() -> void:
 		fase.estrela_pega.connect(_on_estrela_pega)
 		hud.mostrar_vaga_lumes(0, 0)
 	else:
-		nivel = Fase11.new()
+		var a_1_2 := "--faisca-fase-1-2" in args or "--faisca-fase-1-2-captura" in args or "--faisca-jogar-1-2" in args
+		nivel = Fase12.new() if a_1_2 else Fase11.new()
 		add_child(nivel)
 		jogador.position = nivel.inicio
 		jogador.limite_queda = nivel.limite_queda
@@ -71,6 +77,12 @@ func _ready() -> void:
 	elif "--faisca-fase-captura" in args:
 		_teste = TesteFase.new(self)
 		_teste.capturar()
+	elif "--faisca-fase-1-2" in args:
+		_teste12 = TesteFase12.new(self)
+		_teste12.rodar()
+	elif "--faisca-fase-1-2-captura" in args:
+		_teste12 = TesteFase12.new(self)
+		_teste12.capturar()
 	elif nivel:
 		_comecar_fase()
 
@@ -158,11 +170,11 @@ func _rodar_teste_controle() -> void:
 	ok = _conferir("A pula", curto > 0.4, "(%.2f m)" % curto) and ok
 	ok = _conferir("segurando A o pulo vai mais alto", longo > curto + 0.5, "(%.2f m)" % longo) and ok
 
-	# Continua segurando: na descida ele flutua com os jatos.
+	# Continua segurando: na descida ele flutua, com o laser dos pés (sem jato de fogo desde 2026-10-29).
 	await _esperar(0.2)
 	ok = _conferir("segurando A na descida flutua", jogador.flutuando and absf(jogador.velocity.y) < 2.0,
 			"(vel. vertical %.2f)" % jogador.velocity.y) and ok
-	ok = _conferir("jatos acesos ao flutuar", jogador.robo._jatos[0].visible) and ok
+	ok = _conferir("flutuando, o laser liga e o jato de fogo não", jogador._feixes[0].visible and not jogador.robo._jatos[0].visible) and ok
 	_botao(JOY_BUTTON_A, false)
 	await _esperar(1.5)
 	ok = _conferir("solta A e pousa", jogador.is_on_floor() and not jogador.flutuando) and ok
@@ -259,6 +271,32 @@ func _rodar_teste_controle() -> void:
 	ok = _conferir("o laser vai dos pés até o chão", jogador.flutuando and absf(ponta.y) < 0.15, "(ponta em y = %.2f)" % ponta.y) and ok
 	_botao(JOY_BUTTON_A, false)
 	await _esperar(1.0)
+
+	# Pedidos de 2026-10-29: no voo sai só o laser (sem o fogo de jato), o voo dura 1 s, e o laser acerta
+	# num círculo em volta dele (o anel no chão), não só onde o fio bate.
+	jogador.teleportar(Vector3(0, 0.1, 6))
+	await _esperar(0.3)
+	_botao(JOY_BUTTON_A, true)
+	var voo := 0.0
+	var so_laser := true
+	for i in int(2.5 * Engine.physics_ticks_per_second):
+		await get_tree().physics_frame
+		if jogador.flutuando:
+			voo += 1.0 / Engine.physics_ticks_per_second
+			so_laser = so_laser and jogador._feixes[0].visible and jogador._anel_laser.visible \
+					and not jogador.robo._jatos.any(func(m: MeshInstance3D) -> bool: return m.visible)
+	_botao(JOY_BUTTON_A, false)
+	await _esperar(1.0)
+	ok = _conferir("no voo aparece só o laser e o anel no chão, sem o fogo de jato", voo > 0.0 and so_laser) and ok
+	ok = _conferir("o voo dura 1 s", absf(voo - 1.0) < 0.08, "(%.2f s)" % voo) and ok
+	var a4: Alvo = fase.alvos[4]
+	jogador.teleportar(a4.global_position + Vector3(1.3, 2.6, 0))
+	await _esperar(0.1)
+	_botao(JOY_BUTTON_A, true)
+	await _esperar(0.6)
+	_botao(JOY_BUTTON_A, false)
+	await _esperar(1.0)
+	ok = _conferir("o laser acerta o inimigo a 1,3 m de lado, sem estar em cima dele", a4.vida < a4.vida_max, "(vida %d)" % a4.vida) and ok
 
 	# Cair em cima de um inimigo: pisão (2 de dano) e quique.
 	var a3: Alvo = fase.alvos[3]

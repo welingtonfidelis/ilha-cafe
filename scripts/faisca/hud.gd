@@ -92,7 +92,7 @@ func mostrar_vaga_lumes(achados: int, total: int) -> void:
 		_luzes[i].queue_redraw()
 
 
-## Balão do Vovô Farol: "pulo_alto", "flutuar" ou "laser".
+## Balão do Vovô Farol: "pulo_alto", "flutuar", "laser", "tocha" ou "golpe".
 func mostrar_dica(qual: String) -> void:
 	dica_atual = qual
 	_desenho_dica.qual = qual
@@ -288,7 +288,8 @@ class BotaoA extends Control:
 
 
 ## Desenho da dica: o botão A sendo segurado (a barrinha enche) e o que acontece.
-##   pulo_alto: o Faísca pulando bem alto; flutuar: os jatos na descida; laser: o feixe na flor.
+##   pulo_alto: o Faísca pulando bem alto; flutuar: o laser na descida; laser: o feixe na flor;
+##   tocha: o feixe na tocha, que pega fogo. No golpe é o X apertado três vezes, na parede rachada.
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -296,15 +297,25 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		draw_circle(b + Vector2(0, 4), 36, Color("1f7a3a"))
-		draw_circle(b, 36, Color("3ccf6a"))
-		draw_arc(b, 36, 0, TAU, 40, Color("2b2140"), 4.0, true)
+		var golpe := qual == "golpe"
+		# No golpe o botão pulsa a cada toque; nos outros fica apertado enquanto a barrinha enche.
+		var toque := fmod(tempo, 1.6) < 1.2 and fmod(tempo * 2.5, 1.0) < 0.35 if golpe else false
+		var raio := 32.0 if toque else 36.0
+		draw_circle(b + Vector2(0, 4), raio, Color("1d4f9a") if golpe else Color("1f7a3a"))
+		draw_circle(b, raio, Color("4a90e2") if golpe else Color("3ccf6a"))
+		draw_arc(b, raio, 0, TAU, 40, Color("2b2140"), 4.0, true)
 		var fonte := ThemeDB.fallback_font
-		draw_string(fonte, b + Vector2(-13, 15), "A", HORIZONTAL_ALIGNMENT_LEFT, -1, 42, Color.WHITE)
-		var barra := Rect2(b + Vector2(-40, 50), Vector2(80, 14))
-		draw_rect(barra, Color(0, 0, 0, 0.15))
-		draw_rect(Rect2(barra.position, Vector2(80 * clampf(enche, 0, 1), 14)), Color("ffd23f"))
-		draw_rect(barra, Color("2b2140"), false, 3.0)
+		draw_string(fonte, b + Vector2(-13, 15), "X" if golpe else "A", HORIZONTAL_ALIGNMENT_LEFT, -1, 42, Color.WHITE)
+		if golpe:
+			var vezes := mini(int(fmod(tempo, 1.6) * 2.5) + 1, 3)
+			for i in 3:
+				draw_circle(b + Vector2(-24 + i * 24, 58), 8, Color("ffd23f") if i < vezes else Color(0, 0, 0, 0.15))
+				draw_arc(b + Vector2(-24 + i * 24, 58), 8, 0, TAU, 16, Color("2b2140"), 2.5, true)
+		else:
+			var barra := Rect2(b + Vector2(-40, 50), Vector2(80, 14))
+			draw_rect(barra, Color(0, 0, 0, 0.15))
+			draw_rect(Rect2(barra.position, Vector2(80 * clampf(enche, 0, 1), 14)), Color("ffd23f"))
+			draw_rect(barra, Color("2b2140"), false, 3.0)
 		var f := Vector2(170, size.y * 0.5)
 		match qual:
 			"pulo_alto":
@@ -328,6 +339,30 @@ class DesenhoDica extends Control:
 					var a := TAU * i / 6.0
 					draw_circle(f + Vector2(cos(a), sin(a) * 0.5) * 14 + Vector2(0, 42), 8, Color("ff8fc8"))
 				draw_circle(f + Vector2(0, 42), 7, Color("ffe066"))
+			"tocha":
+				var p := f + Vector2(0, -34)
+				_faisca(p)
+				for lado in [-8.0, 8.0]:
+					draw_line(p + Vector2(lado, 22), f + Vector2(lado, 26), Color("8ff3ff"), 5.0)
+				draw_rect(Rect2(f + Vector2(-5, 30), Vector2(10, 26)), Color("8a5a36"))
+				draw_rect(Rect2(f + Vector2(-9, 26), Vector2(18, 8)), Color("6a6478"))
+				if enche > 0.5:
+					var chama := 1.0 + sin(tempo * 14.0) * 0.12
+					draw_colored_polygon(PackedVector2Array([f + Vector2(-9, 26), f + Vector2(9, 26), f + Vector2(0, 26 - 22 * chama)]), Color("ff9a2e"))
+					draw_colored_polygon(PackedVector2Array([f + Vector2(-5, 26), f + Vector2(5, 26), f + Vector2(0, 26 - 13 * chama)]), Color("ffe066"))
+			"golpe":
+				var bate := fmod(tempo * 2.5, 1.0) < 0.35
+				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(28 if bate else 20, 6), Color("ff7a22"), 7.0)
+				var parede := Rect2(f + Vector2(16, -38), Vector2(30, 84))
+				draw_rect(parede, Color("8a90a8"))
+				draw_rect(parede, Color("2b2140"), false, 3.0)
+				draw_polyline(PackedVector2Array([f + Vector2(31, -38), f + Vector2(24, -12), f + Vector2(36, 4), f + Vector2(26, 28), f + Vector2(32, 46)]), Color("2b2140"), 3.0)
+				if bate:
+					for i in 4:
+						var a := -0.8 + i * 0.5
+						draw_line(f + Vector2(14, 16), f + Vector2(14, 16) + Vector2(cos(a + PI), sin(a + PI)) * 14, Color("ffd23f"), 3.0)
 
 	## O Faísca em miniatura: cabeça branca com o visor e o corpinho laranja.
 	func _faisca(p: Vector2) -> void:

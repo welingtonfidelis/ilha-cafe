@@ -75,7 +75,8 @@ func animacao_atual() -> String:
 	return _ap.current_animation if _ap else ""
 
 
-## Jatos de luz debaixo dos tênis (quando flutua).
+## Jatos de luz debaixo dos tênis. Desde 2026-10-29 o voo mostra só o laser (pedido do usuário) e o
+## Jogador não liga mais; os nós continuam marcando a ponta de cada pé, de onde o laser sai.
 func jatos(ligados: bool) -> void:
 	for j in _jatos:
 		j.visible = ligados

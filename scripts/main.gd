@@ -88,7 +88,8 @@ var confirm_panel: Control
 var select_panel: Control
 var pause_panel: Control
 var controls_panel: Control
-var controls_label: Label
+## Comandos em duas colunas: o que faz e, numa etiqueta, o botão ou a tecla.
+var controls_grid: GridContainer
 var menu_dim: ColorRect
 var menu_state := ""
 var _menu_hints: Array[Label] = []
@@ -99,6 +100,16 @@ var _pause_buttons: Array[Button] = []
 var _faisca_button: Button
 var _pause_exit: Button
 var _pause_switch: Button
+## Escolha de personagem com os cartões (scripts/character_menu.gd); select_panel aponta para ele.
+var character_menu: CharacterMenu
+## Cartão de quem está jogando, na pausa.
+var _pause_card: PanelContainer
+var _pause_portrait: Portrait
+var _pause_name: Label
+var _pause_stars: Control
+var _pause_star_count: Label
+var _pause_swap_icon: MenuIcon
+var _pause_goal: Control
 var _controls_back: Button
 var _start_buttons: Array[Button] = []
 var _continue_button: Button
@@ -542,6 +553,8 @@ func _ready() -> void:
 	elif "--parte2-captura" in args:
 		select_panel.hide()
 		_run_parte2_capture()
+	elif "--menus-captura" in args:
+		_run_menus_capture()
 	elif SaveGame.go_new:
 		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
 		SaveGame.go_new = false
@@ -757,11 +770,7 @@ func _menu_input(event: InputEvent) -> void:
 			elif now - _shop_back_time > 0.35:
 				close_menus()
 		"escolha":
-			# Na abertura do jogo voltar leva ao menu inicial; vindo da pausa, à pausa.
-			if _game_started:
-				open_menu("pausa")
-			elif story:
-				open_menu("inicio")
+			_character_menu_back()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -807,12 +816,8 @@ func open_menu(state: String) -> void:
 			shop_menu.open()
 			shop_menu.slide_in.call_deferred()
 		"escolha":
-			_faisca_button.visible = parte2 != null and parte2.aberta
-			if parte2 and parte2.faisca_ativo:
-				_faisca_button.grab_focus.call_deferred()
-			else:
-				var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
-				_buttons[i].grab_focus.call_deferred()
+			var current := "faisca" if parte2 and parte2.faisca_ativo else player.character_name
+			character_menu.open(current if _game_started else "", parte2 != null and parte2.aberta, _game_started or story != null)
 		"pausa":
 			if story:
 				story.save()
@@ -821,9 +826,10 @@ func open_menu(state: String) -> void:
 			_pause_exit.text = "Sair da fase" if parte2 and parte2.lugar == "fase" else "Voltar para a ilha"
 			_pause_switch.visible = not inside
 			if parte2 and parte2.faisca_ativo:
-				pause_objective.text = "Faísca: %d estrelinhas. Junte estrelinhas para abrir as portas do farol." % parte2.total_estrelas()
+				pause_objective.text = "Junte estrelinhas para abrir as portas do farol."
 			elif story:
 				pause_objective.text = "Objetivo: " + story.objective_text
+			_refresh_pause_card()
 			_pause_buttons[0].grab_focus.call_deferred()
 		"comandos":
 			_on_input_device_changed(player.using_gamepad)
@@ -1266,8 +1272,8 @@ func _build_ui() -> void:
 	tagline.add_theme_font_size_override("font_size", 18)
 	tagline.add_theme_color_override("font_color", Color("#d9a8ff"))
 	sbox.add_child(tagline)
-	for spec in [["Continuar", _continue_campaign], ["Nova campanha", _new_campaign_from_start], ["Sair do jogo", _quit_game]]:
-		var b := _menu_button(spec[0], focus_style)
+	for spec in [["Continuar", _continue_campaign, "continuar"], ["Nova campanha", _new_campaign_from_start, "nova"], ["Sair do jogo", _quit_game, "sair"]]:
+		var b := _menu_button(spec[0], spec[2])
 		b.pressed.connect(func() -> void:
 			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 			spec[1].call())
@@ -1285,78 +1291,39 @@ func _build_ui() -> void:
 	_confirm_text.custom_minimum_size = Vector2(380, 0)
 	_confirm_text.add_theme_font_size_override("font_size", 19)
 	qbox.add_child(_confirm_text)
-	for spec in [["Sim, começar do zero", func() -> void: _confirm_action.call()], ["Voltar", func() -> void: open_menu(_confirm_return)]]:
-		var b := _menu_button(spec[0], focus_style)
+	for spec in [["Sim, começar do zero", func() -> void: _confirm_action.call(), "nova"], ["Voltar", func() -> void: open_menu(_confirm_return), "voltar"]]:
+		var b := _menu_button(spec[0], spec[2])
 		b.pressed.connect(func() -> void:
 			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 			spec[1].call())
 		qbox.add_child(b)
 		_confirm_buttons.append(b)
 
-	var box := _menu_box(layer, "Escolha quem vai jogar")
-	select_panel = box.get_parent().get_parent()
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	box.add_child(grid)
-	for i in CHARACTER_ORDER.size():
-		var key: String = CHARACTER_ORDER[i]
-		var button := Button.new()
-		button.text = CHARACTER_LABELS[key]
-		button.custom_minimum_size = Vector2(220, 56)
-		button.add_theme_font_size_override("font_size", 20)
-		button.add_theme_stylebox_override("focus", focus_style)
-		button.pressed.connect(_choose_character.bind(key))
-		button.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
-		grid.add_child(button)
-		_buttons.append(button)
-	# O Faísca aparece depois do final, com a Parte 2 aberta.
-	_faisca_button = Button.new()
-	_faisca_button.text = "Faísca"
-	_faisca_button.custom_minimum_size = Vector2(220, 56)
-	_faisca_button.add_theme_font_size_override("font_size", 20)
-	_faisca_button.add_theme_stylebox_override("focus", focus_style)
-	_faisca_button.add_theme_color_override("font_color", Color("#8ff3ff"))
-	_faisca_button.pressed.connect(_choose_character.bind("faisca"))
-	_faisca_button.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
-	_faisca_button.visible = false
-	grid.add_child(_faisca_button)
-	_add_menu_hint(box)
+	# Escolha de personagem: cartões com o boneco de cada um (scripts/character_menu.gd). O Faísca aparece depois
+	# do final, com a Parte 2 aberta.
+	character_menu = CharacterMenu.new()
+	character_menu.game = self
+	layer.add_child(character_menu)
+	character_menu.build()
+	character_menu.chosen.connect(_choose_character)
+	character_menu.back_pressed.connect(_character_menu_back)
+	select_panel = character_menu
+	for key in CHARACTER_ORDER:
+		_buttons.append(character_menu.cards[key])
+	_faisca_button = character_menu.cards.faisca
+	_menu_hints.append(character_menu.hint)
 
-	# Pausa: continuar, trocar de personagem, ver os comandos, começar de novo ou sair.
-	var pbox := _menu_box(layer, "Pausa")
-	pause_panel = pbox.get_parent().get_parent()
-	pause_objective = Label.new()
-	pause_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pause_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	pause_objective.custom_minimum_size = Vector2(320, 0)
-	pause_objective.add_theme_font_size_override("font_size", 18)
-	pause_objective.add_theme_color_override("font_color", Color("#d9a8ff"))
-	pbox.add_child(pause_objective)
-	var pause_specs := [["Continuar", close_menus], ["Voltar para a ilha", _leave_lighthouse], ["Trocar de personagem", open_menu.bind("escolha")],
-			["Comandos", open_menu.bind("comandos")], ["Nova campanha", _new_campaign_from_pause], ["Sair do jogo", _quit_game]]
-	if arena:
-		pause_specs.remove_at(4)
-	for spec in pause_specs:
-		var b := _menu_button(spec[0], focus_style)
-		b.pressed.connect(func() -> void:
-			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
-			spec[1].call())
-		pbox.add_child(b)
-		_pause_buttons.append(b)
-	_pause_exit = _pause_buttons[1]
-	_pause_exit.visible = false
-	_pause_switch = _pause_buttons[2]
-	_add_menu_hint(pbox)
+	_build_pause_menu(layer)
 
 	# Comandos: a lista do aparelho em uso (teclado e mouse ou controle).
 	var cbox := _menu_box(layer, "Comandos")
 	controls_panel = cbox.get_parent().get_parent()
-	controls_label = Label.new()
-	controls_label.add_theme_font_size_override("font_size", 19)
-	cbox.add_child(controls_label)
-	_controls_back = _menu_button("Voltar", focus_style)
+	controls_grid = GridContainer.new()
+	controls_grid.columns = 2
+	controls_grid.add_theme_constant_override("h_separation", 14)
+	controls_grid.add_theme_constant_override("v_separation", 5)
+	cbox.add_child(controls_grid)
+	_controls_back = _menu_button("Voltar", "voltar")
 	_controls_back.pressed.connect(func() -> void:
 		Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 		open_menu("pausa"))
@@ -1480,32 +1447,143 @@ func add_boss(b: Boss, pos: Vector3) -> void:
 	b.global_position = pos
 
 
+## Pausa (refeita em 2026-10-29 para criança): à esquerda o cartão de quem está jogando, com o boneco de verdade
+## (clicar nele também leva à troca de personagem); à direita os botões grandes com ícone colorido; embaixo o
+## objetivo, com o ícone de alvo. Com o Faísca, o cartão mostra as estrelinhas.
+func _build_pause_menu(layer: CanvasLayer) -> void:
+	var pbox := _menu_box(layer, "Pausa")
+	pause_panel = pbox.get_parent().get_parent()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	pbox.add_child(row)
+	_pause_card = PanelContainer.new()
+	_pause_card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_pause_card.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pause_card.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and _pause_switch.visible:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			open_menu("escolha"))
+	row.add_child(_pause_card)
+	var who := VBoxContainer.new()
+	who.add_theme_constant_override("separation", 4)
+	_pause_card.add_child(who)
+	var frame := Panel.new()
+	frame.custom_minimum_size = Vector2(196, 226)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	frame.add_theme_stylebox_override("panel", MenuKit.box(Color.WHITE, 14))
+	who.add_child(frame)
+	_pause_portrait = Portrait.new(frame.custom_minimum_size)
+	frame.add_child(_pause_portrait)
+	_pause_portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Bolinha roxa de trocar no canto da foto, a mesma do botão.
+	_pause_swap_icon = MenuIcon.new("trocar", MenuKit.ICON_COLORS.trocar, 38)
+	frame.add_child(_pause_swap_icon)
+	_pause_swap_icon.position = frame.custom_minimum_size - Vector2(46, 46)
+	_pause_name = Label.new()
+	_pause_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pause_name.add_theme_font_size_override("font_size", 26)
+	who.add_child(_pause_name)
+	_pause_stars = HBoxContainer.new()
+	_pause_stars.alignment = BoxContainer.ALIGNMENT_CENTER
+	_pause_stars.add_theme_constant_override("separation", 6)
+	_pause_stars.add_child(MenuIcon.new("estrela", Color.WHITE, 28))
+	_pause_star_count = Label.new()
+	_pause_star_count.add_theme_font_size_override("font_size", 24)
+	_pause_star_count.add_theme_color_override("font_color", MenuKit.GOLD)
+	_pause_stars.add_child(_pause_star_count)
+	who.add_child(_pause_stars)
+	var buttons := VBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	row.add_child(buttons)
+	var pause_specs := [["Continuar", close_menus, "continuar"], ["Voltar para a ilha", _leave_lighthouse, "casa"],
+			["Trocar de personagem", open_menu.bind("escolha"), "trocar"], ["Comandos", open_menu.bind("comandos"), "comandos"],
+			["Nova campanha", _new_campaign_from_pause, "nova"], ["Sair do jogo", _quit_game, "sair"]]
+	if arena:
+		pause_specs.remove_at(4)
+	for spec in pause_specs:
+		var b := _menu_button(spec[0], spec[2])
+		b.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			spec[1].call())
+		buttons.add_child(b)
+		_pause_buttons.append(b)
+	_pause_exit = _pause_buttons[1]
+	_pause_exit.visible = false
+	_pause_switch = _pause_buttons[2]
+	_pause_goal = PanelContainer.new()
+	var goal_style := MenuKit.box(Color("#2a2340"), 14)
+	goal_style.set_content_margin_all(10)
+	goal_style.content_margin_left = 12
+	goal_style.content_margin_right = 16
+	_pause_goal.add_theme_stylebox_override("panel", goal_style)
+	pbox.add_child(_pause_goal)
+	var goal_row := HBoxContainer.new()
+	goal_row.add_theme_constant_override("separation", 12)
+	_pause_goal.add_child(goal_row)
+	goal_row.add_child(MenuIcon.new("objetivo", MenuKit.ICON_COLORS.objetivo, 34))
+	pause_objective = Label.new()
+	pause_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pause_objective.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pause_objective.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pause_objective.custom_minimum_size = Vector2(480, 0)
+	pause_objective.add_theme_font_size_override("font_size", 19)
+	pause_objective.add_theme_color_override("font_color", Color("#e6d6ff"))
+	goal_row.add_child(pause_objective)
+	_add_menu_hint(pbox)
+
+
+## Mostra na pausa quem está jogando: o boneco, o nome e, com o Faísca, as estrelinhas.
+func _refresh_pause_card() -> void:
+	var who := "faisca" if parte2 and parte2.faisca_ativo else player.character_name
+	_pause_portrait.show_character(who)
+	_pause_name.text = "Faísca" if who == "faisca" else CHARACTER_LABELS.get(who, "")
+	_pause_stars.visible = who == "faisca"
+	if who == "faisca":
+		_pause_star_count.text = str(parte2.total_estrelas())
+	_pause_card.add_theme_stylebox_override("panel", _pause_card_style(Portrait.BACKGROUNDS.get(who, Color.WHITE)))
+	_pause_swap_icon.visible = _pause_switch.visible
+	_pause_card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if _pause_switch.visible else Control.CURSOR_ARROW
+	_pause_goal.visible = pause_objective.text != ""
+
+
+func _pause_card_style(color: Color) -> StyleBoxFlat:
+	var s := MenuKit.box(MenuKit.CARD, 20, color.darkened(0.15), 3)
+	s.set_content_margin_all(8)
+	s.content_margin_bottom = 10
+	return s
+
+
+## Voltar da escolha de personagem: no começo do jogo vai ao menu inicial; vindo da pausa, à pausa.
+func _character_menu_back() -> void:
+	if _game_started:
+		open_menu("pausa")
+	elif story:
+		open_menu("inicio")
+
+
 ## Caixa de menu centralizada: CenterContainer > PanelContainer > VBox com título. Devolve a VBox.
 func _menu_box(layer: CanvasLayer, title_text: String) -> VBoxContainer:
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", MenuKit.panel_style())
 	center.add_child(panel)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 14)
+	box.add_theme_constant_override("separation", 12)
 	panel.add_child(box)
 	var title := Label.new()
 	title.text = title_text
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", MenuKit.GOLD)
 	box.add_child(title)
 	return box
 
 
-func _menu_button(text: String, focus_style: StyleBox) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(320, 52)
-	b.add_theme_font_size_override("font_size", 20)
-	b.add_theme_stylebox_override("focus", focus_style)
-	b.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
-	return b
+func _menu_button(text: String, icon: String) -> Button:
+	return MenuKit.icon_button(text, icon, ui_layer)
 
 
 func _add_menu_hint(box: VBoxContainer) -> void:
@@ -1513,6 +1591,7 @@ func _add_menu_hint(box: VBoxContainer) -> void:
 	label.text = MENU_KEYBOARD
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	box.add_child(label)
 	_menu_hints.append(label)
 
@@ -1676,14 +1755,34 @@ func _choose_character(key: String) -> void:
 func _on_input_device_changed(gamepad: bool) -> void:
 	for label in _menu_hints:
 		label.text = MENU_GAMEPAD if gamepad else MENU_KEYBOARD
-	if controls_label:
-		var lines := PackedStringArray()
+	if controls_grid:
 		var rows := CONTROLS_GAMEPAD if gamepad else CONTROLS_KEYBOARD
 		if parte2 and parte2.faisca_ativo:
 			rows = CONTROLS_FAISCA_GAMEPAD if gamepad else CONTROLS_FAISCA_KEYBOARD
+		for child in controls_grid.get_children():
+			controls_grid.remove_child(child)
+			child.queue_free()
 		for row in rows:
-			lines.append("%s:  %s" % row)
-		controls_label.text = "\n".join(lines)
+			var what := Label.new()
+			what.text = row[0]
+			what.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			what.add_theme_font_size_override("font_size", 18)
+			what.add_theme_color_override("font_color", Color(1, 1, 1, 0.78))
+			controls_grid.add_child(what)
+			var chip := PanelContainer.new()
+			chip.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			var cs := MenuKit.box(MenuKit.BUTTON_HOVER, 10)
+			cs.content_margin_left = 10
+			cs.content_margin_right = 10
+			cs.content_margin_top = 1
+			cs.content_margin_bottom = 1
+			chip.add_theme_stylebox_override("panel", cs)
+			var key := Label.new()
+			key.text = row[1]
+			key.add_theme_font_size_override("font_size", 18)
+			key.add_theme_color_override("font_color", Color("#ffe08a"))
+			chip.add_child(key)
+			controls_grid.add_child(chip)
 
 
 func _on_hit_confirmed(region: String, _damage: float) -> void:
@@ -1916,7 +2015,7 @@ func _run_gamepad_test() -> void:
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
 	var focus_after := get_viewport().gui_get_focus_owner()
 	all_ok = _check("direcional move o foco no menu", focus_after != focus_before,
-			"(%s -> %s)" % [focus_before.text, focus_after.text if focus_after else "nada"]) and all_ok
+			"(%s -> %s)" % [focus_before.name, focus_after.name if focus_after else "nada"]) and all_ok
 	await _joy_button(JOY_BUTTON_A)
 	await _wait(0.3)
 	all_ok = _check("A escolhe o aventureiro e fecha o menu", not select_panel.visible,
@@ -2055,6 +2154,15 @@ func _run_gamepad_test() -> void:
 	await _joy_button(JOY_BUTTON_DPAD_DOWN)
 	await _joy_button(JOY_BUTTON_A)
 	all_ok = _check("pausa leva à escolha de personagem", select_panel.visible and get_tree().paused) and all_ok
+	all_ok = _check("a escolha marca quem está jogando, com a etiqueta", get_viewport().gui_get_focus_owner() == character_menu.cards[before]
+			and character_menu._tags[before].visible and character_menu._portraits[before].key == before) and all_ok
+	# Para baixo vai ao Voltar, que volta à pausa; e a pausa leva de novo à escolha.
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	var on_back := get_viewport().gui_get_focus_owner() == character_menu.back_button
+	await _joy_button(JOY_BUTTON_A)
+	all_ok = _check("Voltar da escolha leva de volta à pausa", on_back and pause_panel.visible and menu_state == "pausa") and all_ok
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	await _joy_button(JOY_BUTTON_A)
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT if before == CHARACTER_ORDER[0] else JOY_BUTTON_DPAD_LEFT)
 	await _joy_button(JOY_BUTTON_A)
 	await _wait(0.3)
@@ -5148,6 +5256,18 @@ func _run_parte2_test() -> void:
 	all_ok = _check("o Faísca anda pela ilha com o analógico e o aventureiro acompanha", walked > 2.0
 			and player.global_position.distance_to(f.global_position) < 0.05, "(%.1f m)" % walked) and all_ok
 	all_ok = _check("o celular é das crianças", not await open_phone() and menu_state == "") and all_ok
+	open_menu("pausa")
+	await _wait(0.1)
+	all_ok = _check("na pausa, o cartão mostra o Faísca com as estrelinhas e dá para trocar de volta", _pause_portrait.key == "faisca"
+			and _pause_name.text == "Faísca" and _pause_stars.visible and _pause_star_count.text == str(parte2.total_estrelas())
+			and _pause_switch.visible and _pause_swap_icon.visible) and all_ok
+	open_menu("escolha")
+	await _wait(0.1)
+	all_ok = _check("na troca, o cartão do Faísca vem marcado e com a etiqueta Jogando agora",
+			get_viewport().gui_get_focus_owner() == _faisca_button and character_menu._tags.faisca.visible
+			and not character_menu._tags.menino.visible) and all_ok
+	close_menus()
+	await _wait(0.3)
 	all_ok = _check("a seta aponta o farol", objective_marker.visible and parte2.alvo().distance_to(farol.porta()) < 4.0) and all_ok
 	var sea := Vector3(0, 0.5, 290)
 	await _faisca_em(sea, 0.2)
@@ -5305,6 +5425,28 @@ func _run_parte2_test() -> void:
 	all_ok = _check("a campanha guarda a Parte 2", saved.get("aberta", false) and saved.get("faisca", false) and "1-1" in saved.get("grandes", [])
 			and (saved.estrelas.get("1-1", []) as Array).size() == got and (saved.estrelas.get("farol", []) as Array).size() == farol_stars, str(saved.get("estrelas", {}))) and all_ok
 
+	# A 1-2 abre com 30 estrelinhas (completadas aqui com estrelinhas de mentira, tiradas na volta).
+	var fakes := []
+	for k in 30 - parte2.total_estrelas():
+		fakes.append("t%d" % k)
+	parte2.estrelas["teste"] = fakes
+	hub.atualizar_portas(parte2.total_estrelas())
+	await _wait(0.6)
+	var door12: Node3D = hub.portas_nos["1-2"]
+	all_ok = _check("com 30 estrelinhas, a porta dos Túneis do Morro abre, com a foto da fase", door12.dados.aberta and door12.dados.feita
+			and door12._quadro_mat.albedo_texture != null) and all_ok
+	await _faisca_em(door12.global_position + door12.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
+	await _wait_until(func() -> bool: return parte2.lugar == "fase" and not parte2.busy(), 8.0)
+	all_ok = _check("a porta leva aos Túneis do Morro, e o Faísca pousa no começo do túnel", parte2.nivel is Fase12 and f.is_on_floor()
+			and f.global_position.distance_to(parte2.nivel.inicio) < 1.5) and all_ok
+	parte2.sair_da_fase()
+	await _wait_until(func() -> bool: return parte2.lugar == "hub" and not parte2.busy(), 6.0)
+	await _wait(0.2)
+	hub = parte2.hub
+	parte2.estrelas.erase("teste")
+	all_ok = _check("Sair da fase volta para a frente da porta dos Túneis", parte2.lugar == "hub"
+			and f.global_position.distance_to(hub.portas_nos["1-2"].global_position) < 4.5) and all_ok
+
 	# Sai do farol pela porta do sul.
 	var exit_door: Node3D = hub.portas_nos["saida"]
 	await _faisca_em(exit_door.global_position + exit_door.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
@@ -5340,6 +5482,51 @@ func _run_parte2_test() -> void:
 
 ## Fotos da Parte 2 em tools/capturas/ (precisa de janela): o farol na Parte 1, a abertura, o Faísca na ilha,
 ## o hub (portas, escada, sacada e topo), a 1-1 e a constelação. Uso: godot --path . -- --parte2-captura
+## Fotos dos menus (u01 a u07): início, escolha de personagem, pausa e comandos com a criança e com o Faísca e a
+## confirmação. Uso: godot --path . -- --menus-captura
+func _run_menus_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	# O cursor fica no canto, longe dos botões (passar o mouse por cima marca o botão).
+	Input.warp_mouse(Vector2.ZERO)
+	open_menu("inicio")
+	await _wait(1.0)
+	await _shot("u01_inicio.png")
+	open_menu("escolha")
+	await _wait(1.0)
+	await _shot("u02_escolha_no_comeco.png")
+	_choose_character("menino")
+	await _wait(1.0)
+	parte2.aberta = true
+	open_menu("escolha")
+	await _wait(0.3)
+	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
+	await _wait(1.2)
+	await _shot("u03_escolha_com_faisca.png")
+	close_menus()
+	await _wait(0.5)
+	open_menu("pausa")
+	await _wait(1.0)
+	await _shot("u04_pausa.png")
+	open_menu("comandos")
+	await _wait(0.4)
+	await _shot("u04b_comandos_criancas.png")
+	close_menus()
+	parte2.usar_faisca(true)
+	await _wait(0.8)
+	open_menu("pausa")
+	await _wait(1.0)
+	await _shot("u05_pausa_faisca.png")
+	open_menu("comandos")
+	await _wait(0.4)
+	await _shot("u06_comandos.png")
+	open_menu("pausa")
+	_new_campaign_from_pause()
+	await _wait(0.4)
+	await _shot("u07_confirmar.png")
+	get_tree().quit()
+
+
 func _run_parte2_capture() -> void:
 	story.fast = true
 	player.god_mode = true

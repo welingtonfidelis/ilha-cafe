@@ -18,10 +18,15 @@ signal estrela_grande_pega
 
 const PLATAFORMA := "res://assets/faisca/plataforma/"
 const FLORESTA := "res://assets/faisca/floresta/"
+## Peças do Dungeon Pack (Túneis do Morro).
+const MASMORRA := "res://assets/faisca/masmorra/"
 const CAMADA_JOGADOR := 1 << 1
 ## Camada do que o laser dos pés acende (flores de luz). O Faísca não esbarra nela. Na Ilha a camada 4
 ## é a dos pontos de impacto dos esqueletos e a 5 a dos moradores; esta é a 6.
 const CAMADA_LUZ := 1 << 5
+## Paredes invisíveis acima das paredes que se veem (fases sem teto, como os Túneis do Morro): o Faísca
+## esbarra e a câmera não. Na Ilha é a camada dos moradores, que não existem dentro das fases.
+const CAMADA_LIMITE := 1 << 4
 ## Cada Bolota derrotada solta estas estrelinhas (já contam no total desde o começo).
 const ESTRELAS_POR_BOLOTA := 3
 
@@ -44,6 +49,12 @@ var vaga_lumes: Array[VagaLume] = []
 var achados := 0
 var flores: Array[FlorDeLuz] = []
 var portoes: Array[Node3D] = []
+var tochas: Array[Tocha] = []
+var paredes_rachadas: Array[ParedeRachada] = []
+## Portas que abrem com tochas: {"porta": nó da folha, "tochas": [Tocha], "aberta": bool}.
+var portas_das_tochas: Array[Dictionary] = []
+## Pontes que sobem quando a tocha delas acende.
+var pontes: Array[StaticBody3D] = []
 var bau: Bau
 var molas: Array[Area3D] = []
 var coracoes: Array[Area3D] = []
@@ -101,7 +112,11 @@ func _process(delta: float) -> void:
 ## Peça de um pacote do KayKit pelo nome do arquivo, sem ".gltf" (as da floresta têm "_Color"
 ## no nome). `escala` aceita número ou Vector3. `solida` gera a colisão com a forma da malha.
 func peca(arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 1.0, solida := true) -> Node3D:
-	var pasta := FLORESTA if arquivo.contains("_Color") else PLATAFORMA
+	return peca_de(FLORESTA if arquivo.contains("_Color") else PLATAFORMA, arquivo, pos, giro, escala, solida)
+
+
+## Como `peca`, de uma pasta qualquer (MASMORRA, por exemplo).
+func peca_de(pasta: String, arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 1.0, solida := true) -> Node3D:
 	var no: Node3D = _cena(pasta + arquivo + ".gltf").instantiate()
 	no.position = pos
 	no.rotation.y = giro
@@ -383,8 +398,102 @@ func _flor_acesa(_f: FlorDeLuz) -> void:
 		tw.tween_callback(func(): p.process_mode = Node.PROCESS_MODE_DISABLED; p.hide())
 
 
-func colocar_bau(pos: Vector3, giro := 0.0) -> Bau:
+## Tocha que o laser acende (com pedestal de pedra, ou direto no chão de cima de um pilar ou caixote).
+func tocha(pos: Vector3, com_pedestal := true, acesa := false) -> Tocha:
+	var t := Tocha.new()
+	t.position = pos
+	t.com_pedestal = com_pedestal
+	t.acesa_no_comeco = acesa
+	add_child(t)
+	t.acesa.connect(_tocha_acesa)
+	tochas.append(t)
+	return t
+
+
+## Parede rachada (6 x 6 m) com a frente para +Z girada de `giro`: três golpes quebram.
+func parede_rachada(pos: Vector3, giro := 0.0) -> ParedeRachada:
+	var p := ParedeRachada.new()
+	p.position = pos
+	p.rotation.y = giro
+	add_child(p)
+	paredes_rachadas.append(p)
+	return p
+
+
+## Vão de porta com a porta de madeira do Dungeon Pack (6 x 6 m), fechada até as `quais` tochas acenderem;
+## aí a porta gira e abre. Devolve o nó da parede.
+func porta_das_tochas(pos: Vector3, giro: float, quais: Array) -> Node3D:
+	var vao := peca_de(MASMORRA, "wall_doorway", pos, giro, 1.5)
+	portas_das_tochas.append({"porta": vao.find_child("wall_doorway_door", true, false), "tochas": quais, "aberta": false})
+	return vao
+
+
+## Ponte de tábuas (3 m de largura) de `de` até `ate` (os dois na altura de pisar), escondida no escuro
+## até a tocha `t` acender; aí ela sobe lá de baixo e para no lugar.
+func ponte_da_tocha(t: Tocha, de: Vector3, ate: Vector3) -> StaticBody3D:
+	var corpo := StaticBody3D.new()
+	var meio := (de + ate) * 0.5
+	var dir := ate - de
+	var comprimento := dir.length()
+	corpo.position = meio
+	corpo.rotation.y = atan2(dir.x, dir.z)
+	var n := maxi(1, ceili(comprimento / 3.0))
+	for i in n:
+		var tabua: Node3D = _cena(MASMORRA + "floor_wood_small.gltf").instantiate()
+		tabua.scale = Vector3(1.5, 1.5, comprimento / n / 2.0)
+		tabua.position = Vector3(0, -0.08, -comprimento * 0.5 + comprimento / n * (i + 0.5))
+		corpo.add_child(tabua)
+	var vigas := _material(Color("6b3f22"))
+	for lado in [-1.0, 1.0]:
+		var viga := MeshInstance3D.new()
+		var caixa := BoxMesh.new()
+		caixa.size = Vector3(0.25, 0.35, comprimento)
+		viga.mesh = caixa
+		viga.material_override = vigas
+		viga.position = Vector3(1.4 * lado, -0.3, 0)
+		corpo.add_child(viga)
+	var cs := CollisionShape3D.new()
+	var forma := BoxShape3D.new()
+	forma.size = Vector3(3.0, 0.4, comprimento)
+	cs.shape = forma
+	cs.position.y = -0.2
+	cs.disabled = true
+	corpo.add_child(cs)
+	corpo.visible = false
+	add_child(corpo)
+	corpo.set_meta("lugar", meio)
+	corpo.set_meta("tocha", t)
+	pontes.append(corpo)
+	return corpo
+
+
+func ponte_no_lugar(p: StaticBody3D) -> bool:
+	return p.has_meta("no_lugar")
+
+
+func _tocha_acesa(t: Tocha) -> void:
+	for p in pontes:
+		if p.get_meta("tocha") == t and not p.visible:
+			var lugar: Vector3 = p.get_meta("lugar")
+			p.position = lugar + Vector3.DOWN * 14.0
+			p.visible = true
+			(p.get_child(p.get_child_count() - 1) as CollisionShape3D).disabled = false
+			var tw := p.create_tween()
+			tw.tween_property(p, "position", lugar, 1.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.tween_callback(func(): p.set_meta("no_lugar", true))
+	for d in portas_das_tochas:
+		if d.aberta or not (d.tochas as Array).all(func(q: Tocha) -> bool: return q.esta_acesa):
+			continue
+		d.aberta = true
+		var folha: Node3D = d.porta
+		var tw := folha.create_tween()
+		tw.tween_interval(0.4)
+		tw.tween_property(folha, "rotation:y", folha.rotation.y - 1.75, 1.0).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func colocar_bau(pos: Vector3, giro := 0.0, dourado := false) -> Bau:
 	bau = Bau.new()
+	bau.dourado = dourado
 	bau.position = pos
 	bau.rotation.y = giro
 	add_child(bau)

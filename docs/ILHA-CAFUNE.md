@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26). Em 2026-10-28 começou a Parte 2 (seção 11):** depois dos créditos, o Faísca (o robozinho do projeto Faísca) entra na troca de personagem e entra no farol da ponta sudeste, o hub das fases de plataforma. A primeira rodada está no branch `parte-2-faisca`: o farol, a abertura, o hub e a fase 1-1. Em 2026-10-29 o hub virou uma torre de quatro andares com escada em espiral, com as portas das fases que ainda vão ser feitas. Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
+**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26). Em 2026-10-28 começou a Parte 2 (seção 11):** depois dos créditos, o Faísca (o robozinho do projeto Faísca) entra na troca de personagem e entra no farol da ponta sudeste, o hub das fases de plataforma. A primeira rodada está no branch `parte-2-faisca`: o farol, a abertura, o hub e a fase 1-1. Em 2026-10-29 o hub virou uma torre de quatro andares com escada em espiral, com as portas das fases que ainda vão ser feitas, e a fase 1-2 Túneis do Morro ficou pronta. No mesmo dia, o voo do Faísca passou a mostrar só o laser, durar 1 s e acertar num círculo em volta dele. Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
 
 ## Índice
 
@@ -224,7 +224,13 @@ Ideias para depois: coletáveis (estrelas escondidas, bilhetes dos esqueletos), 
 
 - **Pacote:** KayKit Mystery Monthly Series 5 (vendido no itch.io; licença CC0, como todo o KayKit). Traz 14 personagens; só usamos os dois Protagonists. Em 2026-10-25 o usuário trouxe a Coleção Completa do KayKit v6.1 (clone em `Projects/others/kaykit-complete-v6-1-assets`, com os arquivos no Git LFS; só os pacotes usados foram baixados com `git lfs pull --include`).
 - **No jogo (desde 2026-10-25):** `assets/characters/protagonists/Protagonist_B.glb` é o menino e `Protagonist_A.glb` é a menina (a de óculos). Usam o mesmo `Rig_Medium` dos esqueletos, com os mesmos 23 ossos (só a ordem muda, e as animações acham os ossos pelo nome), então animações, encaixe do blaster e regiões de impacto valeram sem mudança. Antes, o Ranger e a Rogue do Adventurers grátis seguravam o lugar; eles saíram da build (`exclude_filter` do `export_presets.cfg`) e só ficam para as ferramentas de inspeção.
-- **Escolher e trocar:** o jogo abre na tela "Escolha quem vai jogar". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário). Na primeira versão a diferença é só visual.
+- **Escolher e trocar:** o jogo abre na tela "Quem vai jogar?". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário), ou clicando no boneco da pausa. Na primeira versão a diferença é só visual.
+- **Tela de escolha (refeita em 2026-10-29, pedido do usuário: "está apenas textual, uma criança teria dificuldades"):**
+  - Cada personagem é um cartão grande (`scripts/character_menu.gd`) com o boneco 3D de verdade, num fundo da cor dele (azul o menino, rosa a menina, laranja o Faísca), o nome embaixo e uma linha do que faz, com a miniatura de um blaster ou uma estrela.
+  - O cartão marcado (direcional, setas ou o mouse andando por cima) cresce, ganha a borda dourada e o boneco dá tchau; os outros ficam parados respirando.
+  - Quem já está jogando tem a etiqueta verde "Jogando agora" e vem marcado ao abrir.
+  - O Faísca só aparece com a Parte 2 aberta.
+  - O botão "Voltar" (ou B / Esc) leva à pausa, ou ao menu inicial no começo do jogo.
 - **Nomes:** ainda por decidir.
 
 ### Moradores (feitos em 2026-10-26)
@@ -436,7 +442,7 @@ godot -e --path .
 
 **Testes automáticos:**
 - `godot --headless --path . -- --smoke` atira num esqueleto sem abrir janela e imprime os estados.
-- `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 22 pontos (escolha inicial, analógicos, L3 correndo, pulo, mira, auxílio de mira, tiro, direcional e Y trocando de blaster, X, RB, R3 com o Pirulitão, Back, pausa com Start, trocar de personagem pela pausa, B e Start fechando a pausa); termina com "CONTROLE OK".
+- `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 25 pontos (escolha inicial, analógicos, L3 correndo, pulo, mira, auxílio de mira, tiro, direcional e Y trocando de blaster, X, RB, R3 com o Pirulitão, Back, pausa com Start, a escolha marcando quem está jogando, o Voltar da escolha, trocar de personagem pela pausa, B e Start fechando a pausa); termina com "CONTROLE OK".
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
@@ -498,6 +504,15 @@ godot -e --path .
 | Regiões de impacto | F3 | Back / Share |
 
 **Auxílio de mira (só no controle e mirando):** um alvo a até 7° do centro da mira freia o giro do analógico pela metade e puxa a mira de leve para o corpo do esqueleto. Logo que aperta o gatilho de mira o puxão é mais forte por 0,25 s. A cabeça (dano em dobro) fica por conta de quem mira. Os valores ficam no grupo "Controle" do `player.gd` (`aim_assist_angle_deg`, `aim_assist_pull`, `aim_assist_snap`, `stick_speed`). A vibração é curta no tiro e mais forte no acerto.
+
+**Menus (refeitos em 2026-10-29, pedido do usuário).** Pensados para criança, como a lojinha do celular:
+- **Visual comum** (`scripts/menu_kit.gd`): a tela escura e opaca da lojinha, com borda e título dourados (as faixas do jogo não aparecem mais por trás das letras), e botões grandes com um ícone redondo colorido à esquerda (`scripts/menu_icon.gd`, desenhado por código). Cada ação tem a sua cor: verde continuar, azul voltar para a ilha ou sair da fase (casinha), roxo trocar de personagem, verde-água comandos (controle), laranja nova campanha (brilho), vermelho sair (desligar), cinza voltar (seta).
+- **Pausa:** à esquerda, o cartão de quem está jogando, com o boneco de verdade (`scripts/portrait.gd`, o mesmo retrato dos cartões) e o nome; com o Faísca, também as estrelinhas. A bolinha roxa de trocar no canto da foto avisa que clicar no boneco leva à troca de personagem. À direita, os botões. Embaixo, o objetivo numa faixa com o ícone de alvo.
+- **Comandos:** duas colunas, o que faz à esquerda e o botão ou a tecla numa etiqueta amarela à direita.
+- **Mouse:** passar o mouse por cima marca o botão, igual ao direcional. Só conta movimento de verdade (mais de 2 px, o mesmo limite do `Player.detect_device`): o menu que abre embaixo do cursor parado, de quem joga de controle, não perde o botão marcado.
+- **Direcional na escolha:** os vizinhos de cada cartão são fixos. Sem isso, o direcional para a esquerda saindo da menina caía no "Voltar", que fica no meio, embaixo.
+- **Retratos:** cada um tem o seu mundinho (`SubViewport` com `own_world_3d`), luz, câmera de três quartos e uma sombrinha redonda. Escondido, o boneco para de animar.
+- `godot --path . -- --menus-captura` tira as fotos `u01` a `u07` em `tools/capturas/`: menu inicial, escolha no começo, escolha com o Faísca, pausa, comandos das crianças, pausa com o Faísca, comandos do Faísca e a confirmação de nova campanha.
 
 **Detalhe da Godot 4.7:** as ações de menu `ui_accept` e `ui_cancel` não vêm ligadas aos botões A e B do controle; o `main.gd` liga.
 
@@ -836,11 +851,12 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 - **Bandeiras da ilha:** com o Faísca, elas não acendiam, porque só reconheciam o `Player`, que fica guardado e sem colisão. Agora o `Checkpoint` aceita o `Jogador` também, e o `--parte2` confere.
 
 **Como testar:**
-- `godot --headless --path . -- --parte2` confere 37 pontos de ponta a ponta. Termina com "PARTE2 OK" e leva uns 2 minutos. Desde 2026-10-29 ele também sobe a escada do farol andando de verdade (o analógico simulado segue a curva), do térreo ao topo. No caminho, confere a sacada do 2º andar, a murinha (empurrando para o vão e pulando), as 8 estrelinhas, a porta da nave e a bandeira da ilha acesa pelo Faísca.
+- `godot --headless --path . -- --parte2` confere 42 pontos de ponta a ponta (com a entrada na 1-2 pela porta e, desde a pausa nova, o cartão do Faísca na pausa e na troca). Termina com "PARTE2 OK" e leva uns 2 minutos. Desde 2026-10-29 ele também sobe a escada do farol andando de verdade (o analógico simulado segue a curva), do térreo ao topo. No caminho, confere a sacada do 2º andar, a murinha (empurrando para o vão e pulando), as 8 estrelinhas, a porta da nave e a bandeira da ilha acesa pelo Faísca.
 - `godot --path . -- --parte2-captura` tira as fotos `t01` a `t12` em `tools/capturas/`. Do hub: `t05` a entrada, `t06` e `t07` as portas do térreo, `t08` a escada, `t09` a sacada do 2º andar, `t10` o topo com a porta da nave e `t12` a constelação da 1-1 vista do topo.
 - Os testes do projeto Faísca rodam sem montar a ilha, pelo `FaiscaSolo`:
-  - `-- --faisca-controle` (26 pontos);
+  - `-- --faisca-controle` (29 pontos, com o laser só, o voo de 1 s e o laser acertando de lado);
   - `-- --faisca-fase` (27 pontos: a 1-1 de ponta a ponta, com os postos e a área maior);
+  - `-- --faisca-fase-1-2` (34 pontos: a 1-2 de ponta a ponta), `-- --faisca-fase-1-2-captura` (fotos em `tools/capturas/faisca/fase_1_2/`) e `-- --faisca-jogar-1-2` (a 1-2 direto, para jogar sem o farol);
   - `-- --faisca-smoke`;
   - `-- --faisca-captura` e `-- --faisca-fase-captura`, com fotos em `tools/capturas/faisca/`.
 - `godot --path . -s tools/foto_farol.gd` fotografa o farol apagado e aceso.
@@ -848,9 +864,127 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 **Ainda não feito ou não conferido:**
 - Ninguém jogou a Parte 2 com controle de verdade.
 - Os andares de cima do farol existem, mas as fases deles ainda não. As portas mostram o cadeado e, quando o número chegar, "Em breve".
-- A fase 2 (Túneis do Morro) ainda não foi planejada nem feita.
+- A 1-2 foi feita e testada por script, mas ninguém jogou com controle.
 - O Faísca não tem sons próprios.
-- O build do Bazzite foi para o PC em 2026-10-28, ainda sem a torre de andares, sem a área maior dos postos e sem as bandeiras da ilha para o Faísca.
+- Em 2026-10-29 a build com a 1-2 e o laser novo foi para o PC Bazzite (código conferido pelo hash). O jogo estava aberto lá desde 2026-10-28 e quebrou: depois da troca do executável, os blasters não carregaram e ele fechou. A Godot lê as peças do próprio executável enquanto roda, então a troca só pode ser feita com o jogo fechado.
+
+### Fase 1-2: Túneis do Morro (aprovada e construída em 2026-10-29)
+
+**Como ficou:**
+- **Código:** `scripts/faisca/fases/fase_1_2.gd` (`Fase12`), uma função por trecho, com as peças da caverna no fim:
+  - `rocha`: a pedra escura sólida;
+  - `chao`: os módulos do chão;
+  - `parede_z` e `parede_x`: as paredes;
+  - `tablado`: o andaime com tábuas;
+  - `elevador` e `caixote`;
+  - `_ossinho`: o esqueleto mineiro acenando.
+- **Peças novas e reaproveitáveis:**
+  - `Tocha` (`tocha.gd`);
+  - `ParedeRachada` (`parede_rachada.gd`);
+  - no `Fase`: `tocha`, `parede_rachada`, `porta_das_tochas` (a porta de madeira do `wall_doorway` gira) e `ponte_da_tocha`;
+  - o baú dourado (`Bau.dourado`);
+  - os desenhos "tocha" e "golpe" no balão do Vovô.
+- **Paredes:** só o desenho do pacote, com a colisão em caixas. Em cima delas, paredes invisíveis na camada `Fase.CAMADA_LIMITE` (a 5): o Faísca esbarra nelas e a câmera não, porque as molas jogam alto e a fase não tem teto.
+- **Números:** 89 estrelinhas (53 no caminho e 36 das 12 Bolotas), 16 tochas (5 já acesas, de enfeite), 3 pontes, 2 postos e 3 vaga-lumes.
+- **No hub:** a porta abre com 30 estrelinhas e mostra a foto da mina de ouro (`assets/faisca/portas/fase_1_2.jpg`).
+
+**O que mudou do plano na construção:**
+- **P1:** fica no alto do poço, na beirada do abismo. Assim, cair no abismo não obriga a subir os andaimes de novo.
+- **Andaimes:** ficam um de frente para o outro, com folga, e terminam numa passarela até a beirada. O atalho é uma mola ao lado da passarela.
+- **Vãos do abismo:** com o voo de 1 s, o pulo mais longo flutuando passa de 12 m. Por isso os vãos ficaram com 14, 14 e 13 m, e o resto da fase andou 6 m para a frente. O teste confere que, sem a ponte, o Faísca desce da altura da beirada uns 2 m antes do pilar.
+- **A porta:** em vez de uma grade que sobe, é a porta de madeira do vão do Dungeon Pack, que gira e abre.
+- **Os caixotes da última tocha:** o degrau fica encostado na pilha alta, que segura quem pula longe demais.
+
+O texto abaixo é o plano original.
+
+Pedido do usuário: "seguir para fase 2". É a porta do leste do térreo, que pede 30 estrelinhas. Um rascunho com as peças foi montado em `tools/rascunho_tuneis.gd`; as fotos `tuneis_1` a `tuneis_3` estão em `tools/capturas/`.
+
+**A história:** as Bolotas cavaram por baixo do Morro dos Ventos e esconderam a segunda Estrela Grande na mina velha dos Ossinhos. Os esqueletos, amigos desde a Parte 1, tinham deixado tochas pelo caminho, mas estão todas apagadas. Na boca do túnel, um Ossinho mineiro acena e aponta para dentro (é só enfeite; ninguém fala na fase).
+
+**O que a fase ensina de novo:**
+- **Tochas:** o laser dos pés acende, como as flores de luz da 1-1. Cada tocha acesa clareia em volta com luz laranja, e algumas fazem coisas:
+  - três tochas juntas abrem um portão de grade;
+  - as tochas do abismo fazem a ponte de tábuas subir do escuro até a próxima tocha.
+- **Paredes rachadas:** três golpes quebram e mostram um segredo. O Vovô Farol ganha um desenho novo, o do golpe (X).
+- **Elevadores:** plataformas de madeira subindo e descendo.
+
+**Tamanho:** 5 a 7 minutos. Umas 45 estrelinhas no caminho e as das Bolotas (3 cada), 3 vaga-lumes e a Estrela Grande.
+
+**Postos:** P1 no começo do poço dos andaimes, P2 na mina de ouro.
+
+Caminho:
+
+```
+                [8] Câmara do Baú   (Estrela Grande)
+                          ^
+                [7] Portão das três tochas
+                          ^
+                [6] Elevadores de madeira
+                          ^
+                [5] Mina de ouro  P2   (coração extra)
+                          ^
+                [4] Abismo escuro: a ponte aparece com as tochas   V3 embaixo da última ponte
+                          ^
+                [3] Poço dos andaimes  P1   V2 numa viga lá no alto
+                          ^
+                [2] Corredor das tochas   V1 atrás da parede rachada
+                          ^
+                [1] Boca do túnel (o Ossinho acena)
+```
+
+Trechos:
+
+1. **Boca do túnel.** O Faísca desce flutuando logo depois da entrada. Atrás dele fica o arco claro da saída, com a luz do dia. Tem barris, caixotes, uma trilha de estrelinhas e uma Bolota dormindo.
+2. **Corredor das tochas.** Um corredor de mina com andaimes de madeira atravessados, cada vez mais escuro. A primeira tocha apagada fica bem no caminho, e o Vovô Farol mostra o desenho do laser. Cada tocha acesa clareia o pedaço seguinte. Uma parede rachada no meio esconde o V1, e o Vovô mostra o desenho do golpe na primeira vez.
+3. **Poço dos andaimes (P1).** Um salão alto com andaimes de madeira em degraus, para subir pulando, com uma mola e uma Bolota em cada patamar. O V2 fica numa viga lá no alto.
+4. **Abismo escuro.** Um vão grande e escuro, sem ponte. Três tochas em cima de pilares, em linha: cada uma acesa faz subir a ponte de tábuas até a próxima. Cair tira um coração e volta no P1. O V3 fica numa beiradinha embaixo da última ponte, para quem descer flutuando.
+5. **Mina de ouro (P2).** Uma caverna larga, com pedras de ouro, baldes com picaretas e caixotes. Bolotas acordadas, para soco, chute e pisão. Tem um coração extra.
+6. **Elevadores.** Duas plataformas de madeira subindo e descendo num poço, até uma passarela alta.
+7. **Portão das três tochas.** O portão de grade fechado, com três tochas apagadas na frente; uma fica em cima de caixotes altos e pede pulo alto e flutuar. Com as três acesas, a grade sobe.
+8. **Câmara do Baú.** O baú dourado da masmorra, com três Bolotas de guarda. Três golpes abrem, a Estrela Grande sai, o Faísca pega e comemora, e vem a tela de fim.
+
+**Regras:**
+- O perigo é só cair no abismo e as Bolotas, como na 1-1.
+- O escuro nunca é breu: a luz da caverna é azulada e fraca, as estrelinhas brilham mais e o caminho sempre aparece. As tochas deixam tudo mais claro e quente.
+- **Sem teto:** em cima, o escuro faz a vez da rocha. Assim a câmera do Faísca fica solta, sem bater num teto baixo.
+
+**Peças:**
+- **Dungeon Pack** (já baixado do LFS e copiado em `assets/faisca/masmorra/`):
+  - paredes de pedra, inclusive a rachada e a de grade;
+  - chão de terra, de pedra e de tábuas;
+  - andaimes de madeira, colunas e pilares;
+  - tochas, pedras de ouro, barris, caixotes, balde com picaretas e o baú dourado.
+- **Escala:** as peças de construção ficam em 1,5x, então os módulos de 4 m viram 6 m e as paredes ficam com 6 m de altura. Os enfeites ficam em 1x. O rascunho confere isso ao lado do Faísca.
+- **Ficam de fora pelo tema infantil:**
+  - o chão de espinhos;
+  - espadas e escudos;
+  - o baú mímico;
+  - o andaime com suportes de tocha, que de longe parecem mãos de garra.
+- **Do Platformer:** molas, corações e as bandeiras dos postos.
+- **Feitos por código:** a chama das tochas, a ponte que sobe, as Bolotas e as estrelinhas.
+
+**O que construir, nesta ordem:**
+1. A `Tocha` (como a `FlorDeLuz`), o portão de grade que abre com tochas e a ponte que aparece.
+2. A parede rachada e o desenho do golpe no balão do Vovô.
+3. O ambiente de caverna: luz azulada e fraca, névoa leve, sem céu nem nuvens.
+4. Os trechos, um por um, jogando cada um.
+5. A foto da 1-2 para a porta do hub; a porta passa a abrir a fase com 30 estrelinhas.
+6. Testes:
+   - `--faisca-fase-1-2`: tochas, ponte, parede, portão, baú e fim;
+   - o `--parte2` entrando na 1-2 pela porta.
+
+### O laser e o voo do Faísca (pedido do usuário em 2026-10-29)
+
+O pedido: "dos pés do faísca saem um tipo de fogo de jato + o laser, talvez sair apenas o laser fique melhor visualmente, e o raio de dano desse laser parece pequeno, preciso quase estar no centro do inimigo pra atingir com o laser por cima, e a duração do voo pode aumentar um pouco".
+
+- **Só o laser:** o `Jogador` não liga mais os jatos de fogo do `Robo`. Os nós continuam lá, marcando a ponta de cada pé, de onde o laser sai. Isso vale também na descida do começo das fases.
+- **Área do laser:**
+  - Antes, só valia onde o fio do laser batia, então era preciso estar quase em cima do meio do inimigo.
+  - Agora, tudo num cilindro de `Jogador.RAIO_LASER` (1 m), dos pés até o chão, leva o laser: inimigos levam dano, e flores e tochas acendem.
+  - Um anel ciano no chão mostra o tamanho da área.
+  - Uma Bolota a 1,3 m de lado já leva; antes, ela precisava estar a menos de uns 0,8 m.
+- **Voo:** `tempo_flutuar` passou de 0,75 s para 1 s. O vão grande da 1-1 continua pedindo flutuar, como confere o `--faisca-fase`.
+- **Fora do projeto separado:** essa mudança é só da cópia da Ilha. O projeto Faísca separado ficou como registro.
 
 ### Em aberto
 

@@ -2,8 +2,8 @@ class_name Jogador
 extends CharacterBody3D
 ## O Faísca na mão do jogador. Anda com o analógico (devagar ou rápido, conforme a inclinação),
 ## pula com A (segurando o botão o pulo vai mais alto) e, segurando A na descida, flutua com
-## os jatos dos tênis disparando um laser até o chão, como no Astro: o laser acerta quem estiver
-## embaixo. Golpe no X (quadrado no PlayStation): soco, soco e chute no chão, e um giro no ar.
+## um laser saindo dos tênis até o chão, como no Astro: o laser acerta quem estiver embaixo, num
+## círculo de RAIO_LASER em volta dele (o anel no chão mostra). Golpe no X (quadrado no PlayStation): soco, soco e chute no chão, e um giro no ar.
 ## Cair em cima de um inimigo é um pisão, que quica. Câmera no analógico direito ou no mouse.
 ## Tem 3 corações: encostar numa Bolota ou cair nas nuvens tira um. Sem corações ele dá um
 ## curto (faisquinhas e fumacinha) e volta no último posto com os 3 de novo; não tem fim de jogo.
@@ -22,7 +22,8 @@ signal vida_mudou(vida: int)
 @export var tempo_coiote := 0.12
 ## Apertar o pulo um pouco antes de pousar também vale.
 @export var tempo_memoria_pulo := 0.12
-@export var tempo_flutuar := 0.75
+## Era 0,75 s; o usuário pediu um voo um pouco mais longo em 2026-10-29.
+@export var tempo_flutuar := 1.0
 @export var sensibilidade_mouse := 0.0025
 @export var velocidade_analogico := Vector2(3.0, 2.0)
 @export var vibracao := true
@@ -48,6 +49,9 @@ const ALTURA_GOLPE := 1.6
 const TEMPO_GIRO := 0.45
 const ALCANCE_GIRO := 2.0
 const ALCANCE_LASER := 25.0
+## Raio do círculo que o laser acerta embaixo do Faísca (antes só valia o fio do laser, e era preciso
+## estar quase em cima do meio do inimigo; pedido do usuário em 2026-10-29).
+const RAIO_LASER := 1.0
 ## Inimigo a até esta distância, mais ou menos na frente, puxa a mira do golpe (ajuda criança).
 const AJUDA_MIRA := 2.8
 
@@ -99,6 +103,8 @@ var _invencivel := 0.0
 var _no_curto := false
 var _feixes: Array[Node3D] = []
 var _impactos: Array[MeshInstance3D] = []
+var _anel_laser: MeshInstance3D
+var _area_laser: CylinderShape3D
 
 
 func _ready() -> void:
@@ -178,6 +184,22 @@ func _montar_lasers() -> void:
 		imp.visible = false
 		add_child(imp)
 		_impactos.append(imp)
+	# O anel no chão do tamanho da área que o laser acerta.
+	_anel_laser = MeshInstance3D.new()
+	var anel := TorusMesh.new()
+	anel.inner_radius = RAIO_LASER - 0.12
+	anel.outer_radius = RAIO_LASER
+	anel.rings = 32
+	anel.ring_segments = 6
+	_anel_laser.mesh = anel
+	_anel_laser.scale = Vector3(1.0, 0.15, 1.0)
+	_anel_laser.material_override = clarao
+	_anel_laser.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_anel_laser.top_level = true
+	_anel_laser.visible = false
+	add_child(_anel_laser)
+	_area_laser = CylinderShape3D.new()
+	_area_laser.radius = RAIO_LASER
 
 
 func _material_laser(cor: Color, alfa: float, forca: float) -> StandardMaterial3D:
@@ -292,7 +314,6 @@ func _physics_process(delta: float) -> void:
 
 	_decolando -= delta
 	_pousando -= delta
-	robo.jatos(flutuando)
 	_atualizar_lasers()
 	_atualizar_animacao()
 
@@ -538,29 +559,52 @@ func _frente() -> Vector3:
 
 # --- laser dos pés ------------------------------------------------------------------
 
-## Enquanto flutua, um laser sai de cada tênis direto para baixo até bater no chão ou num
-## inimigo; quem estiver embaixo leva dano (a imunidade curta do inimigo dá o ritmo).
+## Enquanto flutua, um laser sai de cada tênis direto para baixo até bater no chão ou num inimigo (só o
+## desenho). O que leva o laser é tudo o que estiver num cilindro de RAIO_LASER embaixo do Faísca, dos
+## pés até o chão: inimigos levam dano (a imunidade curta deles dá o ritmo), flores e tochas acendem.
 func _atualizar_lasers() -> void:
+	_anel_laser.visible = flutuando
+	if not flutuando:
+		for i in 2:
+			_feixes[i].visible = false
+			_impactos[i].visible = false
+		return
 	var espaco := get_world_3d().direct_space_state
+	var mais_baixo := INF
+	var pes := Vector3.ZERO
 	for i in 2:
-		_feixes[i].visible = flutuando
-		_impactos[i].visible = flutuando
-		if not flutuando:
-			continue
+		_feixes[i].visible = true
+		_impactos[i].visible = true
 		var de := robo.ponta_do_pe(i)
 		var ate := de + Vector3.DOWN * ALCANCE_LASER
 		var consulta := PhysicsRayQueryParameters3D.create(de, ate, 1 | Alvo.CAMADA | Fase.CAMADA_LUZ, [get_rid()])
 		var batida := espaco.intersect_ray(consulta)
 		if not batida.is_empty():
 			ate = batida.position
-			if batida.collider is Alvo and batida.collider.receber_golpe(1, de, 2.5):
-				_tremer(0.2, 0.3, 0.08)
-			elif batida.collider.has_method("acender"):
-				batida.collider.acender()
 		var largura := 1.0 + randf() * 0.3
 		_feixes[i].global_transform = Transform3D(Basis.from_scale(Vector3(largura, maxf(de.y - ate.y, 0.01), largura)), (de + ate) / 2.0)
 		_impactos[i].global_position = ate + Vector3.UP * 0.03
 		_impactos[i].scale = Vector3.ONE * (0.8 + randf() * 0.4)
+		pes += de * 0.5
+		mais_baixo = minf(mais_baixo, ate.y)
+	# O chão de verdade embaixo do meio (o fio pode ter parado num inimigo).
+	var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(pes, pes + Vector3.DOWN * ALCANCE_LASER, 1, [get_rid()]))
+	var fundo: float = chao.position.y if not chao.is_empty() else mais_baixo
+	_anel_laser.global_position = Vector3(pes.x, fundo + 0.04, pes.z)
+	var altura := maxf(pes.y - fundo, 0.2)
+	_area_laser.height = altura
+	var area := PhysicsShapeQueryParameters3D.new()
+	area.shape = _area_laser
+	area.transform = Transform3D(Basis.IDENTITY, Vector3(pes.x, pes.y - altura * 0.5, pes.z))
+	area.collision_mask = Alvo.CAMADA | Fase.CAMADA_LUZ
+	area.exclude = [get_rid()]
+	for r in espaco.intersect_shape(area, 16):
+		var quem: Object = r.collider
+		if quem is Alvo:
+			if quem.receber_golpe(1, pes, 2.5):
+				_tremer(0.2, 0.3, 0.08)
+		elif quem.has_method("acender"):
+			quem.acender()
 
 
 ## Fim do laser `i` (para os testes).

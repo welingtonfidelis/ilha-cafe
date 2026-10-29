@@ -3,6 +3,7 @@ extends StaticBody3D
 ## Baú das Bolotas (o baú grande do pacote Platformer, amarelo). Três golpes abrem: a cada um
 ## ele balança; no terceiro a tampa abre e a Estrela Grande sobe de dentro. Encostar nela
 ## termina a fase (sinal `estrela_pega`). Fica no grupo dos alvos para os golpes e a mira.
+## Com `dourado`, é o baú grande dourado do Dungeon Pack (Túneis do Morro), com a tampa do mesmo jeito.
 
 signal aberto
 signal estrela_pega
@@ -15,7 +16,9 @@ var derrotado := false
 ## O baú é grande: os golpes alcançam a partir da beirada, não do meio.
 var raio_golpe := 1.9
 var golpes := 0
+var dourado := false
 var estrela: Area3D
+var _escala := ESCALA
 var _modelo: Node3D
 var _tampa: Node3D
 var _imune := 0.0
@@ -29,15 +32,23 @@ func _ready() -> void:
 	add_to_group(Alvo.GRUPO)
 	collision_layer = 1
 	collision_mask = 0
-	_modelo = load(Fase.PLATAFORMA + "chest_large_yellow.gltf").instantiate()
-	_modelo.scale = Vector3.ONE * ESCALA
-	add_child(_modelo)
-	_tampa = _modelo.find_child("chest_large_lid_yellow", true, false)
 	var cs := CollisionShape3D.new()
 	var caixa := BoxShape3D.new()
-	caixa.size = Vector3(1.85, 0.8, 1.6) * ESCALA
+	if dourado:
+		_modelo = load(Fase.MASMORRA + "chest_large_gold.gltf").instantiate()
+		_escala = 1.4
+		_modelo.scale = Vector3.ONE * _escala
+		_tampa = _modelo.find_child("chest_large_gold_lid", true, false)
+		caixa.size = Vector3(2.2, 1.3, 1.85) * 1.4
+		cs.position = Vector3(0, 0.65 * 1.4, 0)
+	else:
+		_modelo = load(Fase.PLATAFORMA + "chest_large_yellow.gltf").instantiate()
+		_modelo.scale = Vector3.ONE * ESCALA
+		_tampa = _modelo.find_child("chest_large_lid_yellow", true, false)
+		caixa.size = Vector3(1.85, 0.8, 1.6) * ESCALA
+		cs.position = Vector3(0, 0.4 * ESCALA - 0.16 * ESCALA, 0.1 * ESCALA)
+	add_child(_modelo)
 	cs.shape = caixa
-	cs.position = Vector3(0, 0.4 * ESCALA - 0.16 * ESCALA, 0.1 * ESCALA)
 	add_child(cs)
 
 
@@ -66,7 +77,7 @@ func receber_golpe(_dano: int, de: Vector3, _forca := 6.0) -> bool:
 	tw.tween_property(_modelo, "rotation:z", -0.12 * signf(lado.x + 0.01), 0.06)
 	tw.tween_property(_modelo, "rotation:z", 0.08 * signf(lado.x + 0.01), 0.08)
 	tw.tween_property(_modelo, "rotation:z", 0.0, 0.1)
-	tw.parallel().tween_property(_modelo, "scale", Vector3.ONE * ESCALA, 0.12).from(Vector3(1.12, 0.88, 1.12) * ESCALA)
+	tw.parallel().tween_property(_modelo, "scale", Vector3.ONE * _escala, 0.12).from(Vector3(1.12, 0.88, 1.12) * _escala)
 	if golpes >= GOLPES_PARA_ABRIR:
 		_abrir()
 	return true
