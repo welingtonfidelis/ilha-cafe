@@ -6,10 +6,13 @@ extends Fase
 ## 1,5x (módulos de 6 m) e sem teto: em cima, o escuro faz a vez da rocha e a câmera fica solta.
 ## Novidades: tochas que o laser acende (clareiam; três abrem a porta; as do abismo sobem a ponte),
 ## paredes rachadas que três golpes quebram e elevadores de madeira. Plano na seção 11 do docs/ILHA-CAFUNE.md.
-## O caminho vai para -Z, subindo em três níveis (chão a 0, 8 e 16 m):
+## O caminho vai para -Z, subindo em quatro níveis (chão a 0, 8, 16 e 28 m). Em 2026-10-29 o usuário achou a
+## fase muito curta (uns 200 m) e ela ganhou cinco trechos novos (marcados com *), passando de uns 380 m:
 ##   1 Boca do túnel (o Ossinho acena)  2 Corredor das tochas (V1 atrás da parede rachada)
 ##   3 Poço dos andaimes (V2 numa viga alta)  4 Abismo: as tochas sobem a ponte (P1 antes; V3 embaixo)
-##   5 Mina de ouro (P2)  6 Elevadores  7 Porta das três tochas  8 Câmara do Baú
+##   5 Mina de ouro (P2)  *6 Carrinho de mina (P3 na chegada)  *7 Sala escura  8 Elevadores
+##   9 Porta das três tochas  *10 Alavancas  *11 Poço dos cristais  *12 Arena da Bolotona (P4)
+##   13 Câmara do Baú
 
 ## Escala das peças de construção e o tamanho de um módulo.
 const S := 1.5
@@ -22,6 +25,11 @@ const LIMITE := 16.0
 var _mat_rocha: StandardMaterial3D
 var _paredes: StaticBody3D
 var _limites: StaticBody3D
+## A luz da caverna (a sala escura abaixa e devolve).
+var _ambiente: Environment
+var _luz_de_cima: DirectionalLight3D
+var escuro := false
+var _grade_da_arena: Grade
 
 
 func _montar() -> void:
@@ -41,8 +49,13 @@ func _montar() -> void:
 	_poco_dos_andaimes()
 	_abismo()
 	_mina_de_ouro()
+	_carrinho_de_mina()
+	_sala_escura()
 	_elevadores()
 	_porta_das_tres_tochas()
+	_alavancas()
+	_poco_dos_cristais()
+	_arena_da_bolotona()
 	_camara_do_bau()
 
 
@@ -243,54 +256,217 @@ func _mina_de_ouro() -> void:
 	trilha(Vector3(0, 9.0, -141.0), Vector3(0, 9.0, -147.0), 3)
 
 
-## 6. O poço dos elevadores: duas plataformas de madeira sobem e descem 8 m, com estrelinhas no caminho,
+## 6*. Carrinho de Mina: na estação, o carrinho espera nos trilhos, com uma estrelinha em cima chamando e um
+## caixote de degrau. Pulando dentro, ele leva o Faísca por um túnel de 60 m, clareado por tochas acesas; as
+## estrelinhas ficam no ar em cima dos trilhos (as mais altas pedem pulo, e pulando ele continua indo junto).
+## Na estação de chegada, o P3.
+func _carrinho_de_mina() -> void:
+	rocha(-7.5, 7.5, -162.0, -228.0, 8.0)
+	chao([-3.0, 3.0], -153.0, -225.0, 8.0)
+	parede_z(6.75, -153.0, -225.0, 8.0)
+	parede_z(-6.75, -153.0, -225.0, 8.0)
+	carrinho(Vector3(0, 8.0, -157.0), Vector3(0, 8.0, -219.0))
+	caixote(Vector3(-2.4, 8.0, -155.0), Vector3(1.2, 0.7, 1.2))
+	estrelinha(Vector3(0, 10.4, -157.0))
+	for i in 9:
+		estrelinha(Vector3(0, 12.2 if i % 3 == 2 else 10.1, -165.0 - i * 6.5))
+	var madeira := _material(COR_MADEIRA)
+	for z in [-170.0, -185.0, -200.0, -215.0]:
+		var viga := MeshInstance3D.new()
+		var caixa := BoxMesh.new()
+		caixa.size = Vector3(13.5, 0.5, 0.6)
+		viga.mesh = caixa
+		viga.material_override = madeira
+		viga.position = Vector3(0, 8.0 + 5.8, z)
+		add_child(viga)
+	for spec in [[Vector3(-5.2, 8.0, -156.0)], [Vector3(5.2, 8.0, -177.0)], [Vector3(-5.2, 8.0, -198.0)], [Vector3(5.2, 8.0, -212.0)], [Vector3(-5.2, 8.0, -221.0)]]:
+		tocha(spec[0], true, true)
+	# Chegada: o P3 e o batente no fim dos trilhos.
+	posto(Vector3(3.6, 8.0, -221.5))
+	caixote(Vector3(0, 8.0, -222.8), Vector3(2.6, 0.9, 0.8))
+	enfeite_m("crates_stacked", Vector3(-5.0, 8.0, -160.0), 1.2, 0.3)
+	enfeite_m("barrel_large", Vector3(5.0, 8.0, -159.0), 1.0)
+	enfeite_m("crates_stacked", Vector3(5.0, 8.0, -224.0), 1.1, 1.4)
+
+
+## 7*. Sala Escura: no fundo da mina, a luz da caverna quase apaga quando o Faísca entra. O caminho é uma
+## passarela de tábuas em zigue-zague em cima de um buraco, com uma tocha apagada em cada curva: acesa com o
+## laser, ela clareia o pedaço seguinte. Cair no buraco volta no P3.
+func _sala_escura() -> void:
+	rocha(-7.5, 7.5, -228.0, -231.0, 8.0)
+	chao_pedaco(Vector3(0, 8.0, -229.5), Vector2(13.5, 3.0))
+	for x in [-7.5, 6.0]:
+		rocha(x, x + 1.5, -231.0, -249.0, 8.0)
+	parede_z(6.75, -231.0, -249.0, 8.0)
+	parede_z(-6.75, -231.0, -249.0, 8.0)
+	# Passarela: frente pela esquerda, atravessa, frente pela direita, atravessa de novo e sai pela esquerda.
+	var trechos := [[Vector3(-3.0, 8.0, -233.5), Vector2(3.0, 5.0)], [Vector3(0, 8.0, -237.5), Vector2(9.0, 3.0)],
+		[Vector3(3.0, 8.0, -241.5), Vector2(3.0, 5.0)], [Vector3(0, 8.0, -245.5), Vector2(9.0, 3.0)],
+		[Vector3(-3.0, 8.0, -248.0), Vector2(3.0, 2.0)]]
+	for t in trechos:
+		tablado(t[0], t[1], -6.0, false)
+	for p in [Vector3(-3.9, 8.0, -238.2), Vector3(3.9, 8.0, -236.8), Vector3(3.9, 8.0, -246.2), Vector3(-3.9, 8.0, -244.8)]:
+		tocha(p)
+	trilha(Vector3(-3.0, 9.0, -232.0), Vector3(-3.0, 9.0, -235.0), 2)
+	trilha(Vector3(-1.5, 9.0, -237.5), Vector3(1.5, 9.0, -237.5), 2)
+	trilha(Vector3(3.0, 9.0, -240.0), Vector3(3.0, 9.0, -243.0), 2)
+	trilha(Vector3(1.5, 9.0, -245.5), Vector3(-1.5, 9.0, -245.5), 2)
+	ponto_de_dica(Vector3(0, 8.5, -229.5), 2.4, "tocha")
+	# Escurece só aqui dentro.
+	var area := Area3D.new()
+	area.collision_layer = 0
+	area.collision_mask = CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(13.5, 22.0, 19.0)
+	cs.shape = caixa
+	cs.position = Vector3(0, 5.0, -240.0)
+	area.add_child(cs)
+	add_child(area)
+	area.body_entered.connect(func(c: Node3D) -> void:
+		if c is Jogador:
+			escurecer(true))
+	area.body_exited.connect(func(c: Node3D) -> void:
+		if c is Jogador:
+			escurecer(false))
+
+
+## A luz da caverna baixa quase toda (sala escura) ou volta ao normal, aos poucos.
+func escurecer(sim: bool) -> void:
+	if sim == escuro or _ambiente == null:
+		return
+	escuro = sim
+	var tw := create_tween().set_parallel()
+	tw.tween_property(_ambiente, "ambient_light_energy", 0.08 if sim else 0.5, 0.8)
+	tw.tween_property(_luz_de_cima, "light_energy", 0.03 if sim else 0.18, 0.8)
+
+
+## 8. O poço dos elevadores: duas plataformas de madeira sobem e descem 8 m, com estrelinhas no caminho,
 ## até a beirada da porta, a 16 m.
 func _elevadores() -> void:
-	chao([-3.0, 3.0], -153.0, -159.0, 8.0)
-	parede_z(6.75, -153.0, -159.0, 8.0, 2)
-	parede_z(-6.75, -153.0, -159.0, 8.0, 2)
-	elevador(Vector3(-3.0, 8.0, -159.5), 8.0, 6.0, 0.0)
-	elevador(Vector3(3.0, 8.0, -159.5), 8.0, 6.0, 3.0)
-	trilha(Vector3(-3.0, 11.0, -159.5), Vector3(-3.0, 15.0, -159.5), 3)
+	rocha(-7.5, 7.5, -249.0, -264.0, 8.0)
+	chao([-3.0, 3.0], -252.0, -258.0, 8.0)
+	parede_z(6.75, -252.0, -261.0, 8.0, 2)
+	parede_z(-6.75, -252.0, -261.0, 8.0, 2)
+	elevador(Vector3(-3.0, 8.0, -261.5), 8.0, 6.0, 0.0)
+	elevador(Vector3(3.0, 8.0, -261.5), 8.0, 6.0, 3.0)
+	trilha(Vector3(-3.0, 11.0, -261.5), Vector3(-3.0, 15.0, -261.5), 3)
 
 
-## 7. A sala da porta, a 16 m: três tochas apagadas, uma em cima de caixotes altos (pulo alto e depois
+## 9. A sala da porta, a 16 m: três tochas apagadas, uma em cima de caixotes altos (pulo alto e depois
 ## flutuar por cima dela). Com as três acesas, a porta de madeira abre.
 func _porta_das_tres_tochas() -> void:
-	rocha(-6.0, 6.0, -162.0, -205.5, 16.0, 8.0)
-	chao([-3.0, 3.0], -165.0, -183.0, 16.0, "floor_tile_large")
-	parede_z(6.75, -165.0, -201.0, 16.0)
-	parede_z(-6.75, -165.0, -201.0, 16.0)
-	var ta := tocha(Vector3(-3.8, 16.0, -169.0))
-	var tb := tocha(Vector3(3.8, 16.0, -173.5))
+	rocha(-6.0, 6.0, -264.0, -330.0, 16.0, 8.0)
+	chao([-3.0, 3.0], -267.0, -285.0, 16.0, "floor_tile_large")
+	parede_z(6.75, -267.0, -327.0, 16.0)
+	parede_z(-6.75, -267.0, -327.0, 16.0)
+	var ta := tocha(Vector3(-3.8, 16.0, -271.0))
+	var tb := tocha(Vector3(3.8, 16.0, -275.5))
 	# Os caixotes: um degrau de 1,6 m e a pilha de 3 m com a tocha em cima.
-	caixote(Vector3(-1.4, 16.0, -178.0), Vector3(1.8, 1.6, 1.8))
-	caixote(Vector3(-3.6, 16.0, -178.5), Vector3(2.6, 3.0, 2.6))
-	var tc := tocha(Vector3(-4.2, 19.0, -179.1), false)
-	porta_das_tochas(Vector3(0, 16.0, -186.75), 0.0, [ta, tb, tc])
-	peca_de(MASMORRA, "wall_half", Vector3(3.0, 16.0, -186.75), 0.0, S, false)
-	peca_de(MASMORRA, "wall_half", Vector3(-3.0, 16.0, -186.75), PI, S, false)
-	_muro(Vector3(4.5, 16.0, -186.75), Vector3(3.0, M, 1.5))
-	_muro(Vector3(-4.5, 16.0, -186.75), Vector3(3.0, M, 1.5))
-	_muro(Vector3(0, 16.0 + M, -186.75), Vector3(12.0, LIMITE, 1.5), true)
-	bolota(Vector3(3.0, 16.0, -181.0))
-	trilha(Vector3(0, 17.0, -164.5), Vector3(0, 17.0, -174.0), 3)
-	estrelinha(Vector3(-1.4, 18.6, -178.0))
-	estrelinha(Vector3(-3.0, 20.0, -177.9))
+	caixote(Vector3(-1.4, 16.0, -280.0), Vector3(1.8, 1.6, 1.8))
+	caixote(Vector3(-3.6, 16.0, -280.5), Vector3(2.6, 3.0, 2.6))
+	var tc := tocha(Vector3(-4.2, 19.0, -281.1), false)
+	porta_das_tochas(Vector3(0, 16.0, -288.75), 0.0, [ta, tb, tc])
+	_lados_da_porta(-288.75, 16.0)
+	bolota(Vector3(3.0, 16.0, -283.0))
+	trilha(Vector3(0, 17.0, -266.5), Vector3(0, 17.0, -276.0), 3)
+	estrelinha(Vector3(-1.4, 18.6, -280.0))
+	estrelinha(Vector3(-3.0, 20.0, -279.9))
 
 
-## 8. A câmara do baú dourado, com três Bolotas de guarda e duas tochas acesas no fundo.
+## Meias paredes e colisões dos dois lados de uma porta de 3 m no meio de um corredor de 12 m.
+func _lados_da_porta(z: float, y: float) -> void:
+	peca_de(MASMORRA, "wall_half", Vector3(3.0, y, z), 0.0, S, false)
+	peca_de(MASMORRA, "wall_half", Vector3(-3.0, y, z), PI, S, false)
+	_muro(Vector3(4.5, y, z), Vector3(3.0, M, 1.5))
+	_muro(Vector3(-4.5, y, z), Vector3(3.0, M, 1.5))
+	_muro(Vector3(0, y + M, z), Vector3(12.0, LIMITE, 1.5), true)
+
+
+## 10*. Alavancas: depois da porta, um corredor com três grades. Cada uma abre com um soco na alavanca dela: a
+## primeira logo ao lado, a segunda em cima de um caixote (pula e soca lá de cima) e a terceira guardada por
+## duas Bolotas.
+func _alavancas() -> void:
+	chao([-3.0, 3.0], -291.0, -327.0, 16.0, "floor_tile_large")
+	ponto_de_dica(Vector3(0, 16.5, -292.0), 2.4, "alavanca")
+	portao_de_grade(Vector3(0, 16.0, -297.75), 0.0, Vector3(-3.6, 16.0, -294.0), "yellow")
+	_lados_da_porta(-297.75, 16.0)
+	caixote(Vector3(3.6, 16.0, -304.0), Vector3(2.2, 2.0, 2.2))
+	portao_de_grade(Vector3(0, 16.0, -309.75), 0.0, Vector3(3.6, 18.0, -304.0), "red")
+	_lados_da_porta(-309.75, 16.0)
+	bolota(Vector3(-3.0, 16.0, -303.5), true)
+	trilha(Vector3(0, 17.0, -300.0), Vector3(0, 17.0, -307.0), 3)
+	estrelinha(Vector3(3.6, 19.2, -304.0))
+	portao_de_grade(Vector3(0, 16.0, -321.75), 0.0, Vector3(-3.6, 16.0, -318.0), "blue")
+	_lados_da_porta(-321.75, 16.0)
+	bolota(Vector3(2.4, 16.0, -314.5))
+	bolota(Vector3(-1.0, 16.0, -319.0))
+	coracao(Vector3(4.6, 17.0, -319.5))
+	trilha(Vector3(0, 17.0, -312.0), Vector3(0, 17.0, -318.0), 3)
+	tocha(Vector3(5.0, 16.0, -292.0), true, true)
+	tocha(Vector3(-5.0, 16.0, -312.0), true, true)
+
+
+## 11*. Poço dos Cristais: um poço alto de 16 a 28 m. Os cristais azuis jogam para o alto como molas: do chão
+## para a beirada da direita, dela para a da esquerda e dela para a arena, lá em cima. As estrelinhas
+## mostram o caminho de cada pulo.
+func _poco_dos_cristais() -> void:
+	rocha(-6.0, 6.0, -330.0, -345.0, 16.0, 8.0)
+	chao([-3.0, 3.0], -333.0, -339.0, 16.0, "floor_tile_large")
+	parede_z(6.75, -333.0, -345.0, 16.0, 3)
+	parede_z(-6.75, -333.0, -345.0, 16.0, 3)
+	tablado(Vector3(4.0, 21.0, -337.0), Vector2(3.5, 4.0), 16.0, false)
+	tablado(Vector3(-4.0, 25.0, -341.5), Vector2(3.5, 4.0), 16.0, false)
+	mola_de_cristal(Vector3(-3.0, 16.0, -335.0), 19.0)
+	mola_de_cristal(Vector3(4.0, 21.0, -338.0), 19.0)
+	mola_de_cristal(Vector3(-4.0, 25.0, -342.5), 15.0)
+	arco(Vector3(-3.0, 19.0, -335.0), Vector3(4.0, 22.5, -337.0), 3.0, 3)
+	arco(Vector3(4.0, 24.0, -338.0), Vector3(-4.0, 26.5, -341.5), 3.0, 3)
+	trilha(Vector3(-4.0, 28.5, -343.0), Vector3(-2.0, 29.5, -346.0), 2)
+
+
+## 12*. Arena da Bolotona, a 28 m: o P4 na entrada e a Bolotona dormindo no meio. Derrotada, ela se desfaz em
+## três Bolotas pequenas; vencidas todas, a grade do fundo abre para a câmara do baú.
+func _arena_da_bolotona() -> void:
+	rocha(-9.75, 9.75, -345.0, -372.0, 28.0, 16.0)
+	chao([-6.0, 0.0, 6.0], -348.0, -366.0, 28.0, "floor_tile_large")
+	parede_z(9.75, -348.0, -366.0, 28.0)
+	parede_z(-9.75, -348.0, -366.0, 28.0)
+	parede_x(-345.0, [-9.0, 9.0], 28.0)
+	posto(Vector3(-5.5, 28.0, -349.0))
+	var grande := bolotona(Vector3(0, 28.0, -358.0))
+	for b in [grande] + grande.filhas:
+		b.derrotada.connect(func(_a: Alvo) -> void: _ver_arena(grande))
+	coracao(Vector3(7.0, 29.0, -365.0))
+	roda(Vector3(0, 28.9, -358.0), 5.5, 6)
+	for p in [Vector3(-8.2, 28.0, -347.5), Vector3(8.2, 28.0, -347.5), Vector3(-8.2, 28.0, -367.5), Vector3(8.2, 28.0, -367.5)]:
+		tocha(p, true, true)
+	peca_de(MASMORRA, "wall_doorway", Vector3(0, 28.0, -369.75), 0.0, S, false).find_child("wall_doorway_door", true, false).queue_free()
+	_grade_da_arena = Grade.new()
+	_grade_da_arena.position = Vector3(0, 28.0, -369.75)
+	add_child(_grade_da_arena)
+	grades.append(_grade_da_arena)
+	_lados_da_porta(-369.75, 28.0)
+	parede_x(-369.75, [-9.0, 9.0], 28.0)
+
+
+func _ver_arena(grande: Bolotona) -> void:
+	if bolotona_vencida(grande):
+		_grade_da_arena.abrir()
+
+
+## 13. A câmara do baú dourado, com duas tochas acesas no fundo (os guardas agora são a Bolotona).
 func _camara_do_bau() -> void:
-	chao([-3.0, 3.0], -189.0, -201.0, 16.0, "floor_tile_large")
-	parede_x(-204.75, [-3.0], 16.0, 1, "wall_inset_candles")
-	parede_x(-204.75, [3.0], 16.0, 1, "wall_inset_candles")
-	colocar_bau(Vector3(0, 16.0, -198.0), 0.0, true)
-	bolota(Vector3(-3.6, 16.0, -193.5))
-	bolota(Vector3(3.6, 16.0, -194.5))
-	bolota(Vector3(0, 16.0, -202.0))
-	roda(Vector3(0, 16.9, -198.0), 3.4, 3)
-	tocha(Vector3(-4.6, 16.0, -202.8), true, true)
-	tocha(Vector3(4.6, 16.0, -202.8), true, true)
+	rocha(-6.0, 6.0, -372.0, -390.0, 28.0, 16.0)
+	chao([-3.0, 3.0], -375.0, -387.0, 28.0, "floor_tile_large")
+	parede_z(6.75, -375.0, -387.0, 28.0)
+	parede_z(-6.75, -375.0, -387.0, 28.0)
+	parede_x(-390.75, [-3.0], 28.0, 1, "wall_inset_candles")
+	parede_x(-390.75, [3.0], 28.0, 1, "wall_inset_candles")
+	colocar_bau(Vector3(0, 28.0, -384.0), 0.0, true)
+	roda(Vector3(0, 28.9, -384.0), 3.4, 3)
+	tocha(Vector3(-4.6, 28.0, -388.8), true, true)
+	tocha(Vector3(4.6, 28.0, -388.8), true, true)
 
 
 # --- peças da caverna ------------------------------------------------------------------
@@ -314,11 +490,13 @@ func _montar_ceu_e_luz() -> void:
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
+	_ambiente = env
 	var luz := DirectionalLight3D.new()
 	luz.rotation_degrees = Vector3(-60, 20, 0)
 	luz.light_energy = 0.18
 	luz.light_color = Color("b8c4ff")
 	add_child(luz)
+	_luz_de_cima = luz
 
 
 func _montar_nuvens() -> void:

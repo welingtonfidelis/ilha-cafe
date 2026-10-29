@@ -27,12 +27,16 @@ func rodar() -> void:
 	var ok := true
 	await m._esperar(0.3)
 	var total := n.total_estrelas()
-	ok = m._conferir("a fase tem umas 85 estrelinhas", total >= 70 and total <= 100, "(%d)" % total) and ok
-	ok = m._conferir("2 postos, 3 vaga-lumes, 16 tochas (5 já acesas), 1 parede rachada, 3 pontes e 1 porta das tochas",
-			n.postos.size() == 2 and n.vaga_lumes.size() == 3 and n.tochas.size() == 16
-			and n.tochas.filter(func(t: Tocha) -> bool: return t.esta_acesa).size() == 5 and n.paredes_rachadas.size() == 1
-			and n.pontes.size() == 3 and n.portas_das_tochas.size() == 1, "(%d tochas)" % n.tochas.size()) and ok
-	ok = m._conferir("12 Bolotas e o baú dourado", n.alvos.size() == 12 and n.bau != null and n.bau.dourado, "(%d)" % n.alvos.size()) and ok
+	ok = m._conferir("a fase tem umas 140 estrelinhas (eram 89 antes dos trechos novos)", total >= 120 and total <= 160, "(%d)" % total) and ok
+	var acesas := n.tochas.filter(func(t: Tocha) -> bool: return t.esta_acesa).size()
+	ok = m._conferir("4 postos, 3 vaga-lumes, 31 tochas (16 já acesas), 1 parede rachada, 3 pontes e 1 porta das tochas",
+			n.postos.size() == 4 and n.vaga_lumes.size() == 3 and n.tochas.size() == 31 and acesas == 16 and n.paredes_rachadas.size() == 1
+			and n.pontes.size() == 3 and n.portas_das_tochas.size() == 1, "(%d postos, %d tochas, %d acesas)" % [n.postos.size(), n.tochas.size(), acesas]) and ok
+	ok = m._conferir("16 Bolotas (com a Bolotona e as 3 filhas) e o baú dourado", n.alvos.size() == 16 and n.bau != null and n.bau.dourado,
+			"(%d)" % n.alvos.size()) and ok
+	ok = m._conferir("trechos novos: carrinho, 3 alavancas com grade, 3 cristais e a Bolotona", n.carrinhos.size() == 1 and n.alavancas.size() == 3
+			and n.grades.size() == 4 and n.cristais.size() == 3 and n.bolotonas.size() == 1) and ok
+	ok = m._conferir("o caminho passou de uns 200 m para uns 380 m", n.bau.global_position.z < -375.0, "(baú em z %.0f)" % n.bau.global_position.z) and ok
 	# As Bolotas ficam paradas no teste (a 1-1 já confere o jeito delas), menos a primeira, que dorme.
 	for b in n.alvos.slice(1):
 		b.process_mode = Node.PROCESS_MODE_DISABLED
@@ -132,6 +136,7 @@ func rodar() -> void:
 	j.teleportar(n.postos[1].global_position + Vector3(0, 0.1, 1.2))
 	await m._esperar(0.4)
 	ok = m._conferir("o P2 acende na mina de ouro", n.postos[1].acendido) and ok
+	ok = await _carrinho_e_sala_escura() and ok
 	var elev: AnimatableBody3D = n.moveis[0]
 	while elev.global_position.y > 8.3:
 		await m.get_tree().physics_frame
@@ -141,17 +146,18 @@ func rodar() -> void:
 
 	# A porta: fechada segura; as três tochas (a dos caixotes subindo de verdade) abrem.
 	var porta: Dictionary = n.portas_das_tochas[0]
-	j.teleportar(Vector3(0, 16.1, -183.0))
+	j.teleportar(Vector3(0, 16.1, -285.0))
 	await _andar(Vector3(0, 0, -1), 1.0)
-	ok = m._conferir("com a porta fechada não se passa", j.global_position.z > -186.0, "(z %.1f)" % j.global_position.z) and ok
-	await _acender_com_laser(n.tochas[11], Vector3.ZERO)
-	await _acender_com_laser(n.tochas[12], Vector3.ZERO)
+	ok = m._conferir("com a porta fechada não se passa", j.global_position.z > -288.0, "(z %.1f)" % j.global_position.z) and ok
+	var da_porta: Array = porta.tochas
+	await _acender_com_laser(da_porta[0], Vector3.ZERO)
+	await _acender_com_laser(da_porta[1], Vector3.ZERO)
 	ok = m._conferir("com duas das três acesas a porta continua fechada", not porta.aberta) and ok
-	var onde := await _pular(Vector3(1.6, 16.1, -178.0), Vector3(-1, 0, 0), 1.2, false)
+	var onde := await _pular(Vector3(1.6, 16.1, -280.0), Vector3(-1, 0, 0), 1.2, false)
 	ok = m._conferir("pula no caixote baixo", absf(onde.y - 17.6) < 0.4, "(altura %.1f)" % onde.y) and ok
-	onde = await _pular(Vector3(-0.7, 17.7, -178.0), Vector3(-1, 0, 0), 0.05, false)
+	onde = await _pular(Vector3(-0.7, 17.7, -280.0), Vector3(-1, 0, 0), 0.05, false)
 	ok = m._conferir("e dele na pilha alta, onde está a última tocha", absf(onde.y - 19.0) < 0.4, "(altura %.1f)" % onde.y) and ok
-	var tc: Tocha = n.tochas[13]
+	var tc: Tocha = da_porta[2]
 	j.teleportar(tc.global_position + Vector3(0.9, 0.1, 0.4))
 	await m._esperar(0.3)
 	j.forcar_pulo = true
@@ -159,9 +165,10 @@ func rodar() -> void:
 	j.forcar_pulo = false
 	await m._esperar(1.6)
 	ok = m._conferir("pulando e flutuando em cima da pilha acende a tocha, e as três abrem a porta", tc.esta_acesa and porta.aberta) and ok
-	j.teleportar(Vector3(0, 16.1, -183.0))
+	j.teleportar(Vector3(0, 16.1, -285.0))
 	await _andar(Vector3(0, 0, -1), 1.2)
-	ok = m._conferir("com a porta aberta se passa para a câmara do baú", j.global_position.z < -188.0, "(z %.1f)" % j.global_position.z) and ok
+	ok = m._conferir("com a porta aberta se passa para o corredor das alavancas", j.global_position.z < -290.0, "(z %.1f)" % j.global_position.z) and ok
+	ok = await _alavancas_cristais_e_bolotona() and ok
 
 	# Baú dourado: três golpes, a Estrela Grande e a tela de fim.
 	var bau := n.bau
@@ -177,6 +184,93 @@ func rodar() -> void:
 	await m._esperar(3.6)
 	ok = m._conferir("pegar a Estrela Grande mostra a tela de fim", m.hud.fim_aberto and not j.controle_ligado) and ok
 	m._terminar(ok)
+
+
+## Carrinho de mina (pega as estrelinhas baixas, chega na estação e volta vazio) e a sala escura.
+func _carrinho_e_sala_escura() -> bool:
+	var ok := true
+	var c := n.carrinhos[0]
+	var pegas := n.pegas
+	j.teleportar(c.global_position + Vector3(0, 1.0, 0))
+	await m._esperar(0.8)
+	ok = m._conferir("pulando dentro, o carrinho sai sozinho", c.estado == "indo") and ok
+	var dentro := true
+	while c.estado == "indo":
+		await m.get_tree().physics_frame
+		dentro = dentro and j.global_position.distance_to(c.global_position) < 2.5
+	await m._esperar(0.3)
+	ok = m._conferir("o carrinho leva o Faísca pelo túnel até a estação de chegada, pegando as estrelinhas baixas",
+			c.estado == "chegou" and dentro and c.global_position.distance_to(c.ate) < 0.1 and n.pegas >= pegas + 7,
+			"(dentro o tempo todo %s, %d estrelinhas)" % [dentro, n.pegas - pegas]) and ok
+	j.teleportar(n.postos[2].global_position + Vector3(0, 0.1, 1.2))
+	await m._esperar(2.8)
+	ok = m._conferir("o P3 acende na chegada e o carrinho volta vazio para o começo", n.postos[2].acendido and c.estado in ["voltando", "parado"]) and ok
+	# Sala escura: a luz baixa ao entrar; as tochas das curvas acendem com o laser; ao sair, volta.
+	var f12 := n as Fase12
+	j.teleportar(Vector3(-3.0, 8.1, -233.0))
+	await m._esperar(1.2)
+	ok = m._conferir("entrando na sala escura a luz da caverna quase apaga", f12.escuro and f12._ambiente.ambient_light_energy < 0.15) and ok
+	var curvas := n.tochas.filter(func(t: Tocha) -> bool: return t.global_position.z < -234.0 and t.global_position.z > -248.0 and absf(t.global_position.y - 8.0) < 0.1)
+	await _acender_com_laser(curvas[0], Vector3.ZERO)
+	ok = m._conferir("as 4 tochas das curvas da passarela; a primeira acende com o laser", curvas.size() == 4 and curvas[0].esta_acesa) and ok
+	j.teleportar(Vector3(0, 8.1, -237.5))
+	await m._esperar(0.6)
+	ok = m._conferir("a passarela de tábuas segura o Faísca em cima do buraco", j.is_on_floor() and j.global_position.y > 7.8) and ok
+	j.teleportar(Vector3(0, 8.1, -251.0))
+	await m._esperar(1.2)
+	ok = m._conferir("saindo da sala a luz volta", not f12.escuro and f12._ambiente.ambient_light_energy > 0.4) and ok
+	return ok
+
+
+## Alavancas e grades, os cristais do poço e a Bolotona (que acorda, apanha e vira três).
+func _alavancas_cristais_e_bolotona() -> bool:
+	var ok := true
+	for i in n.alavancas.size():
+		var a := n.alavancas[i]
+		j.teleportar(a.global_position + Vector3(0, 0.1, 1.4))
+		j.visual.rotation.y = PI
+		await m._esperar(0.3)
+		await m._toque(JOY_BUTTON_X)
+		await m._esperar(0.6)
+	await m._esperar(1.4)
+	ok = m._conferir("um soco em cada alavanca abre a grade dela (a segunda, em cima do caixote)", n.alavancas.all(func(a: Alavanca) -> bool: return a.puxada_ja)
+			and n.grades.slice(0, 3).all(func(g: Grade) -> bool: return g.aberta)) and ok
+	j.teleportar(Vector3(0, 16.1, -319.0))
+	await _andar(Vector3(0, 0, -1), 1.0)
+	ok = m._conferir("com as grades abertas se chega ao poço dos cristais", j.global_position.z < -323.0, "(z %.1f)" % j.global_position.z) and ok
+	var cristal := n.cristais[0]
+	j.teleportar(cristal.global_position + Vector3(0, 1.0, 0))
+	var altura: float = await m._altura_maxima(1.4)
+	ok = m._conferir("o cristal azul joga para o alto, até a beirada", altura > 21.5, "(%.1f m)" % altura) and ok
+	# Bolotona: acorda com o Faísca perto; apanhando, vira três; vencidas todas, a grade do fundo abre.
+	var grande := n.bolotonas[0]
+	grande.process_mode = Node.PROCESS_MODE_INHERIT
+	j.vida = Jogador.VIDA_MAX
+	j.teleportar(grande.global_position + Vector3(0, 0.1, 2.4))
+	j.visual.rotation.y = PI
+	await m._esperar(0.4)
+	for i in 16:
+		if grande.derrotado:
+			break
+		j.vida = Jogador.VIDA_MAX
+		await m._toque(JOY_BUTTON_X)
+		await m._esperar(0.45)
+	await m._esperar(0.4)
+	var filhas := grande.filhas
+	ok = m._conferir("a Bolotona apanha e se desfaz em três Bolotas", grande.derrotado and filhas.all(func(f: Bolota) -> bool:
+			return f.visible and f.process_mode == Node.PROCESS_MODE_INHERIT and not f.derrotado), "(vida %d)" % grande.vida) and ok
+	ok = m._conferir("com as filhas ainda de pé, a grade da arena fica fechada", not n.grades[3].aberta) and ok
+	# As filhas ficam sem andar (paradas de vez, a imunidade depois de cada golpe não passaria) e o Faísca longe.
+	j.teleportar(n.postos[3].ponto())
+	for f in filhas:
+		f.velocidade = 0.0
+		for k in 6:
+			f.receber_golpe(1, f.global_position + Vector3(0, 0, 1), 3.0)
+			await m._esperar(0.35)
+	await m._esperar(0.4)
+	ok = m._conferir("vencidas as quatro, a grade da arena abre para a câmara do baú", n.bolotona_vencida(grande) and n.grades[3].aberta) and ok
+	j.vida = Jogador.VIDA_MAX
+	return ok
 
 
 ## Põe o Faísca em cima da tocha (deslocado `ao_lado`) e segura o pulo, para flutuar com o laser.
@@ -262,13 +356,33 @@ func capturar() -> void:
 	await m._esperar(2.0)
 	await _foto_em(Vector3(-1.5, 8.1, -87.0), 0.1, -0.3, "08_pontes")
 	await _foto_em(Vector3(-2.0, 8.1, -121.5), 0.3, -0.2, "09_mina_de_ouro")
-	await _foto_em(Vector3(0.0, 8.1, -151.0), 0.0, 0.25, "10_elevadores")
-	await _foto_em(Vector3(1.0, 16.1, -164.0), 0.1, -0.2, "11_porta_fechada")
-	for k in [11, 12, 13]:
-		n.tochas[k].acender()
+	await _foto_em(Vector3(2.5, 8.1, -152.0), 0.1, -0.1, "09b_carrinho")
+	var c := n.carrinhos[0]
+	j.teleportar(c.global_position + Vector3(0, 1.0, 0))
+	j.yaw = 0.0
+	j.pitch = -0.15
+	j.visual.rotation.y = PI
+	await m._esperar(3.2)
+	await m._foto("fase_1_2/09c_no_carrinho")
+	await _foto_em(Vector3(-3.0, 8.1, -232.2), 0.15, -0.35, "09d_sala_escura")
+	for t in n.tochas.filter(func(t: Tocha) -> bool: return t.global_position.z < -234.0 and t.global_position.z > -248.0 and absf(t.global_position.y - 8.0) < 0.1):
+		t.acender()
+	await m._esperar(1.5)
+	await _foto_em(Vector3(-3.0, 8.1, -232.2), 0.15, -0.35, "09e_sala_escura_acesa")
+	await _foto_em(Vector3(0.0, 8.1, -250.5), 0.0, 0.25, "10_elevadores")
+	await _foto_em(Vector3(1.0, 16.1, -266.0), 0.1, -0.2, "11_porta_fechada")
+	for t in n.portas_das_tochas[0].tochas:
+		t.acender()
 	await m._esperar(2.0)
-	await _foto_em(Vector3(1.5, 16.1, -181.0), 0.1, -0.15, "12_porta_aberta")
-	await _foto_em(Vector3(1.0, 16.1, -189.0), 0.1, -0.25, "13_camara_do_bau")
+	await _foto_em(Vector3(1.5, 16.1, -283.0), 0.1, -0.15, "12_porta_aberta")
+	await _foto_em(Vector3(1.0, 16.1, -291.0), 0.1, -0.2, "12b_alavancas")
+	for a in n.alavancas:
+		a.puxar()
+	await m._esperar(1.8)
+	await _foto_em(Vector3(1.0, 16.1, -326.5), 0.0, 0.35, "12c_poco_dos_cristais")
+	n.bolotonas[0].process_mode = Node.PROCESS_MODE_INHERIT
+	await _foto_em(Vector3(2.0, 28.1, -347.5), 0.15, -0.25, "12d_bolotona")
+	await _foto_em(Vector3(1.0, 28.1, -373.0), 0.1, -0.25, "13_camara_do_bau")
 	m.get_tree().quit()
 
 

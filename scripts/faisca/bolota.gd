@@ -14,6 +14,9 @@ extends Alvo
 const ACORDA_DE := 3.2
 const ALCANCE_TOQUE := 1.05
 
+## Distância em que encostar tira coração (a Bolotona, grande, tem mais).
+var alcance_toque := ALCANCE_TOQUE
+
 var _seguindo := false
 ## Depois de encostar no Faísca ou levar um golpe, fica um tempinho parada.
 var _pausa := 0.0
@@ -44,7 +47,7 @@ func _physics_process(delta: float) -> void:
 			_acordar()
 		return
 	# Encostou: tira um coração. Quem vem caindo por cima é pisão, não toque.
-	if _pausa <= 0.0 and longe < ALCANCE_TOQUE and d.y > -0.6 and d.y < 1.0:
+	if _pausa <= 0.0 and longe < alcance_toque and d.y > -0.6 and d.y < 1.0:
 		if jogador.receber_dano(global_position):
 			_pausa = 1.0
 			_amasso = 0.25

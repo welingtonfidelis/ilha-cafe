@@ -893,8 +893,8 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 - `godot --path . -- --parte2-captura` tira as fotos `t01` a `t12` em `tools/capturas/`. Do hub: `t05` a entrada, `t06` e `t07` as portas do térreo, `t08` a escada, `t09` a sacada do 2º andar, `t10` o topo com a porta da nave e `t12` a constelação da 1-1 vista do topo.
 - Os testes do projeto Faísca rodam sem montar a ilha, pelo `FaiscaSolo`:
   - `-- --faisca-controle` (29 pontos, com o laser só, o voo de 1 s e o laser acertando de lado);
-  - `-- --faisca-fase` (27 pontos: a 1-1 de ponta a ponta, com os postos e a área maior);
-  - `-- --faisca-fase-1-2` (34 pontos: a 1-2 de ponta a ponta), `-- --faisca-fase-1-2-captura` (fotos em `tools/capturas/faisca/fase_1_2/`) e `-- --faisca-jogar-1-2` (a 1-2 direto, para jogar sem o farol);
+  - `-- --faisca-fase` (38 pontos: a 1-1 de ponta a ponta, com os postos, a área maior e os trechos novos);
+  - `-- --faisca-fase-1-2` (49 pontos: a 1-2 de ponta a ponta, com os trechos novos), `-- --faisca-fase-1-2-captura` (fotos em `tools/capturas/faisca/fase_1_2/`) e `-- --faisca-jogar-1-2` (a 1-2 direto, para jogar sem o farol);
   - `-- --faisca-smoke`;
   - `-- --faisca-captura` e `-- --faisca-fase-captura`, com fotos em `tools/capturas/faisca/`.
 - `godot --path . -s tools/foto_farol.gd` fotografa o farol apagado e aceso.
@@ -1010,6 +1010,42 @@ Trechos:
 6. Testes:
    - `--faisca-fase-1-2`: tochas, ponte, parede, portão, baú e fim;
    - o `--parte2` entrando na 1-2 pela porta.
+
+### Fases mais compridas (pedido do usuário em 2026-10-29: "as fases do faisca estão muito curtas")
+
+As duas fases tinham uns 130 m (1-1) e 200 m (1-2): quem já sabe jogar passava cada uma em 1 a 2 minutos, e o plano era de 4 a 7. Cada uma ganhou cinco trechos novos no meio do caminho, com brincadeiras novas (peças do Platformer Pack que faltavam: esteira, argola, botão, alavanca e canhão; o resto feito por código). Os trechos antigos andaram para a frente sem mudar por dentro. As próximas fases já nascem nesse tamanho.
+
+**1-1 Pulinhos nas Nuvens (de uns 130 m para uns 300 m, 3 postos, 101 estrelinhas):**
+- **Ilha das Esteiras** (depois da ponte):
+  - duas esteiras lado a lado: a verde leva para a frente e a vermelha, para trás, tem as estrelinhas;
+  - uma esteira atravessada que empurra para o lado, com uma mureta no fim, de modo que quem não anda é empurrado contra ela, sem cair.
+  - `Esteira`: corpo parado com `constant_linear_velocity` e setinhas brancas andando por cima. A faixa fica 3 cm acima das plataformas do lado, porque na mesma altura a emenda segurava o Faísca parado.
+- **Argolas no Céu** (depois do vão grande): da ilhinha onde o vão chega, quatro nuvens firmes subindo, com uma argola em cada vão (`Argola`). Os pulos passam por dentro delas; acesas as quatro, cai uma roda de 8 estrelinhas em cima da última nuvem.
+- **Botões Coloridos** (depois do portão do Jardim): três botões no chão (`Botao`), que afundam e acendem quando ele cai em cima. Com os três apertados, sobem do vão as três plataformas da ponte (`Fase.ponte_dos_botoes`). O vão é comprido demais até para flutuar. A dica do Vovô desenha o pulo em cima do botão.
+- **Nuvens que Somem** (depois das plataformas que se mexem): o P3 numa plataforma e cinco nuvens lilases em zigue-zague (`NuvemQueSome`). Cada uma treme 0,8 s depois de pisada, some e volta 3 s depois.
+- **Canhão de Nuvem**: entrando no canhão (`Canhao`), o Faísca é lançado num arco alto (12 m) até a Ilha do Baú, girando. As 5 estrelinhas do voo ficam no caminho.
+- O farol de fundo foi para z -390, para continuar ao longe.
+
+**1-2 Túneis do Morro (de uns 200 m para uns 380 m, 4 postos, umas 140 estrelinhas, quatro níveis: 0, 8, 16 e 28 m):**
+- **Carrinho de Mina** (depois da mina de ouro):
+  - o carrinho (`CarrinhoDeMina`, feito por código; os pacotes não têm um) espera na estação, com um caixote de degrau e uma estrelinha em cima;
+  - pulando dentro, ele leva o Faísca por um túnel de 60 m com tochas e vigas;
+  - as estrelinhas baixas vêm sozinhas; as altas pedem pulo, e pulando ele continua indo junto;
+  - na chegada fica o P3, e o carrinho volta vazio para o começo.
+  - Tropeço: a posição do corpo animado tem que ir antes de entrar na cena. Senão, ele fica no zero do mundo até começar a andar.
+- **Sala Escura**: a luz da caverna quase apaga ao entrar (a sala baixa a luz ambiente e a de cima, e devolve ao sair). O caminho é uma passarela de tábuas em zigue-zague em cima de um buraco, com uma tocha apagada em cada curva.
+- **Alavancas** (depois da porta das três tochas):
+  - três grades de ferro (`Grade`) nas portas do corredor, cada uma aberta por um soco na alavanca dela (`Alavanca`, no grupo dos alvos dos golpes);
+  - a primeira alavanca fica ao lado, a segunda em cima de um caixote e a terceira guardada por duas Bolotas.
+  - Nova dica do Vovô: o soco na alavanca.
+- **Poço dos Cristais**: de 16 a 28 m. Cristais azuis que jogam para o alto como molas (`Fase.mola_de_cristal`) levam do chão para uma beirada, dela para outra e dela para a arena.
+- **Arena da Bolotona**: o P4 e a Bolotona (`Bolotona`, duas vezes maior, 8 de vida, dormindo). Derrotada, ela se desfaz em três Bolotas pequenas, que já existiam escondidas, para as estrelinhas contarem no total. Vencidas as quatro, a grade do fundo abre.
+- **Câmara do Baú**, agora a 28 m e sem os guardas (quem guarda é a Bolotona).
+
+**Testes e fotos:**
+- `--faisca-fase` confere 38 pontos, 11 a mais: os trechos novos, a esteira levando até a plataforma, a mureta segurando, argolas e prêmio, botões e ponte, nuvem sumindo e voltando, e o canhão pousando com as estrelinhas do voo.
+- `--faisca-fase-1-2` confere 49 pontos, 15 a mais: carrinho, P3, sala escura, alavancas e grades, cristal, Bolotona e grade da arena. Ele acha as tochas da porta pela própria porta, não pela ordem.
+- `--faisca-fase-captura` ganhou as fotos `03b`, `07b`, `09b`, `09c` e `10b` a `10d`. O `--faisca-fase-1-2-captura` ganhou `09b` a `09e` e `12b` a `12d`.
 
 ### O laser e o voo do Faísca (pedido do usuário em 2026-10-29)
 

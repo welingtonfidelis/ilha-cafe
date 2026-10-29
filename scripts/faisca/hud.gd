@@ -303,7 +303,7 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual == "golpe"
+		var golpe := qual in ["golpe", "alavanca"]
 		# No golpe o botão pulsa a cada toque; nos outros fica apertado enquanto a barrinha enche.
 		var toque := fmod(tempo, 1.6) < 1.2 and fmod(tempo * 2.5, 1.0) < 0.35 if golpe else false
 		var raio := 32.0 if toque else 36.0
@@ -356,6 +356,29 @@ class DesenhoDica extends Control:
 					var chama := 1.0 + sin(tempo * 14.0) * 0.12
 					draw_colored_polygon(PackedVector2Array([f + Vector2(-9, 26), f + Vector2(9, 26), f + Vector2(0, 26 - 22 * chama)]), Color("ff9a2e"))
 					draw_colored_polygon(PackedVector2Array([f + Vector2(-5, 26), f + Vector2(5, 26), f + Vector2(0, 26 - 13 * chama)]), Color("ffe066"))
+			"botao":
+				# Pula e cai em cima do botão vermelho, que afunda.
+				var pulo := absf(sin(tempo * 3.0))
+				var em_cima := pulo < 0.15
+				draw_line(f + Vector2(-44, 52), f + Vector2(44, 52), Color("2b2140"), 4.0)
+				draw_rect(Rect2(f + Vector2(-26, 42), Vector2(52, 10)), Color("6a6478"))
+				draw_rect(Rect2(f + Vector2(-18, 36 if em_cima else 30), Vector2(36, 12 if em_cima else 14)), Color("ff5d5d"))
+				_faisca(f + Vector2(0, 2 - pulo * 46))
+				if em_cima:
+					for i in 3:
+						var a := -PI * 0.15 - i * PI * 0.35
+						draw_line(f + Vector2(0, 34) + Vector2(cos(a), sin(a)) * 30, f + Vector2(0, 34) + Vector2(cos(a), sin(a)) * 42, Color("ffd23f"), 3.0)
+			"alavanca":
+				# Soca a alavanca: o cabo vira e a grade sobe.
+				var bate := fmod(tempo * 1.2, 1.0) < 0.3
+				var p := f + Vector2(-28 + (8.0 if bate else 0.0), 10)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(28 if bate else 20, 6), Color("ff7a22"), 7.0)
+				draw_rect(Rect2(f + Vector2(14, 40), Vector2(26, 10)), Color("6a6478"))
+				var vira := 0.6 if fmod(tempo * 1.2, 1.0) > 0.3 else -0.6
+				var cabo := f + Vector2(27, 40)
+				draw_line(cabo, cabo + Vector2(sin(vira), -cos(vira)) * 30, Color("ffd23f"), 6.0)
+				draw_circle(cabo + Vector2(sin(vira), -cos(vira)) * 30, 6, Color("ff5d5d"))
 			"golpe":
 				var bate := fmod(tempo * 2.5, 1.0) < 0.35
 				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)
