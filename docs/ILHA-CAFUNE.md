@@ -1155,20 +1155,26 @@ O usuário mandou a tabela de movimentos do Astro Bot e pediu os três que mais 
   - Depois fica tontinho 0,5 s, sem golpear e com os olhos de espiral.
   - Soltar antes de encher desiste. Para carregar de novo, tem que soltar o botão.
 - **Agarrar e arremessar (Y; no teclado E, K ou botão direito):**
-  - Pega pela antena a Bolota mais perto (até 2,2 m, mais ou menos na frente; a Bolotona não, é grande demais) e gira de braços abertos com ela pendurada na mão esquerda.
+  - **Só a Bolota tonta** (o usuário achou o agarrar fácil demais; pediu que a tontura acontecesse por acaso nas lutas):
+    - Cada golpe que não derruba tem 25% de chance por ponto de dano de deixar a Bolota tonta por 3 s (`Alvo.chance_tontura` e `TEMPO_TONTA`). Num soco é 25%; no pisão, no soco forte ou numa Bolota arremessada, 50%.
+    - Tonta, ela para de andar, não machuca ao encostar, balança e mostra três estrelinhas douradas girando em cima, com o som de tonto.
+    - A Bolotona não fica tonta.
+  - Pega pela antena a Bolota tonta mais perto (até 2,2 m, mais ou menos na frente) e gira de braços abertos com ela pendurada na mão esquerda. Ele para no lugar ao agarrar e ao arremessar.
   - A Bolota que gira na mão acerta quem estiver no caminho.
   - Soltando Y (no mínimo 0,35 s, no máximo 2,5 s segurando), ele arremessa para onde o analógico aponta, ou para a frente da câmera.
   - A Bolota voa rodando. Bate e estoura no primeiro alvo do caminho (2 de dano nele, inclusive na Bolotona, no baú, na parede rachada e na alavanca) ou onde cair.
   - Se estourar em cima do vazio, as estrelinhas dela caem no último ponto do voo que tinha chão embaixo.
-  - Sem nada perto, ele só faz o gesto de pegar. Levar golpe com a Bolota na mão solta ela.
+  - Sem Bolota tonta perto, ele só fecha as mãos (`Robo.fechar_mao`), sem parar de andar. Antes fazia o gesto de pegar com o corpo todo, e andando parecia deslizar (o usuário notou).
+  - Levar golpe com a Bolota na mão solta ela.
 - **Dancinha (seta para baixo; no teclado V):**
   - O `Robo` mexe os ossos por cima da animação de parado (o KayKit não tem dança): o quadril desce dobrando os joelhos a cada batida (120 por minuto), o corpo balança, e os braços trocam (um sobe aberto ao lado da cabeça, o outro vai para a frente).
   - Ele fica de cara feliz, com notinhas douradas e cianas subindo. Dura 4 s; andar, pular ou golpear para.
-- **Dicas do Vovô na 1-1:** "agarrar" (o botão Y amarelo e o Faísca girando com uma Bolota) na Ilha das Molas, onde aparecem as primeiras Bolotas acordadas, e "giro_forte" (o X com a barrinha e o anel) na Ilha do Baú, com as três Bolotas.
+- **Dicas do Vovô na 1-1:** "agarrar" (o botão Y amarelo; a Bolota tonta com estrelinhas, depois o Faísca girando com ela) na Ilha das Molas, onde aparecem as primeiras Bolotas acordadas, e "giro_forte" (o X com a barrinha e o anel) na Ilha do Baú, com as três Bolotas.
 - **Na pausa:** os comandos do Faísca ganharam o giro forte, o agarrar e a dancinha.
 - **Testes e fotos:**
-  - O `--faisca-controle` confere os socos alternados e os movimentos novos (carga, giro, acerto em volta, tontinho, agarrar, girar, arremessar, acertar, dancinha e parar andando).
-  - O `--faisca-captura` tira de `10_carregando` a `17_dica_giro_forte`, e o `tools/foto_faisca.gd` tira o soco esquerdo e dois momentos da dança.
+  - O `--faisca-controle` confere os socos alternados e os movimentos novos. São a carga, o giro, o acerto em volta e o tontinho; não agarrar sem tontura e ficar tonta com o golpe; agarrar, girar, arremessar e acertar; a dancinha e parar andando.
+  - O `--faisca-fase` confere que a Bolota tonta não vem atrás do Faísca.
+  - O `--faisca-captura` tira de `10_carregando` a `17_dica_giro_forte` (com `12a_bolota_tonta`), e o `tools/foto_faisca.gd` tira o soco esquerdo e dois momentos da dança.
 
 ### Em aberto
 

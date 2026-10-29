@@ -69,7 +69,8 @@ const TEMPO_CARGA := 0.5
 const TEMPO_GIRO_FORTE := 1.0
 const ALCANCE_GIRO_FORTE := 2.6
 const TEMPO_TONTINHO := 0.5
-## Agarrar (Y): a bolota até esta distância (mais ou menos na frente) vem pela antena para a mão esquerda.
+## Agarrar (Y): a bolota tonta (Alvo.tonta; o usuário achou fácil demais agarrar qualquer uma) até esta distância,
+## mais ou menos na frente, vem pela antena para a mão esquerda.
 ## Segurando Y ele gira com ela (pelo menos BALANCO_MIN, no máximo BALANCO_MAX); soltando, arremessa para onde
 ## o analógico aponta, ou para a frente da câmera.
 const ALCANCE_AGARRAR := 2.2
@@ -302,7 +303,8 @@ func _physics_process(delta: float) -> void:
 	_atualizar_agarrar(delta, no_chao, dir)
 	_atualizar_danca(delta, entrada)
 	var andar := dir * (0.25 if golpe_atual >= 0 else 1.0)
-	if _carga > 0.0 or agarrada or dancando > 0.0:
+	# Agarrando, arremessando, carregando e dançando ele fica no lugar (andando com essas animações, deslizava).
+	if _carga > 0.0 or agarrada or dancando > 0.0 or _arremessando > 0.0:
 		andar = Vector3.ZERO
 	elif giro_forte > 0.0:
 		andar = dir * 0.55
@@ -757,13 +759,14 @@ func _atualizar_agarrar(delta: float, no_chao: bool, dir: Vector3) -> void:
 		_parar_danca()
 		var alvo := _bolota_proxima()
 		if alvo == null:
-			# Nada perto: só o gesto de pegar, para a criança ver que o botão fez alguma coisa.
-			robo.animar_desde("geral/Interact", 0.1, 0.05, 1.8)
-			_arremessando = 0.4
+			# Nenhuma tonta perto: ele só fecha a mão, sem parar de andar (o gesto do corpo inteiro deslizava).
+			robo.fechar_mao()
 			return
 		agarrada = alvo
 		alvo.ser_agarrada()
 		_balanco = 0.0
+		velocity.x = 0.0
+		velocity.z = 0.0
 		var d := alvo.global_position - global_position
 		# A mão esquerda (+X do robô) aponta para ela.
 		visual.rotation.y = atan2(d.x, d.z) - PI / 2.0
@@ -832,7 +835,7 @@ func _soltar_agarrada() -> void:
 	agarrada = null
 
 
-## Bolota (ou alvo de treino) que dá para agarrar: perto, mais ou menos na frente, sem ser a Bolotona.
+## Bolota (ou alvo de treino) que dá para agarrar: tonta, perto e mais ou menos na frente (a Bolotona não fica tonta).
 func _bolota_proxima() -> Alvo:
 	var f := _frente()
 	var melhor: Alvo = null
@@ -841,7 +844,7 @@ func _bolota_proxima() -> Alvo:
 		if not alvo is Alvo or alvo is Bolotona:
 			continue
 		var b := alvo as Alvo
-		if b.derrotado or b.voando or b.agarrada or not b.visible:
+		if b.derrotado or b.voando or b.agarrada or not b.visible or b.tonta <= 0.0:
 			continue
 		var d := b.global_position - global_position
 		if absf(d.y) > 1.5:

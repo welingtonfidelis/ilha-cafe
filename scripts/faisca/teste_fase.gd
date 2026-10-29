@@ -109,6 +109,15 @@ func rodar() -> void:
 	ok = m._conferir("a Bolota vem até o Faísca e encostar tira um coração", j.vida == Jogador.VIDA_MAX - 1, "(vida %d)" % j.vida) and ok
 	await m._esperar(1.8)
 
+	# Tonta (um golpe às vezes deixa; 2026-10-29), ela não vem atrás do Faísca, e é a hora de agarrar.
+	b1.ficar_tonta()
+	j.teleportar(b1.global_position + Vector3(3.0, 0.1, 0))
+	var p_tonta := b1.global_position
+	await m._esperar(1.2)
+	ok = m._conferir("tonta, a Bolota não vem atrás do Faísca", b1.global_position.distance_to(p_tonta) < 0.1,
+			"(andou %.2f m)" % b1.global_position.distance_to(p_tonta)) and ok
+	await m._esperar(2.2)
+
 	# Mola: cair em cima joga lá para o alto.
 	var mola := n.molas[0]
 	j.teleportar(mola.global_position + Vector3(0, 2.0, 0))

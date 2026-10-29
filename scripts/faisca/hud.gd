@@ -413,16 +413,25 @@ class DesenhoDica extends Control:
 				draw_line(cabo, cabo + Vector2(sin(vira), -cos(vira)) * 30, Color("ffd23f"), 6.0)
 				draw_circle(cabo + Vector2(sin(vira), -cos(vira)) * 30, 6, Color("ff5d5d"))
 			"agarrar":
-				# Segura Y: o Faísca gira com a Bolota pendurada pela antena; solta: ela voa longe.
-				var ciclo := fmod(tempo, 1.6)
+				# A Bolota tonta (estrelinhas girando); segura Y: o Faísca gira com ela pendurada pela antena;
+				# solta: ela voa longe.
+				var ciclo := fmod(tempo, 2.0)
 				_faisca(f + Vector2(0, 8))
-				if ciclo < 1.2:
-					var a := ciclo * TAU * 1.4
+				if ciclo < 0.5:
+					var bola := f + Vector2(46, 10 + sin(tempo * 9.0) * 2.0)
+					_bolota(bola)
+					for i in 3:
+						var a := tempo * 6.0 + i * TAU / 3.0
+						var e := bola + Vector2(cos(a) * 14, -26 + sin(a) * 4)
+						draw_circle(e, 4, Color("ffd23f"))
+						draw_arc(e, 4, 0, TAU, 12, Color("2b2140"), 1.5, true)
+				elif ciclo < 1.6:
+					var a := (ciclo - 0.5) * TAU * 1.4
 					var bola := f + Vector2(cos(a) * 46, 10 + sin(a) * 14)
 					draw_line(f + Vector2(0, 12), bola + (f + Vector2(0, 12) - bola).normalized() * 12, Color("2b2140"), 3.0)
 					_bolota(bola)
 				else:
-					var voo := (ciclo - 1.2) / 0.4
+					var voo := (ciclo - 1.6) / 0.4
 					_bolota(f + Vector2(46 + voo * 50, 10 - sin(voo * PI) * 26))
 			"giro_forte":
 				# Segura X: carrega (anel dourado crescendo) e gira de braços abertos, jogando as Bolotas longe.

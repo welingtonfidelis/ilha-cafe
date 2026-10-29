@@ -362,7 +362,8 @@ func _movimentos_do_astro() -> bool:
 	ok = _conferir("depois do giro forte ele fica tontinho e para de girar", jogador.giro_forte <= 0.0 and jogador.robo.expressao_atual() == "tonto") and ok
 	await _esperar(1.0)
 
-	# Y agarra a bolota pela antena, ele gira com ela e, soltando, arremessa: ela estoura no alvo do caminho.
+	# Y agarra a bolota tonta pela antena, ele gira com ela e, soltando, arremessa: ela estoura no alvo do
+	# caminho. Sem estar tonta, não dá para agarrar (pedido do usuário: estava fácil demais).
 	var a0: Alvo = fase.alvos[0]
 	var a1: Alvo = fase.alvos[1]
 	for i in 6 * Engine.physics_ticks_per_second:
@@ -371,13 +372,24 @@ func _movimentos_do_astro() -> bool:
 		await get_tree().physics_frame
 	jogador.teleportar(a0.global_position + Vector3(0, 0.1, 1.4))
 	jogador.visual.rotation.y = PI
-	var para := (a1.global_position - (a0.global_position + Vector3(0, 0, 1.4))) * Vector3(1, 0, 1)
-	jogador.yaw = atan2(-para.x, -para.z)
 	await _esperar(0.3)
+	await _toque(JOY_BUTTON_Y)
+	ok = _conferir("sem estar tonta, a bolota não deixa agarrar (só fecha a mão)", not a0.agarrada and jogador.agarrada == null
+			and jogador.robo._mao_fechada > 0.0) and ok
+	# Um golpe às vezes deixa tonta; aqui a chance vai a 100% para o teste não depender da sorte.
+	a0.chance_tontura = 1.0
+	await _toque(JOY_BUTTON_X)
+	await _esperar(0.3)
+	a0.chance_tontura = 0.25
+	ok = _conferir("o golpe às vezes deixa a bolota tonta, com estrelinhas girando", a0.tonta > 0.0 and a0._estrelas_tonta.visible
+			and a0.vida == a0.vida_max - 1) and ok
+	var para := (a1.global_position - jogador.global_position) * Vector3(1, 0, 1)
+	jogador.yaw = atan2(-para.x, -para.z)
+	await _esperar(0.1)
 	var vida_a1 := a1.vida
 	_botao(JOY_BUTTON_Y, true)
 	await _esperar(0.1)
-	ok = _conferir("Y agarra a bolota pela antena", a0.agarrada and jogador.agarrada == a0) and ok
+	ok = _conferir("Y agarra a bolota tonta pela antena", a0.agarrada and jogador.agarrada == a0 and a0.tonta <= 0.0) and ok
 	await _esperar(0.5)
 	# O meio do corpo dela (pendurada pela antena, o "para cima" dela aponta para a mão).
 	var meio := a0.global_position + a0.visual.global_basis.y * 0.62
@@ -487,7 +499,9 @@ func _capturar_movimentos() -> void:
 	jogador.visual.rotation.y = PI
 	var para := (a1.global_position - (a0.global_position + Vector3(0, 0, 1.4))) * Vector3(1, 0, 1)
 	jogador.yaw = atan2(-para.x, -para.z) + 0.9
-	await _esperar(0.3)
+	a0.ficar_tonta()
+	await _esperar(0.6)
+	await _foto("12a_bolota_tonta")
 	_botao(JOY_BUTTON_Y, true)
 	await _esperar(0.45)
 	await _foto("12_agarrando")

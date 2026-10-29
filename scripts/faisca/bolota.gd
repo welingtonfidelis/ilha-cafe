@@ -46,8 +46,8 @@ func _physics_process(delta: float) -> void:
 		if longe < ACORDA_DE and absf(d.y) < 2.0:
 			_acordar()
 		return
-	# Encostou: tira um coração. Quem vem caindo por cima é pisão, não toque.
-	if _pausa <= 0.0 and longe < alcance_toque and d.y > -0.6 and d.y < 1.0:
+	# Encostou: tira um coração (tonta, não). Quem vem caindo por cima é pisão, não toque.
+	if _pausa <= 0.0 and tonta <= 0.0 and longe < alcance_toque and d.y > -0.6 and d.y < 1.0:
 		if jogador.receber_dano(global_position):
 			_pausa = 1.0
 			_amasso = 0.25
@@ -93,7 +93,7 @@ func _andar(_delta: float) -> Vector3:
 
 
 func _olhar_jogador() -> bool:
-	return not dormindo
+	return not dormindo and tonta <= 0.0
 
 
 func _acordar() -> void:

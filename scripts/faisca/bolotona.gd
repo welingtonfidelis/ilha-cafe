@@ -12,6 +12,8 @@ var filhas: Array[Bolota] = []
 
 func _ready() -> void:
 	vida_max = 8
+	# Grande demais para agarrar, então não fica tonta.
+	chance_tontura = 0.0
 	velocidade = 1.5
 	ve_de = 9.0
 	desiste_de = 14.0

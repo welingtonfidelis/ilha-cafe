@@ -60,12 +60,12 @@ const CONTROLS_KEYBOARD := [
 ## Com o Faísca (Parte 2).
 const CONTROLS_FAISCA_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular (segurar pula mais alto)", "Espaço"], ["Flutuar e laser dos pés", "segurar Espaço na descida"],
-	["Socos (no ar, giro)", "F, J ou clique"], ["Giro forte", "segurar F"], ["Agarrar e jogar a Bolota", "E (segurar gira, soltar joga)"],
+	["Socos (no ar, giro)", "F, J ou clique"], ["Giro forte", "segurar F"], ["Agarrar e jogar a Bolota tonta", "E (segurar gira, soltar joga)"],
 	["Dancinha", "V"], ["Voltar ao começo da fase", "R"], ["Pausa", "Esc ou Tab"],
 ]
 const CONTROLS_FAISCA_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular (segurar pula mais alto)", "A"], ["Flutuar e laser dos pés", "segurar A na descida"],
-	["Socos (no ar, giro)", "X"], ["Giro forte", "segurar X"], ["Agarrar e jogar a Bolota", "Y (segurar gira, soltar joga)"],
+	["Socos (no ar, giro)", "X"], ["Giro forte", "segurar X"], ["Agarrar e jogar a Bolota tonta", "Y (segurar gira, soltar joga)"],
 	["Dancinha", "↓ (direcional)"], ["Voltar ao começo da fase", "Select"], ["Pausa", "Start"],
 ]
 const CONTROLS_GAMEPAD := [

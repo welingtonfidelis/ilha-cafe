@@ -6,12 +6,15 @@ extends CharacterBody3D
 ## A Bolota das fases (`Bolota`) herda daqui: anda, encosta e não volta depois de derrotada.
 ## O Faísca agarra pela antena (Y), gira em volta dele e arremessa (pedido do usuário em 2026-10-29, movimentos
 ## do Astro): agarrada ela não anda nem machuca; voando, estoura no que bater e acerta quem estiver no caminho.
+## Só dá para agarrar a bolota tonta (o usuário achou o agarrar fácil demais): cada golpe que não derruba tem
+## `chance_tontura` por ponto de dano de deixar tonta por TEMPO_TONTA, com estrelinhas girando em cima.
 
 signal derrotada(alvo: Alvo)
 
 const CAMADA := 1 << 2
 ## Tudo o que os golpes acertam fica neste grupo, com `derrotado` e `receber_golpe` (o baú também).
 const GRUPO := "alvos"
+const TEMPO_TONTA := 3.0
 
 @export var vida_max := 3
 @export var volta_depois := 4.0
@@ -26,6 +29,9 @@ var visual: Node3D
 ## Na mão do Faísca (ele põe no lugar a cada quadro) e voando depois de arremessada.
 var agarrada := false
 var voando := false
+## Chance de ficar tonta a cada ponto de dano (a Bolotona não fica) e o tempo que ainda falta de tontura.
+var chance_tontura := 0.25
+var tonta := 0.0
 
 var _corpo: Node3D
 var _mat_corpo: StandardMaterial3D
@@ -39,6 +45,7 @@ var _gravidade := 26.0
 ## Último ponto do voo com chão embaixo: se estourar em cima do vazio, as estrelinhas caem aqui.
 var _sobre_chao := Vector3.ZERO
 var _voo := 0.0
+var _estrelas_tonta: Node3D
 
 
 func _ready() -> void:
@@ -95,7 +102,8 @@ func _physics_process(delta: float) -> void:
 	if voando:
 		_voar(delta)
 		return
-	var andar := _andar(delta)
+	_tontura(delta)
+	var andar := Vector3.ZERO if tonta > 0.0 else _andar(delta)
 	velocity.x = _empurrao.x + andar.x
 	velocity.z = _empurrao.z + andar.z
 	_empurrao = _empurrao.lerp(Vector3.ZERO, 1.0 - exp(-6.0 * delta))
@@ -110,8 +118,54 @@ func _physics_process(delta: float) -> void:
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(d.x, d.z), 1.0 - exp(-5.0 * delta))
 
 
+## Fica tonta: para de andar, não machuca e balança, com três estrelinhas girando em cima. É a hora de agarrar.
+func ficar_tonta() -> void:
+	tonta = TEMPO_TONTA
+	if _estrelas_tonta == null:
+		_estrelas_tonta = Node3D.new()
+		visual.add_child(_estrelas_tonta)
+		var mat := _material(Color("ffd23f"), 0.3)
+		mat.emission_enabled = true
+		mat.emission = Color("ffb800")
+		mat.emission_energy_multiplier = 1.2
+		# A Forma.estrela tem as faces viradas para dentro.
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		var malha := Forma.estrela(0.19, 0.085, 0.12)
+		for i in 3:
+			var e := MeshInstance3D.new()
+			e.mesh = malha
+			e.material_override = mat
+			var a := TAU * i / 3.0
+			e.position = Vector3(cos(a) * 0.5, 0, sin(a) * 0.5)
+			_estrelas_tonta.add_child(e)
+	_estrelas_tonta.position.y = 1.75
+	_estrelas_tonta.show()
+	Sfx.play_at(get_parent(), "tonto", global_position, -4.0)
+
+
+func _tontura(delta: float) -> void:
+	if tonta <= 0.0:
+		return
+	tonta -= delta
+	_estrelas_tonta.rotation.y += 4.0 * delta
+	# Cada estrela também gira em volta de si (de lado ela sumia).
+	for e in _estrelas_tonta.get_children():
+		(e as Node3D).rotation.y += 6.0 * delta
+	_corpo.rotation.z = sin(_tempo * 7.0) * 0.16
+	if tonta <= 0.0:
+		_sarar()
+
+
+func _sarar() -> void:
+	tonta = 0.0
+	_corpo.rotation.z = 0.0
+	if _estrelas_tonta:
+		_estrelas_tonta.hide()
+
+
 ## O Faísca pegou pela antena: para de andar, sai do caminho dele e treme as perninhas.
 func ser_agarrada() -> void:
+	_sarar()
 	agarrada = true
 	collision_layer = 0
 	_empurrao = Vector3.ZERO
@@ -192,6 +246,8 @@ func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
 	_imune = 0.25
 	_piscar = 0.12
 	_amasso = 0.35
+	if vida > 0 and tonta <= 0.0 and randf() < chance_tontura * dano:
+		ficar_tonta()
 	var dir := global_position - de
 	dir.y = 0.0
 	_empurrao = dir.normalized() * forca if dir.length() > 0.05 else Vector3.ZERO
@@ -202,6 +258,7 @@ func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
 
 
 func _derrotar() -> void:
+	_sarar()
 	derrotado = true
 	collision_layer = 0
 	_estrelinhas()
@@ -246,6 +303,7 @@ func _sair_quicando() -> void:
 
 
 func _voltar() -> void:
+	_sarar()
 	agarrada = false
 	voando = false
 	visual.rotation = Vector3.ZERO

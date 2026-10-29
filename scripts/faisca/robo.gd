@@ -56,6 +56,8 @@ var _prox_olhada := 2.5
 var _feliz_da_festa := false
 ## Dancinha (Jogador.dancando): peso da dança por cima da animação de parado e o tempo dela.
 var _dancando := false
+## Tempo que a mão ainda fica fechada fora dos golpes (o Y sem bolota tonta perto).
+var _mao_fechada := 0.0
 var _danca := 0.0
 var _danca_t := 0.0
 
@@ -127,6 +129,11 @@ func animacao_atual() -> String:
 	return _ap.current_animation if _ap else ""
 
 
+## Fecha as mãos por um instante (pegar o ar), sem mexer o resto do corpo.
+func fechar_mao(tempo := 0.3) -> void:
+	_mao_fechada = tempo
+
+
 ## Liga e desliga a dancinha (a animação por baixo continua; a dança entra e sai misturando).
 func dancar(on: bool) -> void:
 	if on and not _dancando:
@@ -180,7 +187,8 @@ func _process(delta: float) -> void:
 		var descanso := esqueleto.get_bone_rest(quadril).origin
 		esqueleto.set_bone_pose_position(quadril, Vector3(descanso.x, pos.y, descanso.z))
 	# Mão fechada nos golpes e na comemoração.
-	var fechado: bool = anim.begins_with("luta/") or anim == "festa/Cheering"
+	_mao_fechada -= delta
+	var fechado: bool = anim.begins_with("luta/") or anim == "festa/Cheering" or _mao_fechada > 0.0
 	_punho = move_toward(_punho, 1.0 if fechado else PUNHO_SOLTO, delta * 10.0)
 	for d in _dedos:
 		d[0].basis = Basis(d[1], lerpf(d[2], d[3], _punho))
