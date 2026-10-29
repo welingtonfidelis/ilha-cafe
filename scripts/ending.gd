@@ -611,7 +611,13 @@ func start_credits() -> void:
 	await c.finished
 	get_tree().paused = false
 	credits_running = false
+	# Parte 2: ainda de noite, a nave do Rei Bolotão suga as estrelas e o Faísca sai do farol.
+	var parte2: Parte2 = game.parte2
+	if parte2 and not parte2.aberta:
+		await parte2.abrir(true)
 	post_game(true)
+	if parte2 and parte2.aberta:
+		parte2.anunciar()
 
 
 ## Depois dos créditos: de dia, a ilha em festa e a brincadeira do Mestre na praia.

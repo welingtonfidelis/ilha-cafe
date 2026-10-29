@@ -57,6 +57,15 @@ const CONTROLS_KEYBOARD := [
 	["Lojinha no celular", "C (fora de luta)"],
 	["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
 ]
+## Com o Faísca (Parte 2).
+const CONTROLS_FAISCA_KEYBOARD := [
+	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular (segurar pula mais alto)", "Espaço"], ["Flutuar e laser dos pés", "segurar Espaço na descida"],
+	["Golpe (no ar, giro)", "F, J ou clique"], ["Voltar ao começo da fase", "R"], ["Pausa", "Esc ou Tab"],
+]
+const CONTROLS_FAISCA_GAMEPAD := [
+	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular (segurar pula mais alto)", "A"], ["Flutuar e laser dos pés", "segurar A na descida"],
+	["Golpe (no ar, giro)", "X"], ["Voltar ao começo da fase", "Select"], ["Pausa", "Start"],
+]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
 	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart e skate", "B (entrar e sair)"],
@@ -85,6 +94,11 @@ var menu_state := ""
 var _menu_hints: Array[Label] = []
 var _buttons: Array[Button] = []
 var _pause_buttons: Array[Button] = []
+## Parte 2: o Faísca na escolha de personagem, a saída do farol na pausa e o "Trocar de personagem" (some
+## dentro do farol).
+var _faisca_button: Button
+var _pause_exit: Button
+var _pause_switch: Button
 var _controls_back: Button
 var _start_buttons: Array[Button] = []
 var _continue_button: Button
@@ -106,6 +120,8 @@ var sun_light: DirectionalLight3D
 var ending: Ending
 ## "Festa sem fim" no cemitério (só no pós-jogo).
 var party_mode: EndlessParty
+## Parte 2: o farol, o Faísca, o hub e as fases (scripts/faisca/parte2.gd). Nula na arena dos testes.
+var parte2: Parte2
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
 var shop_menu: ShopMenu
 var shop_marker: ObjectiveMarker
@@ -276,6 +292,10 @@ const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som",
 
 func _ready() -> void:
 	_setup_input()
+	# O Faísca sozinho, sem a ilha (os testes que vieram do projeto Faísca).
+	if FaiscaSolo.MODOS.any(func(m: String) -> bool: return m in OS.get_cmdline_user_args()):
+		add_child(FaiscaSolo.new())
+		return
 	Sfx.setup_buses()
 	music = Sfx.music(self, "tema")
 	music.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -393,6 +413,10 @@ func _ready() -> void:
 			coins_bar.set_coins(n, story.coins_ever)
 			if menu_state == "loja":
 				shop_menu.refresh())
+		parte2 = Parte2.new()
+		parte2.name = "Parte2"
+		add_child(parte2)
+		parte2.setup(self)
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -512,6 +536,12 @@ func _ready() -> void:
 	elif "--brinquedos-captura" in args:
 		select_panel.hide()
 		_run_toys_capture()
+	elif "--parte2" in args:
+		select_panel.hide()
+		_run_parte2_test()
+	elif "--parte2-captura" in args:
+		select_panel.hide()
+		_run_parte2_capture()
 	elif SaveGame.go_new:
 		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
 		SaveGame.go_new = false
@@ -634,6 +664,13 @@ func _setup_input() -> void:
 	_bind_button("celular", JOY_BUTTON_BACK)
 	_bind_key("menu", [KEY_TAB, KEY_ESCAPE])
 	_bind_button("menu", JOY_BUTTON_START)
+	# Faísca (Parte 2): golpe no X / quadrado (F, J ou clique) e Back / R volta ao começo da fase. Na ilha
+	# os mesmos botões são do aventureiro (recarregar, celular); só um dos dois lê o controle de cada vez.
+	_bind_key("golpe", [KEY_F, KEY_J])
+	_bind_mouse("golpe", MOUSE_BUTTON_LEFT)
+	_bind_button("golpe", JOY_BUTTON_X)
+	_bind_key("recomecar", [KEY_R])
+	_bind_button("recomecar", JOY_BUTTON_BACK)
 	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
 	_bind_button("ui_accept", JOY_BUTTON_A)
 	_bind_button("ui_cancel", JOY_BUTTON_B)
@@ -702,7 +739,7 @@ func _menu_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 	match menu_state:
 		"":
-			if event.is_action_pressed("menu") and not player.dizzy and not (ending and ending.busy()):
+			if event.is_action_pressed("menu") and not player.dizzy and not (ending and ending.busy()) and not (parte2 and parte2.busy()):
 				open_menu("pausa")
 		"pausa":
 			close_menus()
@@ -749,6 +786,8 @@ func open_menu(state: String) -> void:
 	controls_panel.visible = state == "comandos"
 	menu_dim.visible = true
 	crosshair.hide()
+	if parte2:
+		parte2.menu_abriu()
 	# Com o jogo pausado o _process não roda: o aviso de baixo some aqui.
 	hint_label.hide()
 	player.input_enabled = false
@@ -768,13 +807,26 @@ func open_menu(state: String) -> void:
 			shop_menu.open()
 			shop_menu.slide_in.call_deferred()
 		"escolha":
-			var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
-			_buttons[i].grab_focus.call_deferred()
+			_faisca_button.visible = parte2 != null and parte2.aberta
+			if parte2 and parte2.faisca_ativo:
+				_faisca_button.grab_focus.call_deferred()
+			else:
+				var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
+				_buttons[i].grab_focus.call_deferred()
 		"pausa":
 			if story:
 				story.save()
+			var inside := parte2 != null and parte2.lugar != "ilha"
+			_pause_exit.visible = inside
+			_pause_exit.text = "Sair da fase" if parte2 and parte2.lugar == "fase" else "Voltar para a ilha"
+			_pause_switch.visible = not inside
+			if parte2 and parte2.faisca_ativo:
+				pause_objective.text = "Faísca: %d estrelinhas. Junte estrelinhas para abrir as portas do farol." % parte2.total_estrelas()
+			elif story:
+				pause_objective.text = "Objetivo: " + story.objective_text
 			_pause_buttons[0].grab_focus.call_deferred()
 		"comandos":
+			_on_input_device_changed(player.using_gamepad)
 			_controls_back.grab_focus.call_deferred()
 
 
@@ -788,7 +840,7 @@ func close_menus() -> void:
 	pause_panel.hide()
 	controls_panel.hide()
 	menu_dim.hide()
-	crosshair.show()
+	crosshair.visible = not player.parked
 	get_tree().paused = false
 	_game_started = true
 	if was == "loja":
@@ -799,8 +851,11 @@ func close_menus() -> void:
 		story.start()
 	if not player.using_gamepad:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo.
-	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = true)
+	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo (o guardado, com o Faísca
+	# na ilha, continua sem controle).
+	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = not player.parked)
+	if parte2:
+		parte2.menu_fechou()
 
 
 # --- campanha: continuar e começar de novo ------------------------------------
@@ -813,6 +868,10 @@ func open_shop() -> void:
 ## Select (ou C): puxa o celular do bolso e, meio segundo depois, abre a lojinha. Só fora de luta, a pé.
 func open_phone() -> bool:
 	if story == null or menu_state != "" or _phone_opening or player.dizzy or (ending and ending.busy()):
+		return false
+	if parte2 and parte2.faisca_ativo:
+		if parte2.lugar == "ilha":
+			show_message("O celular é das crianças: troque de personagem na pausa", Color("#8ff3ff"), 1.8)
 		return false
 	if player.in_vehicle or player.skating:
 		show_message("Desça primeiro para usar o celular", Color("#ff9d9d"), 1.6)
@@ -1010,6 +1069,8 @@ func _splash() -> void:
 	player.respawn(current_checkpoint.spawn_position())
 	player.hearts = hearts_before
 	player.health_changed.emit(player.hearts, player.max_hearts)
+	if parte2:
+		parte2.depois_do_tchibum()
 	tw = fade.create_tween()
 	tw.tween_property(fade, "modulate:a", 0.0, 0.4)
 	await tw.finished
@@ -1250,6 +1311,17 @@ func _build_ui() -> void:
 		button.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
 		grid.add_child(button)
 		_buttons.append(button)
+	# O Faísca aparece depois do final, com a Parte 2 aberta.
+	_faisca_button = Button.new()
+	_faisca_button.text = "Faísca"
+	_faisca_button.custom_minimum_size = Vector2(220, 56)
+	_faisca_button.add_theme_font_size_override("font_size", 20)
+	_faisca_button.add_theme_stylebox_override("focus", focus_style)
+	_faisca_button.add_theme_color_override("font_color", Color("#8ff3ff"))
+	_faisca_button.pressed.connect(_choose_character.bind("faisca"))
+	_faisca_button.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
+	_faisca_button.visible = false
+	grid.add_child(_faisca_button)
 	_add_menu_hint(box)
 
 	# Pausa: continuar, trocar de personagem, ver os comandos, começar de novo ou sair.
@@ -1262,10 +1334,10 @@ func _build_ui() -> void:
 	pause_objective.add_theme_font_size_override("font_size", 18)
 	pause_objective.add_theme_color_override("font_color", Color("#d9a8ff"))
 	pbox.add_child(pause_objective)
-	var pause_specs := [["Continuar", close_menus], ["Trocar de personagem", open_menu.bind("escolha")],
+	var pause_specs := [["Continuar", close_menus], ["Voltar para a ilha", _leave_lighthouse], ["Trocar de personagem", open_menu.bind("escolha")],
 			["Comandos", open_menu.bind("comandos")], ["Nova campanha", _new_campaign_from_pause], ["Sair do jogo", _quit_game]]
 	if arena:
-		pause_specs.remove_at(3)
+		pause_specs.remove_at(4)
 	for spec in pause_specs:
 		var b := _menu_button(spec[0], focus_style)
 		b.pressed.connect(func() -> void:
@@ -1273,6 +1345,9 @@ func _build_ui() -> void:
 			spec[1].call())
 		pbox.add_child(b)
 		_pause_buttons.append(b)
+	_pause_exit = _pause_buttons[1]
+	_pause_exit.visible = false
+	_pause_switch = _pause_buttons[2]
 	_add_menu_hint(pbox)
 
 	# Comandos: a lista do aparelho em uso (teclado e mouse ou controle).
@@ -1555,7 +1630,7 @@ func _process(_delta: float) -> void:
 			hint = "Aperte %s para dirigir: %s" % [button, kart_race.nearest.display_name]
 		elif menu_state == "" and skate_park and skate_park.state == "a_pe" and skate_park.near:
 			hint = "Aperte %s para pegar o skate" % button
-		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat():
+		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
 		hint_label.text = hint
@@ -1567,12 +1642,31 @@ func _process(_delta: float) -> void:
 		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
 		var show_target := menu_state == "" and not (ending and ending.busy())
 		var view_cam := get_viewport().get_camera_3d()
-		objective_marker.update_marker(view_cam, story.objective_target if show_target else Vector3.INF, player.global_position)
-		shop_marker.update_marker(view_cam, story.shop_target() if show_target else Vector3.INF, player.global_position)
+		var target := story.objective_target
+		var shop_target := story.shop_target()
+		if parte2 and parte2.faisca_ativo:
+			# Com o Faísca a seta leva ao farol (dentro dele, nenhuma).
+			target = parte2.alvo()
+			shop_target = Vector3.INF
+		show_target = show_target and not (parte2 and parte2.busy())
+		objective_marker.update_marker(view_cam, target if show_target else Vector3.INF, player.global_position)
+		shop_marker.update_marker(view_cam, shop_target if show_target else Vector3.INF, player.global_position)
+
+
+## Pausa dentro do farol: sai da fase (volta ao farol) ou do farol (volta para a ilha).
+func _leave_lighthouse() -> void:
+	close_menus()
+	if parte2:
+		parte2.sair_pela_pausa()
 
 
 func _choose_character(key: String) -> void:
-	player.set_character(key)
+	if key == "faisca":
+		parte2.usar_faisca(true)
+	else:
+		if parte2 and parte2.faisca_ativo:
+			parte2.usar_faisca(false)
+		player.set_character(key)
 	Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 	close_menus()
 	if story and story.stage != "antes":
@@ -1584,7 +1678,10 @@ func _on_input_device_changed(gamepad: bool) -> void:
 		label.text = MENU_GAMEPAD if gamepad else MENU_KEYBOARD
 	if controls_label:
 		var lines := PackedStringArray()
-		for row in (CONTROLS_GAMEPAD if gamepad else CONTROLS_KEYBOARD):
+		var rows := CONTROLS_GAMEPAD if gamepad else CONTROLS_KEYBOARD
+		if parte2 and parte2.faisca_ativo:
+			rows = CONTROLS_FAISCA_GAMEPAD if gamepad else CONTROLS_FAISCA_KEYBOARD
+		for row in rows:
 			lines.append("%s:  %s" % row)
 		controls_label.text = "\n".join(lines)
 
@@ -4317,10 +4414,10 @@ func _run_save_test() -> void:
 					"(%d corações, %s)" % [player.max_hearts, player.character_name])
 			open_menu("pausa")
 			await get_tree().process_frame
-			_pause_buttons[3].pressed.emit()
+			_pause_buttons[4].pressed.emit()
 			await get_tree().process_frame
 			_save_check("Nova campanha na pausa pede confirmação", menu_state == "confirmar" and confirm_panel.visible
-					and _pause_buttons[3].text == "Nova campanha")
+					and _pause_buttons[4].text == "Nova campanha")
 			SaveGame.test_phase = 2
 			_confirm_buttons[0].pressed.emit()
 		2:
@@ -4945,6 +5042,387 @@ func _ground_point(p: Vector3) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(Vector3(p.x, 200.0, p.z), Vector3(p.x, -50.0, p.z), 1)
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	return hit.position if not hit.is_empty() else Vector3(p.x, 0.0, p.z)
+
+
+# --- Parte 2: o Faísca ------------------------------------------------------------------
+
+## Leva a campanha até a noite da festa (o epílogo), pronta para os créditos.
+func _skip_to_festa_night() -> void:
+	story.skip_to_cemetery()
+	var cemiterio: Defense = story.defenses.cemiterio
+	cemiterio.state = Defense.State.VENCIDA
+	cemiterio.active = false
+	ending.start_epilogue(false)
+
+
+## Põe o Faísca parado em `pos` e espera a física contar.
+func _faisca_em(pos: Vector3, seconds := 0.3) -> void:
+	parte2.faisca.teleportar(pos)
+	await _wait(seconds)
+
+
+## Sobe a escada em espiral do farol com o analógico simulado, virando a câmera para seguir a curva, até o
+## patamar do fim do lance `lance` (0 é o que sai do térreo). Devolve se chegou na altura do andar.
+func _subir_escada_do_farol(lance: int, segundos: float) -> bool:
+	var f := parte2.faisca
+	var meio := (HubFarol.ESCADA_DENTRO + HubFarol.SACADA) * 0.5
+	var andar: float = HubFarol.ANDARES[lance + 1]
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < segundos * 1000.0:
+		var p := f.global_position
+		if p.y > andar - 0.05 and f.is_on_floor():
+			break
+		var a := atan2(p.x, -p.z)
+		var r := Vector2(p.x, p.z).length()
+		# A curva da escada (graus crescendo) mais um puxão de volta para o meio dos degraus.
+		var dir := Vector3(cos(a), 0, sin(a)) + Vector3(sin(a), 0, -cos(a)) * (meio - r) * 0.4
+		f.yaw = atan2(-dir.x, -dir.z)
+		f.forcar_direcao = Vector2(0, -1)
+		await get_tree().physics_frame
+	f.forcar_direcao = Vector2.ZERO
+	return f.global_position.y > andar - 0.3
+
+
+## Parte 2 de ponta a ponta: farol fechado na Parte 1, abertura depois dos créditos, o Faísca na troca de
+## personagem e andando pela ilha (com o aventureiro guardado acompanhando), celular e tchibum, o hub dentro
+## do farol (portas dos andares, escada em espiral subindo até o topo com as estrelinhas, murinhas, porta
+## trancada, porta da nave, porta da 1-1), estrelinhas que contam uma vez, a Estrela Grande e a constelação,
+## a volta para a ilha, a troca de volta para as crianças e o salvamento.
+## Uso: godot --headless --path . -- --parte2
+func _run_parte2_test() -> void:
+	var all_ok := true
+	story.fast = true
+	parte2.rapido = true
+	player.god_mode = true
+	await _wait(0.5)
+	var farol := parte2.farol
+	all_ok = _check("farol na ponta sudeste, de cadeado e apagado na Parte 1", is_instance_valid(farol)
+			and Vector2(farol.global_position.x, farol.global_position.z).distance_to(Vector2(161.5, 161.5)) < 1.0
+			and farol._cadeado.visible and not farol.modelo.aceso and not parte2.aberta) and all_ok
+	open_menu("escolha")
+	await _wait(0.1)
+	all_ok = _check("sem a Parte 2, o Faísca não aparece na troca de personagem", not _faisca_button.visible) and all_ok
+	close_menus()
+	await _wait(0.3)
+	await _stand(farol.modelo.porta() - FarolIlha.DIRECAO * 0.8)
+	await _wait(0.3)
+	all_ok = _check("na Parte 1 a porta do farol avisa que está fechado", message_label.text == "O farol está fechado"
+			and parte2.lugar == "ilha", "(%s)" % message_label.text) and all_ok
+
+	# Créditos e a abertura da Parte 2.
+	_skip_to_festa_night()
+	await _wait(0.3)
+	ending.start_credits()
+	var night_sky := false
+	var stars_gone := false
+	var t0 := Time.get_ticks_msec()
+	while (not parte2.aberta or parte2.busy() or ending.busy()) and Time.get_ticks_msec() - t0 < 40000:
+		await get_tree().process_frame
+		if parte2.busy() and ending.night:
+			night_sky = true
+			if sky_material.sky_cover_modulate.a < 0.05:
+				stars_gone = true
+	await _wait(1.0)
+	all_ok = _check("depois dos créditos, a nave suga as estrelas da noite e a Parte 2 abre", parte2.aberta and night_sky and stars_gone
+			and story.stage == "fim" and not ending.night, "(aberta %s, noite %s, estrelas sumiram %s)" % [parte2.aberta, night_sky, stars_gone]) and all_ok
+	all_ok = _check("o farol acende e perde o cadeado", farol.modelo.aceso and not farol._cadeado.visible) and all_ok
+	all_ok = _check("a faixa ensina a escolher o Faísca", _banners.any(func(b: Array) -> bool: return b[0] == "Parte 2 liberada!")
+			or banner_title.text == "Parte 2 liberada!") and all_ok
+
+	# O Faísca na troca de personagem.
+	open_menu("escolha")
+	await _wait(0.1)
+	all_ok = _check("com a Parte 2, o Faísca aparece na troca de personagem", _faisca_button.visible) and all_ok
+	_faisca_button.pressed.emit()
+	await _wait(0.4)
+	var f := parte2.faisca
+	all_ok = _check("escolher o Faísca: ele aparece no lugar do aventureiro, que fica guardado", parte2.faisca_ativo and f.visible
+			and f.camera.current and player.parked and not player.visible and player.collision_layer == 0
+			and not hearts_bar.visible and parte2.hud.visible) and all_ok
+	var p0 := f.global_position
+	_joy_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await _wait(0.8)
+	_joy_axis(JOY_AXIS_LEFT_Y, 0.0)
+	await _wait(0.2)
+	var walked := Vector2(f.global_position.x - p0.x, f.global_position.z - p0.z).length()
+	all_ok = _check("o Faísca anda pela ilha com o analógico e o aventureiro acompanha", walked > 2.0
+			and player.global_position.distance_to(f.global_position) < 0.05, "(%.1f m)" % walked) and all_ok
+	all_ok = _check("o celular é das crianças", not await open_phone() and menu_state == "") and all_ok
+	all_ok = _check("a seta aponta o farol", objective_marker.visible and parte2.alvo().distance_to(farol.porta()) < 4.0) and all_ok
+	var sea := Vector3(0, 0.5, 290)
+	await _faisca_em(sea, 0.2)
+	await _wait_until(func() -> bool: return not _splashing and f.global_position.y > -0.5 and f.global_position.distance_to(sea) > 20.0, 6.0)
+	all_ok = _check("caiu no mar: tchibum e o Faísca volta na bandeira", f.global_position.distance_to(current_checkpoint.spawn_position()) < 3.0,
+			"(%.1f m da bandeira)" % f.global_position.distance_to(current_checkpoint.spawn_position())) and all_ok
+	var other_flag: Checkpoint = checkpoints.filter(func(c: Checkpoint) -> bool: return c != current_checkpoint)[0]
+	await _faisca_em(_ground_point(other_flag.global_position + Vector3(2.5, 0, 0)) + Vector3.UP * 0.2, 0.4)
+	all_ok = _check("o Faísca também acende as bandeiras da ilha", current_checkpoint == other_flag and other_flag.active) and all_ok
+
+	# Entra no farol.
+	await _faisca_em(farol.porta() - FarolIlha.DIRECAO * 1.6, 0.2)
+	_joy_axis(JOY_AXIS_LEFT_Y, 0.0)
+	f.yaw = atan2(FarolIlha.DIRECAO.x, FarolIlha.DIRECAO.z) + PI
+	f.forcar_direcao = Vector2(0, -1)
+	await _wait_until(func() -> bool: return parte2.lugar == "hub", 6.0)
+	f.forcar_direcao = Vector2.ZERO
+	await _wait_until(func() -> bool: return not parte2.busy(), 3.0)
+	await _wait(0.3)
+	var hub := parte2.hub
+	var world_env_gone := not get_children().any(func(c: Node) -> bool: return c is WorldEnvironment)
+	all_ok = _check("encostar na porta do farol entra no hub, e a ilha fica pausada e escondida", parte2.lugar == "hub" and is_instance_valid(hub)
+			and not island.visible and island.process_mode == Node.PROCESS_MODE_DISABLED and world_env_gone
+			and f.global_position.distance_to(hub.inicio) < 1.5, "(lugar %s)" % parte2.lugar) and all_ok
+	var doors := hub.portas
+	var ground := doors.filter(func(d: Dictionary) -> bool: return int(d.andar) == 0)
+	all_ok = _check("no térreo: a 1-1 aberta, os Túneis do Morro trancados (pedem 30) e a saída", ground.size() == 3
+			and ground[0].aberta and not ground[1].aberta and int(ground[1].pede) == 30 and ground[2].tipo == "saida") and all_ok
+	var upper := doors.filter(func(d: Dictionary) -> bool: return int(d.andar) > 0)
+	var nave_door: Node3D = hub.portas_nos["nave"]
+	all_ok = _check("nos andares de cima: 3 portas trancadas em cada um e a da nave no topo, pedindo as 8 Estrelas Grandes", upper.size() == 7
+			and upper.all(func(d: Dictionary) -> bool: return not d.aberta)
+			and doors.filter(func(d: Dictionary) -> bool: return int(d.andar) == 1).size() == 3
+			and doors.filter(func(d: Dictionary) -> bool: return int(d.andar) == 2).size() == 3
+			and int(hub.portas_nos["nave"].dados.pede_grandes) == 8 and absf(nave_door.global_position.y - HubFarol.ANDARES[3]) < 0.01) and all_ok
+	var stair_star: Area3D = hub.estrelas[0]
+	await _faisca_em(stair_star.global_position - Vector3(0, 1.0, 0))
+	all_ok = _check("a estrelinha da escada do farol conta", parte2.total_estrelas() == 1 and parte2.hud._contador.text == "1",
+			"(%d)" % parte2.total_estrelas()) and all_ok
+	var locked: Node3D = hub.portas_nos["1-2"]
+	locked._espera = 0.0
+	await _faisca_em(locked.global_position + locked.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.4)
+	all_ok = _check("a porta trancada não abre e mostra quantas faltam", parte2.lugar == "hub" and locked._aviso.text == "Faltam 29",
+			"(%s)" % locked._aviso.text) and all_ok
+
+	# A escada em espiral, andando de verdade: do térreo ao 2º andar, a sacada, a murinha e até o topo.
+	var stair_mid := (HubFarol.ESCADA_DENTRO + HubFarol.SACADA) * 0.5
+	await _faisca_em(HubFarol.ponto(HubFarol.ESCADA_COMECO - 8.0, stair_mid, 0.1), 0.3)
+	var climbed := await _subir_escada_do_farol(0, 8.0)
+	await _wait(0.2)
+	all_ok = _check("a escada sobe do térreo até o patamar do 2º andar, pegando as estrelinhas do caminho", climbed and f.is_on_floor()
+			and absf(f.global_position.y - HubFarol.ANDARES[1]) < 0.3 and parte2.total_estrelas() == 4,
+			"(altura %.1f, %d estrelinhas)" % [f.global_position.y, parte2.total_estrelas()]) and all_ok
+	var out_dir := Vector3(f.global_position.x, 0, f.global_position.z).normalized()
+	f.yaw = atan2(-out_dir.x, -out_dir.z)
+	f.forcar_direcao = Vector2(0, -1)
+	await _wait(0.8)
+	f.forcar_direcao = Vector2.ZERO
+	await _wait(0.3)
+	var radius := Vector2(f.global_position.x, f.global_position.z).length()
+	all_ok = _check("do patamar o Faísca sai na sacada do 2º andar", f.is_on_floor() and radius > HubFarol.SACADA + 1.5
+			and absf(f.global_position.y - HubFarol.ANDARES[1]) < 0.3, "(raio %.1f, altura %.1f)" % [radius, f.global_position.y]) and all_ok
+	var mid_turn := HubFarol.comeco_do_lance(1) + HubFarol.LANCE * 0.5
+	var mid_floor := HubFarol.altura_na_escada(1, HubFarol.LANCE * 0.5)
+	await _faisca_em(HubFarol.ponto(mid_turn, stair_mid, mid_floor + 0.1), 0.3)
+	var in_dir := -Vector3(f.global_position.x, 0, f.global_position.z).normalized()
+	f.yaw = atan2(-in_dir.x, -in_dir.z)
+	f.forcar_direcao = Vector2(0, -1)
+	f.forcar_pulo = true
+	await _wait(1.2)
+	f.forcar_pulo = false
+	f.forcar_direcao = Vector2.ZERO
+	await _wait(0.6)
+	radius = Vector2(f.global_position.x, f.global_position.z).length()
+	all_ok = _check("a murinha da escada segura o Faísca, mesmo pulando para o vão do meio", f.is_on_floor() and radius > HubFarol.ESCADA_DENTRO
+			and f.global_position.y > mid_floor - 1.0, "(raio %.1f, altura %.1f)" % [radius, f.global_position.y]) and all_ok
+	await _faisca_em(HubFarol.ponto(HubFarol.comeco_do_lance(1) - 8.0, stair_mid, HubFarol.ANDARES[1] + 0.1), 0.3)
+	climbed = await _subir_escada_do_farol(1, 8.0)
+	climbed = climbed and await _subir_escada_do_farol(2, 8.0)
+	await _wait(0.2)
+	var farol_stars := parte2.total_estrelas()
+	all_ok = _check("a escada continua até o topo, com todas as 8 estrelinhas do farol", climbed and f.is_on_floor()
+			and absf(f.global_position.y - HubFarol.ANDARES[3]) < 0.3 and farol_stars == 8,
+			"(altura %.1f, %d estrelinhas)" % [f.global_position.y, farol_stars]) and all_ok
+	nave_door._espera = 0.0
+	await _faisca_em(nave_door.global_position + nave_door.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.4)
+	all_ok = _check("no topo, a porta da nave pede as Estrelas Grandes", parte2.lugar == "hub" and nave_door._aviso.text == "Faltam 8 Estrelas Grandes",
+			"(%s)" % nave_door._aviso.text) and all_ok
+
+	# A 1-1.
+	await _faisca_em(hub.inicio, 0.3)
+	var door11: Node3D = hub.portas_nos["1-1"]
+	await _faisca_em(door11.global_position + door11.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
+	await _wait_until(func() -> bool: return parte2.lugar == "fase" and not parte2.busy(), 8.0)
+	var lvl := parte2.nivel
+	all_ok = _check("a porta da 1-1 leva à fase, e o Faísca desce do céu até o começo", lvl is Fase11 and f.is_on_floor()
+			and f.global_position.distance_to(lvl.inicio) < 1.5 and f.controle_ligado) and all_ok
+	for k in 5:
+		await _faisca_em(lvl.estrelas[k].global_position - Vector3(0, 1.0, 0), 0.2)
+	# Estrelinhas vizinhas podem vir junto: conta o que a fase contou.
+	var got := lvl.pegas
+	all_ok = _check("estrelinhas da fase contam no total", got >= 5 and parte2.total_estrelas() == farol_stars + got and parte2.hud._contador.text == str(got),
+			"(fase %d, total %d)" % [got, parte2.total_estrelas()]) and all_ok
+	await _faisca_em(lvl.inicio, 0.2)
+	open_menu("pausa")
+	await _wait(0.1)
+	all_ok = _check("na pausa dentro da fase: Sair da fase, sem Trocar de personagem", _pause_exit.visible and _pause_exit.text == "Sair da fase"
+			and not _pause_switch.visible) and all_ok
+	_pause_exit.pressed.emit()
+	await _wait_until(func() -> bool: return parte2.lugar == "hub" and not parte2.busy(), 6.0)
+	await _wait(0.2)
+	hub = parte2.hub
+	door11 = hub.portas_nos["1-1"]
+	all_ok = _check("Sair da fase volta para o farol, na frente da porta, e guarda as estrelinhas", parte2.lugar == "hub"
+			and f.global_position.distance_to(door11.global_position) < 4.5 and parte2.total_estrelas() == farol_stars + got) and all_ok
+	await _faisca_em(door11.global_position + door11.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
+	await _wait_until(func() -> bool: return parte2.lugar == "fase" and not parte2.busy(), 8.0)
+	lvl = parte2.nivel
+	var ghost: StandardMaterial3D = (lvl.estrelas[0].get_child(1) as MeshInstance3D).material_override
+	all_ok = _check("de novo na 1-1: as já pegas ficam transparentes e o contador começa com elas", lvl.pegas == got
+			and ghost.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA, "(%d)" % lvl.pegas) and all_ok
+	await _faisca_em(lvl.estrelas[0].global_position - Vector3(0, 1.0, 0), 0.2)
+	var again := lvl.pegas
+	var fresh: Area3D = null
+	for e in lvl.estrelas:
+		if not lvl.ja_pegas.has(e.get_meta("id")) and e.monitoring and e.global_position.distance_to(lvl.inicio) > 3.0:
+			fresh = e
+			break
+	await _faisca_em(fresh.global_position - Vector3(0, 1.0, 0), 0.2)
+	all_ok = _check("pegar de novo não conta; uma nova conta", again == got and lvl.pegas > got and parte2.total_estrelas() == farol_stars + lvl.pegas,
+			"(de novo %d, fase %d, total %d)" % [again, lvl.pegas, parte2.total_estrelas()]) and all_ok
+	got = lvl.pegas
+	await _faisca_em(lvl.vaga_lumes[0].global_position - Vector3(0, 1.0, 0), 0.3)
+	var bau := lvl.bau
+	await _faisca_em(bau.global_position + bau.global_basis.z * 2.6, 0.2)
+	for k in 3:
+		bau.receber_golpe(1, f.global_position)
+		await _wait(0.35)
+	await _wait_until(func() -> bool: return bau._estrela_pronta, 3.0)
+	await _faisca_em(bau.estrela.global_position - Vector3(0, 1.2, 0), 0.2)
+	await _wait_until(func() -> bool: return parte2.hud.fim_aberto, 6.0)
+	all_ok = _check("a Estrela Grande termina a fase e fica guardada", "1-1" in parte2.grandes and parte2.hud.fim_aberto
+			and (parte2.vaga_lumes.get("1-1", []) as Array).size() == 1) and all_ok
+	got = lvl.pegas
+	await _joy_button(JOY_BUTTON_A)
+	await _wait_until(func() -> bool: return parte2.lugar == "hub" and not parte2.busy(), 6.0)
+	await _wait(0.2)
+	hub = parte2.hub
+	door11 = hub.portas_nos["1-1"]
+	all_ok = _check("o A na tela de fim volta para o farol, com a Estrela Grande na porta e a constelação acesa", parte2.lugar == "hub"
+			and not parte2.hud.fim_aberto and door11.dados.grande and int(door11.dados.achados) == 1 and "1-1" in hub.grandes) and all_ok
+	all_ok = _check("com uma Estrela Grande, a porta da nave pede as outras 7", int(hub.portas_nos["nave"].dados.falta) == 7
+			and not hub.portas_nos["nave"].dados.aberta) and all_ok
+	var saved: Dictionary = story.snapshot().get("parte2", {})
+	all_ok = _check("a campanha guarda a Parte 2", saved.get("aberta", false) and saved.get("faisca", false) and "1-1" in saved.get("grandes", [])
+			and (saved.estrelas.get("1-1", []) as Array).size() == got and (saved.estrelas.get("farol", []) as Array).size() == farol_stars, str(saved.get("estrelas", {}))) and all_ok
+
+	# Sai do farol pela porta do sul.
+	var exit_door: Node3D = hub.portas_nos["saida"]
+	await _faisca_em(exit_door.global_position + exit_door.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
+	await _wait_until(func() -> bool: return parte2.lugar == "ilha" and not parte2.busy(), 6.0)
+	await _wait(0.3)
+	world_env_gone = not get_children().any(func(c: Node) -> bool: return c is WorldEnvironment)
+	all_ok = _check("a porta do sul volta para a ilha, na porta do farol", parte2.lugar == "ilha" and island.visible
+			and island.process_mode != Node.PROCESS_MODE_DISABLED and not world_env_gone and not is_instance_valid(parte2.hub)
+			and f.global_position.distance_to(farol.porta()) < 2.5 and f.is_on_floor()) and all_ok
+
+	# De volta para as crianças.
+	open_menu("escolha")
+	await _wait(0.1)
+	_buttons[1].pressed.emit()
+	await _wait(0.5)
+	all_ok = _check("escolher a menina guarda o Faísca e devolve a aventureira no lugar dele", not parte2.faisca_ativo and not f.visible
+			and player.visible and not player.parked and player.camera.current and player.input_enabled and player.character_name == "menina"
+			and player.global_position.distance_to(f.global_position) < 0.5 and hearts_bar.visible) and all_ok
+	await _stand(farol.modelo.porta() - FarolIlha.DIRECAO * 0.8)
+	await _wait(0.3)
+	all_ok = _check("com a Parte 2, as crianças recebem o aviso de trocar para o Faísca", message_label.text.begins_with("Só o Faísca")
+			and parte2.lugar == "ilha", "(%s)" % message_label.text) and all_ok
+
+	# Carregar: quem salvou dentro do farol volta com o Faísca na porta dele.
+	parte2.restore({"aberta": true, "faisca": true, "lugar": "hub", "estrelas": saved.estrelas, "grandes": saved.grandes, "vaga_lumes": saved.vaga_lumes})
+	await _wait(0.4)
+	all_ok = _check("carregar com o Faísca dentro do farol volta com ele na porta", parte2.faisca_ativo and parte2.lugar == "ilha"
+			and f.global_position.distance_to(farol.porta()) < 2.0 and parte2.total_estrelas() == farol_stars + got,
+			"(ativo %s, lugar %s, %.1f m da porta, %d estrelinhas)" % [parte2.faisca_ativo, parte2.lugar, f.global_position.distance_to(farol.porta()), parte2.total_estrelas()]) and all_ok
+	print("PARTE2 OK" if all_ok else "PARTE2 COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da Parte 2 em tools/capturas/ (precisa de janela): o farol na Parte 1, a abertura, o Faísca na ilha,
+## o hub (portas, escada, sacada e topo), a 1-1 e a constelação. Uso: godot --path . -- --parte2-captura
+func _run_parte2_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	var farol := parte2.farol
+	var beach := farol.porta() - FarolIlha.DIRECAO * 26.0 + Vector3(-6, 0, 6)
+	await _stand(_ground_point(beach))
+	var look := farol.global_position + Vector3.UP * 8.0 - player.global_position
+	player.set_yaw(atan2(-look.x, -look.z))
+	await _wait(1.0)
+	await _shot("t01_farol_fechado.png")
+	_skip_to_festa_night()
+	await _wait(0.5)
+	parte2.abrir(false)
+	await _wait_until(func() -> bool: return is_instance_valid(get_node_or_null("Aspiratrao")), 6.0)
+	await _wait(3.4)
+	await _shot("t02_nave_sugando.png")
+	await _wait_until(func() -> bool: return is_instance_valid(parte2.faisca) and parte2.faisca.visible, 12.0)
+	await _wait(1.6)
+	await _shot("t03_faisca_sai.png")
+	await _wait_until(func() -> bool: return not parte2.busy(), 12.0)
+	ending.post_game(false)
+	await _wait(0.5)
+	parte2.usar_faisca(true)
+	var f := parte2.faisca
+	f.teleportar(farol.porta() - FarolIlha.DIRECAO * 9.0)
+	f.yaw = atan2(FarolIlha.DIRECAO.x, FarolIlha.DIRECAO.z) + PI + 0.35
+	f.pitch = -0.18
+	f.visual.rotation.y = f.yaw + PI
+	await _wait(1.2)
+	await _shot("t04_faisca_no_farol.png")
+	f.forcar_direcao = Vector2(0, -1)
+	f.yaw = atan2(FarolIlha.DIRECAO.x, FarolIlha.DIRECAO.z) + PI
+	await _wait_until(func() -> bool: return parte2.lugar == "hub" and not parte2.busy(), 8.0)
+	f.forcar_direcao = Vector2.ZERO
+	await _wait(1.0)
+	await _shot("t05_hub_entrada.png")
+	var hub := parte2.hub
+	f.teleportar(Vector3(3.0, 0.1, 6.0))
+	f.yaw = -0.9
+	f.pitch = -0.12
+	await _wait(1.0)
+	await _shot("t06_porta_trancada.png")
+	f.teleportar(Vector3(-3.0, 0.1, 6.0))
+	f.yaw = 0.9
+	await _wait(1.0)
+	await _shot("t07_porta_1_1.png")
+	# A escada em espiral, vista do meio do térreo; a sacada do 2º andar; o topo com a lâmpada e a porta da nave.
+	f.teleportar(HubFarol.ponto(180.0, 3.0, 0.1))
+	f.yaw = 0.25
+	f.pitch = 0.12
+	await _wait(1.0)
+	await _shot("t08_escada.png")
+	f.teleportar(HubFarol.ponto(118.0, 9.6, HubFarol.ANDARES[1] + 0.1))
+	f.yaw = deg_to_rad(-118.0 - 90.0)
+	f.pitch = -0.2
+	await _wait(1.0)
+	await _shot("t09_sacada.png")
+	f.teleportar(HubFarol.ponto(335.0, 9.6, HubFarol.ANDARES[3] + 0.1))
+	f.yaw = deg_to_rad(90.0 - 335.0)
+	f.pitch = -0.05
+	await _wait(1.0)
+	await _shot("t10_topo.png")
+	parte2.grandes.append("1-1")
+	f.teleportar(hub.inicio)
+	await _wait(0.4)
+	var door11: Node3D = hub.portas_nos["1-1"]
+	f.teleportar(door11.global_position + door11.global_basis.z * 0.9 + Vector3.UP * 0.1)
+	await _wait_until(func() -> bool: return parte2.lugar == "fase" and not parte2.busy(), 10.0)
+	await _wait(0.6)
+	await _shot("t11_fase_1_1.png")
+	parte2.sair_da_fase()
+	await _wait_until(func() -> bool: return parte2.lugar == "hub" and not parte2.busy(), 8.0)
+	# O teto com a constelação da 1-1 acesa, de uma câmera própria no topo olhando para cima.
+	var cam := Camera3D.new()
+	cam.fov = 80.0
+	parte2.hub.add_child(cam)
+	cam.global_position = HubFarol.ponto(60.0, 9.0, HubFarol.ANDARES[3] + 2.0)
+	cam.look_at(HubFarol.ponto(229.0, 8.2, HubFarol.ALTURA + 4.5))
+	cam.make_current()
+	await _wait(1.0)
+	await _shot("t12_constelacao.png")
+	get_tree().quit()
 
 
 ## Fotografa a cena com uma câmera própria num SubViewport do tamanho pedido (a interface não entra).

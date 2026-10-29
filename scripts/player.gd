@@ -176,6 +176,9 @@ var _look_idle := 10.0
 ## Dirigindo um veículo (kart): o aventureiro fica escondido, acompanhando o veículo. Leva golpe do mesmo
 ## jeito (quem pisca é o piloto no banco); sem corações, fica tonto e desce.
 var in_vehicle := false
+## Guardado enquanto o Faísca anda pela ilha (Parte 2): invisível, sem colisão, acompanhando ele. As defesas,
+## a Festa sem fim e o celular não começam assim.
+var parked := false
 ## Pirulitão na mão (só aparece durante o golpe; o blaster some nesse instante).
 var _lollipop: Node3D
 ## Lojinha no celular: puxou o celular do bolso (o blaster some e ele segura o celular na frente).

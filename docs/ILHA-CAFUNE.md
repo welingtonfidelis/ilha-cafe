@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
+**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26). Em 2026-10-28 começou a Parte 2 (seção 11):** depois dos créditos, o Faísca (o robozinho do projeto Faísca) entra na troca de personagem e entra no farol da ponta sudeste, o hub das fases de plataforma. A primeira rodada está no branch `parte-2-faisca`: o farol, a abertura, o hub e a fase 1-1. Em 2026-10-29 o hub virou uma torre de quatro andares com escada em espiral, com as portas das fases que ainda vão ser feitas. Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
 
 ## Índice
 
@@ -19,6 +19,7 @@ Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os bla
 8. [Blasters, itens e pacotes de arte](#8-blasters-itens-e-pacotes-de-arte)
 9. [Notas técnicas na Godot](#9-notas-técnicas-na-godot)
 10. [Decisões em aberto](#10-decisões-em-aberto)
+11. [Parte 2: Faísca e o Céu Apagado](#11-parte-2-faísca-e-o-céu-apagado)
 
 ---
 
@@ -591,3 +592,268 @@ Um escorregador gigante do cemitério do Morro até a mata, por cima do rio, che
 - **Nomes do menino e da menina:** ainda por decidir.
 - **Habilidades por classe:** na primeira versão a escolha é só visual.
 - **Animação de tiro:** resolvida no papel, pelo KayKit Character Animations; falta baixar e conferir na Godot.
+
+## 11. Parte 2: Faísca e o Céu Apagado
+
+**Aprovada pelo usuário em 2026-10-28; a primeira rodada foi feita no mesmo dia, no branch `parte-2-faisca`** (ver "Primeira rodada" abaixo). A Parte 2 vem do projeto Faísca (`Projects/others/faisca`). É um jogo de plataforma 3D no estilo do Astro Bot, feito para o filho do usuário, que já tem o robozinho, uma base de fases reaproveitável e a fase 1-1 jogável. O usuário decidiu juntar o Faísca à Ilha. Decisões dele:
+
+- **O farol fica fixo na ilha desde o começo,** mas fechado durante a campanha contra os esqueletos (a Parte 1, que é a história das seções 4 e 5).
+- **Terminada a campanha, abre a Parte 2,** e o Faísca entra na troca de personagem.
+- **Só o Faísca entra no farol,** que é o hub das fases.
+- **Cada fase pede um número mínimo de estrelas para abrir.**
+- **Tem fases no chão também,** não só no céu.
+
+O modelo é o Clank do Ratchet & Clank, que já está nas inspirações (seção 1): as crianças atiram na ilha e o robozinho pula nas fases. As regras de tom da seção 2 valem iguais.
+
+### História
+
+**Premissa:** toda noite, as estrelas do céu da Ilha Cafuné são acesas por um robozinho que quase ninguém conhece. É o Faísca, que mora no farol velho da ponta sudeste e acende as estrelas com o laser dos pés. Quem o construiu foi o vovô da praça, quando ainda era o faroleiro.
+
+**Durante a Parte 1:** o farol fica lá, de porta trancada e lâmpada apagada. Chegando perto, aparece um cadeado. O vovô da praça solta uma pista: "O farol? Está fechado desde que eu me aposentei...".
+
+**Abertura da Parte 2:** uma cena curta, sem controle, logo depois dos créditos, ainda na noite da festa.
+1. Os fogos acabam.
+2. Uma nave roxa enorme, o Aspiratrão do Rei Bolotão, passa e suga as estrelas, e o céu fica preto.
+3. Na fuga, o saco de estrelas rasga. Elas caem espalhadas pelas ilhas do céu e por lugares no chão, e as Bolotas descem para catar.
+4. A lâmpada do farol acende, a porta abre e o Faísca sai pulando.
+5. A faixa "Parte 2!" aparece, e o Faísca passa a estar na troca de personagem.
+
+Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depois do final", como a do Bazzite, mostra a cena uma vez ao carregar e abre a Parte 2.
+
+**Vovô:** o vovô da praça muda para o farol e dá as dicas das fases pelo rádio. Ele ocupa o lugar do Vovô Farol robô do projeto Faísca, e fica um vovô só.
+
+**Vilões:** as Bolotas, bolotas roxas de um olho só, e o Rei Bolotão, que tem medo do escuro e não conta para ninguém. Bolota derrotada estoura, solta as estrelinhas que escondia e sai quicando pequenininha. Os esqueletos, que já são amigos, aparecem torcendo e dando dicas.
+
+**Cada fase:** termina com a Estrela Grande presa num baú das Bolotas. Três golpes abrem o baú, e a estrela volta para o céu.
+
+**Final:**
+- Na nave, o Faísca vence o Rei Bolotão.
+- O Rei se esconde e chora: só queria uma luzinha para dormir.
+- O Faísca devolve as estrelas e dá a ele uma estrelinha de bolso.
+- As crianças entregam um convite para a Festa do Cafuné, que fecha com a mensagem da seção 4: às vezes falta só um convite.
+- Vem uma segunda festa, com o céu aceso de novo e as Bolotas convidadas.
+
+### O farol na ilha
+
+- **Onde:** na ponta sudeste, a uns 160 m a leste da praça. Fica numa ilhota de pedra perto de (165, 165), ligada à praia por uma passarela de madeira, como o cais. Dá para ver da praça e do cais.
+  - Fica a uns 80 m da Lanterna Leste, que é a defesa mais perto.
+  - O barco mais perto é a lancha ancorada em (150, 240).
+- **Como é:** o KayKit não tem farol pronto, mas as torres redondas do Medieval Hexagon servem. A `building_tower_base` vai embaixo e a `building_tower_B` em cima (a de varanda com telhado cônico; o pacote tem telhado azul, verde, vermelho e amarelo), ampliadas. Faixas branca e laranja, as cores do Faísca, tapam a emenda e a porta da torre de cima. A lâmpada ciano (a cor dos olhos dele) e o facho de luz girando são feitos por código. A base pode levar pedras do Forest.
+  - Um rascunho foi montado em 2026-10-28 numa cena à parte.
+  - Falta deixar a lâmpada à vista: dentro da varanda, a salinha da torre a esconde.
+- **Na Parte 1:** a porta tem colisão e cadeado.
+- **Na Parte 2:** só o Faísca abre a porta. Com o menino ou a menina, aparece o aviso "Só o Faísca entra no farol" e a dica de trocar de personagem na pausa.
+
+### O Faísca na ilha
+
+- **Controle:** o mesmo das fases. Anda e corre pela inclinação do analógico, pula mais alto segurando o botão e flutua com os jatos segurando o pulo na descida. Tem golpes (soco, soco e chute, giro no ar, pisão) e laser dos pés. A câmera é a dele.
+- **Na água:** cair no mar ou no rio faz o "tchibum" de sempre e volta na bandeira.
+- **O que fica só com as crianças:** o Faísca não usa blaster. Kart, skate, lojinha, barraca de tiro e Festa sem fim continuam sendo das crianças, e tentar usar mostra o aviso para trocar de personagem.
+- **Por dentro:** o menino ou a menina fica guardado, invisível e sem colisão, acompanhando o Faísca. Assim moradores, bichos e a seta do objetivo continuam funcionando sem mexer no resto do jogo. O `Player` é usado em quase todos os sistemas da Ilha (só o `main.gd` tem 639 usos), por isso trocar a classe do jogador seria bem mais arriscado.
+- **Ideia extra:** estrelinhas caídas pela ilha em lugares que só o Faísca alcança, como telhados da cidade, copas das árvores gigantes do Bosque e o alto da cripta. Elas contam para abrir as portas.
+
+### O hub dentro do farol
+
+- **Entrada:** a porta leva para dentro, que é maior do que parece por fora, com uma transição curta de luz.
+- **Andares:** o farol tem andares redondos. Cada andar é um mundo, com portas para fases do chão e do céu. Uma escada em espiral sobe entre eles (pedido do usuário em 2026-10-29); a ideia antiga era um caminho de plataformas, como treino de pulo.
+- **Portas:**
+  - Cada uma mostra a imagem da fase, um ícone (nuvem para céu, casinha para chão) e quantas estrelinhas pede.
+  - Fechada, a porta mostra o cadeado com quantas estrelinhas faltam.
+  - Vencida, a fase ganha a Estrela Grande na moldura e uma luzinha para cada vaga-lume achado.
+- **Topo:** a sala da lâmpada, com teto de céu estrelado. Cada Estrela Grande devolvida acende uma constelação, e o teto vira o mapa do progresso. Ali fica a última porta, para a nave do Rei Bolotão.
+- **Saída:** a porta do térreo volta para a ilha.
+
+### Estrelas que abrem as portas
+
+- **O que conta:** as estrelinhas, que são as pequenas, espalhadas pela fase e soltas pelas Bolotas. Cada uma conta uma vez e fica guardada mesmo saindo no meio da fase. Jogando de novo, as que já foram pegas aparecem transparentes.
+- **Os números:** cada porta pede mais ou menos metade das estrelinhas que existem até ali. Quem só segue o caminho abre a próxima, e quem explora abre mais rápido. A 1-1 tem 67 estrelinhas, e a segunda porta pediria 30.
+- **A porta final** pede todas as Estrelas Grandes.
+
+### Mapa das fases (rascunho; o jogo cresce uma fase por vez)
+
+| Andar | Fase | Onde | Arte (KayKit) | Novidade | Pede |
+|---|---|---|---|---|---|
+| 1 Ilhas Fofas | 1 Pulinhos nas Nuvens | céu | Platformer, Forest, nuvens do Medieval | pular, flutuar, golpes, laser (pronta no projeto Faísca) | 0 |
+| 1 | 2 Túneis do Morro | chão | Dungeon Pack | por baixo do Morro dos esqueletos; o laser acende tochas para clarear o caminho | 30 |
+| 2 Doces e Brinquedos | 3 Cozinha Gigante | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
+| 2 | 4 Nuvens de Algodão-Doce | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), Platformer | bengalas e balas como plataformas, nuvens que quicam | 90 |
+| 2 | 5 Quarto de Brinquedos | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que rolam, peões e cartas, carona no trenzinho | 120 |
+| 3 Frio e Vento | 6 Pico Gelado | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | chão escorregadio e bolas de neve | 150 |
+| 3 | 7 Fábrica de Blocos | chão | Block Bits, esteiras e botões do Platformer | esteiras e blocos que aparecem e somem | 180 |
+| 3 | 8 Moinhos do Vento | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que empurra quem flutua | 210 |
+| Topo | 9 Nave Aspiratrão | céu | Space Base Bits, cristais roxos do Resource Bits | o Rei Bolotão | todas as Estrelas Grandes |
+
+- Todos esses pacotes estão na Coleção Completa do KayKit v6.1. As prévias de cada pacote foram olhadas em 2026-10-28 (veja "Arte da coleção" abaixo); as peças de cada fase são conferidas quando ela for planejada.
+- Os números do "Pede" se ajustam conforme as fases ficam prontas.
+
+### Arte da coleção (conferida em 2026-10-28)
+
+A pedido do usuário, olhei os 22 pacotes da Coleção Completa do KayKit v6.1 (`Projects/others/kaykit-complete-v6-1-assets`). Ainda faltava baixar quase todos os arquivos `.bin` do Git LFS; as prévias e os `.gltf` de texto já estavam lá.
+
+**Platformer Pack completo (525 arquivos; a 1-1 usa só uma parte):**
+- Servem para as fases:
+  - martelos e blocos-martelo;
+  - varredores que giram (`swiper`);
+  - esteiras;
+  - canhão com bola e bombinhas;
+  - botões e alavancas;
+  - argolas para atravessar flutuando;
+  - molas e tapete de mola;
+  - redes que quicam;
+  - canos;
+  - correntes;
+  - arcos e placas de chegada;
+  - baús, diamantes, corações, estrelas e bandeiras.
+- Cada peça vem em 4 cores.
+- Ficam de fora pelo tom da seção 2: serras, espinhos, bolas e rolos de espinho.
+
+**Céu e farol:**
+- **Medieval Hexagon:**
+  - nuvens prontas (`cloud_big`, `cloud_small`), para plataformas de nuvem e enfeite do céu;
+  - ilhotas com árvores;
+  - moinho (`building_windmill`);
+  - as torres do farol;
+  - navios e cais, que dariam uma fase no mar com um navio das Bolotas.
+
+**Pacotes para as fases do chão:**
+- **Dungeon Pack:** paredes, portas, escadas, tochas, andaimes e barris.
+- **Restaurant Bits:** cozinha inteira com fogão, geladeira, pia, comida e piso xadrez.
+- **Furniture Bits:** cama, sofá, mesa, estante e abajur.
+- **Board Game Bits:** dados (de 4, 6 e 20 lados), peões, cartas e hexágonos.
+- **Block Bits:** blocos de grama, terra, tijolo, pedra, neve e água, e caixotes.
+
+**Doces, neve e final:**
+- **Holiday Bits:** casinha de biscoito, balas, bengalas de doce, árvore de Natal, bonecos de neve, bolas de neve, presentes e trilhos com trenzinho.
+- **Resource Bits:** cristais roxos e azuis, para a caverna do Rei ou para enfeitar a nave.
+- **Space Base Bits:** módulos brancos e laranja, foguetes e robozinhos.
+
+### Primeira rodada (feita em 2026-10-28)
+
+O plano aprovado foi este. O que saiu diferente está em "Como ficou", logo depois da lista.
+
+1. **Branch próprio na Ilha** (`parte-2-faisca`). O Bazzite só recebe a build no fim, já testada.
+2. **Código e arte do Faísca:**
+   - o código vai para `scripts/faisca/`;
+   - o `AnimUtil` repetido sai (é igual ao da Ilha), e nenhum outro nome de classe se repete;
+   - as peças usadas vão para `assets/faisca/`, e os corpos do Tripo ficam de fora;
+   - o laser muda para uma camada de colisão livre, porque a camada 4 é a dos pontos de impacto da Ilha;
+   - a pasta `faisca` vira arquivo.
+3. **O farol** na ponta sudeste, com as torres do Medieval Hexagon, fechado na Parte 1.
+4. **Abertura da Parte 2** depois dos créditos, também para campanhas já terminadas. O Faísca entra na troca de personagem e anda pela ilha.
+5. **O hub com o primeiro andar** (a torre com os outros andares veio em 2026-10-29): a porta da 1-1 aberta, a dos Túneis do Morro trancada (pede 30) e a porta de saída. A fase troca o céu, a luz e a interface pelos dela e, no fim, devolve os da ilha.
+6. **Salvamento versão 3:** Parte 2 aberta, estrelinhas pegas em cada fase, Estrelas Grandes e vaga-lumes. As campanhas antigas continuam valendo.
+7. **Testes:**
+   - os testes do Faísca viram `--faisca-fase` e `--faisca-controle`;
+   - um teste novo, `--parte2`, confere a abertura, a troca de personagem, o farol fechado para as crianças, a entrada no hub, a porta trancada, a 1-1 e a volta para a ilha com as estrelinhas guardadas;
+   - fotos novas com `--parte2-captura`;
+   - todos os testes da Ilha continuam passando.
+
+A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
+
+### Como ficou
+
+**Arquivos (`scripts/faisca/`):**
+
+| Arquivo | O que é |
+|---|---|
+| `parte2.gd` (`Parte2`) | cuida de tudo: o farol, a abertura, o Faísca na ilha, o hub, as fases e o salvamento |
+| `farol_ilha.gd`, `farol_modelo.gd` | o farol na ilha e o modelo da torre (também usado ao longe nas fases) |
+| `hub_farol.gd` | o hub, com as portas (`PortaFase`) |
+| `aspiratrao.gd` | a nave da abertura |
+| `faisca_solo.gd` | o antigo `main.gd` do projeto Faísca, para os testes sem a ilha |
+| `jogador.gd`, `robo.gd`, `forma.gd`, `fase.gd`, `fases/fase_1_1.gd`, `hud.gd`, `bolota.gd`, `alvo.gd`, `posto.gd`, `bau.gd`, `vaga_lume.gd`, `flor_de_luz.gd`, `fase_teste.gd`, `teste_fase.gd` | vieram do projeto Faísca |
+
+- O `robo.gd` veio sem o corpo do Tripo.
+- **Peças:** em `assets/faisca/`, com `plataforma/` e `floresta/` da 1-1, `farol/` com as duas torres do Medieval Hexagon e a textura, e `portas/` com a foto da 1-1.
+- **Ações novas:** `golpe` (X, F, J ou clique) e `recomecar` (Back ou R), no `_setup_input` do `main.gd`.
+- **Camadas de colisão:** o laser do Faísca acende o que está na camada 6 (`Fase.CAMADA_LUZ`). O Faísca esbarra nos moradores (camada 5).
+
+**O farol na ilha:**
+- A ilhota de pedra fica em (161,5; 161,5), com 7 m de raio e o topo na altura da passarela, 0,45 m.
+- A passarela é um módulo `Dock_Long` só, da beira da ilhota até a areia, com rampa no fim.
+- O farol tem a escala 4,5 (uns 18 m) e a porta virada para a praia.
+- O vovô da praça ganha a fala "O farol? Está fechado desde que eu me aposentei...".
+- O Faísca aparece 3 m para fora da porta, fora da área que faz entrar. Na primeira versão ele aparecia dentro dela e entrava de novo sozinho ao carregar a campanha.
+
+**A abertura:**
+- Toca depois dos créditos, entre o fim deles e o pós-jogo, ainda de noite.
+- Primeiro, uma câmera na praça mostra a nave passando e as estrelas (as do céu pintado e umas estrelinhas que voam até o bocal) sumindo.
+- Depois, a câmera vai para a passarela: a lâmpada acende e o Faísca sai pulando e comemora.
+- Por último, a faixa "Parte 2 liberada!" ensina a escolher o Faísca na pausa.
+- Uma campanha salva em "Depois do final" sem a Parte 2 vê a cena uma vez ao continuar: a noite é só durante a cena.
+
+**O Faísca na ilha:**
+- Entra pelo botão "Faísca" na troca de personagem, que só aparece com a Parte 2 aberta.
+- O menino ou a menina fica guardado (`Player.parked`): invisível, sem colisão e sem controle, acompanhando o Faísca.
+- Os corações, os blasters, a mira e as moedas das crianças somem. O HUD do Faísca mostra os 3 corações e o total de estrelinhas.
+- A seta do objetivo aponta a porta do farol.
+- O celular avisa que é das crianças.
+- O kart e o skate não oferecem o B, porque pedem o aventureiro visível.
+- As defesas (o Guerreiro Planta) e a Festa sem fim não começam.
+- Cair na água faz o "tchibum" do `main.gd`, e o Faísca volta na bandeira junto com o aventureiro guardado.
+- As bandeiras da ilha acendem com o Faísca também (desde 2026-10-29; antes só com as crianças).
+
+**Dentro do farol:**
+- A ilha inteira fica pausada e escondida: os filhos do `main`, menos a interface, a música e a Parte 2, ficam com `PROCESS_MODE_DISABLED`, o que tira a colisão. O `WorldEnvironment` da ilha sai da árvore até a volta.
+- **O hub** é uma torre redonda de 12 m de raio e 27 m de parede, com o domo em cima (versão de 2026-10-29, pedido do usuário: "podemos usar uma rampa ou escada dentro do farol pra subir os níveis e entrar nas fases seguintes?"). Tem:
+  - **quatro andares:** o térreo (0 m), o 2º (7 m), o 3º (14 m) e o topo (21 m). Os de cima são sacadas de madeira que vão da parede até 7,5 m do meio, com murinha creme e borda laranja na beira; o meio fica aberto, e dá para ver a torre inteira de baixo;
+  - **a escada em espiral** no vão do meio, entre 4,5 e 7,5 m do eixo. São três lances de 35 degraus, cada um girando 150°, e cada lance termina num patamar de 30° colado na sacada de cima (por ali se entra nela). O primeiro sai do térreo a oeste-noroeste, longe das portas, e sobe pelo norte; os patamares ficam a leste (2º andar e topo) e a oeste (3º). Por baixo dos degraus, a colisão é uma rampa lisa que passa no meio de cada degrau, para o Faísca subir sem tropeçar;
+  - **murinhas** dos dois lados da escada e na beira das sacadas (menos no patamar), com uma parede invisível de 3,2 m em cima. O pulo com os jatos chega a uns 2,5 m, então o Faísca não cai no vão;
+  - **as 8 estrelinhas do farol** na escada: 4 no primeiro lance e 2 em cada um dos outros. Elas contam como "farol", com os mesmos nomes de antes (0 a 7), e as campanhas salvas continuam valendo;
+  - o eixo listrado no meio, do chão até o topo, com a lâmpada ciano e o telhado vermelho em cima;
+  - um tapete de faixas no térreo, uma faixa laranja e 4 janelas em cada andar;
+  - o teto escuro com as constelações, uma para cada fase de 1-1 a 3-3.
+- **A colisão da parede** fica 35 cm para dentro da parede que se vê. Assim o braço da câmera, raspando de lado numa sacada, para antes dela; senão a câmera ia para fora da torre e um lado da tela ficava azul-escuro.
+- **As portas** (as fases do mapa abaixo, com os nomes e números de lá; mudam quando cada fase for planejada):
+  - térreo: a 1-1 a oeste, os Túneis do Morro (pedem 30) a leste e a saída para a ilha ao sul;
+  - 2º andar: Cozinha Gigante (60) ao sul, Nuvens de Algodão-Doce (90) a oeste e Quarto de Brinquedos (120) ao norte;
+  - 3º andar: Pico Gelado (150) ao norte, Fábrica de Blocos (180) a leste e Moinhos do Vento (210) ao sul;
+  - topo: a Nave Aspiratrão a oeste, de moldura roxa e ícone de disco voador. Ela pede as 8 Estrelas Grandes, com uma estrela grande do lado do número, e encostar mostra "Faltam N Estrelas Grandes".
+- **Porta trancada:**
+  - mostra o cadeado, o número e uma estrelinha;
+  - encostar balança o cadeado e mostra "Faltam N";
+  - se o total chega lá com o Faísca no hub, o cadeado cai na hora.
+- **Porta sem fase:** a de fase ainda não feita mostra "Em breve".
+- **Fase vencida:** a porta mostra a Estrela Grande dourada e as luzinhas dos vaga-lumes.
+- **Na pausa:**
+  - "Voltar para a ilha" no hub;
+  - "Sair da fase" numa fase, que volta para a frente da porta guardando o que pegou;
+  - "Trocar de personagem" some dentro do farol.
+- **O fim da fase:** o A na tela de fim volta para o farol.
+
+**Estrelinhas e salvamento:**
+- Cada estrelinha tem um nome: a ordem em que a fase cria, ou "b<Bolota>_<n>" nas que as Bolotas soltam. Vaga-lumes também.
+- As já pegas aparecem transparentes, o contador da fase começa com elas e pegar de novo não conta.
+- A campanha (versão 3) guarda em "parte2" se ela está aberta, se o Faísca está em uso, onde ele estava, as estrelinhas por fase (e "farol"), as Estrelas Grandes e os vaga-lumes.
+- Quem salvou dentro do farol volta com o Faísca na porta dele, na ilha.
+
+**Postos de recarga (pedido do usuário em 2026-10-28):**
+- O problema: "os pontos de checkpoint do jogo não devem ficar próximos demais de beiras/quedas, porque o jogador nasce e cai direto por eles". Na 1-1, os dois postos devolviam o Faísca 1,8 m à frente da bandeira, fora da ilha: 0,3 m além da beira no primeiro e 0,65 m no segundo.
+- A correção: agora cada `Posto` procura sozinho, depois de dois quadros de física, um ponto de chão firme perto da bandeira. Começa pela frente e vai girando de 45 em 45 graus, a 1,8, 2,6, 1,2 e 3,4 m. O ponto precisa ter chão também a `Posto.MARGEM` (1,6 m) em oito direções, sem degrau.
+- O `--faisca-fase` confere que todos os postos e o começo da fase passam nessa conta, e que depois de cair o Faísca fica de pé no posto.
+- A mesma correção foi para o `posto.gd` do projeto Faísca separado.
+- **Área maior (pedido do usuário em 2026-10-29: "a area que ativa a bandeira de checkpoint precisa aumentar"):** a área que acende o posto passou de 1,6 m de raio e 3 m de altura para `Posto.RAIO_AREA` (3,2 m) e `ALTURA_AREA` (6 m), começando 1 m abaixo do pé da bandeira. Passar a 3 m da bandeira já acende; antes precisava chegar a uns 2 m. O `--faisca-fase` confere isso, e a mudança também foi para o projeto Faísca separado.
+- **Bandeiras da ilha:** com o Faísca, elas não acendiam, porque só reconheciam o `Player`, que fica guardado e sem colisão. Agora o `Checkpoint` aceita o `Jogador` também, e o `--parte2` confere.
+
+**Como testar:**
+- `godot --headless --path . -- --parte2` confere 37 pontos de ponta a ponta. Termina com "PARTE2 OK" e leva uns 2 minutos. Desde 2026-10-29 ele também sobe a escada do farol andando de verdade (o analógico simulado segue a curva), do térreo ao topo. No caminho, confere a sacada do 2º andar, a murinha (empurrando para o vão e pulando), as 8 estrelinhas, a porta da nave e a bandeira da ilha acesa pelo Faísca.
+- `godot --path . -- --parte2-captura` tira as fotos `t01` a `t12` em `tools/capturas/`. Do hub: `t05` a entrada, `t06` e `t07` as portas do térreo, `t08` a escada, `t09` a sacada do 2º andar, `t10` o topo com a porta da nave e `t12` a constelação da 1-1 vista do topo.
+- Os testes do projeto Faísca rodam sem montar a ilha, pelo `FaiscaSolo`:
+  - `-- --faisca-controle` (26 pontos);
+  - `-- --faisca-fase` (27 pontos: a 1-1 de ponta a ponta, com os postos e a área maior);
+  - `-- --faisca-smoke`;
+  - `-- --faisca-captura` e `-- --faisca-fase-captura`, com fotos em `tools/capturas/faisca/`.
+- `godot --path . -s tools/foto_farol.gd` fotografa o farol apagado e aceso.
+
+**Ainda não feito ou não conferido:**
+- Ninguém jogou a Parte 2 com controle de verdade.
+- Os andares de cima do farol existem, mas as fases deles ainda não. As portas mostram o cadeado e, quando o número chegar, "Em breve".
+- A fase 2 (Túneis do Morro) ainda não foi planejada nem feita.
+- O Faísca não tem sons próprios.
+- O build do Bazzite foi para o PC em 2026-10-28, ainda sem a torre de andares, sem a área maior dos postos e sem as bandeiras da ilha para o Faísca.
+
+### Em aberto
+
+- Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
+- Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
+- Se o Faísca pode dirigir o kart e andar de skate.
