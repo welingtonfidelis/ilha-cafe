@@ -322,14 +322,17 @@ class DesenhoDica extends Control:
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
 		var golpe := qual in ["golpe", "alavanca"]
+		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
+		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
+		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
 		# No golpe o botão pulsa a cada toque; nos outros fica apertado enquanto a barrinha enche.
 		var toque := fmod(tempo, 1.6) < 1.2 and fmod(tempo * 2.5, 1.0) < 0.35 if golpe else false
 		var raio := 32.0 if toque else 36.0
-		draw_circle(b + Vector2(0, 4), raio, Color("1d4f9a") if golpe else Color("1f7a3a"))
-		draw_circle(b, raio, Color("4a90e2") if golpe else Color("3ccf6a"))
+		draw_circle(b + Vector2(0, 4), raio, cores[letra][0])
+		draw_circle(b, raio, cores[letra][1])
 		draw_arc(b, raio, 0, TAU, 40, Color("2b2140"), 4.0, true)
 		var fonte := ThemeDB.fallback_font
-		draw_string(fonte, b + Vector2(-13, 15), "X" if golpe else "A", HORIZONTAL_ALIGNMENT_LEFT, -1, 42, Color.WHITE)
+		draw_string(fonte, b + Vector2(-13, 15), letra, HORIZONTAL_ALIGNMENT_LEFT, -1, 42, Color.WHITE)
 		if golpe:
 			var vezes := mini(int(fmod(tempo, 1.6) * 2.5) + 1, 3)
 			for i in 3:
@@ -409,6 +412,36 @@ class DesenhoDica extends Control:
 				var cabo := f + Vector2(27, 40)
 				draw_line(cabo, cabo + Vector2(sin(vira), -cos(vira)) * 30, Color("ffd23f"), 6.0)
 				draw_circle(cabo + Vector2(sin(vira), -cos(vira)) * 30, 6, Color("ff5d5d"))
+			"agarrar":
+				# Segura Y: o Faísca gira com a Bolota pendurada pela antena; solta: ela voa longe.
+				var ciclo := fmod(tempo, 1.6)
+				_faisca(f + Vector2(0, 8))
+				if ciclo < 1.2:
+					var a := ciclo * TAU * 1.4
+					var bola := f + Vector2(cos(a) * 46, 10 + sin(a) * 14)
+					draw_line(f + Vector2(0, 12), bola + (f + Vector2(0, 12) - bola).normalized() * 12, Color("2b2140"), 3.0)
+					_bolota(bola)
+				else:
+					var voo := (ciclo - 1.2) / 0.4
+					_bolota(f + Vector2(46 + voo * 50, 10 - sin(voo * PI) * 26))
+			"giro_forte":
+				# Segura X: carrega (anel dourado crescendo) e gira de braços abertos, jogando as Bolotas longe.
+				var ciclo := fmod(tempo, 1.6)
+				if ciclo < 1.2:
+					var treme := sin(tempo * 50.0) * 2.0 * ciclo
+					draw_arc(f + Vector2(0, 40), 14 + 30 * ciclo / 1.2, 0, TAU, 32, Color("ffd23f"), 4.0)
+					_faisca(f + Vector2(treme, 8))
+					for lado in [-1.0, 1.0]:
+						_bolota(f + Vector2(52 * lado, 24))
+				else:
+					var giro := (ciclo - 1.2) / 0.4
+					for i in 3:
+						var a := tempo * 18.0 + i * TAU / 3.0
+						draw_arc(f + Vector2(0, 14), 34, a, a + 1.2, 12, Color("8ff3ff"), 4.0)
+					_faisca(f + Vector2(0, 8))
+					draw_line(f + Vector2(-26, 8), f + Vector2(26, 8), Color("f4f5f9"), 6.0)
+					for lado in [-1.0, 1.0]:
+						_bolota(f + Vector2((52 + giro * 30) * lado, 24 - sin(giro * PI) * 20))
 			"golpe":
 				var bate := fmod(tempo * 2.5, 1.0) < 0.35
 				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)
@@ -422,6 +455,15 @@ class DesenhoDica extends Control:
 					for i in 4:
 						var a := -0.8 + i * 0.5
 						draw_line(f + Vector2(14, 16), f + Vector2(14, 16) + Vector2(cos(a + PI), sin(a + PI)) * 14, Color("ffd23f"), 3.0)
+
+	## Bolota em miniatura: bolinha roxa de um olho, com a antena de bolinha vermelha.
+	func _bolota(p: Vector2) -> void:
+		draw_line(p + Vector2(0, -10), p + Vector2(0, -18), Color("3d2e5c"), 3.0)
+		draw_circle(p + Vector2(0, -19), 3.5, Color("ff5a6e"))
+		draw_circle(p, 11, Color("9b5de5"))
+		draw_arc(p, 11, 0, TAU, 24, Color("2b2140"), 2.5, true)
+		draw_circle(p + Vector2(0, -2), 4, Color.WHITE)
+		draw_circle(p + Vector2(0, -2), 2, Color("1b1530"))
 
 	## O Faísca em miniatura: cabeça branca com o visor e o corpinho laranja.
 	func _faisca(p: Vector2) -> void:

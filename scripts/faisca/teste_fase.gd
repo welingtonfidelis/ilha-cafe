@@ -51,7 +51,7 @@ func rodar() -> void:
 		await m._toque(JOY_BUTTON_X)
 		await m._esperar(0.45)
 	await m._esperar(0.8)
-	ok = m._conferir("soco, soco e chute derrotam a Bolota", b0.derrotado, "(vida %d)" % b0.vida) and ok
+	ok = m._conferir("três socos derrotam a Bolota", b0.derrotado, "(vida %d)" % b0.vida) and ok
 	ok = m._conferir("ela solta 3 estrelinhas e o total não muda", n.estrelas.size() == antes + 3 and n.total_estrelas() == total,
 			"(total %d)" % n.total_estrelas()) and ok
 	var pegas := n.pegas

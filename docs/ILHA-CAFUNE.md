@@ -691,7 +691,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 
 ### O Faísca na ilha
 
-- **Controle:** o mesmo das fases. Anda e corre pela inclinação do analógico, pula mais alto segurando o botão e flutua com os jatos segurando o pulo na descida. Tem golpes (soco, soco e chute, giro no ar, pisão) e laser dos pés. A câmera é a dele.
+- **Controle:** o mesmo das fases. Anda e corre pela inclinação do analógico, pula mais alto segurando o botão e flutua com os jatos segurando o pulo na descida. Tem golpes (socos alternando os braços, giro forte, giro no ar, pisão), agarra e arremessa Bolotas, dança e tem o laser dos pés. A câmera é a dele.
 - **Na água:** cair no mar ou no rio faz o "tchibum" de sempre e volta na bandeira.
 - **O que ele faz como as crianças (desde 2026-10-29, pedido do usuário: "as mesmas interações no mundo, apenas não deve poder comprar"):**
   - **Kart e skate:** quem anda é a criança guardada, vestida de Faísca (`Player.set_robo_skin`). O modelo dela vira o Robo, no mesmo esqueleto do KayKit, então o volante, o impulso e as manobras do skate funcionam iguais. No banco do kart aparece o robô sem as pernas. O Faísca some até ela descer e volta onde ela desceu.
@@ -980,7 +980,7 @@ Trechos:
 2. **Corredor das tochas.** Um corredor de mina com andaimes de madeira atravessados, cada vez mais escuro. A primeira tocha apagada fica bem no caminho, e o Vovô Farol mostra o desenho do laser. Cada tocha acesa clareia o pedaço seguinte. Uma parede rachada no meio esconde o V1, e o Vovô mostra o desenho do golpe na primeira vez.
 3. **Poço dos andaimes (P1).** Um salão alto com andaimes de madeira em degraus, para subir pulando, com uma mola e uma Bolota em cada patamar. O V2 fica numa viga lá no alto.
 4. **Abismo escuro.** Um vão grande e escuro, sem ponte. Três tochas em cima de pilares, em linha: cada uma acesa faz subir a ponte de tábuas até a próxima. Cair tira um coração e volta no P1. O V3 fica numa beiradinha embaixo da última ponte, para quem descer flutuando.
-5. **Mina de ouro (P2).** Uma caverna larga, com pedras de ouro, baldes com picaretas e caixotes. Bolotas acordadas, para soco, chute e pisão. Tem um coração extra.
+5. **Mina de ouro (P2).** Uma caverna larga, com pedras de ouro, baldes com picaretas e caixotes. Bolotas acordadas, para os socos e o pisão. Tem um coração extra.
 6. **Elevadores.** Duas plataformas de madeira subindo e descendo num poço, até uma passarela alta.
 7. **Portão das três tochas.** O portão de grade fechado, com três tochas apagadas na frente; uma fica em cima de caixotes altos e pede pulo alto e flutuar. Com as três acesas, a grade sobe.
 8. **Câmara do Baú.** O baú dourado da masmorra, com três Bolotas de guarda. Três golpes abrem, a Estrela Grande sai, o Faísca pega e comemora, e vem a tela de fim.
@@ -1141,6 +1141,34 @@ O pedido: "viseira brilhante com olhos de LED que mudam de expressão, cantos ar
   - o rosto;
   - socando, correndo, parado e comemorando;
   - uma foto de perto para cada expressão.
+
+### Movimentos do Astro (pedido do usuário em 2026-10-29)
+
+O usuário mandou a tabela de movimentos do Astro Bot e pediu os três que mais serviam ao jogo. No meio do trabalho pediu também para tirar o chute.
+
+- **Socos alternando os braços:** o X no chão dá soco direito, soco esquerdo e um direito mais forte (2 de dano, empurra longe).
+  - O KayKit só tem o soco do braço direito. O esquerdo é ele espelhado (`AnimUtil.add_mirrored`): cada quadro é amostrado, e cada osso recebe o movimento do osso do outro lado, espelhado no espaço do esqueleto.
+  - O `Robo` cria esse soco como `luta/Soco_Esquerdo` antes de montar o AnimationPlayer.
+- **Giro forte (segurar X no chão):**
+  - O primeiro soco sai. Depois de 0,3 s segurando, ele firma os pés (pose de luta, tremendo, cara de bravo) e um anel dourado cresce no chão.
+  - Em 0,5 s a carga enche e ele gira sozinho por 1 s de braços abertos, com um redemoinho ciano. A cada 0,25 s acerta todo mundo a até 2,6 m (1 de dano e empurrão), e dá para andar devagar girando.
+  - Depois fica tontinho 0,5 s, sem golpear e com os olhos de espiral.
+  - Soltar antes de encher desiste. Para carregar de novo, tem que soltar o botão.
+- **Agarrar e arremessar (Y; no teclado E, K ou botão direito):**
+  - Pega pela antena a Bolota mais perto (até 2,2 m, mais ou menos na frente; a Bolotona não, é grande demais) e gira de braços abertos com ela pendurada na mão esquerda.
+  - A Bolota que gira na mão acerta quem estiver no caminho.
+  - Soltando Y (no mínimo 0,35 s, no máximo 2,5 s segurando), ele arremessa para onde o analógico aponta, ou para a frente da câmera.
+  - A Bolota voa rodando. Bate e estoura no primeiro alvo do caminho (2 de dano nele, inclusive na Bolotona, no baú, na parede rachada e na alavanca) ou onde cair.
+  - Se estourar em cima do vazio, as estrelinhas dela caem no último ponto do voo que tinha chão embaixo.
+  - Sem nada perto, ele só faz o gesto de pegar. Levar golpe com a Bolota na mão solta ela.
+- **Dancinha (seta para baixo; no teclado V):**
+  - O `Robo` mexe os ossos por cima da animação de parado (o KayKit não tem dança): o quadril desce dobrando os joelhos a cada batida (120 por minuto), o corpo balança, e os braços trocam (um sobe aberto ao lado da cabeça, o outro vai para a frente).
+  - Ele fica de cara feliz, com notinhas douradas e cianas subindo. Dura 4 s; andar, pular ou golpear para.
+- **Dicas do Vovô na 1-1:** "agarrar" (o botão Y amarelo e o Faísca girando com uma Bolota) na Ilha das Molas, onde aparecem as primeiras Bolotas acordadas, e "giro_forte" (o X com a barrinha e o anel) na Ilha do Baú, com as três Bolotas.
+- **Na pausa:** os comandos do Faísca ganharam o giro forte, o agarrar e a dancinha.
+- **Testes e fotos:**
+  - O `--faisca-controle` confere os socos alternados e os movimentos novos (carga, giro, acerto em volta, tontinho, agarrar, girar, arremessar, acertar, dancinha e parar andando).
+  - O `--faisca-captura` tira de `10_carregando` a `17_dica_giro_forte`, e o `tools/foto_faisca.gd` tira o soco esquerdo e dois momentos da dança.
 
 ### Em aberto
 

@@ -60,11 +60,13 @@ const CONTROLS_KEYBOARD := [
 ## Com o Faísca (Parte 2).
 const CONTROLS_FAISCA_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular (segurar pula mais alto)", "Espaço"], ["Flutuar e laser dos pés", "segurar Espaço na descida"],
-	["Golpe (no ar, giro)", "F, J ou clique"], ["Voltar ao começo da fase", "R"], ["Pausa", "Esc ou Tab"],
+	["Socos (no ar, giro)", "F, J ou clique"], ["Giro forte", "segurar F"], ["Agarrar e jogar a Bolota", "E (segurar gira, soltar joga)"],
+	["Dancinha", "V"], ["Voltar ao começo da fase", "R"], ["Pausa", "Esc ou Tab"],
 ]
 const CONTROLS_FAISCA_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular (segurar pula mais alto)", "A"], ["Flutuar e laser dos pés", "segurar A na descida"],
-	["Golpe (no ar, giro)", "X"], ["Voltar ao começo da fase", "Select"], ["Pausa", "Start"],
+	["Socos (no ar, giro)", "X"], ["Giro forte", "segurar X"], ["Agarrar e jogar a Bolota", "Y (segurar gira, soltar joga)"],
+	["Dancinha", "↓ (direcional)"], ["Voltar ao começo da fase", "Select"], ["Pausa", "Start"],
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
@@ -710,6 +712,12 @@ func _setup_input() -> void:
 	_bind_button("golpe", JOY_BUTTON_X)
 	_bind_key("recomecar", [KEY_R])
 	_bind_button("recomecar", JOY_BUTTON_BACK)
+	# Movimentos do Astro (2026-10-29): Y agarra a Bolota (E, K ou botão direito) e a seta para baixo dança (V).
+	_bind_key("agarrar", [KEY_E, KEY_K])
+	_bind_mouse("agarrar", MOUSE_BUTTON_RIGHT)
+	_bind_button("agarrar", JOY_BUTTON_Y)
+	_bind_key("dancar", [KEY_V])
+	_bind_button("dancar", JOY_BUTTON_DPAD_DOWN)
 	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
 	_bind_button("ui_accept", JOY_BUTTON_A)
 	_bind_button("ui_cancel", JOY_BUTTON_B)

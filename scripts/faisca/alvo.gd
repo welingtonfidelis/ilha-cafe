@@ -4,6 +4,8 @@ extends CharacterBody3D
 ## a cada acerto pisca, dá um pulinho e é empurrada. Derrotada, estoura em estrelinhas e volta
 ## depois de alguns segundos. Golpes, laser dos pés e pisão chamam `receber_golpe`.
 ## A Bolota das fases (`Bolota`) herda daqui: anda, encosta e não volta depois de derrotada.
+## O Faísca agarra pela antena (Y), gira em volta dele e arremessa (pedido do usuário em 2026-10-29, movimentos
+## do Astro): agarrada ela não anda nem machuca; voando, estoura no que bater e acerta quem estiver no caminho.
 
 signal derrotada(alvo: Alvo)
 
@@ -21,6 +23,9 @@ var derrotado := false
 ## Folga do alcance dos golpes além do centro (o baú grande tem mais).
 var raio_golpe := 0.6
 var visual: Node3D
+## Na mão do Faísca (ele põe no lugar a cada quadro) e voando depois de arremessada.
+var agarrada := false
+var voando := false
 
 var _corpo: Node3D
 var _mat_corpo: StandardMaterial3D
@@ -31,6 +36,9 @@ var _amasso := 0.0
 var _origem := Vector3.ZERO
 var _tempo := 0.0
 var _gravidade := 26.0
+## Último ponto do voo com chão embaixo: se estourar em cima do vazio, as estrelinhas caem aqui.
+var _sobre_chao := Vector3.ZERO
+var _voo := 0.0
 
 
 func _ready() -> void:
@@ -82,7 +90,10 @@ func _physics_process(delta: float) -> void:
 	_mat_corpo.emission_enabled = _piscar > 0.0
 	var respira := sin(_tempo * 4.0) * 0.04
 	_corpo.scale = Vector3(1.0 + _amasso - respira, 1.0 - _amasso + respira, 1.0 + _amasso - respira)
-	if derrotado:
+	if derrotado or agarrada:
+		return
+	if voando:
+		_voar(delta)
 		return
 	var andar := _andar(delta)
 	velocity.x = _empurrao.x + andar.x
@@ -99,6 +110,71 @@ func _physics_process(delta: float) -> void:
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(d.x, d.z), 1.0 - exp(-5.0 * delta))
 
 
+## O Faísca pegou pela antena: para de andar, sai do caminho dele e treme as perninhas.
+func ser_agarrada() -> void:
+	agarrada = true
+	collision_layer = 0
+	_empurrao = Vector3.ZERO
+	velocity = Vector3.ZERO
+	_piscar = 0.12
+
+
+## Solta sem arremessar (o Faísca levou um golpe segurando): cai de pé onde está.
+func ser_solta() -> void:
+	agarrada = false
+	collision_layer = CAMADA
+	visual.rotation = Vector3.ZERO
+	velocity = Vector3.ZERO
+
+
+## Arremessada com a velocidade `vel`: voa rodando até bater em alguma coisa.
+func ser_arremessada(vel: Vector3) -> void:
+	agarrada = false
+	voando = true
+	_voo = 0.0
+	_sobre_chao = global_position
+	velocity = vel
+	# Sem colisão com o Faísca, só com o mundo.
+	collision_layer = 0
+	collision_mask = 1
+
+
+func _voar(delta: float) -> void:
+	_voo += delta
+	velocity.y -= _gravidade * delta
+	visual.rotation.x += 14.0 * delta
+	move_and_slide()
+	var espaco := get_world_3d().direct_space_state
+	var abaixo := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.6, global_position + Vector3.DOWN * 6.0, 1))
+	if not abaixo.is_empty():
+		_sobre_chao = global_position
+	# Acertou alguém (ou o baú, a parede rachada, a alavanca): os dois levam, e ela estoura.
+	var meio := global_position + Vector3.UP * 0.62
+	for outro in get_tree().get_nodes_in_group(GRUPO):
+		if outro == self or outro.derrotado or (outro is Alvo and (outro as Alvo).agarrada):
+			continue
+		var centro: Vector3 = (outro as Node3D).global_position + Vector3.UP * 0.6
+		if meio.distance_to(centro) < 0.62 + float(outro.raio_golpe) + 0.2:
+			outro.receber_golpe(2, global_position, 8.0)
+			_estourar()
+			return
+	# Bateu no chão ou numa parede, caiu longe demais ou voou tempo demais.
+	if get_slide_collision_count() > 0 or global_position.y < _sobre_chao.y - 4.0 or _voo > 2.5:
+		_estourar()
+
+
+## Fim do voo: estoura em estrelinhas. Em cima do vazio, estoura no último ponto que tinha chão embaixo.
+func _estourar() -> void:
+	voando = false
+	collision_mask = 1
+	if global_position.y < _sobre_chao.y - 0.5 or get_world_3d().direct_space_state.intersect_ray(
+			PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.6, global_position + Vector3.DOWN * 6.0, 1)).is_empty():
+		global_position = _sobre_chao
+	visual.rotation = Vector3.ZERO
+	vida = 0
+	_derrotar()
+
+
 ## Quanto a bolota anda sozinha (a de treino fica parada).
 func _andar(_delta: float) -> Vector3:
 	return Vector3.ZERO
@@ -110,7 +186,7 @@ func _olhar_jogador() -> bool:
 
 ## Leva um golpe vindo de `de`. Fica imune um instante, para o laser não tirar vida a cada quadro.
 func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
-	if derrotado or _imune > 0.0:
+	if derrotado or _imune > 0.0 or agarrada or voando:
 		return false
 	vida -= dano
 	_imune = 0.25
@@ -170,6 +246,9 @@ func _sair_quicando() -> void:
 
 
 func _voltar() -> void:
+	agarrada = false
+	voando = false
+	visual.rotation = Vector3.ZERO
 	global_position = _origem
 	velocity = Vector3.ZERO
 	_empurrao = Vector3.ZERO

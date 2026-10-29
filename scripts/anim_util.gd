@@ -147,6 +147,79 @@ static func add_mirrored_pose(short_name: String, anim_name: String, time: float
 	lib.add_animation(pose_name, pose)
 
 
+## Cria `novo` na biblioteca: a animação `anim_name` inteira espelhada da direita para a esquerda (o soco do braço
+## direito vira o do esquerdo; o Faísca alterna os dois desde 2026-10-29). Cada quadro é amostrado a `fps`; cada
+## osso recebe o movimento do osso do outro lado (o do meio, o dele mesmo) espelhado no espaço do esqueleto, e o
+## giro local sai do pai já espelhado, porque os eixos dos ossos .l e .r não espelham de um jeito simples (como em
+## add_mirrored_pose). Na pose de descanso o espelho dá o próprio descanso.
+static func add_mirrored(short_name: String, anim_name: String, novo: String, skeleton: Skeleton3D, fps := 30.0) -> void:
+	var lib := library(short_name)
+	if lib.has_animation(novo):
+		return
+	var src := lib.get_animation(anim_name)
+	var prefix := String(src.track_get_path(0)).get_slice(":", 0)
+	var rot_tracks := {}
+	var pos_tracks := {}
+	for i in src.get_track_count():
+		var bone := String(src.track_get_path(i)).get_slice(":", 1)
+		match src.track_get_type(i):
+			Animation.TYPE_ROTATION_3D:
+				rot_tracks[bone] = i
+			Animation.TYPE_POSITION_3D:
+				pos_tracks[bone] = i
+	var order := range(skeleton.get_bone_count())
+	order.sort_custom(func(a: int, b: int) -> bool: return _depth(skeleton, a) < _depth(skeleton, b))
+	var flip := Basis(Vector3(-1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1))
+	var other := {}
+	var fix := {}
+	var anim := Animation.new()
+	anim.length = src.length
+	var rot_out := {}
+	var pos_out := {}
+	for i in order:
+		var name := skeleton.get_bone_name(i)
+		var twin := name
+		if name.ends_with(".l"):
+			twin = name.trim_suffix(".l") + ".r"
+		elif name.ends_with(".r"):
+			twin = name.trim_suffix(".r") + ".l"
+		var j := skeleton.find_bone(twin)
+		other[i] = j if j >= 0 else i
+		fix[i] = (flip * skeleton.get_bone_global_rest(other[i]).basis.orthonormalized()).inverse() * skeleton.get_bone_global_rest(i).basis.orthonormalized()
+		rot_out[i] = anim.add_track(Animation.TYPE_ROTATION_3D)
+		anim.track_set_path(rot_out[i], prefix + ":" + name)
+		if pos_tracks.has(name) or pos_tracks.has(skeleton.get_bone_name(other[i])):
+			pos_out[i] = anim.add_track(Animation.TYPE_POSITION_3D)
+			anim.track_set_path(pos_out[i], prefix + ":" + name)
+	var frames := maxi(int(ceil(src.length * fps)), 1)
+	for k in frames + 1:
+		var time := minf(k / fps, src.length)
+		var source := {}
+		for i in order:
+			var name := skeleton.get_bone_name(i)
+			var rest := skeleton.get_bone_rest(i)
+			var q: Quaternion = src.rotation_track_interpolate(rot_tracks[name], time) if rot_tracks.has(name) else rest.basis.get_rotation_quaternion()
+			var p: Vector3 = src.position_track_interpolate(pos_tracks[name], time) if pos_tracks.has(name) else rest.origin
+			var parent := skeleton.get_bone_parent(i)
+			var local := Transform3D(Basis(q), p)
+			source[i] = (source[parent] as Transform3D) * local if parent >= 0 else local
+		var built := {}
+		for i in order:
+			var from: Transform3D = source[other[i]]
+			var want := Transform3D(flip * from.basis.orthonormalized() * (fix[i] as Basis), flip * from.origin)
+			var parent := skeleton.get_bone_parent(i)
+			var parent_t: Transform3D = built[parent] if parent >= 0 else Transform3D.IDENTITY
+			var local := parent_t.affine_inverse() * want
+			var q := local.basis.orthonormalized().get_rotation_quaternion()
+			anim.rotation_track_insert_key(rot_out[i], time, q)
+			var origin := skeleton.get_bone_rest(i).origin
+			if pos_out.has(i):
+				origin = local.origin
+				anim.position_track_insert_key(pos_out[i], time, origin)
+			built[i] = parent_t * Transform3D(Basis(q), origin)
+	lib.add_animation(novo, anim)
+
+
 static func _depth(sk: Skeleton3D, bone: int) -> int:
 	var d := 0
 	while sk.get_bone_parent(bone) >= 0:

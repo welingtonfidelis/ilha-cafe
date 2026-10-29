@@ -3,8 +3,11 @@ extends CharacterBody3D
 ## O Faísca na mão do jogador. Anda com o analógico (devagar ou rápido, conforme a inclinação),
 ## pula com A (segurando o botão o pulo vai mais alto) e, segurando A na descida, flutua com
 ## um laser saindo dos tênis até o chão, como no Astro: o laser acerta quem estiver embaixo, num
-## círculo de RAIO_LASER em volta dele (o anel no chão mostra). Golpe no X (quadrado no PlayStation): soco, soco e chute no chão, e um giro no ar.
+## círculo de RAIO_LASER em volta dele (o anel no chão mostra). Golpe no X (quadrado no PlayStation): no chão, socos alternando o braço direito e o
+## esquerdo (o terceiro, mais forte, empurra longe; pedido do usuário em 2026-10-29, sem o chute), e um giro no ar.
 ## Cair em cima de um inimigo é um pisão, que quica. Câmera no analógico direito ou no mouse.
+## Movimentos do Astro (pedido do usuário em 2026-10-29): segurar X no chão carrega o giro forte; Y agarra a
+## Bolota pela antena, gira com ela e, soltando, arremessa; a seta para baixo é a dancinha.
 ## Tem 3 corações: encostar numa Bolota ou cair nas nuvens tira um. Sem corações ele dá um
 ## curto (faisquinhas e fumacinha) e volta no último posto com os 3 de novo; não tem fim de jogo.
 ## Base tirada do aventureiro da Ilha Cafuné. Na Parte 2 ele anda também pela ilha (ver Parte2).
@@ -39,12 +42,13 @@ const VIDA_MAX := 3
 ## Depois de levar dano, fica piscando e sem levar outro por este tempo.
 const TEMPO_INVENCIVEL := 1.6
 
-## Sequência do X no chão. As animações do KayKit têm preparo e volta longos; o golpe começa
-## adiantado (`inicio`), mais rápido (`ritmo`), e acerta em `acerto` segundos.
+## Sequência do X no chão: soco direito, soco esquerdo (o mesmo soco espelhado, ver Robo._player) e um direito
+## mais forte. As animações do KayKit têm preparo e volta longos; o golpe começa adiantado (`inicio`), mais rápido
+## (`ritmo`), e acerta em `acerto` segundos.
 const GOLPES := [
 	{"anim": "luta/Melee_Unarmed_Attack_Punch_A", "inicio": 0.25, "ritmo": 1.8, "acerto": 0.17, "duracao": 0.33, "dano": 1, "empurrao": 1.5},
-	{"anim": "luta/Melee_Unarmed_Attack_Punch_A", "inicio": 0.25, "ritmo": 2.0, "acerto": 0.15, "duracao": 0.3, "dano": 1, "empurrao": 1.5},
-	{"anim": "luta/Melee_Unarmed_Attack_Kick", "inicio": 0.15, "ritmo": 1.6, "acerto": 0.19, "duracao": 0.42, "dano": 2, "empurrao": 9.0},
+	{"anim": "luta/Soco_Esquerdo", "inicio": 0.25, "ritmo": 2.0, "acerto": 0.15, "duracao": 0.3, "dano": 1, "empurrao": 1.5},
+	{"anim": "luta/Melee_Unarmed_Attack_Punch_A", "inicio": 0.22, "ritmo": 1.7, "acerto": 0.19, "duracao": 0.38, "dano": 2, "empurrao": 9.0},
 ]
 const ALCANCE_GOLPE := 1.8
 ## Altura máxima entre o meio do Faísca e o meio do inimigo para o golpe pegar.
@@ -57,6 +61,26 @@ const ALCANCE_LASER := 25.0
 const RAIO_LASER := 1.0
 ## Inimigo a até esta distância, mais ou menos na frente, puxa a mira do golpe (ajuda criança).
 const AJUDA_MIRA := 2.8
+## Giro forte: segurando X no chão por TEMPO_CARREGAR (o primeiro soco sai antes), ele firma os pés e carrega
+## por TEMPO_CARGA; com a carga cheia, gira sozinho com os braços abertos, acertando todo mundo em volta a cada
+## 0,25 s. Depois fica tontinho um instante, sem golpear.
+const TEMPO_CARREGAR := 0.3
+const TEMPO_CARGA := 0.5
+const TEMPO_GIRO_FORTE := 1.0
+const ALCANCE_GIRO_FORTE := 2.6
+const TEMPO_TONTINHO := 0.5
+## Agarrar (Y): a bolota até esta distância (mais ou menos na frente) vem pela antena para a mão esquerda.
+## Segurando Y ele gira com ela (pelo menos BALANCO_MIN, no máximo BALANCO_MAX); soltando, arremessa para onde
+## o analógico aponta, ou para a frente da câmera.
+const ALCANCE_AGARRAR := 2.2
+const VOLTAS_BALANCO := 1.8
+const BALANCO_MIN := 0.35
+const BALANCO_MAX := 2.5
+const FORCA_ARREMESSO := 16.0
+## Da mão até a ponta da antena da bolota (ela fica pendurada para fora).
+const ANTENA := 1.45
+## Dancinha (seta para baixo): dura isto, ou até andar, pular ou golpear.
+const TEMPO_DANCA := 4.0
 
 var robo: Robo
 var visual: Node3D
@@ -88,6 +112,11 @@ var girando := 0.0
 var forcar_direcao := Vector2.ZERO
 var forcar_pulo := false
 var forcar_golpe := false
+## Bolota na mão (Y), ou nula.
+var agarrada: Alvo
+## Tempo que falta do giro forte e da dancinha.
+var giro_forte := 0.0
+var dancando := 0.0
 
 var _coiote := 0.0
 var _memoria_pulo := 0.0
@@ -113,6 +142,16 @@ var _feixes: Array[Node3D] = []
 var _impactos: Array[MeshInstance3D] = []
 var _anel_laser: MeshInstance3D
 var _area_laser: CylinderShape3D
+var _segurando_golpe := 0.0
+var _carga := 0.0
+var _soltar_golpe := false
+var _acerto_giro_forte := 0.0
+var _tontinho := 0.0
+var _balanco := 0.0
+var _arremessando := 0.0
+var _nota := 0.0
+var _anel_carga: MeshInstance3D
+var _redemoinho: MeshInstance3D
 
 
 func _ready() -> void:
@@ -136,6 +175,7 @@ func _ready() -> void:
 	visual.add_child(robo)
 	_montar_camera()
 	_montar_lasers()
+	_montar_giro_forte()
 	ponto_retorno = global_position
 
 
@@ -252,10 +292,20 @@ func _physics_process(delta: float) -> void:
 	var no_chao := is_on_floor()
 	var apertou_golpe := forcar_golpe or (controle_ligado and Input.is_action_just_pressed("golpe"))
 	forcar_golpe = false
-	if apertou_golpe:
+	_tontinho -= delta
+	_arremessando -= delta
+	if apertou_golpe and agarrada == null and giro_forte <= 0.0 and _tontinho <= 0.0:
+		_parar_danca()
 		_golpear(no_chao, dir)
 	_atualizar_golpes(delta, dir)
+	_atualizar_giro_forte(delta, no_chao, controle_ligado and Input.is_action_pressed("golpe"))
+	_atualizar_agarrar(delta, no_chao, dir)
+	_atualizar_danca(delta, entrada)
 	var andar := dir * (0.25 if golpe_atual >= 0 else 1.0)
+	if _carga > 0.0 or agarrada or dancando > 0.0:
+		andar = Vector3.ZERO
+	elif giro_forte > 0.0:
+		andar = dir * 0.55
 
 	var acel := aceleracao if no_chao else aceleracao * controle_no_ar
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).lerp(andar * velocidade, 1.0 - exp(-acel * delta))
@@ -265,7 +315,7 @@ func _physics_process(delta: float) -> void:
 	var segurando := forcar_pulo or (controle_ligado and Input.is_action_pressed("pular"))
 	var apertou := (forcar_pulo and not _pulo_forcado_antes) or (controle_ligado and Input.is_action_just_pressed("pular"))
 	_pulo_forcado_antes = forcar_pulo
-	if apertou and golpe_atual < 0:
+	if apertou and golpe_atual < 0 and agarrada == null:
 		_memoria_pulo = tempo_memoria_pulo
 	if no_chao:
 		_coiote = tempo_coiote
@@ -316,7 +366,7 @@ func _physics_process(delta: float) -> void:
 	if _estava_no_ar and not no_ar:
 		_pousando = 0.18
 	_estava_no_ar = no_ar
-	if dir.length() > 0.1 and golpe_atual < 0 and girando <= 0.0:
+	if dir.length() > 0.1 and golpe_atual < 0 and girando <= 0.0 and giro_forte <= 0.0 and agarrada == null and _carga <= 0.0:
 		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-12.0 * delta))
 	if global_position.y < limite_queda and not _no_curto:
 		_caiu()
@@ -333,6 +383,8 @@ func _physics_process(delta: float) -> void:
 ## Põe o Faísca parado em `pos` (testes e capturas). No quadro seguinte o is_on_floor ainda
 ## é o do lugar antigo: esperar uns 0,2 s antes de apertar o pulo, senão o coiote faz pular.
 func teleportar(pos: Vector3) -> void:
+	_soltar_agarrada()
+	_parar_danca()
 	global_position = pos
 	velocity = Vector3.ZERO
 	_memoria_pulo = 0.0
@@ -345,6 +397,8 @@ func teleportar(pos: Vector3) -> void:
 func receber_dano(de: Vector3) -> bool:
 	if _invencivel > 0.0 or _no_curto or not controle_ligado:
 		return false
+	_soltar_agarrada()
+	_parar_danca()
 	robo.expressao("dor", 0.9)
 	_perder_coracao()
 	var empurrao := global_position - de
@@ -466,6 +520,8 @@ func _fumacinha() -> void:
 
 
 func voltar_ao_inicio() -> void:
+	_soltar_agarrada()
+	_parar_danca()
 	global_position = ponto_retorno
 	velocity = Vector3.ZERO
 	visual.rotation.y = PI
@@ -605,6 +661,267 @@ func _frente() -> Vector3:
 	return f.normalized()
 
 
+# --- giro forte, agarrar e dancinha ------------------------------------------------
+
+## Anel no chão que cresce enquanto carrega e o redemoinho em volta durante o giro forte.
+func _montar_giro_forte() -> void:
+	_anel_carga = MeshInstance3D.new()
+	var anel := TorusMesh.new()
+	anel.inner_radius = ALCANCE_GIRO_FORTE - 0.14
+	anel.outer_radius = ALCANCE_GIRO_FORTE
+	anel.rings = 48
+	anel.ring_segments = 6
+	_anel_carga.mesh = anel
+	_anel_carga.material_override = _material_laser(Color("ffd23f"), 0.75, 3.0)
+	_anel_carga.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_anel_carga.top_level = true
+	_anel_carga.visible = false
+	add_child(_anel_carga)
+	_redemoinho = MeshInstance3D.new()
+	var giro := TorusMesh.new()
+	giro.inner_radius = 1.7
+	giro.outer_radius = 2.2
+	giro.rings = 48
+	giro.ring_segments = 8
+	_redemoinho.mesh = giro
+	_redemoinho.scale = Vector3(1.0, 0.12, 1.0)
+	_redemoinho.material_override = _material_laser(Color("8ff3ff"), 0.35, 2.0)
+	_redemoinho.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_redemoinho.top_level = true
+	_redemoinho.visible = false
+	add_child(_redemoinho)
+
+
+## Segurar X no chão: carrega (anel dourado crescendo, tremendo, cara de bravo) e, cheio, gira sozinho. Soltar
+## antes de encher desiste. Para carregar de novo, solta o botão primeiro.
+func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void:
+	if giro_forte > 0.0:
+		giro_forte -= delta
+		visual.rotation.y += TAU * 2.6 * delta
+		_acerto_giro_forte -= delta
+		if _acerto_giro_forte <= 0.0:
+			_acerto_giro_forte = 0.25
+			_acertar(ALCANCE_GIRO_FORTE, PI, 2.4, 1, 7.0)
+		_redemoinho.global_position = global_position + Vector3.UP * 1.1
+		_redemoinho.rotation.y += 11.0 * delta
+		_redemoinho.scale = Vector3(1.0, 0.12, 1.0) * (0.9 + 0.1 * sin(giro_forte * 40.0))
+		if giro_forte <= 0.0:
+			_redemoinho.visible = false
+			_tontinho = TEMPO_TONTINHO
+			robo.expressao("tonto", 0.9)
+		return
+	if not segurando:
+		_soltar_golpe = false
+	var pode := segurando and no_chao and not _soltar_golpe and agarrada == null and controle_ligado
+	_segurando_golpe = _segurando_golpe + delta if pode else 0.0
+	if _segurando_golpe < TEMPO_CARREGAR or golpe_atual >= 0:
+		if _carga > 0.0 and _segurando_golpe < TEMPO_CARREGAR:
+			_carga = 0.0
+			_anel_carga.visible = false
+			visual.position = Vector3.ZERO
+		return
+	_parar_danca()
+	_carga += delta
+	var cheia := minf(_carga / TEMPO_CARGA, 1.0)
+	robo.animar("luta/Melee_Unarmed_Idle", 0.1)
+	robo.expressao("bravo", 0.3)
+	_anel_carga.visible = true
+	_anel_carga.global_position = global_position + Vector3.UP * 0.05
+	_anel_carga.scale = Vector3(0.25 + 0.75 * cheia, 0.15, 0.25 + 0.75 * cheia)
+	visual.position = Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)) * 0.025 * cheia
+	if _carga >= TEMPO_CARGA:
+		_carga = 0.0
+		_segurando_golpe = 0.0
+		_soltar_golpe = true
+		_anel_carga.visible = false
+		visual.position = Vector3.ZERO
+		giro_forte = TEMPO_GIRO_FORTE
+		_acerto_giro_forte = 0.0
+		_redemoinho.visible = true
+		# De braços abertos, como um pião.
+		robo.tpose()
+		robo.expressao("bravo", TEMPO_GIRO_FORTE)
+		Sfx.play(self, "golpe_ar")
+		_tremer(0.4, 0.6, 0.2)
+
+
+## Y: agarra a bolota mais perto pela antena e gira com ela na mão esquerda (de braços abertos, ela fica para
+## fora, pendurada pela antena). Quem ela atropela no giro leva um golpe. Soltando Y, arremessa.
+func _atualizar_agarrar(delta: float, no_chao: bool, dir: Vector3) -> void:
+	var segurando := controle_ligado and Input.is_action_pressed("agarrar")
+	if agarrada == null:
+		if not (controle_ligado and Input.is_action_just_pressed("agarrar")):
+			return
+		if not no_chao or golpe_atual >= 0 or girando > 0.0 or giro_forte > 0.0 or _carga > 0.0:
+			return
+		_parar_danca()
+		var alvo := _bolota_proxima()
+		if alvo == null:
+			# Nada perto: só o gesto de pegar, para a criança ver que o botão fez alguma coisa.
+			robo.animar_desde("geral/Interact", 0.1, 0.05, 1.8)
+			_arremessando = 0.4
+			return
+		agarrada = alvo
+		alvo.ser_agarrada()
+		_balanco = 0.0
+		var d := alvo.global_position - global_position
+		# A mão esquerda (+X do robô) aponta para ela.
+		visual.rotation.y = atan2(d.x, d.z) - PI / 2.0
+		robo.tpose()
+		robo.expressao("feliz", 0.6)
+		Sfx.play(self, "pancada", -6.0)
+		_tremer(0.2, 0.3, 0.1)
+	if not is_instance_valid(agarrada) or agarrada.derrotado:
+		agarrada = null
+		return
+	_balanco += delta
+	visual.rotation.y += TAU * VOLTAS_BALANCO * minf(_balanco / 0.3, 1.0) * delta
+	_segurar_na_mao()
+	_atropelar()
+	if _balanco >= BALANCO_MAX or (not segurando and _balanco >= BALANCO_MIN):
+		_arremessar(dir)
+
+
+## Põe a bolota pendurada pela antena na mão esquerda: a antena aponta para a mão e o corpo para fora.
+func _segurar_na_mao() -> void:
+	var fora := visual.global_basis.x
+	fora.y = 0.0
+	fora = fora.normalized()
+	var mao := visual.global_transform * Vector3(0.95, 1.107, 0.0)
+	agarrada.global_position = mao + fora * ANTENA
+	var cima := -fora
+	agarrada.visual.global_basis = Basis(cima.cross(Vector3.UP), cima, Vector3.UP)
+
+
+## No giro, a bolota da mão acerta quem estiver no caminho.
+func _atropelar() -> void:
+	var meio := agarrada.global_position - agarrada.visual.global_basis.y * 0.62
+	for outro in get_tree().get_nodes_in_group(Alvo.GRUPO):
+		if outro == agarrada or outro.derrotado:
+			continue
+		var centro: Vector3 = (outro as Node3D).global_position + Vector3.UP * 0.6
+		if meio.distance_to(centro) < 0.62 + float(outro.raio_golpe) + 0.1:
+			if outro.receber_golpe(1, global_position, 7.0):
+				_tremer(0.3, 0.4, 0.1)
+
+
+## Solta Y: arremessa para onde o analógico aponta (ou para a frente da câmera), virando o robô para lá.
+func _arremessar(dir: Vector3) -> void:
+	var para := dir
+	if para.length() < 0.3:
+		var base := camera_pivo.global_transform.basis
+		para = Vector3(-base.z.x, 0.0, -base.z.z)
+	para = para.normalized()
+	visual.rotation.y = atan2(para.x, para.z)
+	var b := agarrada
+	agarrada = null
+	b.visual.rotation = Vector3.ZERO
+	b.global_position = global_position + para * 1.3 + Vector3.UP * 0.55
+	b.ser_arremessada(para * FORCA_ARREMESSO + Vector3.UP * 4.5)
+	robo.animar_desde("geral/Throw", 0.35, 0.05, 1.6)
+	_arremessando = 0.4
+	robo.expressao("bravo", 0.6)
+	Sfx.play(self, "arremesso")
+	_tremer(0.3, 0.5, 0.12)
+
+
+## Levou um golpe ou foi teleportado com a bolota na mão: ela cai onde está.
+func _soltar_agarrada() -> void:
+	if agarrada and is_instance_valid(agarrada):
+		agarrada.ser_solta()
+	agarrada = null
+
+
+## Bolota (ou alvo de treino) que dá para agarrar: perto, mais ou menos na frente, sem ser a Bolotona.
+func _bolota_proxima() -> Alvo:
+	var f := _frente()
+	var melhor: Alvo = null
+	var menor := ALCANCE_AGARRAR + 0.6
+	for alvo in get_tree().get_nodes_in_group(Alvo.GRUPO):
+		if not alvo is Alvo or alvo is Bolotona:
+			continue
+		var b := alvo as Alvo
+		if b.derrotado or b.voando or b.agarrada or not b.visible:
+			continue
+		var d := b.global_position - global_position
+		if absf(d.y) > 1.5:
+			continue
+		d.y = 0.0
+		if d.length() < menor and (d.length() < 1.2 or f.angle_to(d.normalized()) < deg_to_rad(100.0)):
+			menor = d.length()
+			melhor = b
+	return melhor
+
+
+## Seta para baixo: dança parado (o Robo mexe os ossos por cima da animação de parado), com cara feliz e
+## notinhas subindo. Andar, pular ou golpear para.
+func _atualizar_danca(delta: float, entrada: Vector2) -> void:
+	if controle_ligado and Input.is_action_just_pressed("dancar") and is_on_floor() and agarrada == null \
+			and giro_forte <= 0.0 and _carga <= 0.0 and golpe_atual < 0:
+		dancando = TEMPO_DANCA
+		_nota = 0.0
+		robo.dancar(true)
+		robo.expressao("feliz", TEMPO_DANCA)
+		return
+	if dancando <= 0.0:
+		return
+	dancando -= delta
+	if dancando <= 0.0 or entrada.length() > 0.3 or not is_on_floor() or not controle_ligado:
+		_parar_danca()
+		return
+	_nota -= delta
+	if _nota <= 0.0:
+		_nota = 0.5
+		_soltar_nota()
+
+
+func _parar_danca() -> void:
+	if dancando <= 0.0:
+		return
+	dancando = 0.0
+	robo.dancar(false)
+	robo.expressao("normal")
+
+
+## Notinha musical que sobe de um lado da cabeça e some (bolinha, haste e bandeirinha).
+func _soltar_nota() -> void:
+	var nota := Node3D.new()
+	nota.top_level = true
+	add_child(nota)
+	var lado := 1.0 if randf() < 0.5 else -1.0
+	nota.global_position = global_position + visual.global_basis.x * 0.55 * lado + Vector3.UP * 2.3
+	var cor := Color("ffd23f") if randf() < 0.5 else Color("8ff3ff")
+	var m := _material_laser(cor, 1.0, 1.6)
+	var cabeca := MeshInstance3D.new()
+	var bola := SphereMesh.new()
+	bola.radius = 0.09
+	bola.height = 0.14
+	cabeca.mesh = bola
+	cabeca.material_override = m
+	nota.add_child(cabeca)
+	var haste := MeshInstance3D.new()
+	var caixa := BoxMesh.new()
+	caixa.size = Vector3(0.03, 0.3, 0.03)
+	haste.mesh = caixa
+	haste.material_override = m
+	haste.position = Vector3(0.075, 0.15, 0)
+	nota.add_child(haste)
+	var bandeira := MeshInstance3D.new()
+	var b := BoxMesh.new()
+	b.size = Vector3(0.1, 0.05, 0.03)
+	bandeira.mesh = b
+	bandeira.material_override = m
+	bandeira.position = Vector3(0.12, 0.27, 0)
+	bandeira.rotation.z = -0.5
+	nota.add_child(bandeira)
+	# De frente para a câmera (o desenho fica no plano XY).
+	nota.global_basis = Basis(camera.global_basis.x, Vector3.UP, camera.global_basis.x.cross(Vector3.UP)).orthonormalized()
+	var tw := nota.create_tween().set_parallel()
+	tw.tween_property(nota, "global_position", nota.global_position + Vector3(0.3 * lado, 1.3, 0), 1.2)
+	tw.tween_property(nota, "scale", Vector3.ONE * 0.01, 0.4).set_delay(0.8)
+	tw.chain().tween_callback(nota.queue_free)
+
+
 # --- laser dos pés ------------------------------------------------------------------
 
 ## Enquanto flutua, um laser sai de cada tênis direto para baixo até bater no chão ou num inimigo (só o
@@ -682,7 +999,7 @@ func _olhar_com_analogico(delta: float) -> void:
 func _atualizar_animacao() -> void:
 	# Sem controle (comemorando, por exemplo) quem escolhe a animação é quem tirou o controle.
 	# Durante o golpe, a animação é a do golpe.
-	if not controle_ligado or golpe_atual >= 0:
+	if not controle_ligado or golpe_atual >= 0 or giro_forte > 0.0 or agarrada or _carga > 0.0 or _arremessando > 0.0:
 		return
 	var vel_h := Vector2(velocity.x, velocity.z).length()
 	if _decolando > 0.0:

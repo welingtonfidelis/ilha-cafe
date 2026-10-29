@@ -54,6 +54,10 @@ var _olhar := Vector2.ZERO
 var _olhar_alvo := Vector2.ZERO
 var _prox_olhada := 2.5
 var _feliz_da_festa := false
+## Dancinha (Jogador.dancando): peso da dança por cima da animação de parado e o tempo dela.
+var _dancando := false
+var _danca := 0.0
+var _danca_t := 0.0
 
 
 func _ready() -> void:
@@ -123,6 +127,13 @@ func animacao_atual() -> String:
 	return _ap.current_animation if _ap else ""
 
 
+## Liga e desliga a dancinha (a animação por baixo continua; a dança entra e sai misturando).
+func dancar(on: bool) -> void:
+	if on and not _dancando:
+		_danca_t = 0.0
+	_dancando = on
+
+
 ## Quanto voo ainda resta (0 a 1): os três LEDs das costas apagam um a um enquanto ele flutua.
 func carga(v: float) -> void:
 	for i in _carga.size():
@@ -173,11 +184,63 @@ func _process(delta: float) -> void:
 	_punho = move_toward(_punho, 1.0 if fechado else PUNHO_SOLTO, delta * 10.0)
 	for d in _dedos:
 		d[0].basis = Basis(d[1], lerpf(d[2], d[3], _punho))
+	_danca = move_toward(_danca, 1.0 if _dancando else 0.0, delta * 6.0)
+	if _danca > 0.0:
+		_danca_t += delta
+		_pose_de_danca(_danca_t, _danca)
 	_rosto(delta)
 	if _jatos.size() > 0 and _jatos[0].visible:
 		mat.jato.emission_energy_multiplier = 3.0 + randf() * 1.5
 		for j in _jatos:
 			j.scale = Vector3(1.0, 0.85 + randf() * 0.3, 1.0)
+
+
+## Dancinha de robô no ritmo de 120 batidas por minuto: em cada batida o quadril desce dobrando os joelhos, o
+## corpo balança de um lado para o outro e os braços trocam (um para cima, o outro para baixo com o antebraço para
+## a frente). Cada osso recebe um giro no espaço do robô (a partir da T-pose); daí sai o giro local, misturado com
+## a animação por `peso`.
+func _pose_de_danca(t: float, peso: float) -> void:
+	var batida := t / 0.5
+	var lado := sin(PI * batida)
+	# Os braços trocam rápido e seguram a pose (jeito de robô).
+	var troca := 0.5 + 0.5 * signf(lado) * pow(absf(lado), 0.35)
+	var desce := 0.5 + 0.5 * cos(TAU * batida)
+	var giros := {}
+	giros["hips"] = Basis(Vector3.UP, 0.2 * lado)
+	giros["spine"] = giros["hips"]
+	giros["chest"] = giros["hips"] * Basis(Vector3.BACK, 0.12 * lado)
+	giros["head"] = giros["chest"] * Basis(Vector3.BACK, -0.2 * lado) * Basis(Vector3.RIGHT, 0.12 * desce)
+	# O braço de cima vai aberto e um pouco para a frente: reto para cima, o cabeção escondia a mão.
+	var cima_braco := Vector3(0.85, 0.45, 0.28)
+	var cima_mao := Vector3(0.5, 0.82, 0.3)
+	var baixo_braco := Vector3(0.45, -0.85, 0.25)
+	var baixo_mao := Vector3(0.2, -0.15, 0.97)
+	for l in [1.0, -1.0]:
+		var s := ".l" if l > 0.0 else ".r"
+		var m := Vector3(l, 1, 1)
+		var k := troca if l > 0.0 else 1.0 - troca
+		var braco := (baixo_braco * m).lerp(cima_braco * m, k).normalized()
+		var mao := (baixo_mao * m).lerp(cima_mao * m, k).normalized()
+		giros["upperarm" + s] = Basis(Quaternion(Vector3(l, 0, 0), braco))
+		giros["lowerarm" + s] = Basis(Quaternion(Vector3(l, 0, 0), mao))
+		giros["wrist" + s] = giros["lowerarm" + s]
+		giros["hand" + s] = giros["lowerarm" + s]
+		# Joelhos dobram para o quadril descer uns 4 cm com os pés no chão.
+		giros["upperleg" + s] = Basis(Vector3.RIGHT, -0.45 * desce)
+		giros["lowerleg" + s] = Basis(Vector3.RIGHT, 0.45 * desce)
+		giros["foot" + s] = Basis.IDENTITY
+	var globais := {}
+	for nome: String in ["hips", "spine", "chest", "head", "upperarm.l", "lowerarm.l", "wrist.l", "hand.l", "upperarm.r",
+			"lowerarm.r", "wrist.r", "hand.r", "upperleg.l", "lowerleg.l", "foot.l", "upperleg.r", "lowerleg.r", "foot.r"]:
+		var i := esqueleto.find_bone(nome)
+		var pai := esqueleto.get_bone_parent(i)
+		var desejado: Basis = giros[nome] * esqueleto.get_bone_global_rest(i).basis.orthonormalized()
+		globais[i] = desejado
+		var base_pai: Basis = globais[pai] if globais.has(pai) else esqueleto.get_bone_global_rest(pai).basis.orthonormalized()
+		var local := (base_pai.inverse() * desejado).get_rotation_quaternion()
+		esqueleto.set_bone_pose_rotation(i, esqueleto.get_bone_pose_rotation(i).slerp(local, peso))
+	var quadril := esqueleto.find_bone("hips")
+	esqueleto.set_bone_pose_position(quadril, esqueleto.get_bone_pose_position(quadril) + Vector3.DOWN * 0.045 * desce * peso)
 
 
 ## Piscadas, a volta para a cara normal e as olhadinhas para os lados quando está parado.
@@ -232,6 +295,8 @@ func _aplicar_expressao(nome: String) -> void:
 
 func _player() -> AnimationPlayer:
 	if _ap == null:
+		# O soco do KayKit é do braço direito; o esquerdo é ele espelhado (os golpes alternam os dois).
+		AnimUtil.add_mirrored("luta", "Melee_Unarmed_Attack_Punch_A", "Soco_Esquerdo", esqueleto)
 		_ap = AnimUtil.make_player(_rig, ["geral", "mov", "festa", "luta", "ferramentas"])
 		_ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	return _ap

@@ -33,7 +33,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	super(delta)
-	if derrotado:
+	if derrotado or agarrada or voando:
 		return
 	_pausa -= delta
 	var jogador := get_tree().get_first_node_in_group("jogador") as Jogador
@@ -64,6 +64,11 @@ func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
 	if levou:
 		_pausa = 0.6
 	return levou
+
+
+func ser_agarrada() -> void:
+	_acordar()
+	super()
 
 
 func _andar(_delta: float) -> Vector3:

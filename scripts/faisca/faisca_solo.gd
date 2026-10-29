@@ -226,7 +226,8 @@ func _rodar_teste_controle() -> void:
 	await _toque(JOY_BUTTON_BACK)
 	ok = _conferir("Back volta ao começo", jogador.global_position.distance_to(jogador.ponto_retorno) < 1.0) and ok
 
-	# X (quadrado): soco, soco e chute derrubam um inimigo de treino (3 de vida).
+	# X (quadrado): soco direito, soco esquerdo e um direito mais forte derrubam um inimigo de treino (3 de vida).
+	# Sem chute desde 2026-10-29 (pedido do usuário: "socos entre braço direito e esquerdo").
 	var a0: Alvo = fase.alvos[0]
 	jogador.teleportar(a0.global_position + Vector3(0, 0.1, 1.5))
 	jogador.visual.rotation.y = PI
@@ -236,13 +237,17 @@ func _rodar_teste_controle() -> void:
 	await _esperar(0.25)
 	ok = _conferir("X dá um soco", a0.vida == 2, "(vida %d)" % a0.vida) and ok
 	await _toque(JOY_BUTTON_X)
-	await _esperar(0.12)
+	var anim_esquerdo := jogador.robo.animacao_atual()
+	await _esperar(0.02)
 	await _toque(JOY_BUTTON_X)
-	await _esperar(0.06)
-	var anim_chute := jogador.robo.animacao_atual()
+	await _esperar(0.12)
+	var anim_forte := jogador.robo.animacao_atual()
+	var terceiro := jogador.golpe_atual
 	await _esperar(0.4)
-	ok = _conferir("o terceiro X é um chute", anim_chute == "luta/Melee_Unarmed_Attack_Kick", "(%s)" % anim_chute) and ok
-	ok = _conferir("soco, soco e chute derrubam o inimigo", a0.derrotado, "(vida %d)" % a0.vida) and ok
+	ok = _conferir("o segundo X é o soco do braço esquerdo", anim_esquerdo == "luta/Soco_Esquerdo", "(%s)" % anim_esquerdo) and ok
+	ok = _conferir("o terceiro X é o soco forte do braço direito", anim_forte == "luta/Melee_Unarmed_Attack_Punch_A" and terceiro == 2,
+			"(%s, golpe %d)" % [anim_forte, terceiro]) and ok
+	ok = _conferir("os três socos derrubam o inimigo", a0.derrotado, "(vida %d)" % a0.vida) and ok
 	var avanco := Vector2(jogador.global_position.x - antes_do_combo.x, jogador.global_position.z - antes_do_combo.z).length()
 	ok = _conferir("o combo é no lugar, sem andar para a frente", avanco < 0.1, "(andou %.2f)" % avanco) and ok
 
@@ -323,7 +328,81 @@ func _rodar_teste_controle() -> void:
 			vida_no_quique = a3.vida
 	ok = _conferir("cair em cima do inimigo é um pisão", vida_no_quique == a3.vida_max - 2, "(vida %d)" % vida_no_quique) and ok
 	ok = _conferir("o pisão quica para o alto", quicou) and ok
+	ok = await _movimentos_do_astro() and ok
 	_terminar(ok)
+
+
+## Pedido do usuário em 2026-10-29: giro forte (segurar X), agarrar e arremessar a bolota (Y) e dancinha (seta
+## para baixo).
+func _movimentos_do_astro() -> bool:
+	var ok := true
+	await _esperar(0.8)
+	# Segurar X no chão: o primeiro soco sai, depois carrega (anel dourado) e gira sozinho acertando em volta.
+	var a2: Alvo = fase.alvos[2]
+	var a3: Alvo = fase.alvos[3]
+	var vivos := fase.alvos.slice(2, 4).filter(func(a: Alvo) -> bool: return not a.derrotado)
+	var vidas := vivos.map(func(a: Alvo) -> int: return a.vida)
+	jogador.teleportar((a2.global_position + a3.global_position) / 2.0 + Vector3(0, 0.1, 0))
+	await _esperar(0.3)
+	_botao(JOY_BUTTON_X, true)
+	await _esperar(0.55)
+	var carregando: bool = jogador._carga > 0.0 and jogador._anel_carga.visible
+	var girou := false
+	for i in int(1.0 * Engine.physics_ticks_per_second):
+		await get_tree().physics_frame
+		girou = girou or jogador.giro_forte > 0.0
+	_botao(JOY_BUTTON_X, false)
+	ok = _conferir("segurando X no chão ele carrega o giro forte", carregando) and ok
+	ok = _conferir("com a carga cheia ele gira sozinho", girou) and ok
+	var acertou := vivos.size() > 0
+	for i in vivos.size():
+		acertou = acertou and (vivos[i].derrotado or vivos[i].vida < vidas[i])
+	ok = _conferir("o giro forte acerta quem está em volta", acertou, "(%d alvos)" % vivos.size()) and ok
+	await _esperar(0.6)
+	ok = _conferir("depois do giro forte ele fica tontinho e para de girar", jogador.giro_forte <= 0.0 and jogador.robo.expressao_atual() == "tonto") and ok
+	await _esperar(1.0)
+
+	# Y agarra a bolota pela antena, ele gira com ela e, soltando, arremessa: ela estoura no alvo do caminho.
+	var a0: Alvo = fase.alvos[0]
+	var a1: Alvo = fase.alvos[1]
+	for i in 6 * Engine.physics_ticks_per_second:
+		if not a0.derrotado and not a1.derrotado:
+			break
+		await get_tree().physics_frame
+	jogador.teleportar(a0.global_position + Vector3(0, 0.1, 1.4))
+	jogador.visual.rotation.y = PI
+	var para := (a1.global_position - (a0.global_position + Vector3(0, 0, 1.4))) * Vector3(1, 0, 1)
+	jogador.yaw = atan2(-para.x, -para.z)
+	await _esperar(0.3)
+	var vida_a1 := a1.vida
+	_botao(JOY_BUTTON_Y, true)
+	await _esperar(0.1)
+	ok = _conferir("Y agarra a bolota pela antena", a0.agarrada and jogador.agarrada == a0) and ok
+	await _esperar(0.5)
+	# O meio do corpo dela (pendurada pela antena, o "para cima" dela aponta para a mão).
+	var meio := a0.global_position + a0.visual.global_basis.y * 0.62
+	var longe := Vector2(meio.x - jogador.global_position.x, meio.z - jogador.global_position.z).length()
+	ok = _conferir("segurando Y ele gira com a bolota pendurada na mão", longe > 1.4 and longe < 2.2 and meio.y > jogador.global_position.y + 0.6,
+			"(a %.2f m)" % longe) and ok
+	_botao(JOY_BUTTON_Y, false)
+	await _esperar(0.05)
+	ok = _conferir("soltando Y ele arremessa", a0.voando and jogador.agarrada == null) and ok
+	await _esperar(0.8)
+	ok = _conferir("a bolota arremessada acerta o alvo do caminho e estoura", a0.derrotado and (a1.derrotado or a1.vida < vida_a1),
+			"(alvo com vida %d)" % a1.vida) and ok
+
+	# Seta para baixo: dancinha; andar para.
+	jogador.teleportar(Vector3(0, 0.1, 6))
+	await _esperar(0.4)
+	await _toque(JOY_BUTTON_DPAD_DOWN)
+	await _esperar(0.8)
+	ok = _conferir("seta para baixo faz a dancinha, com cara feliz", jogador.dancando > 0.0 and jogador.robo._danca > 0.9
+			and jogador.robo.expressao_atual() == "feliz") and ok
+	_eixo(JOY_AXIS_LEFT_Y, -1.0)
+	await _esperar(0.3)
+	_eixo(JOY_AXIS_LEFT_Y, 0.0)
+	ok = _conferir("andar para a dancinha", jogador.dancando <= 0.0) and ok
+	return ok
 
 
 func _rodar_captura() -> void:
@@ -381,7 +460,58 @@ func _rodar_captura() -> void:
 	jogador.visual.rotation.y = 0.0
 	await _esperar(0.8)
 	await _foto("07_topo")
+	await _capturar_movimentos()
 	get_tree().quit()
+
+
+## Giro forte, agarrar e arremessar, dancinha e os socos alternados (pedidos de 2026-10-29), vistos de lado.
+func _capturar_movimentos() -> void:
+	var a0: Alvo = fase.alvos[0]
+	var a1: Alvo = fase.alvos[1]
+	jogador.teleportar(Vector3(0.5, 0.1, 3.5))
+	jogador.yaw = -0.9
+	jogador.pitch = -0.25
+	await _esperar(0.5)
+	_botao(JOY_BUTTON_X, true)
+	await _esperar(0.65)
+	await _foto("10_carregando")
+	await _esperar(0.35)
+	await _foto("11_giro_forte")
+	_botao(JOY_BUTTON_X, false)
+	await _esperar(1.5)
+	for i in 6 * Engine.physics_ticks_per_second:
+		if not a0.derrotado and not a1.derrotado:
+			break
+		await get_tree().physics_frame
+	jogador.teleportar(a0.global_position + Vector3(0, 0.1, 1.4))
+	jogador.visual.rotation.y = PI
+	var para := (a1.global_position - (a0.global_position + Vector3(0, 0, 1.4))) * Vector3(1, 0, 1)
+	jogador.yaw = atan2(-para.x, -para.z) + 0.9
+	await _esperar(0.3)
+	_botao(JOY_BUTTON_Y, true)
+	await _esperar(0.45)
+	await _foto("12_agarrando")
+	jogador.yaw -= 0.9
+	_botao(JOY_BUTTON_Y, false)
+	await _esperar(0.12)
+	await _foto("13_arremesso")
+	await _esperar(1.0)
+	jogador.teleportar(Vector3(0, 0.1, 6))
+	jogador.yaw = PI
+	jogador.pitch = -0.2
+	await _esperar(0.5)
+	await _toque(JOY_BUTTON_DPAD_DOWN)
+	await _esperar(1.1)
+	await _foto("14_danca")
+	await _esperar(0.25)
+	await _foto("15_danca")
+	# Os balões do Vovô com os desenhos novos.
+	hud.mostrar_dica("agarrar")
+	await _esperar(0.7)
+	await _foto("16_dica_agarrar")
+	hud.mostrar_dica("giro_forte")
+	await _esperar(1.4)
+	await _foto("17_dica_giro_forte")
 
 
 func _foto(nome: String) -> void:

@@ -16,6 +16,9 @@ const VISTAS := [
 	{"nome": "costas_perto", "orto": false, "pos": Vector3(-1.1, 1.9, -3.2), "alvo": Vector3(0, 1.25, 0)},
 	{"nome": "rosto", "orto": false, "pos": Vector3(0.9, 1.95, 2.7), "alvo": Vector3(0, 1.64, 0)},
 	{"nome": "socando", "orto": false, "pos": Vector3(-1.9, 1.3, 2.6), "alvo": Vector3(0.0, 1.0, 0.4), "anim": "luta/Melee_Unarmed_Attack_Punch_A", "tempo": 0.55, "expressao": "bravo"},
+	{"nome": "soco_esquerdo", "orto": false, "pos": Vector3(1.9, 1.3, 2.6), "alvo": Vector3(0.0, 1.0, 0.4), "anim": "luta/Soco_Esquerdo", "tempo": 0.55, "expressao": "bravo"},
+	{"nome": "danca_1", "orto": false, "pos": Vector3(1.0, 1.5, 4.2), "alvo": Vector3(0, 1.05, 0), "anim": "geral/Idle_A", "tempo": 0.5, "danca": 0.05, "expressao": "feliz"},
+	{"nome": "danca_2", "orto": false, "pos": Vector3(1.0, 1.5, 4.2), "alvo": Vector3(0, 1.05, 0), "anim": "geral/Idle_A", "tempo": 0.5, "danca": 0.55, "expressao": "feliz"},
 	{"nome": "correndo", "orto": false, "pos": Vector3(2.6, 1.4, 3.2), "alvo": Vector3(0, 1.0, 0), "anim": "mov/Running_A", "tempo": 0.2},
 	{"nome": "parado", "orto": false, "pos": Vector3(1.4, 1.5, 3.9), "alvo": Vector3(0, 1.05, 0), "anim": "geral/Idle_A", "tempo": 0.5},
 	{"nome": "comemorando", "orto": false, "pos": Vector3(1.6, 1.5, 4.3), "alvo": Vector3(0, 1.25, 0), "anim": "festa/Cheering", "tempo": 0.45, "expressao": "feliz"},
@@ -72,6 +75,11 @@ func _arrumar(v: Dictionary) -> void:
 		_robo.tpose()
 	if _robo.has_method("expressao"):
 		_robo.call("expressao", v.get("expressao", "normal"), 0.0, true)
+	# Dancinha: liga e começa no instante pedido (a foto sai uns 0,18 s depois).
+	if _robo.has_method("dancar"):
+		_robo.call("dancar", v.has("danca"))
+		_robo.set("_danca", 1.0 if v.has("danca") else 0.0)
+		_robo.set("_danca_t", v.get("danca", 0.0))
 	if v.orto:
 		_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
 		_cam.size = v.tamanho

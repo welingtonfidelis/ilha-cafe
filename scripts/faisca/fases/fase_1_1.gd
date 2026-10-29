@@ -97,6 +97,8 @@ func _ilha_das_molas() -> void:
 	bolota(Vector3(-2.4, 1.8, -84.5))
 	bolota(Vector3(2.0, 1.8, -86.5))
 	bolota(Vector3(4.0, 1.8, -83.4), true)
+	# Primeiras Bolotas acordadas: o Vovô mostra o agarrar e arremessar (Y, 2026-10-29).
+	ponto_de_dica(Vector3(0, 2.8, -79.5), 3.0, "agarrar")
 	coracao(Vector3(-4.6, 2.8, -87.6))
 	mola(Vector3(0, 1.8, -88.2))
 	estrelinha(Vector3(4.0, 4.0, -80.2))
@@ -238,6 +240,8 @@ func _ilha_do_bau() -> void:
 	bolota(Vector3(-3.0, 9.0, -297.35))
 	bolota(Vector3(3.0, 9.0, -297.95))
 	bolota(Vector3(0, 9.0, -304.35))
+	# Três Bolotas em volta do baú: o Vovô mostra o giro forte (segurar X, 2026-10-29).
+	ponto_de_dica(Vector3(0, 10.0, -294.5), 3.0, "giro_forte")
 	roda(Vector3(0, 9.9, -301.75), 3.4, 3)
 	morro("4x4x4", Vector3(8.5, 6.0, -300.75))
 	vaga_lume(Vector3(8.6, 7.1, -299.35))
