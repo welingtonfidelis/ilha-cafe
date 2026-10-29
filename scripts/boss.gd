@@ -49,6 +49,12 @@ var _start_y := 0.0
 ## Contorna o pilar da lanterna, troncos e pedras em vez de empacar empurrando de frente.
 var _detour := Detour.new()
 var _want := Vector3.ZERO
+## Golpes do Faísca na Festa sem fim (soco, giro, pisão e laser chamam receber_golpe). Fora da luta não é alvo.
+var raio_golpe := 1.2
+var derrotado: bool:
+	get:
+		return phase != Phase.LUTANDO and phase != Phase.COMEMORANDO
+var _last_punch := -10.0
 
 
 # --- a preencher nos guardiões ----------------------------------------------
@@ -97,6 +103,8 @@ func _warning_height() -> float:
 
 func _ready() -> void:
 	_setup()
+	add_to_group(Alvo.GRUPO)
+	raio_golpe = 0.5 * body_scale
 	health = max_health if start_health < 0.0 else minf(start_health, max_health)
 	collision_layer = 1 << 2
 	collision_mask = 1 | (1 << 1)
@@ -287,6 +295,16 @@ func hit_player(from: Vector3) -> void:
 
 
 # --- dano e derrota ----------------------------------------------------------
+
+## Golpe do Faísca: 1,5 de dano por ponto do golpe (como nos esqueletos), sem o bloqueio do escudo.
+func receber_golpe(dano: int, _de: Vector3, _forca := 6.0) -> bool:
+	var now := Time.get_ticks_msec() / 1000.0
+	if derrotado or now - _last_punch < 0.3:
+		return false
+	_last_punch = now
+	_apply_damage(dano * 1.5 * _damage_factor(), global_position + Vector3.UP * body_scale * 1.4, false)
+	return true
+
 
 func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 	if phase != Phase.LUTANDO and phase != Phase.COMEMORANDO:

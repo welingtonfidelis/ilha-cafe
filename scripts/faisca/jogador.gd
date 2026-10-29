@@ -66,6 +66,9 @@ var controle_ligado := true
 var pode_recomecar := true
 var flutuando := false
 var ponto_retorno := Vector3.ZERO
+## Na ilha: a criança guardada que acompanha o Faísca. Os golpes de esqueleto (e as flechas, bolhas e dardos que
+## batem nele) vão para ela, que divide os corações com ele (Player.take_damage chama levar_golpe_na_ilha).
+var crianca: Player
 ## Abaixo desta altura ele caiu (a fase diz onde ficam as nuvens).
 var limite_queda := ALTURA_QUEDA
 var vida := VIDA_MAX
@@ -343,6 +346,18 @@ func receber_dano(de: Vector3) -> bool:
 	return true
 
 
+## Na ilha (Festa sem fim): quem perde o coração é a criança guardada; aqui só o empurrão, o tremor e o pisca
+## pelo tempo invulnerável dela.
+func levar_golpe_na_ilha(de: Vector3, tempo: float) -> void:
+	var empurrao := global_position - de
+	empurrao.y = 0.0
+	empurrao = empurrao.normalized() if empurrao.length() > 0.05 else -_frente()
+	velocity = empurrao * 7.0 + Vector3.UP * 5.0
+	golpe_atual = -1
+	_invencivel = tempo
+	_tremer(0.6, 0.8, 0.25)
+
+
 ## Ganha um coração (até 3). Devolve se pegou.
 func curar() -> bool:
 	if vida >= VIDA_MAX:
@@ -538,8 +553,8 @@ func _alvo_proximo() -> Node3D:
 func _pisao() -> void:
 	for k in get_slide_collision_count():
 		var col := get_slide_collision(k)
-		var alvo := col.get_collider() as Alvo
-		if alvo and col.get_normal().y > 0.6:
+		var alvo := col.get_collider()
+		if _inimigo(alvo) and col.get_normal().y > 0.6:
 			if alvo.receber_golpe(2, global_position + Vector3.UP * 2.0, 3.0):
 				velocity.y = forca_pulo * 0.8
 				_pulou = true
@@ -549,6 +564,12 @@ func _pisao() -> void:
 				_decolando = 0.2
 				_tremer(0.4, 0.5, 0.15)
 			return
+
+
+## Inimigo de verdade (laser e pisão): Bolota e, na ilha, esqueleto e guardião. O baú e a parede rachada só
+## abrem e quebram com os golpes.
+func _inimigo(quem: Object) -> bool:
+	return quem is Alvo or quem is SkeletonEnemy or quem is Boss
 
 
 func _frente() -> Vector3:
@@ -600,7 +621,7 @@ func _atualizar_lasers() -> void:
 	area.exclude = [get_rid()]
 	for r in espaco.intersect_shape(area, 16):
 		var quem: Object = r.collider
-		if quem is Alvo:
+		if _inimigo(quem):
 			if quem.receber_golpe(1, pes, 2.5):
 				_tremer(0.2, 0.3, 0.08)
 		elif quem.has_method("acender"):

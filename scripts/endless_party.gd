@@ -123,7 +123,8 @@ func _physics_process(delta: float) -> void:
 	_timer -= delta
 	match state:
 		State.PARADA:
-			_hold = _hold + delta if flat < START_RADIUS and not player.dizzy and not player.parked else 0.0
+			# O Faísca também luta (soco, giro, pisão e laser), com os corações divididos com a criança guardada.
+			_hold = _hold + delta if flat < START_RADIUS and not player.dizzy and (not player.parked or game.faisca_on_island()) else 0.0
 			if _hold >= START_HOLD:
 				_hold = 0.0
 				_begin()

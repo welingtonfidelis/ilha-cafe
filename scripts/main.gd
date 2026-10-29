@@ -102,6 +102,8 @@ var _pause_exit: Button
 var _pause_switch: Button
 ## Escolha de personagem com os cartões (scripts/character_menu.gd); select_panel aponta para ele.
 var character_menu: CharacterMenu
+## A escolha foi aberta pela porta do farol (Voltar fecha, em vez de ir para a pausa).
+var _door_choice := false
 ## Cartão de quem está jogando, na pausa.
 var _pause_card: PanelContainer
 var _pause_portrait: Portrait
@@ -133,6 +135,8 @@ var ending: Ending
 var party_mode: EndlessParty
 ## Parte 2: o farol, o Faísca, o hub e as fases (scripts/faisca/parte2.gd). Nula na arena dos testes.
 var parte2: Parte2
+## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
+var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
 var shop_menu: ShopMenu
 var shop_marker: ObjectiveMarker
@@ -428,6 +432,13 @@ func _ready() -> void:
 		parte2.name = "Parte2"
 		add_child(parte2)
 		parte2.setup(self)
+		# Os testes e as fotos ficam no dia de sempre (sem o ciclo), a não ser o teste e as fotos do próprio ciclo.
+		var tests := Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
+		if not tests or "--dia-e-noite" in args or "--dia-e-noite-captura" in args:
+			day_night = DayNight.new()
+			day_night.name = "DiaENoite"
+			add_child(day_night)
+			day_night.setup(self)
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -526,6 +537,21 @@ func _ready() -> void:
 	elif "--festa-sem-fim" in args:
 		select_panel.hide()
 		_run_endless_test()
+	elif "--faisca-ilha" in args:
+		select_panel.hide()
+		_run_faisca_island_test()
+	elif "--pista-kart" in args:
+		select_panel.hide()
+		_run_kart_track_test()
+	elif "--dia-e-noite" in args:
+		select_panel.hide()
+		_run_day_night_test()
+	elif "--dia-e-noite-captura" in args:
+		select_panel.hide()
+		_run_day_night_capture()
+	elif "--faisca-ilha-captura" in args:
+		select_panel.hide()
+		_run_faisca_island_capture()
 	elif "--salvar" in args:
 		select_panel.hide()
 		_run_save_test()
@@ -817,14 +843,16 @@ func open_menu(state: String) -> void:
 			shop_menu.slide_in.call_deferred()
 		"escolha":
 			var current := "faisca" if parte2 and parte2.faisca_ativo else player.character_name
-			character_menu.open(current if _game_started else "", parte2 != null and parte2.aberta, _game_started or story != null)
+			character_menu.open(current if _game_started else "", parte2 != null and parte2.aberta, _game_started or story != null,
+					"faisca" if _door_choice else "", "Só o Faísca entra no farol! Escolha o Faísca:" if _door_choice else "")
 		"pausa":
 			if story:
 				story.save()
 			var inside := parte2 != null and parte2.lugar != "ilha"
 			_pause_exit.visible = inside
 			_pause_exit.text = "Sair da fase" if parte2 and parte2.lugar == "fase" else "Voltar para a ilha"
-			_pause_switch.visible = not inside
+			# De kart ou de skate, desce primeiro.
+			_pause_switch.visible = not inside and not player.in_vehicle and not player.skating
 			if parte2 and parte2.faisca_ativo:
 				pause_objective.text = "Junte estrelinhas para abrir as portas do farol."
 			elif story:
@@ -839,6 +867,7 @@ func open_menu(state: String) -> void:
 func close_menus() -> void:
 	var was := menu_state
 	menu_state = ""
+	_door_choice = false
 	start_panel.hide()
 	confirm_panel.hide()
 	shop_menu.hide()
@@ -998,6 +1027,15 @@ func exit_vehicle(at: Vector3) -> void:
 	player.input_enabled = true
 	crosshair.visible = true
 	ammo_hud.visible = true
+	# Era o Faísca dirigindo: ele volta onde a criança vestida desceu.
+	if parte2 and parte2.vestida():
+		parte2.vestir_crianca(false)
+
+
+## O Faísca andando pela ilha (nem no farol, nem numa cena): ele também anda de kart e de skate e luta na Festa
+## sem fim (pedido do usuário em 2026-10-29).
+func faisca_on_island() -> bool:
+	return parte2 != null and parte2.faisca_ativo and parte2.lugar == "ilha" and not parte2.busy() and not parte2.vestida()
 
 
 ## Esconde a mira, os corações, os blasters e a seta do objetivo (cena final e créditos).
@@ -1554,9 +1592,22 @@ func _pause_card_style(color: Color) -> StyleBoxFlat:
 	return s
 
 
-## Voltar da escolha de personagem: no começo do jogo vai ao menu inicial; vindo da pausa, à pausa.
+## A criança encostou na porta do farol com a Parte 2 aberta: abre a troca de personagem já no Faísca, com o
+## aviso (pedido do usuário em 2026-10-29). Escolhendo o Faísca, ele aparece na porta e entra.
+func ask_for_faisca() -> void:
+	if menu_state != "" or player.dizzy or player.in_vehicle or player.skating or (parte2 and parte2.busy()) \
+			or (ending and ending.busy()):
+		return
+	_door_choice = true
+	open_menu("escolha")
+
+
+## Voltar da escolha de personagem: pela porta do farol volta ao jogo; no começo do jogo vai ao menu inicial;
+## vindo da pausa, à pausa.
 func _character_menu_back() -> void:
-	if _game_started:
+	if _door_choice:
+		close_menus()
+	elif _game_started:
 		open_menu("pausa")
 	elif story:
 		open_menu("inicio")
@@ -3851,11 +3902,10 @@ func _run_activities_test() -> void:
 	all_ok = _check("acelera e sai da vaga (para a pista, a leste)", car.global_position.x > x0 + 5.0 and kart_race.state == "dirigindo",
 			"(andou %.1f m)" % (car.global_position.x - x0)) and all_ok
 	# Entra pela LARGADA, vindo de fora da pista.
-	var zone := kart_race._entry_zone
-	car.global_position = Vector3(zone.position.x - 4.0, 0.4, zone.get_center().y)
+	car.global_position = kart_race.entry_center + kart_race.entry_out * 12.0 + Vector3.UP * 0.6
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	car.global_position = Vector3(zone.get_center().x, 0.4, zone.get_center().y)
+	car.global_position = kart_race.entry_center + Vector3.UP * 0.6
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	all_ok = _check("entrar pela LARGADA começa a corrida na largada", kart_race.state == "contagem"
@@ -4083,11 +4133,16 @@ func _run_activities_capture() -> void:
 	await _wait(0.8)
 	var out := "res://tools/capturas/"
 	var size := Vector2i(1280, 720)
-	var kart := Vector3(125, 0, 15)
+	# A pista em 8 (2026-10-29): de cima, a ponte do cruzamento, a largada com o box e a volta sul com a lombada.
+	var kart := Vector3(118, 0, 0)
 	var skate := skate_park.center
-	await _art_shot(out + "a01_kart_de_cima.png", size, kart + Vector3(0, 95, 0.5), kart, 50.0)
-	await _art_shot(out + "a02_kart_largada.png", size, kart + Vector3(-34, 9, 28), kart + Vector3(-20, 1, 8), 60.0)
-	await _art_shot(out + "a03_kart_curva.png", size, kart + Vector3(10, 12, -50), kart + Vector3(0, 0, -30), 60.0)
+	var bridge: Vector3 = KartCircuit.at_point(KartCircuit.BRIDGE).pos
+	await _art_shot(out + "a01_kart_de_cima.png", size, kart + Vector3(0, 205, 0.5), kart, 50.0)
+	await _art_shot(out + "a02_kart_ponte.png", size, bridge + Vector3(-30, 6, -12), bridge + Vector3(0, -1, 0), 60.0)
+	await _art_shot(out + "a03_kart_largada.png", size, kart_race.paddock + Vector3(-10, 9, 6), kart_race.entry_center + Vector3(6, 0, -10), 60.0)
+	await _art_shot(out + "a03b_kart_volta_sul.png", size, Vector3(110, 14, 112), Vector3(130, 0, 60), 60.0)
+	await _art_shot(out + "a03c_kart_rampa_do_box.png", size, kart_race.entry_center + kart_race.entry_out * 14.0 + Vector3(0, 4, 0) - Vector3(kart_race.entry_out.z, 0, -kart_race.entry_out.x) * 10.0,
+			kart_race.entry_center + kart_race.entry_out * 4.0, 60.0)
 	await _art_shot(out + "a04_skate_de_cima.png", size, skate + Vector3(0, 70, 0.5), skate, 50.0)
 	await _art_shot(out + "a05_skate_lado.png", size, skate + Vector3(18, 12, 34), skate + Vector3(-2, 1, -4), 60.0)
 	await _art_shot(out + "a06_half_pipe.png", size, skate + Vector3(-12, 6, -2), skate + Vector3(-8, 1, -16), 60.0)
@@ -4106,7 +4161,7 @@ func _run_activities_capture() -> void:
 	kart_race.enter(car)
 	await _wait(0.3)
 	await _shot("a09a_kart_vaga.png")
-	car.global_position = Vector3(kart_race._entry_zone.get_center().x, 0.4, kart_race._entry_zone.get_center().y)
+	car.global_position = kart_race.entry_center + Vector3.UP * 0.6
 	kart_race._armed = true
 	await _wait_until(func() -> bool: return kart_race.state == "correndo", 6.0)
 	Input.action_press("frente")
@@ -4116,6 +4171,14 @@ func _run_activities_capture() -> void:
 	await _wait(1.6)
 	await _shot("a10_kart_curva.png")
 	Input.action_release("direita")
+	# Subindo a rampa da ponte, de lado: o corpo do kart inclina com o chão.
+	var ramp: Dictionary = KartCircuit.at_point(8)
+	car.global_transform = Transform3D(Basis.looking_at(-ramp.dir), ramp.pos + Vector3.UP * 0.4)
+	car.speed = 8.0
+	await _wait(0.9)
+	var side_dir := Vector3(ramp.dir.z, 0, -ramp.dir.x)
+	await _art_shot("res://tools/capturas/a10b_kart_subindo_a_ponte.png", Vector2i(1280, 720), car.global_position + side_dir * 11.0 + Vector3.UP * 1.5,
+			car.global_position + Vector3.UP * 0.6, 50.0)
 	Input.action_release("frente")
 	kart_race.leave()
 	await _wait(0.4)
@@ -4318,6 +4381,367 @@ func _run_endless_test() -> void:
 	all_ok = _check("depois dá para começar de novo", pd.state == EndlessParty.State.PARADA and "Recorde: 2" in pd._board.text) and all_ok
 	print("FESTA-SEM-FIM OK" if all_ok else "FESTA-SEM-FIM COM FALHAS")
 	get_tree().quit()
+
+
+## O Faísca faz na ilha o que as crianças fazem, menos comprar (pedido do usuário em 2026-10-29): kart, skate e a
+## Festa sem fim, lutando com os golpes dele e dividindo os corações com a criança guardada.
+## Uso: godot --headless --path . -- --faisca-ilha
+func _run_faisca_island_test() -> void:
+	var all_ok := true
+	story.fast = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(0.3)
+	parte2.aberta = true
+	parte2.usar_faisca(true)
+	await _wait(0.5)
+	var f := parte2.faisca
+	all_ok = _check("com o Faísca na ilha ficam os corações das crianças (divididos) e somem os três dele", hearts_bar.visible
+			and not parte2.hud._coracoes[0].visible and player.stand_in == f and f.crianca == player and not ammo_hud.visible) and all_ok
+
+	# Kart: a criança guardada sai vestida de Faísca; no banco aparece o robô.
+	var v: Kart = kart_race.vehicles[0]
+	# Atrás do kart (as vagas ficam lado a lado, a 4,2 m uma da outra).
+	f.teleportar(v.global_position - v.global_basis.z * 2.4 + Vector3.UP * 0.3)
+	await _wait(0.5)
+	all_ok = _check("perto de um kart, o Faísca vê o aviso de dirigir", kart_race.nearest == v and hint_label.visible, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B entra no kart: o robô no banco, sem pernas, e o Faísca some", kart_race.driving() and kart_race.kart == v
+			and v._head is Robo and parte2.vestida() and not f.visible and player.robo_skin and v.camera.current) and all_ok
+	var p0 := v.global_position
+	_joy_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await _wait(1.2)
+	_joy_axis(JOY_AXIS_LEFT_Y, 0.0)
+	var drove := v.global_position.distance_to(p0)
+	await _wait(0.3)
+	open_menu("pausa")
+	await _wait(0.1)
+	all_ok = _check("dirigindo, a pausa não troca de personagem", not _pause_switch.visible and _pause_portrait.key == "faisca") and all_ok
+	close_menus()
+	await _wait(0.3)
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.4)
+	all_ok = _check("B desce: o Faísca volta ao lado do kart, com a câmera dele", not kart_race.driving() and f.visible and not parte2.vestida()
+			and not player.robo_skin and player.parked and f.camera.current and drove > 3.0 and f.global_position.distance_to(v.global_position) < 4.0
+			and not ammo_hud.visible and hearts_bar.visible, "(andou %.1f m)" % drove) and all_ok
+
+	# Skate: sobe vestida de Faísca, com o robô em cima da tábua.
+	await _wait(0.6)
+	f.teleportar(skate_park.board.global_position + Vector3(1.2, 0.3, 0))
+	await _wait(0.5)
+	all_ok = _check("perto do skate, o Faísca vê o aviso", skate_park.near and hint_label.visible) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B sobe no skate: o robô na tábua, empurrando", skate_park.riding() and player.skating and player.model is Robo
+			and player.visible and not f.visible and player.camera.current) and all_ok
+	var s0 := player.global_position
+	player.force_skate_push = true
+	await _wait(1.5)
+	player.force_skate_push = false
+	var rolled := Vector2(player.global_position.x - s0.x, player.global_position.z - s0.z).length()
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.4)
+	all_ok = _check("o skate anda e B desce: o Faísca volta onde parou", rolled > 2.0 and not skate_park.riding() and f.visible
+			and not player.robo_skin and player.parked and f.global_position.distance_to(player.global_position) < 0.6, "(andou %.1f m)" % rolled) and all_ok
+
+	# Festa sem fim: ficar no círculo começa, e o Faísca luta com os golpes dele.
+	var pd := party_mode
+	f.teleportar(pd.center + Vector3.UP * 0.3)
+	await _wait_until(func() -> bool: return pd.state == EndlessParty.State.ONDA, 6.0)
+	all_ok = _check("o Faísca no círculo começa a Festa sem fim", pd.state == EndlessParty.State.ONDA) and all_ok
+	await _wait_until(func() -> bool: return pd.alive.any(func(e: Node) -> bool: return e is SkeletonEnemy and not e.derrotado), 8.0)
+	var e: SkeletonEnemy = null
+	for a in pd.alive:
+		if a is SkeletonEnemy and not a.derrotado:
+			e = a
+			break
+	var h0 := e.health
+	var dir := e.global_basis.z
+	dir.y = 0.0
+	f.teleportar(e.global_position + dir.normalized() * 1.3 + Vector3.UP * 0.2)
+	f.velocity = Vector3.ZERO
+	await _wait(0.15)
+	for k in 3:
+		await _joy_button(JOY_BUTTON_X)
+		await _wait(0.3)
+	all_ok = _check("os socos do Faísca tiram vida do esqueleto", e.health < h0, "(%.1f -> %.1f)" % [h0, e.health]) and all_ok
+	# Laser: flutuando em cima de um esqueleto.
+	var e2: SkeletonEnemy = null
+	for a in pd.alive:
+		if a is SkeletonEnemy and not a.derrotado:
+			e2 = a
+			break
+	if e2:
+		var h1 := e2.health
+		f.teleportar(e2.global_position + Vector3.UP * 3.4)
+		await _wait(0.1)
+		_joy_hold(JOY_BUTTON_A, true)
+		await _wait(0.9)
+		_joy_hold(JOY_BUTTON_A, false)
+		all_ok = _check("o laser dos pés também acerta os esqueletos", e2.health < h1 or e2.derrotado, "(%.1f -> %.1f)" % [h1, e2.health]) and all_ok
+	await _wait(0.8)
+	# Golpe de esqueleto: tira o coração da criança e empurra o Faísca.
+	player.god_mode = false
+	player._invulnerable = 0.0
+	var hearts0 := player.hearts
+	player.take_damage(1, f.global_position + Vector3(1, 0, 0), "teste")
+	await get_tree().physics_frame
+	all_ok = _check("um golpe tira um dos corações divididos e empurra o Faísca, que pisca", player.hearts == hearts0 - 1
+			and f._invencivel > 0.0 and hearts_bar.visible) and all_ok
+	await _wait(0.4)
+	var hurt := player._invulnerable
+	all_ok = _check("o tempo invulnerável corre com a criança guardada", hurt < player.invulnerable_time and hurt >= 0.0, "(%.2f)" % hurt) and all_ok
+	for k in player.hearts + 1:
+		player._invulnerable = 0.0
+		player.take_damage(1, f.global_position + Vector3(1, 0, 0), "teste")
+	await _wait(0.2)
+	all_ok = _check("sem corações: o Faísca solta fumacinha e para, e a festa acaba", not f.controle_ligado and player.dizzy
+			and pd.state != EndlessParty.State.ONDA) and all_ok
+	await _wait_until(func() -> bool: return not player.dizzy, 8.0)
+	await _wait(0.3)
+	all_ok = _check("os dois voltam na bandeira com os corações cheios", f.controle_ligado and player.hearts == player.max_hearts
+			and f.global_position.distance_to(current_checkpoint.spawn_position()) < 3.0) and all_ok
+	all_ok = _check("comprar continua só com as crianças", not await open_phone() and menu_state == "") and all_ok
+	print("FAISCA-ILHA OK" if all_ok else "FAISCA-ILHA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do Faísca na ilha (v20 a v24): kart, skate, Festa sem fim e a porta do farol com a criança.
+## Uso: godot --path . -- --faisca-ilha-captura
+func _run_faisca_island_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(0.3)
+	parte2.aberta = true
+	parte2.usar_faisca(true)
+	await _wait(0.5)
+	var f := parte2.faisca
+	var v: Kart = kart_race.vehicles[1]
+	f.teleportar(v.global_position - v.global_basis.z * 2.4 + Vector3.UP * 0.3)
+	await _wait(0.4)
+	kart_race.enter(v)
+	_joy_axis(JOY_AXIS_LEFT_Y, -1.0)
+	await _wait(1.0)
+	_joy_axis(JOY_AXIS_LEFT_Y, 0.0)
+	await _wait(0.6)
+	await _shot("v20_faisca_no_kart.png")
+	v._cam_yaw = 2.4
+	v._cam_idle = 0.0
+	await _wait(0.5)
+	await _shot("v21_faisca_no_kart_de_lado.png")
+	kart_race.leave()
+	await _wait(0.6)
+	f.teleportar(skate_park.board.global_position + Vector3(1.2, 0.3, 0))
+	await _wait(0.4)
+	skate_park.pick()
+	player.force_skate_push = true
+	await _wait(1.0)
+	await _shot("v22_faisca_no_skate.png")
+	player.force_skate_push = false
+	await _wait(0.4)
+	skate_park._drop(false)
+	await _wait(0.4)
+	var pd := party_mode
+	f.teleportar(pd.center + Vector3.UP * 0.3)
+	await _wait_until(func() -> bool: return pd.alive.size() >= 3, 10.0)
+	await _wait(2.5)
+	var e: SkeletonEnemy = null
+	for a in pd.alive:
+		if a is SkeletonEnemy and not a.derrotado:
+			e = a
+			break
+	if e:
+		var dir := e.global_basis.z
+		dir.y = 0.0
+		f.teleportar(e.global_position + dir.normalized() * 1.4 + Vector3.UP * 0.2)
+		f.yaw = atan2(dir.x, dir.z)
+		f.pitch = -0.25
+		await _wait(0.1)
+		_joy_hold(JOY_BUTTON_X, true)
+		await get_tree().physics_frame
+		_joy_hold(JOY_BUTTON_X, false)
+		await _wait(0.18)
+		await _shot("v23_faisca_na_festa_sem_fim.png")
+	pd._finish(false)
+	await _wait(1.0)
+	_choose_character("menina")
+	await _wait(0.5)
+	await _stand(parte2.farol.modelo.porta() - FarolIlha.DIRECAO * 0.8)
+	await _wait(1.0)
+	await _shot("v24_porta_do_farol_pede_o_faisca.png")
+	get_tree().quit()
+
+
+## Pista de kart em 8 (refeita em 2026-10-29): uma corrida de verdade no piloto automático (acelera e vira para
+## um ponto 12 m à frente na pista), passando por cima da ponte, por baixo dela e pela lombada, até a volta 1
+## contar na chegada. Uso: godot --headless --path . -- --pista-kart
+func _run_kart_track_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	all_ok = _check("pista em 8 com uns 420 m por volta e 13 m de largura", absf(KartCircuit.length() - 420.0) < 25.0 and KartCircuit.WIDTH >= 12.0,
+			"(%.0f m)" % KartCircuit.length()) and all_ok
+	await _stand(kart_race.paddock)
+	var car: Kart = kart_race.vehicles[2]
+	kart_race.enter(car)
+	await _wait(0.3)
+	# Da vaga até a abertura da mureta, dirigindo: sobe a rampa e entra na pista (sem degrau).
+	var drive_t := 0.0
+	while kart_race.state == "dirigindo" and drive_t < 12.0:
+		await get_tree().physics_frame
+		drive_t += 1.0 / Engine.physics_ticks_per_second
+		var to_entry := kart_race.entry_center - car.global_position
+		to_entry.y = 0.0
+		var cside := car.forward().normalized().cross(to_entry.normalized()).y
+		Input.action_press("frente", 0.6)
+		Input.action_release("esquerda")
+		Input.action_release("direita")
+		if absf(cside) > 0.03:
+			Input.action_press("esquerda" if cside > 0.0 else "direita", clampf(absf(cside) * 3.0, 0.3, 1.0))
+	for action in ["frente", "esquerda", "direita"]:
+		Input.action_release(action)
+	all_ok = _check("da vaga, o kart sobe a rampa da abertura e começa a corrida", kart_race.state in ["contagem", "correndo"],
+			"(%.1f s, estado %s)" % [drive_t, kart_race.state]) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 6.0)
+	var last_s: float = KartCircuit.nearest(car.global_position).sample.s
+	var total := KartCircuit.length()
+	var run := 0.0
+	var max_y := -INF
+	var low_bridge := INF
+	var stuck := 0.0
+	var worst_stuck := 0.0
+	var off := 0
+	var max_tilt := 0.0
+	var t := 0.0
+	var samples: Array = KartCircuit.samples()
+	while kart_race.lap < 1 and t < 75.0:
+		await get_tree().physics_frame
+		t += 1.0 / Engine.physics_ticks_per_second
+		var p := car.global_position
+		# A amostra mais perto, procurando só um pouco à frente da última (no cruzamento valem as duas pistas).
+		var best_d := INF
+		var best_s := last_s
+		for sm in samples:
+			var ahead := fposmod(sm.s - last_s, total)
+			if ahead > 25.0:
+				continue
+			var d := Vector2(sm.pos.x - p.x, sm.pos.z - p.z).length()
+			if d < best_d:
+				best_d = d
+				best_s = sm.s
+		run += fposmod(best_s - last_s, total)
+		last_s = best_s
+		if best_d > KartCircuit.WIDTH * 0.5 + 0.5:
+			off += 1
+		var target: Vector3 = samples[int(fposmod(last_s + 12.0, total) / total * samples.size()) % samples.size()].pos
+		var fwd := car.forward()
+		var to := target - p
+		to.y = 0.0
+		fwd.y = 0.0
+		var side := fwd.normalized().cross(to.normalized()).y
+		Input.action_press("frente")
+		Input.action_release("esquerda")
+		Input.action_release("direita")
+		if absf(side) > 0.03:
+			Input.action_press("esquerda" if side > 0.0 else "direita", clampf(absf(side) * 3.0, 0.2, 1.0))
+		max_y = maxf(max_y, p.y)
+		if p.y > 2.0:
+			max_tilt = maxf(max_tilt, absf(car._ground_pitch))
+		stuck = stuck + 1.0 / Engine.physics_ticks_per_second if car.speed < 2.0 else 0.0
+		worst_stuck = maxf(worst_stuck, stuck)
+	for action in ["frente", "esquerda", "direita"]:
+		Input.action_release(action)
+	all_ok = _check("no piloto automático o kart dá a volta inteira e a volta conta na chegada", kart_race.lap >= 1 and run > total * 0.9 and run < total * 1.2,
+			"(%.0f m em %.1f s, volta %d)" % [run, t, kart_race.lap]) and all_ok
+	all_ok = _check("o kart sobe a ponte do cruzamento", max_y > 5.5, "(mais alto: %.1f m)" % max_y) and all_ok
+	all_ok = _check("na rampa da ponte o corpo do kart inclina junto com o chão", max_tilt > 0.05, "(%.1f°)" % rad_to_deg(max_tilt)) and all_ok
+	all_ok = _check("sem enroscar nem sair da pista", worst_stuck < 1.0 and off < 30, "(parado %.1f s, %d quadros fora)" % [worst_stuck, off]) and all_ok
+	kart_race.leave(true)
+	print("PISTA-KART OK" if all_ok else "PISTA-KART COM FALHAS")
+	get_tree().quit()
+
+
+## Ciclo de dia e noite (pedido do usuário em 2026-10-29): começa de manhã, as horas andam, entardecer, noite
+## com estrelas, lua e postes, amanhecer, pausa parada, a hora no salvamento e a noite da festa (do Desfecho).
+## Uso: godot --headless --path . -- --dia-e-noite
+func _run_day_night_test() -> void:
+	var all_ok := true
+	story.fast = true
+	await _wait(0.5)
+	var dn := day_night
+	all_ok = _check("o jogo começa de manhã, sem estrelas e com os postes apagados", dn != null and absf(dn.t - DayNight.MORNING) < 0.01
+			and sky_material.sky_cover_modulate.a < 0.05 and dn._lamps.size() >= 15 and not dn._lamps[0].visible, "(%d postes)" % dn._lamps.size()) and all_ok
+	var t0 := dn.t
+	await _wait(1.0)
+	all_ok = _check("as horas andam sozinhas (um dia em 16 minutos)", dn.t > t0 and dn.t - t0 < 0.01, "(%.4f -> %.4f)" % [t0, dn.t]) and all_ok
+	dn.t = 0.4
+	dn.apply()
+	var noon_sun := -sun_light.rotation_degrees.x
+	dn.t = 0.66
+	dn.apply()
+	all_ok = _check("à tarde o sol desce e no entardecer o horizonte fica alaranjado", noon_sun > 40.0 and -sun_light.rotation_degrees.x < 25.0
+			and sky_material.sky_horizon_color.r > sky_material.sky_horizon_color.b, "(sol %.0f° -> %.0f°)" % [noon_sun, -sun_light.rotation_degrees.x]) and all_ok
+	dn.t = 0.84
+	dn.apply()
+	all_ok = _check("à noite: céu escuro com estrelas, lua azulada e os postes acesos", sky_material.sky_top_color.v < 0.35
+			and sky_material.sky_cover_modulate.a > 0.9 and sun_light.light_color.b > sun_light.light_color.r and dn._lamps[0].visible
+			and dn._lamps[0].light_energy > 1.0 and dn.is_night()) and all_ok
+	all_ok = _check("a noite fica clara o bastante para brincar", environment.ambient_light_energy >= 0.75 and sun_light.light_energy > 0.2) and all_ok
+	dn.t = 0.99
+	dn.apply()
+	all_ok = _check("amanhecendo, as estrelas somem", sky_material.sky_cover_modulate.a < 0.4 and not dn.is_night()) and all_ok
+	dn.t = 0.3
+	open_menu("pausa")
+	await _wait(0.6)
+	all_ok = _check("com o jogo pausado as horas não andam", absf(dn.t - 0.3) < 0.0001) and all_ok
+	close_menus()
+	dn.t = 0.5
+	all_ok = _check("a hora vai para o salvamento", absf(float(story.snapshot().get("hora", -1.0)) - 0.5) < 0.001) and all_ok
+	_skip_to_festa_night()
+	await _wait(0.6)
+	all_ok = _check("a noite da festa é do Desfecho: o ciclo espera", ending.night and dn._held and absf(dn.t - 0.5) < 0.01
+			and sky_material.sky_top_color.is_equal_approx(Color("#0f1a4d"))) and all_ok
+	ending.post_game(false)
+	await _wait(0.6)
+	all_ok = _check("depois da festa o ciclo volta de manhã", not dn._held and absf(dn.t - DayNight.MORNING) < 0.01
+			and sky_material.sky_cover_modulate.a < 0.05) and all_ok
+	print("DIA-E-NOITE OK" if all_ok else "DIA-E-NOITE COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do ciclo (d01 a d06): a praça e o Morro de manhã, à tarde, no entardecer, à noite e amanhecendo, e a pista
+## de kart à noite com os postes. Uso: godot --path . -- --dia-e-noite-captura
+func _run_day_night_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	var dn := day_night
+	dn.running = false
+	var size := Vector2i(1280, 720)
+	var from := Vector3(-12, 26, 232)
+	var to := Vector3(0, 4, 150)
+	for spec in [[0.12, "d01_manha"], [0.45, "d02_tarde"], [0.685, "d03_entardecer"], [0.85, "d04_noite"], [0.985, "d05_amanhecendo"]]:
+		dn.t = spec[0]
+		dn.apply()
+		await _wait(0.8)
+		await _art_shot("res://tools/capturas/%s.png" % spec[1], size, from, to, 60.0)
+	dn.t = 0.85
+	dn.apply()
+	await _wait(0.8)
+	await _art_shot("res://tools/capturas/d06_pista_de_kart_a_noite.png", size, Vector3(70, 14, 10), Vector3(115, 0, -10), 60.0)
+	get_tree().quit()
+
+
+func _joy_hold(button: JoyButton, pressed: bool) -> void:
+	var ev := InputEventJoypadButton.new()
+	ev.device = 0
+	ev.button_index = button
+	ev.pressed = pressed
+	Input.parse_input_event(ev)
 
 
 ## Lojinha: a primeira moeda acende a seta dourada, o tapete abre o menu, comprar, equipar, melhorias, caixa de
@@ -5246,7 +5670,7 @@ func _run_parte2_test() -> void:
 	var f := parte2.faisca
 	all_ok = _check("escolher o Faísca: ele aparece no lugar do aventureiro, que fica guardado", parte2.faisca_ativo and f.visible
 			and f.camera.current and player.parked and not player.visible and player.collision_layer == 0
-			and not hearts_bar.visible and parte2.hud.visible) and all_ok
+			and hearts_bar.visible and not ammo_hud.visible and parte2.hud.visible) and all_ok
 	var p0 := f.global_position
 	_joy_axis(JOY_AXIS_LEFT_Y, -1.0)
 	await _wait(0.8)
@@ -5467,8 +5891,23 @@ func _run_parte2_test() -> void:
 			and player.global_position.distance_to(f.global_position) < 0.5 and hearts_bar.visible) and all_ok
 	await _stand(farol.modelo.porta() - FarolIlha.DIRECAO * 0.8)
 	await _wait(0.3)
-	all_ok = _check("com a Parte 2, as crianças recebem o aviso de trocar para o Faísca", message_label.text.begins_with("Só o Faísca")
-			and parte2.lugar == "ilha", "(%s)" % message_label.text) and all_ok
+	all_ok = _check("com a Parte 2, a criança na porta do farol vê a troca de personagem já no Faísca, com o aviso", menu_state == "escolha"
+			and character_menu.note.visible and get_viewport().gui_get_focus_owner() == _faisca_button and parte2.lugar == "ilha",
+			"(menu %s, aviso '%s')" % [menu_state, character_menu.note.text]) and all_ok
+	character_menu.back_button.pressed.emit()
+	await _wait(0.3)
+	all_ok = _check("Voltar ali fecha a troca e volta ao jogo, ainda com a menina", menu_state == "" and not get_tree().paused
+			and not parte2.faisca_ativo and player.character_name == "menina") and all_ok
+	await _stand(farol.modelo.porta() - FarolIlha.DIRECAO * 8.0)
+	await _wait(2.6)
+	await _stand(farol.modelo.porta() - FarolIlha.DIRECAO * 0.8)
+	await _wait(0.3)
+	_faisca_button.pressed.emit()
+	await _wait_until(func() -> bool: return parte2.lugar == "hub" and not parte2.busy(), 5.0)
+	all_ok = _check("escolhendo o Faísca ali, ele aparece na porta e entra no farol", parte2.faisca_ativo and parte2.lugar == "hub",
+			"(ativo %s, lugar %s)" % [parte2.faisca_ativo, parte2.lugar]) and all_ok
+	parte2.voltar_para_ilha()
+	await _wait_until(func() -> bool: return parte2.lugar == "ilha" and not parte2.busy(), 5.0)
 
 	# Carregar: quem salvou dentro do farol volta com o Faísca na porta dele.
 	parte2.restore({"aberta": true, "faisca": true, "lugar": "hub", "estrelas": saved.estrelas, "grandes": saved.grandes, "vaga_lumes": saved.vaga_lumes})

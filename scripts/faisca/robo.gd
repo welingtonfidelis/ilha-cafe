@@ -36,6 +36,18 @@ func _ready() -> void:
 	_montar()
 
 
+## Raiz do .glb do esqueleto, onde as animações ligam (o Player vestido de Faísca usa a árvore de animação dele).
+func rig() -> Node3D:
+	return _rig
+
+
+## Sentado no kart só aparece da cintura para cima: as pernas e as botas somem.
+func esconder_pernas() -> void:
+	for chave: String in _anexos:
+		if chave.contains("leg") or chave.contains("foot"):
+			(_anexos[chave] as Node3D).visible = false
+
+
 ## Volta para a pose de descanso do esqueleto, que é a T-pose.
 func tpose() -> void:
 	if _ap:
@@ -107,7 +119,7 @@ func _process(delta: float) -> void:
 
 func _player() -> AnimationPlayer:
 	if _ap == null:
-		_ap = AnimUtil.make_player(_rig, ["geral", "mov", "festa", "luta"])
+		_ap = AnimUtil.make_player(_rig, ["geral", "mov", "festa", "luta", "ferramentas"])
 		_ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	return _ap
 

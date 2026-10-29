@@ -23,6 +23,8 @@ var game: Node
 var cards := {}
 var back_button: Button
 var hint: Label
+## Aviso embaixo do título (a porta do farol pede o Faísca).
+var note: Label
 var _portraits := {}
 var _tags := {}
 
@@ -41,6 +43,12 @@ func build() -> void:
 	title.add_theme_font_size_override("font_size", 36)
 	title.add_theme_color_override("font_color", MenuKit.GOLD)
 	box.add_child(title)
+	note = Label.new()
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", 22)
+	note.add_theme_color_override("font_color", Color("#8ff3ff"))
+	note.visible = false
+	box.add_child(note)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 22)
@@ -64,13 +72,16 @@ func build() -> void:
 	box.add_child(hint)
 
 
-## Abre marcando quem está jogando (`current`, vazio no começo do jogo: marca o menino, sem etiqueta).
-func open(current: String, with_faisca: bool, can_go_back: bool) -> void:
+## Abre marcando quem está jogando (`current`, vazio no começo do jogo: marca o menino, sem etiqueta). Com
+## `suggest`, marca esse cartão e mostra `note` embaixo do título.
+func open(current: String, with_faisca: bool, can_go_back: bool, suggest := "", note_text := "") -> void:
 	cards.faisca.visible = with_faisca
 	back_button.visible = can_go_back
+	note.text = note_text
+	note.visible = note_text != ""
 	for k in _tags:
 		_tags[k].visible = k == current
-	var target: Button = cards.get(current, cards.menino)
+	var target: Button = cards.get(suggest if suggest != "" else current, cards.menino)
 	if not target.visible:
 		target = cards.menino
 	_link_focus(target)

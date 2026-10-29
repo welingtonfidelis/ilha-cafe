@@ -33,18 +33,21 @@ const CLAREIRA := Vector2(40, -180)
 const VILA := Vector2(115, -160)
 ## Pasto dos cavalos, a oeste da cidade.
 ## Atividades extras (pedido do usuário em 2026-10-26, pacotes do Kenney, CC0): pista de kart na campina a
-## leste do Morro (City Kit Roads, peças de 1 m ampliadas 8x) e pista de skate na campina a oeste (Mini Skate,
-## peças de 1 m ampliadas 5x). As áreas ficam sem árvores, pedras, arbustos e grama.
-const KART := Vector2(125, 15)
-const KART_TILE := 8.0
-const KART_W := 6
-const KART_L := 10
-## O piso das peças tem 0,16 m (o asfalto precisa ficar acima do chão da ilha, senão a grama aparece por cima).
-const KART_Y := 0.0
-## Pedaço da reta oeste sem a mureta de fora: é a entrada da pista, de frente para o box (a largada fica ali).
-const KART_ENTRY := 6
+## leste do Morro e pista de skate na campina a oeste (Mini Skate, peças de 1 m ampliadas 5x). As áreas ficam
+## sem árvores, pedras, arbustos e grama. A pista de kart foi refeita em 2026-10-29: um 8 com ponte, montado
+## aqui por código a partir do traçado de scripts/kart_circuit.gd (antes era um oval de peças do City Kit Roads).
 ## Vagas do box (o jogo põe os veículos nelas).
 const KART_SPOTS := 5
+## Box: metros para o lado de fora da reta da largada, a partir da abertura da mureta. O chão dele é aplainado
+## (KART_PAD_R) para os karts, os pneus e a caixa ficarem retos no pé do Morro.
+const KART_PADDOCK_OUT := 16.0
+const KART_PAD_R := 15.0
+## Rampa da abertura da mureta: do asfalto até o chão, para o kart subir na pista vindo do box.
+const KART_RAMP := 4.0
+const KART_BARRIER_H := 0.9
+const KART_BARRIER_W := 0.35
+## Espessura da ponte (o vão do cruzamento).
+const KART_DECK := 0.7
 ## A pista de skate fica perto da cidade (a noroeste, entrada virada para as ruas; pedido do usuário) e a
 ## fazenda foi para a campina a oeste do Morro, onde a pista ficava antes.
 const SKATE := Vector2(-98, 66)
@@ -147,8 +150,9 @@ func _init() -> void:
 	_morro()
 	_bridge_and_pier()
 	_forest()
+	_kart_mask()
 	_clear_activity_areas()
-	_kart_track()
+	_kart_circuit()
 	_skate_park()
 	_grass()
 	_markers()
@@ -190,6 +194,10 @@ func height(x: float, z: float) -> float:
 	if rv < VENTOS_R:
 		var tv := clampf((rv - VENTOS_TOP_R) / (VENTOS_R - VENTOS_TOP_R), 0.0, 1.0)
 		land = maxf(land, VENTOS_H * (0.5 + 0.5 * cos(PI * tv)))
+	# Box da pista de kart: chão plano (no pé do Morro ele já começava a subir).
+	var dp := Vector2(x, z).distance_to(_kart_pad2d())
+	if dp < KART_PAD_R + 10.0:
+		land = lerpf(land, 0.0, 1.0 - smoothstep(KART_PAD_R, KART_PAD_R + 10.0, dp))
 	# Cidade plana.
 	if z > CITY_Z:
 		land = 0.0
@@ -1165,18 +1173,26 @@ func _forest() -> void:
 
 # --- pista de kart e pista de skate -------------------------------------------
 
-func _activity_rects() -> Array[Rect2]:
-	var kart_size := Vector2(KART_W, KART_L) * KART_TILE
+## Pista de kart (com uma folga para os lados) e o box: grade de 4 m marcada uma vez (a conta da distância até a
+## pista é cara para cada tufo de grama e cada árvore).
+var _kart_cells := {}
+
+
+func _kart_mask() -> void:
+	for cx in range(15, 45):
+		for cz in range(-26, 26):
+			var c := Vector3(cx * 4.0 + 2.0, 0, cz * 4.0 + 2.0)
+			if KartCircuit.on_track(c, 7.0) or c.distance_to(_kart_paddock()) < 16.0:
+				_kart_cells[Vector2i(cx, cz)] = true
+
+
+func _skate_rect() -> Rect2:
 	var skate_size := Vector2.ONE * SKATE_N * SKATE_TILE
-	return [Rect2(KART - kart_size * 0.5 - Vector2(16, 6), kart_size + Vector2(22, 12)),
-		Rect2(SKATE - skate_size * 0.5 - Vector2(4, 4), skate_size + Vector2(8, 12))]
+	return Rect2(SKATE - skate_size * 0.5 - Vector2(4, 4), skate_size + Vector2(8, 12))
 
 
 func _in_activity(p: Vector2) -> bool:
-	for r in _activity_rects():
-		if r.has_point(p):
-			return true
-	return false
+	return _kart_cells.has(Vector2i(floori(p.x / 4.0), floori(p.y / 4.0))) or _skate_rect().has_point(p)
 
 
 ## Tira árvores, pedras e arbustos de dentro das áreas (depois do sorteio: não muda o resto da ilha).
@@ -1189,54 +1205,260 @@ func _clear_activity_areas() -> void:
 			n.free()
 
 
-## Pista oval de kart: retas de 48 m nas laterais, 16 m em cima e embaixo e curvas de 12 m de raio
-## (uns 200 m por volta). Peças do City Kit Roads: a peça "-barrier" é só a mureta, então cada pedaço leva
-## o asfalto (com colisão, o kart anda nele) e a mureta por cima. A mureta reta corre norte-sul, mas o asfalto
-## reto (e a faixa de pedestre) corre leste-oeste: ele vai girado 90° a mais. A curva grande (2x2) liga sul e
-## oeste e, girada +90°, leste e sul (asfalto e mureta da curva batem). O kart corre no sentido horário visto
-## de cima: sobe a reta da esquerda (para o norte), passa pela largada e faz a volta.
-func _kart_track() -> void:
+## Pista de kart em 8 (refeita em 2026-10-29, pedido do usuário; o traçado e as contas ficam em
+## scripts/kart_circuit.gd). Uma malha só, com cores por vértice:
+## - asfalto de 13 m, zebras vermelhas e brancas nas beiradas, faixa tracejada no meio e faixa quadriculada na
+##   largada;
+## - muretas vermelhas e brancas dos dois lados. Só a de fora da reta da largada tem uma abertura: a entrada
+##   que vem do box.
+## O asfalto nunca fica abaixo do chão. Onde ele sobe (a rampa, a ponte e a lombada), as paredes descem até o
+## chão. No cruzamento, a pista de cima vira ponte, sem parede embaixo, para a de baixo passar. A colisão é a
+## mesma malha (asfalto, muretas e paredes), salva em assets/terrain/ junto com o terreno.
+var _kart_heights := PackedFloat32Array()
+
+
+func _kart_circuit() -> void:
 	var group := _group(ilha, "PistaDeKart")
-	var o := Vector3(KART.x - KART_W * KART_TILE * 0.5, KART_Y, KART.y - KART_L * KART_TILE * 0.5)
-	var at := func(i: float, j: float) -> Vector3:
-		return o + Vector3(i * KART_TILE, 0, j * KART_TILE)
-	var piece := func(road: String, pos: Vector3, rot: float) -> void:
-		_prop(group, PISTA % road, pos, rot + (0.0 if road == "road-curve" else 90.0), KART_TILE, "malha")
-		var rail := road.replace("-crossing", "-straight") + "-barrier"
-		_prop(group, PISTA % rail, pos, rot, KART_TILE, "malha")
-	for spec in [[0, 0, 90.0], [KART_W - 2, 0, 0.0], [KART_W - 2, KART_L - 2, -90.0], [0, KART_L - 2, 180.0]]:
-		piece.call("road-curve", at.call(spec[0] + 1, spec[1] + 1), spec[2])
-	for j in range(2, KART_L - 2):
-		for i in [0, KART_W - 1]:
-			if i == 0 and j == KART_ENTRY:
-				# Entrada: só o asfalto e a mureta de dentro (a peça do pacote tem as duas muretas juntas).
-				var ep: Vector3 = at.call(i + 0.5, j + 0.5)
-				_prop(group, PISTA % "road-straight", ep, 90.0, KART_TILE, "malha")
-				_box_body(group, "MuretaDaEntrada", Vector3(0.18, 0.64, KART_TILE),
-					Transform3D(Basis.IDENTITY, ep + Vector3(0.47 * KART_TILE, 0.32, 0)), Color("#a6aad8"))
+	var sm: Array = KartCircuit.samples()
+	var n := sm.size()
+	var half := KartCircuit.WIDTH * 0.5
+	var outer := half + KART_BARRIER_W
+	# Altura do asfalto: a de projeto, nunca a menos de 12 cm do chão embaixo dele (o terreno tem grade de 4 m),
+	# suavizada para não dar degrau.
+	var floor_h := PackedFloat32Array()
+	var hs := PackedFloat32Array()
+	for i in n:
+		var c: Vector3 = sm[i].pos
+		var left := _kart_left(sm[i])
+		var top := -INF
+		for o in [-outer - 1.0, -half * 0.5, 0.0, half * 0.5, outer + 1.0]:
+			var q: Vector3 = c + left * o
+			top = maxf(top, ground(q.x, q.z))
+		floor_h.append(top + 0.12)
+		hs.append(maxf(c.y, top + 0.12))
+	for _k in 3:
+		var smooth := hs.duplicate()
+		for i in n:
+			var acc := 0.0
+			for d in range(-5, 6):
+				acc += hs[(i + d + n) % n]
+			smooth[i] = maxf(acc / 11.0, floor_h[i])
+		hs = smooth
+	_kart_heights = hs
+	# Vão da ponte: os pedaços com outra parte da pista passando por baixo.
+	var span: Array[bool] = []
+	for i in n:
+		var over := false
+		var pi: Vector3 = sm[i].pos
+		for j in n:
+			var gap := absi(i - j)
+			if mini(gap, n - gap) < 40:
 				continue
-			# A faixa de pedestre da reta da esquerda vira a linha de chegada.
-			piece.call("road-crossing" if i == 0 and j == 5 else "road-straight", at.call(i + 0.5, j + 0.5), 0.0)
-	for i in range(2, KART_W - 2):
-		for j in [0, KART_L - 1]:
-			piece.call("road-straight", at.call(i + 0.5, j + 0.5), 90.0)
-	# Largada: arco quadriculado (o do Watercraft Kit) em cima da faixa da reta da esquerda.
-	var start: Vector3 = at.call(0.5, 5.5)
-	_prop(group, "res://assets/barcos/gate-finish.glb", Vector3(start.x, 0, start.z), 0.0, 1.35)
-	# Postes de luz por fora das retas e cones nas curvas, por dentro.
-	for j in [2.5, 5.0, 7.5]:
-		for side in [[-0.15, 90.0], [KART_W + 0.15, -90.0]]:
-			var lp: Vector3 = at.call(side[0], j)
-			_prop(group, PISTA % "light-curved", Vector3(lp.x, 0, lp.z), side[1], 7.0, "tronco")
-	for spec in [[2.1, 2.1], [KART_W - 2.1, 2.1], [2.1, KART_L - 2.1], [KART_W - 2.1, KART_L - 2.1]]:
-		for k in 3:
-			var cp: Vector3 = at.call(spec[0] + (k - 1) * 0.25, spec[1] + (1 - k) * 0.25)
-			_prop(group, CARROS % "cone", Vector3(cp.x, 0, cp.z), k * 30.0, 2.2)
-	# Box (paddock) a oeste da pista: pneus e caixas (os veículos o jogo põe nas vagas, marcadores "Vagas").
-	var pit: Vector3 = at.call(-1.4, 6.5)
+			var pj: Vector3 = sm[j].pos
+			if Vector2(pi.x - pj.x, pi.z - pj.z).length() < outer + 3.0 and hs[j] < hs[i] - 2.0:
+				over = true
+				break
+		span.append(over)
+	var start_i: int = sm.find(KartCircuit.from_start(0.0))
+	var pad_side := _kart_paddock_side()
+	var gap_a := posmod(start_i - int(KartCircuit.ENTRY_FROM), n)
+	var gap_b := posmod(start_i - int(KartCircuit.ENTRY_TO), n)
+	var in_gap := func(i: int) -> bool:
+		return posmod(i - gap_a, n) <= posmod(gap_b - gap_a, n)
+
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var faces := PackedVector3Array()
+	var asphalt := Color("#555b6e")
+	var red := Color("#e8505b")
+	var white := Color("#f3f1ea")
+	var wall := Color("#d9cbb0")
+	var deck := Color("#b8b0c8")
+	for i in n:
+		var j := (i + 1) % n
+		var ci: Vector3 = sm[i].pos
+		var cj: Vector3 = sm[j].pos
+		var li := _kart_left(sm[i])
+		var lj := _kart_left(sm[j])
+		var yi := hs[i]
+		var yj := hs[j]
+		var at := func(c: Vector3, l: Vector3, o: float, y: float) -> Vector3:
+			return Vector3(c.x, 0, c.z) + l * o + Vector3.UP * y
+		# Asfalto.
+		_kart_quad(st, faces, at.call(ci, li, half, yi), at.call(ci, li, -half, yi), at.call(cj, lj, -half, yj),
+				at.call(cj, lj, half, yj), Vector3.UP, asphalt, true)
+		# Zebras, faixa do meio e quadriculado da largada (só pintura, sem colisão).
+		var zebra := red if (i / 2) % 2 == 0 else white
+		for sgn in [1.0, -1.0]:
+			_kart_quad(st, faces, at.call(ci, li, sgn * half, yi + 0.02), at.call(ci, li, sgn * (half - 0.9), yi + 0.02),
+					at.call(cj, lj, sgn * (half - 0.9), yj + 0.02), at.call(cj, lj, sgn * half, yj + 0.02), Vector3.UP, zebra, false)
+		var near_start := posmod(i - start_i, n) < 2
+		if near_start:
+			for k in int(KartCircuit.WIDTH):
+				var o0 := -half + k
+				var col := white if (k + posmod(i - start_i, n)) % 2 == 0 else Color("#22242e")
+				_kart_quad(st, faces, at.call(ci, li, o0, yi + 0.025), at.call(ci, li, o0 + 1.0, yi + 0.025),
+						at.call(cj, lj, o0 + 1.0, yj + 0.025), at.call(cj, lj, o0, yj + 0.025), Vector3.UP, col, false)
+		elif i % 6 < 3:
+			_kart_quad(st, faces, at.call(ci, li, 0.15, yi + 0.015), at.call(ci, li, -0.15, yi + 0.015),
+					at.call(cj, lj, -0.15, yj + 0.015), at.call(cj, lj, 0.15, yj + 0.015), Vector3.UP, white, false)
+		# Muretas e paredes dos dois lados.
+		var block := red if (i / 3) % 2 == 0 else white
+		for sgn in [1.0, -1.0]:
+			var gap: bool = sgn == pad_side and in_gap.call(i)
+			var out: float = sgn * outer
+			var inn: float = sgn * half
+			var face_out: Vector3 = li * sgn
+			if not gap:
+				# Mureta: dentro, em cima e fora.
+				_kart_quad(st, faces, at.call(ci, li, inn, yi), at.call(ci, li, inn, yi + KART_BARRIER_H),
+						at.call(cj, lj, inn, yj + KART_BARRIER_H), at.call(cj, lj, inn, yj), -face_out, block, true)
+				_kart_quad(st, faces, at.call(ci, li, inn, yi + KART_BARRIER_H), at.call(ci, li, out, yi + KART_BARRIER_H),
+						at.call(cj, lj, out, yj + KART_BARRIER_H), at.call(cj, lj, inn, yj + KART_BARRIER_H), Vector3.UP, block, true)
+				_kart_quad(st, faces, at.call(ci, li, out, yi), at.call(ci, li, out, yi + KART_BARRIER_H),
+						at.call(cj, lj, out, yj + KART_BARRIER_H), at.call(cj, lj, out, yj), face_out, block, true)
+				# Ponta da mureta na abertura da entrada.
+				if sgn == pad_side and (in_gap.call(j) or in_gap.call((i - 1 + n) % n)):
+					var cap_c: Vector3 = cj if in_gap.call(j) else ci
+					var cap_l: Vector3 = lj if in_gap.call(j) else li
+					var cap_y: float = yj if in_gap.call(j) else yi
+					var cap_d: Vector3 = sm[j].dir if in_gap.call(j) else -sm[i].dir
+					_kart_quad(st, faces, at.call(cap_c, cap_l, inn, cap_y), at.call(cap_c, cap_l, out, cap_y),
+							at.call(cap_c, cap_l, out, cap_y + KART_BARRIER_H), at.call(cap_c, cap_l, inn, cap_y + KART_BARRIER_H), cap_d, block, true)
+			if gap:
+				# Rampa da entrada: do asfalto até o chão do box, sem degrau (com os lados fechados nas pontas).
+				var gi := ground(at.call(ci, li, sgn * (half + KART_RAMP), 0.0).x, at.call(ci, li, sgn * (half + KART_RAMP), 0.0).z) + 0.03
+				var gj := ground(at.call(cj, lj, sgn * (half + KART_RAMP), 0.0).x, at.call(cj, lj, sgn * (half + KART_RAMP), 0.0).z) + 0.03
+				_kart_quad(st, faces, at.call(ci, li, inn, yi), at.call(ci, li, sgn * (half + KART_RAMP), gi),
+						at.call(cj, lj, sgn * (half + KART_RAMP), gj), at.call(cj, lj, inn, yj), Vector3.UP, asphalt, true)
+				# Lados nas pontas: no começo (antes de i não tem rampa) e no fim (j já está fora da abertura).
+				for end in [[i, (i - 1 + n) % n, -1.0], [j, j, 1.0]]:
+					if not in_gap.call(end[1]):
+						var ec: Vector3 = sm[end[0]].pos
+						var el := _kart_left(sm[end[0]])
+						var ey: float = hs[end[0]]
+						var eg: float = gi if end[0] == i else gj
+						var ed: Vector3 = sm[end[0]].dir * end[2]
+						_kart_quad(st, faces, at.call(ec, el, inn, ey), at.call(ec, el, inn, eg - 0.3),
+								at.call(ec, el, sgn * (half + KART_RAMP), eg - 0.3), at.call(ec, el, sgn * (half + KART_RAMP), eg), ed, wall, true)
+				continue
+			# Parede de fora até o chão (ou, na ponte, a borda da laje).
+			var bi: float = yi - KART_DECK if span[i] else minf(ground(at.call(ci, li, out, 0.0).x, at.call(ci, li, out, 0.0).z) - 0.3, yi - 0.05)
+			var bj: float = yj - KART_DECK if span[i] else minf(ground(at.call(cj, lj, out, 0.0).x, at.call(cj, lj, out, 0.0).z) - 0.3, yj - 0.05)
+			_kart_quad(st, faces, at.call(ci, li, out, bi), at.call(ci, li, out, yi), at.call(cj, lj, out, yj),
+					at.call(cj, lj, out, bj), face_out, deck if span[i] else wall, true)
+		if span[i]:
+			# Embaixo da ponte.
+			_kart_quad(st, faces, at.call(ci, li, outer, yi - KART_DECK), at.call(ci, li, -outer, yi - KART_DECK),
+					at.call(cj, lj, -outer, yj - KART_DECK), at.call(cj, lj, outer, yj - KART_DECK), Vector3.DOWN, deck, true)
+		if span[i] != span[j]:
+			# Cabeceira da ponte: a parede de baixo da pista termina aqui, virada para o vão.
+			var hc: Vector3 = cj if span[i] else ci
+			var hl: Vector3 = lj if span[i] else li
+			var hy: float = yj if span[i] else yi
+			var toward: Vector3 = -sm[j].dir if span[i] else sm[i].dir
+			var g0 := minf(ground(hc.x, hc.z), ground(at.call(hc, hl, outer, 0.0).x, at.call(hc, hl, outer, 0.0).z)) - 0.3
+			_kart_quad(st, faces, at.call(hc, hl, outer, g0), at.call(hc, hl, -outer, g0), at.call(hc, hl, -outer, hy - KART_DECK),
+					at.call(hc, hl, outer, hy - KART_DECK), toward, wall, true)
+
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.vertex_color_is_srgb = true
+	mat.roughness = 0.85
+	st.set_material(mat)
+	var mesh := st.commit()
+	ResourceSaver.save(mesh, "res://assets/terrain/pista_kart.res")
+	mesh.take_over_path("res://assets/terrain/pista_kart.res")
+	var shape := ConcavePolygonShape3D.new()
+	shape.backface_collision = true
+	shape.set_faces(faces)
+	ResourceSaver.save(shape, "res://assets/terrain/pista_kart_colisao.res")
+	shape.take_over_path("res://assets/terrain/pista_kart_colisao.res")
+	var body := StaticBody3D.new()
+	body.name = "Pista"
+	_add(group, body)
+	var mi := MeshInstance3D.new()
+	mi.name = "Malha"
+	mi.mesh = mesh
+	_add(body, mi)
+	var cs := CollisionShape3D.new()
+	cs.name = "Colisao"
+	cs.shape = shape
+	_add(body, cs)
+
+	# Arco de chegada (o do Watercraft Kit) em cima da faixa quadriculada.
+	var start: Dictionary = sm[start_i]
+	_prop(group, "res://assets/barcos/gate-finish.glb", Vector3(start.pos.x, hs[start_i], start.pos.z),
+			rad_to_deg(atan2(start.dir.x, start.dir.z)), 2.3)
+	# Postes de luz por fora, onde a pista está no chão (fora da ponte e da abertura).
+	for i in range(8, n, 34):
+		var sgn := 1.0 if (i / 34) % 2 == 0 else -1.0
+		if span[i] or (sgn == pad_side and in_gap.call(i)):
+			continue
+		var l := _kart_left(sm[i]) * sgn
+		var lp: Vector3 = sm[i].pos + l * (outer + 1.4)
+		var gy := ground(lp.x, lp.z)
+		if hs[i] - gy > 0.8:
+			continue
+		_prop(group, PISTA % "light-curved", Vector3(lp.x, gy, lp.z), rad_to_deg(atan2(-l.x, -l.z)), 7.0, "tronco")
+	# Box: pneus empilhados e uma caixa atrás das vagas, cada um no chão do lugar dele.
+	var box := _kart_box()
+	var back: Vector3 = box.pad - box.to_track * 6.0
+	var tyres: Vector3 = back - box.along * 3.0
 	for k in 3:
-		_prop(group, CARROS % "wheel-racing", Vector3(pit.x - 6.0, 0.3 * 1.6 + k * 0.62, pit.z - 3.0), 0.0, 1.6)
-	_prop(group, CARROS % "box", Vector3(pit.x - 6.0, 0, pit.z - 0.5), 20.0, 1.8, "caixa")
+		_prop(group, CARROS % "wheel-racing", Vector3(tyres.x, ground(tyres.x, tyres.z) + 0.3 * 1.6 + k * 0.62, tyres.z), 0.0, 1.6)
+	var crate: Vector3 = back + box.along * 2.5
+	_prop(group, CARROS % "box", Vector3(crate.x, ground(crate.x, crate.z), crate.z), 20.0, 1.8, "caixa")
+
+
+## Lado esquerdo de quem corre (no plano).
+func _kart_left(sample: Dictionary) -> Vector3:
+	var d: Vector3 = sample.dir
+	return Vector3(d.z, 0, -d.x)
+
+
+## Lado da reta da largada onde fica o box (o do Morro, a oeste): +1 é a esquerda de quem corre.
+func _kart_paddock_side() -> float:
+	return 1.0 if _kart_left(KartCircuit.from_start(0.0)).x < 0.0 else -1.0
+
+
+## Box: o meio dele, a direção da reta e para onde fica a pista.
+func _kart_box() -> Dictionary:
+	var e := KartCircuit.from_start(-(KartCircuit.ENTRY_FROM + KartCircuit.ENTRY_TO) * 0.5)
+	var side := _kart_left(e) * _kart_paddock_side()
+	var p: Vector3 = e.pos + side * KART_PADDOCK_OUT
+	return {"pad": Vector3(p.x, 0, p.z), "along": e.dir, "to_track": -side}
+
+
+func _kart_paddock() -> Vector3:
+	return _kart_box().pad
+
+
+var _pad2d := Vector2.INF
+
+
+func _kart_pad2d() -> Vector2:
+	if _pad2d == Vector2.INF:
+		var p := _kart_paddock()
+		_pad2d = Vector2(p.x, p.z)
+	return _pad2d
+
+
+## Quadrado a-b-c-d com a frente virada para `normal` (a ordem dos vértices é acertada aqui). `solid` entra
+## na colisão.
+func _kart_quad(st: SurfaceTool, faces: PackedVector3Array, a: Vector3, b: Vector3, c: Vector3, d: Vector3,
+		normal: Vector3, color: Color, solid: bool) -> void:
+	# Na Godot a frente é a do sentido horário: o produto (b - a) x (c - a) aponta para trás.
+	if (b - a).cross(c - a).dot(normal) > 0.0:
+		var t := b
+		b = d
+		d = t
+	for v in [a, b, c, a, c, d]:
+		st.set_color(color)
+		st.set_normal(normal)
+		st.add_vertex(v)
+	if solid:
+		faces.append_array(PackedVector3Array([a, b, c, a, c, d]))
 
 
 ## Pista de skate: chão de concreto, half-pipe de 4 m (dois quarter-pipes de frente um para o outro), rampas,
@@ -1388,16 +1610,21 @@ func _markers() -> void:
 	var fun := _group(markers, "Diversao")
 	var pc0 := Vector2(PLAZA.position.x + 20, PLAZA.position.y + 20)
 	_marker(fun, "TiroAoAlvo", pc0.x - 4.0, pc0.y + 9.4)
-	# Kart: onde o aventureiro pega o kart (no box) e a posição de largada (logo depois do arco, virado para o norte).
-	var kart_o := Vector2(KART.x - KART_W * KART_TILE * 0.5, KART.y - KART_L * KART_TILE * 0.5)
-	_marker(fun, "Kart", kart_o.x - 1.4 * KART_TILE + 1.0, kart_o.y + 6.5 * KART_TILE)
-	var grid := _marker(fun, "KartLargada", kart_o.x + 0.5 * KART_TILE, kart_o.y + (KART_ENTRY + 0.6) * KART_TILE)
-	grid.rotation_degrees.y = 180.0
-	# Vagas do box, viradas para a pista (leste): o veículo do Car Kit olha para +Z, girado 90° olha para +X.
+	# Kart: o box (para onde o aventureiro vai ao descer dentro da pista), a largada (logo depois da faixa
+	# quadriculada, virada para a frente da pista) e as vagas, enfileiradas ao longo da reta e viradas para a
+	# abertura da mureta. O veículo do Car Kit olha para +Z.
+	var box := _kart_box()
+	_marker(fun, "Kart", box.pad.x, box.pad.z)
+	var sm: Array = KartCircuit.samples()
+	var st: Dictionary = KartCircuit.from_start(4.0)
+	var grid := _marker(fun, "KartLargada", st.pos.x, st.pos.z)
+	grid.position.y = _kart_heights[sm.find(st)] + 0.1
+	grid.rotation.y = atan2(st.dir.x, st.dir.z)
 	var spots := _group(fun, "Vagas")
 	for k in KART_SPOTS:
-		var v := _marker(spots, "Vaga%d" % (k + 1), kart_o.x - 1.4 * KART_TILE - 2.5, kart_o.y + 6.5 * KART_TILE - 7.0 + k * 3.8)
-		v.rotation_degrees.y = 90.0
+		var vp: Vector3 = box.pad + box.along * ((k - 2) * 4.2)
+		var v := _marker(spots, "Vaga%d" % (k + 1), vp.x, vp.z)
+		v.rotation.y = atan2(box.to_track.x, box.to_track.z)
 	_marker(fun, "Skate", SKATE.x, SKATE.y + SKATE_N * SKATE_TILE * 0.5 + 3.0)
 	_pasture()
 

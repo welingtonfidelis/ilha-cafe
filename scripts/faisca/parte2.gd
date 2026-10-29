@@ -52,6 +52,9 @@ var rapido := false
 
 var _em_cena := false
 var _trocando := false
+## Kart ou skate com o Faísca: a criança guardada sai vestida de Faísca (Player.set_robo_skin) e ele some até
+## ela descer (vestir_crianca).
+var _vestida := false
 var _guardado := {}
 var _ceu_da_ilha: WorldEnvironment
 var _controle_antes_do_menu := true
@@ -59,6 +62,9 @@ var _controle_antes_do_menu := true
 
 func setup(p_game: Node) -> void:
 	game = p_game
+	var kid: Player = game.player
+	kid.dizzy_started.connect(_tonto_na_ilha)
+	kid.respawned.connect(_voltou_na_bandeira)
 	farol = FarolIlha.new()
 	farol.name = "Farol"
 	farol.parte2 = self
@@ -69,10 +75,13 @@ func setup(p_game: Node) -> void:
 		vovo.lines.append(VOVO_FALA)
 
 
-func _physics_process(_delta: float) -> void:
-	# O aventureiro guardado acompanha o Faísca pela ilha.
-	if faisca_ativo and lugar == "ilha" and not _em_cena and is_instance_valid(faisca):
+func _physics_process(delta: float) -> void:
+	# O aventureiro guardado acompanha o Faísca pela ilha. Parado, a física dele não corre: o tempo invulnerável
+	# depois de um golpe (os corações são divididos) anda aqui.
+	if faisca_ativo and lugar == "ilha" and not _em_cena and not _vestida and is_instance_valid(faisca):
 		game.player.global_position = faisca.global_position
+		game.player.ride_tick(delta)
+		faisca.ponto_retorno = game.current_checkpoint.spawn_position()
 
 
 ## Cena ou troca de lugar em andamento (a pausa espera).
@@ -136,12 +145,15 @@ func usar_faisca(ligar: bool) -> void:
 		hud.show()
 	else:
 		faisca_ativo = false
+		_ligar_corpo_dividido(false)
 		_guardar_aventureiro(false)
 		kid.global_position = faisca.global_position
 		kid.set_yaw(faisca.yaw)
 		_esconder_faisca()
 		hud.hide()
 	game.set_hud_visible(not ligar)
+	if ligar:
+		_hud_da_ilha()
 
 
 func _preparar_na_ilha() -> void:
@@ -153,6 +165,75 @@ func _preparar_na_ilha() -> void:
 	hud.mostrar_vida(faisca.vida)
 	hud.mostrar_estrelas(total_estrelas())
 	hud.mostrar_vaga_lumes(0, 0)
+	_ligar_corpo_dividido(true)
+
+
+## Na ilha o Faísca e a criança guardada dividem os corações (pedido do usuário em 2026-10-29: o Faísca luta na
+## Festa sem fim): o golpe que chega na criança tira o coração dela e empurra o Faísca, e o tonto dela vale para
+## ele. No farol e nas fases ele volta a ter os três corações dele.
+func _ligar_corpo_dividido(ligar: bool) -> void:
+	var kid: Player = game.player
+	kid.stand_in = faisca if ligar else null
+	faisca.crianca = kid if ligar else null
+	hud.mostrar_coracoes(not ligar)
+	if ligar:
+		_hud_da_ilha()
+	else:
+		game.set_hud_visible(not faisca_ativo)
+
+
+## Com o Faísca na ilha, da interface das crianças ficam os corações (divididos) e a faixa de cima (ondas da Festa
+## sem fim, corrida e sessão de skate); mira, blasters e moedas somem.
+func _hud_da_ilha() -> void:
+	game.set_hud_visible(false)
+	game.hearts_bar.visible = true
+	game.wave_label.visible = true
+
+
+## A criança guardada ficou tonta (o Faísca levou o último golpe na ilha): ele solta fumacinha e fica parado até
+## os dois voltarem na bandeira.
+func _tonto_na_ilha() -> void:
+	if faisca_ativo and lugar == "ilha" and not _vestida and is_instance_valid(faisca):
+		faisca.controle_ligado = false
+		faisca.velocity = Vector3.ZERO
+		faisca._fumacinha()
+
+
+func _voltou_na_bandeira() -> void:
+	if faisca_ativo and lugar == "ilha" and not _vestida and is_instance_valid(faisca):
+		faisca.teleportar(game.player.global_position + Vector3.UP * 0.1)
+		faisca.controle_ligado = true
+
+
+## Kart e skate com o Faísca (pedido do usuário em 2026-10-29): quem anda é a criança guardada, vestida de
+## Faísca (o mesmo esqueleto do KayKit, então o volante e o skate funcionam iguais), e ele some até ela descer.
+## Desligar põe o Faísca de volta onde ela desceu.
+func vestir_crianca(ligar: bool) -> void:
+	if ligar == _vestida or not faisca_ativo or lugar != "ilha":
+		return
+	var kid: Player = game.player
+	_vestida = ligar
+	if ligar:
+		kid.global_position = faisca.global_position
+		kid.set_yaw(faisca.yaw)
+		kid.set_robo_skin(true)
+		_esconder_faisca()
+		_guardar_aventureiro(false)
+		kid.stand_in = null
+	else:
+		kid.set_robo_skin(false)
+		faisca.teleportar(kid.global_position + Vector3.UP * 0.1)
+		faisca.yaw = kid.get_yaw()
+		faisca.visual.rotation.y = faisca.yaw + PI
+		_mostrar_faisca()
+		_guardar_aventureiro(true)
+		kid.stand_in = faisca
+		faisca.controle_ligado = not kid.dizzy
+		_hud_da_ilha()
+
+
+func vestida() -> bool:
+	return _vestida
 
 
 func _guardar_aventureiro(guardar: bool) -> void:
@@ -236,6 +317,7 @@ func entrar_no_farol() -> void:
 	faisca.controle_ligado = false
 	await _escurecer(1.0, 0.35)
 	_ligar_ilha(false)
+	_ligar_corpo_dividido(false)
 	_montar_hub("")
 	lugar = "hub"
 	_salvar()

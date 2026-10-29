@@ -185,14 +185,23 @@ var _blink_spot := Vector3.ZERO
 var _blink_mark: MeshInstance3D
 ## Contorna o pilar da lanterna, troncos e pedras em vez de empacar empurrando de frente.
 var _detour := Detour.new()
+## Golpes do Faísca (pedido do usuário em 2026-10-29: ele luta na Festa sem fim): soco, giro, pisão e laser
+## chamam receber_golpe, como nas Bolotas das fases. Desmontado ou dormindo não conta como alvo.
+var raio_golpe := 0.7
+var derrotado: bool:
+	get:
+		return state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO, State.AFUNDANDO, State.SUMIDO]
+var _last_punch := -10.0
 var _want := Vector3.ZERO
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
 
 
 func _ready() -> void:
+	add_to_group(Alvo.GRUPO)
 	config = TYPES[type_name]
 	health = config.health
 	_size = config.get("size", 1.0)
+	raio_golpe = 0.7 * _size
 	collision_layer = 1 << 2
 	collision_mask = 1 | (1 << 1) | (1 << 2)
 	var shape := CollisionShape3D.new()
@@ -849,6 +858,22 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 			Sfx.play_at(get_parent(), "escudo", point)
 			return
 	_apply_damage(amount, point, hb.multiplier > 1.0)
+
+
+## Golpe do Faísca: cada ponto do golpe vale 1,5 de dano (um soco tira mais que um tiro da Paçoca, mas o soco
+## é mais lento e precisa chegar perto). O escudo não segura; o empurrão não mexe nos pesados. Um instante de
+## imunidade dá o ritmo do laser, que encosta em todo quadro.
+func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
+	var now := Time.get_ticks_msec() / 1000.0
+	if derrotado or now - _last_punch < 0.3:
+		return false
+	_last_punch = now
+	if not config.get("heavy", false):
+		var away := global_position - de
+		away.y = 0.0
+		velocity += (away.normalized() if away.length() > 0.05 else Vector3.ZERO) * forca * 0.6 + Vector3.UP * 2.0
+	_apply_damage(dano * 1.5, global_position + Vector3.UP * 1.6 * _size, false)
+	return true
 
 
 ## Explosão da granada: o escudo não segura, e o dano já vem com a distância descontada.

@@ -115,7 +115,7 @@ func _physics_process(delta: float) -> void:
 	match state:
 		"a_pe":
 			var inside := absf(player.global_position.x - center.x) < HALF and absf(player.global_position.z - center.z) < HALF
-			near = board.visible and player.visible and not player.dizzy and not player.skating \
+			near = board.visible and (player.visible or game.faisca_on_island()) and not player.dizzy and not player.skating \
 					and (player.global_position.distance_to(board.global_position) < PICK_RADIUS or (inside and board_at_home()))
 			# Skate largado pela ilha: longe dele, volta para a entrada da pista.
 			if board.visible and not board_at_home() and player.global_position.distance_to(board.global_position) > RETURN_DISTANCE:
@@ -152,6 +152,9 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Sobe no skate (o do chão some e aparece debaixo dos pés).
 func pick() -> void:
 	var player: Player = game.player
+	# O Faísca também anda de skate: a criança guardada sobe vestida dele.
+	if game.faisca_on_island():
+		game.parte2.vestir_crianca(true)
 	board.visible = false
 	player.start_skating()
 	game.crosshair.visible = false
@@ -170,6 +173,8 @@ func _drop(go_home: bool) -> void:
 	player.stop_skating()
 	game.crosshair.visible = true
 	game.ammo_hud.visible = true
+	if game.parte2 and game.parte2.vestida():
+		game.parte2.vestir_crianca(false)
 	if state == "sessao":
 		game.show_message("Sessão cancelada", Color(1, 1, 1, 0.9), 1.4)
 	state = "a_pe"

@@ -1,11 +1,12 @@
 class_name KartRace
 extends Node3D
-## Box da pista de kart, a leste do Morro (pedidos do usuário em 2026-10-26). Os veículos ficam estacionados
-## nas vagas do box, vazios: chegar perto de um e apertar B (ou E) entra e já sai dirigindo (sem contagem).
-## Dá para passear pela ilha inteira com ele. A corrida começa quando o veículo entra na pista pela abertura
-## marcada "LARGADA" (a reta oeste, de frente para o box), vindo de fora da pista: o carro é posto na largada,
-## contagem 3, 2, 1, "Já!" e três voltas contra o relógio (cada volta só vale passando pelas três marcas do
-## meio das retas). Na chegada mostra o tempo, guarda o recorde e dá moedas (15, mais 10 com recorde novo).
+## Box da pista de kart, a leste do Morro (pedidos do usuário em 2026-10-26; a pista virou um 8 com ponte em
+## 2026-10-29, scripts/kart_circuit.gd). Os veículos ficam estacionados nas vagas do box, vazios: chegar perto
+## de um e apertar B (ou E) entra e já sai dirigindo (sem contagem). Dá para passear pela ilha inteira com ele.
+## A corrida começa quando o veículo entra na pista pela abertura da mureta marcada "LARGADA" (na reta da
+## largada, de frente para o box), vindo de fora da pista: o carro é posto na largada, contagem 3, 2, 1, "Já!"
+## e três voltas contra o relógio (cada volta só vale passando pelo alto da volta norte, pela ponte e pelo
+## fundo da volta sul). Na chegada mostra o tempo, guarda o recorde e dá moedas (15, mais 10 com recorde novo).
 ## Descer (B ou E): dentro da pista, o aventureiro vai para fora dela e o veículo volta para a vaga; fora da
 ## pista, o veículo fica onde parou e volta sozinho para a vaga quando o aventureiro se afasta 50 m. Cair no
 ## mar também manda o veículo de volta. Dirigindo, os esqueletos atacam do mesmo jeito: cada golpe tira um
@@ -13,7 +14,8 @@ extends Node3D
 ## vaga.
 
 const LAPS := 3
-const GATE_RADIUS := 7.0
+## As marcas valem em toda a largura da pista.
+const GATE_RADIUS := 9.0
 const COINS := 15
 const RECORD_BONUS := 10
 ## Distância para entrar num veículo estacionado.
@@ -21,13 +23,6 @@ const ENTER_RADIUS := 3.4
 ## Longe assim do veículo deixado pela ilha, ele volta para a vaga.
 const RETURN_DISTANCE := 50.0
 const SEA_LEVEL := -0.6
-## A pista (igual a KART, KART_TILE, KART_W, KART_L e KART_ENTRY de tools/gerar_ilha.gd): oval de 6 x 10
-## pedaços de 8 m; a entrada é o pedaço 6 da reta oeste.
-const CENTER := Vector2(125, 15)
-const TILE := 8.0
-const W := 6
-const L := 10
-const ENTRY := 6
 ## piloto: onde o aventureiro senta (y é a altura do banco, onde fica a cintura); piloto_escala: tamanho dele.
 const KART := {"modelo": "kart-oopi", "escala": 1.6, "piloto": Vector3(0, 0.42, -0.15), "piloto_escala": 0.75, "velocidade": 17.0}
 ## Um por vaga: [nome, modelo base, cor].
@@ -46,8 +41,13 @@ var paddock := Vector3.ZERO
 var start := Transform3D.IDENTITY
 ## Vagas do box (marcadores "Vagas").
 var spots: Array[Transform3D] = []
-## Marcas na ordem da volta (meio da reta de cima, da direita, de baixo) e a linha de chegada.
+## Marcas na ordem da volta (alto da volta norte, ponte, fundo da volta sul) e a linha de chegada, na altura de
+## projeto do asfalto (a da ponte só vale em cima dela).
 var gates: Array[Vector3] = []
+## Meio da abertura da mureta (a entrada da corrida), na pista.
+var entry_center := Vector3.ZERO
+## Para fora da pista, a partir da abertura (o lado do box).
+var entry_out := Vector3.ZERO
 var vehicles: Array[Kart] = []
 ## Veículo que o aventureiro está dirigindo (nulo a pé).
 var kart: Kart
@@ -60,15 +60,16 @@ var _next_gate := 0
 var _count := 0.0
 var _armed := false
 var _prompt: Label3D
-var _entry_zone := Rect2()
 
 
 func _ready() -> void:
-	var o := CENTER - Vector2(W, L) * TILE * 0.5
-	for g in [Vector2(W * 0.5, 0.5), Vector2(W - 0.5, L * 0.5), Vector2(W * 0.5, L - 0.5), Vector2(0.5, 5.5)]:
-		var p: Vector2 = o + g * TILE
-		gates.append(Vector3(p.x, 0, p.y))
-	_entry_zone = Rect2(o + Vector2(0, ENTRY) * TILE, Vector2(TILE, TILE))
+	for k in KartCircuit.GATES:
+		gates.append(KartCircuit.at_point(k).pos)
+	gates.append(KartCircuit.from_start(0.0).pos)
+	var e := KartCircuit.from_start(-(KartCircuit.ENTRY_FROM + KartCircuit.ENTRY_TO) * 0.5)
+	entry_center = e.pos
+	var left := Vector3(e.dir.z, 0, -e.dir.x)
+	entry_out = left if (paddock - entry_center).dot(left) > 0.0 else -left
 	for k in mini(spots.size(), GARAGE.size()):
 		var spec: Array = GARAGE[k]
 		var base: Dictionary = spec[1]
@@ -107,15 +108,15 @@ func _ready() -> void:
 
 ## A abertura da pista: faixa dourada no asfalto e a placa "LARGADA" em cima.
 func _build_entry_mark() -> void:
-	var c := _entry_zone.get_center()
 	var stripe := MeshInstance3D.new()
 	var box := BoxMesh.new()
-	box.size = Vector3(TILE - 0.6, 0.04, TILE - 0.6)
+	box.size = Vector3(KartCircuit.WIDTH - 1.0, 0.04, KartCircuit.ENTRY_FROM - KartCircuit.ENTRY_TO)
 	box.material = Defense.glow(Color(1.0, 0.82, 0.25, 0.32))
 	stripe.mesh = box
 	stripe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(stripe)
-	stripe.global_position = Vector3(c.x, 0.2, c.y)
+	stripe.global_position = entry_center + Vector3.UP * 0.06
+	stripe.look_at(stripe.global_position + Vector3(entry_out.z, 0, -entry_out.x), Vector3.UP)
 	var sign := Label3D.new()
 	sign.text = "LARGADA\nentre aqui para correr"
 	sign.font_size = 80
@@ -125,7 +126,7 @@ func _build_entry_mark() -> void:
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.pixel_size = 0.008
 	add_child(sign)
-	sign.global_position = Vector3(c.x - TILE * 0.5, 3.2, c.y)
+	sign.global_position = entry_center + entry_out * (KartCircuit.WIDTH * 0.5 + 1.0) + Vector3.UP * 3.6
 
 
 func running() -> bool:
@@ -138,9 +139,12 @@ func driving() -> bool:
 
 ## Dentro da pista (com a entrada), onde descer manda o veículo de volta para a vaga.
 func on_track(p: Vector3) -> bool:
-	var o := CENTER - Vector2(W, L) * TILE * 0.5
-	return Rect2(o, Vector2(W, L) * TILE).grow(1.0).has_point(Vector2(p.x, p.z))
+	return KartCircuit.on_track(p, 1.0)
 
+
+## Na abertura da mureta, já em cima da pista.
+func in_entry(p: Vector3) -> bool:
+	return Vector2(p.x - entry_center.x, p.z - entry_center.z).length() < KartCircuit.WIDTH * 0.5
 
 func hud_text() -> String:
 	match state:
@@ -173,7 +177,8 @@ func _physics_process(delta: float) -> void:
 	match state:
 		"a_pe":
 			nearest = null
-			if player.visible and not player.dizzy and not player.skating:
+			# O Faísca também dirige (a criança guardada sai vestida dele).
+			if (player.visible or game.faisca_on_island()) and not player.dizzy and not player.skating:
 				var best := ENTER_RADIUS
 				for v in vehicles:
 					var d := v.global_position.distance_to(player.global_position)
@@ -194,7 +199,7 @@ func _physics_process(delta: float) -> void:
 			if state == "dirigindo":
 				if not on_track(p):
 					_armed = true
-				elif _armed and _entry_zone.has_point(Vector2(p.x, p.z)):
+				elif _armed and in_entry(p):
 					_start_race()
 			elif state == "contagem":
 				_countdown(delta)
@@ -216,6 +221,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Entra no veículo e já sai dirigindo de onde ele está.
 func enter(v: Kart) -> void:
+	if game.faisca_on_island():
+		game.parte2.vestir_crianca(true)
 	kart = v
 	nearest = null
 	v.drive(game.player)
@@ -285,7 +292,8 @@ func _countdown(delta: float) -> void:
 func _check_gates() -> void:
 	var p := kart.global_position
 	var gate: Vector3 = gates[_next_gate]
-	if Vector2(p.x - gate.x, p.z - gate.z).length() > GATE_RADIUS:
+	# A ponte passa em cima do começo da reta: a marca dela só vale lá em cima.
+	if Vector2(p.x - gate.x, p.z - gate.z).length() > GATE_RADIUS or absf(p.y - gate.y) > 3.0:
 		return
 	_next_gate += 1
 	if _next_gate < gates.size():

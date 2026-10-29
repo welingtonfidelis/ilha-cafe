@@ -285,7 +285,7 @@ func _set_night(on: bool) -> void:
 		sky.sky_horizon_color = Color("#3d3f86")
 		sky.ground_horizon_color = Color("#3d3f86")
 		sky.ground_bottom_color = Color("#0c1a40")
-		sky.sky_cover = _stars_texture()
+		sky.sky_cover = DayNight.stars_texture()
 		sky.sky_cover_modulate = Color(1, 1, 1, 0.95)
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = Color("#7884c8")
@@ -318,25 +318,6 @@ func _set_night(on: bool) -> void:
 			_night_nodes.queue_free()
 
 
-## Estrelas pintadas na textura de cobertura do céu (panorama: o alto da imagem é o zênite).
-func _stars_texture() -> ImageTexture:
-	var img := Image.create(2048, 1024, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0, 0, 0, 0))
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7
-	for k in 1400:
-		var x := rng.randi_range(0, 2047)
-		var y := int(pow(rng.randf(), 1.4) * 470.0)
-		var a := rng.randf_range(0.35, 1.0)
-		var c := Color(1.0, rng.randf_range(0.9, 1.0), rng.randf_range(0.8, 1.0), a)
-		img.set_pixel(x, y, c)
-		if a > 0.85:
-			for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
-				img.set_pixel((x + d.x) % 2048, mini(y + d.y, 1023), Color(c, a * 0.6))
-	return ImageTexture.create_from_image(img)
-
-
-## Luzes da noite: postes da cidade perto da praça, lanternas da festa e um foco rosa no palco.
 func _build_night_lights() -> void:
 	if is_instance_valid(_night_nodes):
 		return

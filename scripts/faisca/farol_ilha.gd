@@ -3,7 +3,8 @@ extends Node3D
 ## O farol na ponta sudeste da ilha, a casa do Faísca (Parte 2, seção 11 do doc). Fica numa ilhota de pedra
 ## no mar, ligada à praia por uma passarela de madeira (os módulos do cais do Animated Cute Fish Pack), com
 ## a porta virada para a passarela. Na Parte 1 a porta tem cadeado; na Parte 2 só o Faísca entra (sinal
-## `entrou`), e as crianças recebem o aviso para trocar de personagem. Montado em tempo de jogo pela Parte2,
+## `entrou`), e a criança que encosta na porta vê a troca de personagem já marcando o Faísca (main.gd,
+## ask_for_faisca); escolhendo, ele aparece ali e entra. Montado em tempo de jogo pela Parte2,
 ## sem mexer na ilha gerada (scenes/ilha.tscn).
 
 signal entrou
@@ -206,7 +207,11 @@ func _tocou(corpo: Node3D) -> void:
 	_aviso_espera = 2.5
 	var game := parte2.game
 	if parte2.aberta:
-		game.show_message("Só o Faísca entra no farol! Troque de personagem na pausa", Color("#8ff3ff"), 2.4)
+		# Abre a troca de personagem já no Faísca (de kart ou de skate, só o aviso).
+		if corpo.in_vehicle or corpo.skating:
+			game.show_message("Só o Faísca entra no farol! Troque de personagem na pausa", Color("#8ff3ff"), 2.4)
+		else:
+			game.ask_for_faisca()
 	else:
 		_cadeado.rotation.z = 0.35
 		game.show_message("O farol está fechado", Color(1, 1, 1, 0.9), 1.8)

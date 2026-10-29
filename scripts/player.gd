@@ -87,6 +87,12 @@ const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow"
 @export var vibration := true
 
 var character_name := ""
+## Faísca de kart ou de skate na ilha (pedido do usuário em 2026-10-29): o modelo vira o Robo, no mesmo esqueleto
+## do KayKit, e o personagem (character_name) continua o da criança. Ver set_robo_skin.
+var robo_skin := false
+## O Faísca andando pela ilha com a criança guardada: os golpes que chegam nela tiram os corações dela (na ilha
+## os dois dividem os corações) e o empurrão vai para ele.
+var stand_in: Node3D
 var aiming := false
 var using_gamepad := false
 ## Desligado enquanto um menu está aberto, para o analógico não mexer o boneco.
@@ -270,14 +276,36 @@ func model_path() -> String:
 	return CHARACTERS.get(character_name, CHARACTERS.menino)
 
 
+## Piloto do kart: o .glb da criança ou, vestida de Faísca, o Robo (os dois no esqueleto do KayKit).
+func driver_model() -> Node3D:
+	return Robo.new() if robo_skin else load(model_path()).instantiate()
+
+
 func set_character(char_name: String) -> void:
 	if not CHARACTERS.has(char_name):
 		return
+	character_name = char_name
+	_install_model(Robo.new() if robo_skin else load(CHARACTERS[char_name]).instantiate())
+	character_changed.emit(char_name)
+
+
+## Veste (ou tira) o Faísca: o modelo vira o Robo, com as mesmas animações, o mesmo skate e os blasters
+## escondidos. Só a pé, fora do skate (o skate prende uma pose no esqueleto do modelo).
+func set_robo_skin(on: bool) -> void:
+	if on == robo_skin or skating:
+		return
+	robo_skin = on
+	_install_model(Robo.new() if on else load(model_path()).instantiate())
+	_show_blasters(not on)
+
+
+func _install_model(new_model: Node3D) -> void:
 	if model:
 		model.queue_free()
-	character_name = char_name
-	model = load(CHARACTERS[char_name]).instantiate()
+	model = new_model
 	visual.add_child(model)
+	# O Robo monta o esqueleto no _ready: as animações ligam no .glb dele, por dentro.
+	var rig: Node = (model as Robo).rig() if model is Robo else model
 	for mi in model.find_children("*", "MeshInstance3D", true, false):
 		for hint in HIDDEN_MESH_HINTS:
 			if hint in mi.name:
@@ -285,8 +313,8 @@ func set_character(char_name: String) -> void:
 	AnimUtil.add_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_1H")
 	AnimUtil.add_pose("tiro", "Ranged_2H_Aiming", AIM_POSE_2H, "Pose_2H")
 	AnimUtil.add_mirrored_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_Dual", model.find_child("Skeleton3D", true, false))
-	var ap := AnimUtil.make_player(model, ["geral", "mov", "mov2", "tiro", "luta", "ferramentas"])
-	anim_tree = _build_anim_tree(model, ap)
+	var ap := AnimUtil.make_player(rig, ["geral", "mov", "mov2", "tiro", "luta", "ferramentas"])
+	anim_tree = _build_anim_tree(rig, ap)
 	_air_state = ""
 	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	_hand = BoneAttachment3D.new()
@@ -327,7 +355,8 @@ func set_character(char_name: String) -> void:
 	if dizzy:
 		anim_tree.set("parameters/estado/transition_request", "tonto")
 	reloading = false
-	character_changed.emit(char_name)
+	if robo_skin:
+		_show_blasters(false)
 
 
 func _anim(anim_name: String) -> AnimationNodeAnimation:
@@ -1482,7 +1511,9 @@ func take_damage(amount: int, from: Vector3, source := "") -> void:
 	hearts = maxi(hearts - amount, 0)
 	last_hit_by = source
 	_invulnerable = invulnerable_time
-	if skating:
+	if parked and is_instance_valid(stand_in):
+		stand_in.call("levar_golpe_na_ilha", from, invulnerable_time)
+	elif skating:
 		# No skate não tem empurrão: perde o embalo (no veículo, quem dá o tranco é ele).
 		_skate_speed *= 0.4
 	elif not in_vehicle:

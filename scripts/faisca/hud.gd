@@ -80,6 +80,12 @@ func mostrar_vida(vida: int) -> void:
 		_coracoes[i].queue_redraw()
 
 
+## Na ilha o Faísca usa os corações das crianças (os do canto direito, do main.gd): os três dele somem.
+func mostrar_coracoes(on: bool) -> void:
+	for c in _coracoes:
+		c.visible = on
+
+
 func mostrar_estrelas(pegas: int) -> void:
 	_contador.text = str(pegas)
 
