@@ -87,6 +87,12 @@ const TEMPO_DANCA := 4.0
 ## ou acabando o tempo, o balão estoura e ele cai, e ainda dá para flutuar com o laser. Um balão por pulo.
 const SUBIDA_BALAO := 3.6
 const TEMPO_BALAO := 3.5
+## Ioiô, o poder da 2-3 (pego na caixa de brinquedos da escrivaninha; vale até sair da fase). No ar, apertando o golpe
+## perto de uma ArgolaDeIoio (até ALCANCE_IOIO), ele joga o ioiô, prende na argola e é puxado até ela; lá ganha um
+## impulso para cima e para a frente, e dá para emendar outra argola. Sem argola perto, o golpe é o giro de sempre.
+const ALCANCE_IOIO := 14.0
+const VELOCIDADE_IOIO := 18.0
+const TEMPO_MAX_IOIO := 1.6
 
 var robo: Robo
 var visual: Node3D
@@ -126,6 +132,9 @@ var dancando := 0.0
 ## Tem o Balão de Chiclete (a fase liga; o Parte2 desliga ao entrar em outra) e está subindo nele agora.
 var balao_de_chiclete := false
 var no_balao := false
+## Tem o Ioiô (2-3) e está sendo puxado por ele agora.
+var ioio := false
+var no_ioio := false
 
 var _coiote := 0.0
 var _memoria_pulo := 0.0
@@ -173,6 +182,9 @@ var _sombra: MeshInstance3D
 var _balao: Node3D
 var _balao_restante := 0.0
 var _balao_usado := false
+var _argola_ioio: Node3D
+var _ioio_tempo := 0.0
+var _fio_ioio: MeshInstance3D
 
 
 func _ready() -> void:
@@ -199,6 +211,7 @@ func _ready() -> void:
 	_montar_giro_forte()
 	_montar_sombra()
 	_montar_balao()
+	_montar_ioio()
 	_som_laser = AudioStreamPlayer.new()
 	var zumbido := Sfx.stream("faisca_laser").duplicate() as AudioStreamWAV
 	zumbido.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -325,6 +338,12 @@ func _physics_process(delta: float) -> void:
 	forcar_golpe = false
 	_tontinho -= delta
 	_arremessando -= delta
+	# Com o ioiô, o golpe no ar perto de uma argola laranja puxa até ela (no lugar do giro).
+	if apertou_golpe and ioio and not no_chao and not no_ioio and agarrada == null:
+		var argola := argola_de_ioio_perto()
+		if argola:
+			_jogar_ioio(argola)
+			apertou_golpe = false
 	if apertou_golpe and agarrada == null and giro_forte <= 0.0 and _tontinho <= 0.0:
 		_parar_danca()
 		_golpear(no_chao, dir)
@@ -369,7 +388,9 @@ func _physics_process(delta: float) -> void:
 	# Começa a flutuar na descida; depois de começar, segue enquanto segurar (ele sobe um pouquinho).
 	var pode_flutuar := segurando and _flutuar_restante > 0.0 and girando <= 0.0 and (flutuando or velocity.y <= 0.0) and not no_balao
 	flutuando = false
-	if no_balao and not no_chao:
+	if no_ioio:
+		_puxar_ioio(delta)
+	elif no_balao and not no_chao:
 		_balao_restante -= delta
 		if segurando and _balao_restante > 0.0:
 			velocity.y = lerpf(velocity.y, SUBIDA_BALAO, 1.0 - exp(-4.0 * delta))
@@ -438,6 +459,7 @@ func teleportar(pos: Vector3) -> void:
 	_soltar_agarrada()
 	_parar_danca()
 	_estourar_balao(false)
+	_soltar_ioio()
 	global_position = pos
 	velocity = Vector3.ZERO
 	_memoria_pulo = 0.0
@@ -584,6 +606,7 @@ func voltar_ao_inicio() -> void:
 	_soltar_agarrada()
 	_parar_danca()
 	_estourar_balao(false)
+	_soltar_ioio()
 	global_position = ponto_retorno
 	velocity = Vector3.ZERO
 	visual.rotation.y = PI
@@ -661,6 +684,91 @@ func _estourar_balao(barulho := true) -> void:
 		Fx.confetti(get_parent(), _balao.global_position, 14, 2.5)
 		Sfx.play(self, "estouro", -2.0, 0.1)
 		_tremer(0.2, 0.3, 0.08)
+
+
+## Tira os poderes de fase (o Parte2 chama ao entrar e ao sair de uma fase).
+func tirar_poderes() -> void:
+	_estourar_balao(false)
+	_soltar_ioio()
+	balao_de_chiclete = false
+	ioio = false
+
+
+# --- Ioiô (2-3) ----------------------------------------------------------------------
+
+## O fio do ioiô, da mão até a argola, escondido até ele jogar.
+func _montar_ioio() -> void:
+	_fio_ioio = MeshInstance3D.new()
+	var fio := CylinderMesh.new()
+	fio.top_radius = 0.04
+	fio.bottom_radius = 0.04
+	fio.height = 1.0
+	_fio_ioio.mesh = fio
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("ff7a22")
+	m.emission_enabled = true
+	m.emission = Color("ff7a22")
+	m.emission_energy_multiplier = 0.6
+	_fio_ioio.material_override = m
+	_fio_ioio.top_level = true
+	_fio_ioio.visible = false
+	add_child(_fio_ioio)
+
+
+## Argola de ioiô mais perto (até ALCANCE_IOIO), fora a que ele acabou de usar (a menos de 2,5 m).
+func argola_de_ioio_perto() -> Node3D:
+	var melhor: Node3D = null
+	var menor := ALCANCE_IOIO
+	var meio := global_position + Vector3.UP * 1.1
+	for a in get_tree().get_nodes_in_group(ArgolaDeIoio.GRUPO):
+		var d := (a as Node3D).global_position.distance_to(meio)
+		if d < menor and d > 2.5:
+			menor = d
+			melhor = a
+	return melhor
+
+
+func _jogar_ioio(argola: Node3D) -> void:
+	no_ioio = true
+	_argola_ioio = argola
+	_ioio_tempo = 0.0
+	girando = 0.0
+	_fio_ioio.visible = true
+	robo.expressao("feliz", 0.8)
+	Sfx.play(self, "faisca_arremesso", -2.0, 0.08)
+
+
+## Puxado pelo fio até a argola (o meio do corpo passa por dentro dela); chegando, ganha um impulso para cima.
+func _puxar_ioio(delta: float) -> void:
+	_ioio_tempo += delta
+	var alvo := _argola_ioio.global_position - Vector3.UP * 1.1
+	var falta := alvo - global_position
+	if falta.length() < 0.7 or _ioio_tempo > TEMPO_MAX_IOIO:
+		var frente := Vector3(falta.x, 0, falta.z).normalized() if Vector2(falta.x, falta.z).length() > 0.1 else _frente()
+		velocity = frente * 5.0 + Vector3.UP * 9.5
+		_pulou = true
+		_cortou_pulo = true
+		_flutuar_restante = tempo_flutuar
+		_giro_usado = false
+		_balao_usado = false
+		_soltar_ioio()
+		Sfx.play(self, "faisca_mola", -3.0, 0.08)
+		return
+	velocity = falta.normalized() * minf(VELOCIDADE_IOIO, falta.length() / delta)
+	visual.rotation.y = lerp_angle(visual.rotation.y, atan2(falta.x, falta.z), 0.3)
+	var mao := global_position + Vector3.UP * 1.5
+	var ponta := _argola_ioio.global_position
+	if mao.distance_to(ponta) > 0.1:
+		_fio_ioio.look_at_from_position((mao + ponta) * 0.5, ponta, Vector3.UP if absf((ponta - mao).normalized().y) < 0.99 else Vector3.FORWARD)
+		_fio_ioio.rotate_object_local(Vector3.RIGHT, PI / 2.0)
+		_fio_ioio.scale = Vector3(1, mao.distance_to(ponta), 1)
+
+
+func _soltar_ioio() -> void:
+	no_ioio = false
+	_argola_ioio = null
+	if _fio_ioio:
+		_fio_ioio.visible = false
 
 
 # --- golpes ----------------------------------------------------------------------

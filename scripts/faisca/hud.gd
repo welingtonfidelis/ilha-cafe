@@ -315,6 +315,7 @@ class BotaoA extends Control:
 ##   pulo_alto: o Faísca pulando bem alto; flutuar: o laser na descida; laser: o feixe na flor;
 ##   tocha: o feixe na tocha, que pega fogo. No golpe é o X apertado três vezes, na parede rachada.
 ##   quicar: a nuvem rosa amassa e joga para cima; balao: o balão de chiclete enche, sobe e estoura (2-2).
+##   dado: o soco tomba o dado; ioio: X no ar perto da argola laranja puxa o Faísca até ela (2-3).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -322,7 +323,7 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual in ["golpe", "alavanca"]
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio"]
 		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
 		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
 		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
@@ -479,6 +480,33 @@ class DesenhoDica extends Control:
 					for i in 6:
 						var a := TAU * i / 6.0
 						draw_line(p + Vector2(0, -46) + Vector2(cos(a), sin(a)) * 8, p + Vector2(0, -46) + Vector2(cos(a), sin(a)) * 18, Color("ff79bd"), 3.0)
+			"dado":
+				# Soca o dado, e ele tomba para o lado (vira em volta da aresta de baixo).
+				var ciclo := fmod(tempo, 1.6)
+				var bate := ciclo > 0.2 and ciclo < 0.45
+				var p := f + Vector2(-34 + (8.0 if bate else 0.0), 10)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(28 if bate else 20, 6), Color("ff7a22"), 7.0)
+				draw_line(f + Vector2(-50, 52), f + Vector2(60, 52), Color("2b2140"), 4.0)
+				var gira := clampf((ciclo - 0.45) / 0.4, 0.0, 1.0) * PI * 0.5
+				var pivo := f + Vector2(36, 52)
+				var cantos := PackedVector2Array()
+				for c in [Vector2(-28, 0), Vector2(0, 0), Vector2(0, -28), Vector2(-28, -28)]:
+					cantos.append(pivo + c.rotated(gira))
+				draw_colored_polygon(cantos, Color("f4f5f9"))
+				cantos.append(cantos[0])
+				draw_polyline(cantos, Color("2b2140"), 3.0)
+				draw_circle(pivo + Vector2(-14, -14).rotated(gira), 4, Color("2b2140"))
+			"ioio":
+				# No ar, X perto da argola laranja: o fio estica e puxa o Faísca até ela.
+				var ciclo := fmod(tempo, 1.6)
+				var argola := f + Vector2(40, -34)
+				draw_arc(argola, 12, 0, TAU, 24, Color("ff7a22"), 5.0)
+				var puxa := clampf((ciclo - 0.4) / 0.8, 0.0, 1.0)
+				var p := (f + Vector2(-30, 24)).lerp(argola + Vector2(0, 22), puxa)
+				_faisca(p)
+				if ciclo > 0.3:
+					draw_line(p + Vector2(10, -10), argola, Color("ff7a22"), 2.5)
 			"golpe":
 				var bate := fmod(tempo * 2.5, 1.0) < 0.35
 				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)

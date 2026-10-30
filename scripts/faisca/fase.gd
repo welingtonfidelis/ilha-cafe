@@ -22,6 +22,8 @@ const FLORESTA := "res://assets/faisca/floresta/"
 const MASMORRA := "res://assets/faisca/masmorra/"
 ## Peças do Restaurant Bits (a 2-1 Cozinha Gigante, ampliadas 8 vezes).
 const COZINHA := "res://assets/faisca/cozinha/"
+## Peças do quarto (Furniture Bits, Board Game Bits e o trenzinho do Holiday Bits), para a 2-3 Quarto de Brinquedos.
+const QUARTO := "res://assets/faisca/quarto/"
 const CAMADA_JOGADOR := 1 << 1
 ## Camada do que o laser dos pés acende (flores de luz). O Faísca não esbarra nela. Na Ilha a camada 4
 ## é a dos pontos de impacto dos esqueletos e a 5 a dos moradores; esta é a 6.
@@ -85,6 +87,11 @@ var aguas: Array[Area3D] = []
 ## E as da 2-2: nuvens que quicam (e as que quicam e somem) e as viagens que esperam o Faísca (nuvem-carro, teleférico).
 var nuvens_que_quicam: Array[NuvemQueQuica] = []
 var caronas: Array[Carona] = []
+## E as da 2-3: dados que tombam com um soco, dados que rolam sozinhos, argolas do ioiô e cartas que viram.
+var dados: Array[DadoQueTomba] = []
+var dados_rolando: Array[DadoRolando] = []
+var argolas_ioio: Array[ArgolaDeIoio] = []
+var cartas: Array[CartaQueVira] = []
 
 ## Padrão de playgrounds (aprovado pelo usuário em 2026-10-29; docs/level-design/molde-das-fases.html): os
 ## playgrounds na ordem ({nome, centro, raio, entrada}), o marco com o ponto do brilho dele (a coluna de luz que
@@ -589,18 +596,66 @@ func nuvem_que_quica(topo: Vector3, raio := 2.2, forca := 16.0, some := false) -
 	return n
 
 
-## Viagem que espera o Faísca subir em `de` e o leva até `ate` (`tipo` "nuvem" ou "cabine"; os dois pontos são o
-## chão dela, onde ele pisa).
-func carona(de: Vector3, ate: Vector3, tipo := "nuvem", velocidade := 5.0) -> Carona:
+## Viagem que espera o Faísca subir em `de` e o leva até `ate` (`tipo` "nuvem", "cabine", "trem", "aviao" ou
+## "carrinho"; os pontos são o chão dela, onde ele pisa). Com `caminho`, ela segue os pontos (curvas, subidas).
+func carona(de: Vector3, ate: Vector3, tipo := "nuvem", velocidade := 5.0, caminho: Array = []) -> Carona:
 	var c := Carona.new()
 	c.de = de
 	c.ate = ate
 	c.tipo = tipo
 	c.velocidade = velocidade
+	c.caminho = caminho
 	# A posição vai antes de entrar na cena: depois, o corpo animado só sai do lugar quando começa a andar.
 	c.position = de
 	add_child(c)
 	caronas.append(c)
+	return c
+
+
+## Dado grande que tomba com um soco, com o meio de baixo em `chao` (`lado` de 1,8 m sobe com um pulo).
+func dado(chao: Vector3, modelo := "D6_A", lado := 1.8) -> DadoQueTomba:
+	var d := DadoQueTomba.new()
+	d.lado = lado
+	d.modelo = modelo
+	d.position = chao + Vector3.UP * lado * 0.5
+	add_child(d)
+	dados.append(d)
+	return d
+
+
+## Dado que rola sozinho de `de` até `ate` e volta (os dois no chão, embaixo do meio dele).
+func dado_rolando(de: Vector3, ate: Vector3, periodo := 8.0, atraso := 0.0, lado := 2.6, modelo := "D6_A_red") -> DadoRolando:
+	var d := DadoRolando.new()
+	d.de = de + Vector3.UP * lado * 0.5
+	d.ate = ate + Vector3.UP * lado * 0.5
+	d.periodo = periodo
+	d.atraso = atraso
+	d.lado = lado
+	d.modelo = modelo
+	d.position = d.de
+	add_child(d)
+	dados_rolando.append(d)
+	return d
+
+
+## Argola laranja do ioiô, com o meio em `pos`.
+func argola_de_ioio(pos: Vector3) -> ArgolaDeIoio:
+	var a := ArgolaDeIoio.new()
+	a.position = pos
+	add_child(a)
+	argolas_ioio.append(a)
+	return a
+
+
+## Carta gigante deitada que vira de tempos em tempos, com o meio em `pos` (a face de cima, mais ou menos).
+func carta(pos: Vector3, modelo := "card_hearts_ace", atraso := 0.0, giro := 0.0) -> CartaQueVira:
+	var c := CartaQueVira.new()
+	c.modelo = modelo
+	c.atraso = atraso
+	c.position = pos - Vector3.UP * 0.1
+	c.rotation.y = giro
+	add_child(c)
+	cartas.append(c)
 	return c
 
 

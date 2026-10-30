@@ -24,7 +24,8 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/fase_2_1.gd", "imagem": "res://assets/faisca/portas/fase_2_1.jpg"},
 	{"id": "2-2", "nome": "Nuvens de Algodão-Doce", "tipo": "ceu", "pede": 90, "andar": 1, "lado": 270,
 		"cena": "res://scripts/faisca/fases/fase_2_2.gd", "imagem": "res://assets/faisca/portas/fase_2_2.jpg"},
-	{"id": "2-3", "nome": "Quarto de Brinquedos", "tipo": "chao", "pede": 120, "andar": 1, "lado": 0, "cena": "", "imagem": ""},
+	{"id": "2-3", "nome": "Quarto de Brinquedos", "tipo": "chao", "pede": 120, "andar": 1, "lado": 0,
+		"cena": "res://scripts/faisca/fases/fase_2_3.gd", "imagem": "res://assets/faisca/portas/fase_2_3.jpg"},
 	{"id": "3-1", "nome": "Pico Gelado", "tipo": "ceu", "pede": 150, "andar": 2, "lado": 0, "cena": "", "imagem": ""},
 	{"id": "3-2", "nome": "Fábrica de Blocos", "tipo": "chao", "pede": 180, "andar": 2, "lado": 90, "cena": "", "imagem": ""},
 	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180, "cena": "", "imagem": ""},
@@ -420,7 +421,7 @@ func entrar_fase(id: String) -> void:
 	nivel.estrela_grande_pega.connect(_terminar_fase)
 	faisca.limite_queda = nivel.limite_queda
 	faisca.pode_recomecar = true
-	faisca.balao_de_chiclete = false
+	faisca.tirar_poderes()
 	faisca.vida = Jogador.VIDA_MAX
 	hud.mostrar_vida(faisca.vida)
 	hud.mostrar_estrelas(nivel.pegas)
@@ -480,8 +481,8 @@ func sair_da_fase() -> void:
 	nivel = null
 	_montar_hub(fase_atual)
 	lugar = "hub"
-	# O poder da fase (o Balão de Chiclete da 2-2) fica lá dentro.
-	faisca.balao_de_chiclete = false
+	# O poder da fase (o Balão de Chiclete da 2-2, o Ioiô da 2-3) fica lá dentro.
+	faisca.tirar_poderes()
 	faisca.vida = Jogador.VIDA_MAX
 	hud.mostrar_vida(faisca.vida)
 	faisca.robo.animar("geral/Idle_A", 0.1)

@@ -755,7 +755,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 | 1 | 2 Túneis do Morro | chão | Dungeon Pack | por baixo do Morro dos esqueletos; o laser acende tochas para clarear o caminho | 30 |
 | 2 Doces e Brinquedos | 3 Cozinha Gigante (pronta em 2026-10-29) | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
 | 2 | 4 Nuvens de Algodão-Doce (pronta em 2026-10-30) | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), pirulitos do Halloween Bits, Platformer | nuvens que quicam e o Balão de Chiclete | 90 |
-| 2 | 5 Quarto de Brinquedos | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que rolam, peões e cartas, carona no trenzinho | 120 |
+| 2 | 5 Quarto de Brinquedos (pronta em 2026-10-30) | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que tombam com um soco e o Ioiô | 120 |
 | 3 Frio e Vento | 6 Pico Gelado | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | chão escorregadio e bolas de neve | 150 |
 | 3 | 7 Fábrica de Blocos | chão | Block Bits, esteiras e botões do Platformer | esteiras e blocos que aparecem e somem | 180 |
 | 3 | 8 Moinhos do Vento | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que empurra quem flutua | 210 |
@@ -1496,13 +1496,90 @@ A porta do 2º andar do farol pede 90 estrelinhas. O código fica em `scripts/fa
   - se os quiques sobre o vazio estão fáceis demais ou difíceis demais;
   - se os 10 a 12 minutos do padrão batem com o tempo de verdade de uma criança.
 
+### Fase 2-3: Quarto de Brinquedos (feita em 2026-10-30)
+
+Pedido do usuário: "pode commitar, push, enviar pro pc e seguir pra próxima fase". Segue a maquete aprovada (`docs/level-design/maquete-2-3-quarto-de-brinquedos.html`), no tamanho maior da 2-2: cinco playgrounds, cada saída com uma tarefa.
+
+A porta do 2º andar do farol pede 120 estrelinhas. O código fica em `scripts/faisca/fases/fase_2_3.gd`.
+- **Peças:** em `assets/faisca/quarto/`. São os móveis do Furniture Bits (mesa, escrivaninha, abajur, cama, almofadas, tapete), as peças do Board Game Bits (dados, peões, rei de xadrez, cartas, tabuleiro, casinhas, bandeiras) e a locomotiva do Holiday Bits. Os arquivos foram baixados do LFS da coleção em 2026-10-30.
+- **Feito por código:** o castelo, os livros, o foguete, a garagem, a lava e a máquina dos dados.
+
+Fase de chão: o chão do quarto é a rede de segurança. Quem cai de um móvel só desce, e uma escada de livros leva de volta (há uma na mesa e outra na escrivaninha). A exceção é o tapete de lava do playground 4.
+
+- **Marco:** o castelo de blocos no meio do quarto.
+  - A muralha é feita de blocos de 4 m em dois andares, num quadrado de 28 x 28 m.
+  - Tem quatro torres redondas com telhado e bandeira.
+  - A torre do meio tem 12 x 12 m e 22 m de altura, com ameias em volta da arena.
+- **Novidade, o dado que tomba** (`DadoQueTomba`):
+  - um soco ou o giro tomba o dado um lado inteiro (1,8 m) para o lado do golpe, girando em volta da aresta de baixo. Ele vira degrau: dá para subir nele com um pulo e dele subir mais 1,6 m;
+  - com alguma coisa no caminho, ele só balança;
+  - tombando para fora de uma beirada, ele cai, e se cair mais de 1 m volta para a casa dele num puf, para a tarefa nunca ficar impossível;
+  - o pisão e o laser não tombam o dado;
+  - dica nova do Vovô: `dado`.
+- **Poder da fase, o Ioiô** (`Jogador.ioio`):
+  - vem da caixa de brinquedos da escrivaninha e vale até sair da fase (`Jogador.tirar_poderes`, chamado pelo `Parte2`);
+  - no ar, o golpe perto de uma argola laranja (`ArgolaDeIoio`, até 14 m) joga o ioiô, que prende na argola e puxa o Faísca até lá. Chegando, ele ganha um impulso para cima e para a frente e pode emendar outra argola;
+  - sem argola perto, o golpe no ar é o giro de sempre. Não tem botão novo;
+  - a argola acende e pulsa quando o Faísca tem o ioiô e está perto;
+  - dica nova: `ioio`.
+- **Outras peças novas:**
+  - `DadoRolando`: o dado que rola sozinho e dá carona;
+  - `CartaQueVira`: a carta gigante que treme e vira de ponta-cabeça;
+  - `PonteLevadica`;
+  - a lava, que conta como cair;
+  - a `Carona` agora segue um caminho com curvas e subidas, com o trem, o avião de papel e o carrinho de corda. Tropeço: mudar a posição e depois o giro do corpo animado no mesmo quadro fazia ele ficar só com o giro, e o trem não saía do lugar. Agora os dois vão juntos num `Transform3D`.
+- **Os playgrounds:**
+  1. **Tapete da Cidade** (no chão, ao sul, sem risco):
+     - tarefa: a estação do trenzinho fica num bloco de 3,4 m, alto demais para um pulo. Tombado quatro vezes até a marca amarela, o dado vira o degrau;
+     - mini-marco: o foguete de brinquedo;
+     - bolsos: a torre de blocos, com outro dado, e a garagem, com o coração;
+     - Bolotas: um cogumelo dormindo e um alien.
+  2. **Tabuleiro na Mesa** (6 m, a oeste, P1):
+     - a escada de livros sobe do trenzinho até a mesa;
+     - tarefa: tombar os três dados até as casas brilhantes. Cada dado trava quando chega, e com os três no lugar o avião de papel aparece na beira da mesa;
+     - os peões são pilares, e o rei de xadrez é o mini-marco;
+     - bolso: embaixo da mesa, o V1;
+     - três Bolotas.
+  3. **Escrivaninha** (12 m, ao norte, P2):
+     - a caixa de brinquedos dá o ioiô;
+     - tarefa: a torre de livros do carrinho, 8 m acima da mesa, só se alcança com a argola dela;
+     - bolsos: a prateleira alta, por três argolas em fila (V2), e o topo do abajur, por uma escadinha de livros e uma argola;
+     - coração e três Bolotas.
+  4. **O Chão É Lava** (a leste, P3):
+     - o caminho passa por almofadas, três cartas que viram e o dado que rola;
+     - tarefa: as três alavancas, cada uma numa almofada, abaixam a ponte levadiça do castelo;
+     - a faixa de 4 m junto ao castelo é chão firme;
+     - coração e duas Bolotas.
+  5. **Subida do Castelo** (P4):
+     - entra-se pela ponte levadiça;
+     - tarefa: o dado do pátio, tombado quatro vezes, vira o degrau da escada de blocos até o alto da muralha (8 m);
+     - na muralha há um ciclope no estreito, e do canto duas argolas puxam até o alto da torre;
+     - segredo: o bloco rachado de baixo da muralha sul, com o V3 no oco e a dica do golpe.
+  - **Arena no alto da torre** (22 m): o baú, um alien, um porco e uma abelha.
+- **Viagens:**
+  - o trenzinho, da estação alta pela ponte de blocos até o pé da mesa;
+  - o avião de papel, da beira da mesa até a escrivaninha;
+  - o carrinho de corda, da torre de livros pela pista laranja até a primeira almofada da lava.
+  - Todas esperam o Faísca e levam de volta.
+- **Números:** 129 estrelinhas soltas (174 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 6 dados que tombam, 1 dado que rola, 7 argolas, 3 cartas e 3 alavancas.
+- **Testes e fotos:**
+  - `--faisca-fase-2-3` confere 54 pontos com socos, pulos, ioiô e viagens de verdade, do tapete até o baú. Entram aí a estação alta sem o dado, o quinto soco que só balança, o dado travado, o dado que cai da mesa, o giro sem o ioiô, as três argolas em fila, a lava, a carta, o dado que rola, as alavancas e a ponte;
+  - `--faisca-fase-2-3-captura` tira 14 fotos em `tools/capturas/faisca/fase_2_3/`;
+  - `--faisca-jogar-2-3` abre a fase direto;
+  - a foto da porta, `assets/faisca/portas/fase_2_3.jpg`, é a do castelo com a mesa e a escrivaninha.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se a criança entende que o soco tomba o dado e o leva até a marca;
+  - se o golpe no ar perto da argola fica claro;
+  - se as cartas da lava viram rápido demais.
+
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
 - Se o Faísca pode dirigir o kart.
 - **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando.
-- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 já nasce maior, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 1-1, a 1-2 e a 2-1 do mesmo jeito.
+- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 e a 2-3 já nascem maiores, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 1-1, a 1-2 e a 2-1 do mesmo jeito.
+- **Teste `--ilha` instável na viela** (visto em 2026-10-30): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
 - **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Ainda não investigado.
   - Foram dois fechamentos seguidos, às 17:53:17 e às 17:53:57, os dois por SIGSEGV na thread principal. A pilha repete sempre o mesmo trio de endereços do executável (`+0x3e89ce`, `+0x2c2e402`, `+0x2a61dc6`, `+0x526b10`), o que lembra recursão infinita em GDScript (estouro da pilha; a build de release não escreve o erro no log).
   - Os coredumps estão no PC (`coredumpctl info 152449` e `154948`). O log da Godot nessas sessões só tem o erro de sempre do `Mage.glb` na abertura.
