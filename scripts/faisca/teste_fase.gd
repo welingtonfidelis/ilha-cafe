@@ -83,12 +83,12 @@ func rodar() -> void:
 	var p1 := n.postos[0]
 	var lado := p1.ponto() - p1.global_position
 	lado.y = 0.0
-	j.teleportar(p1.global_position + lado.normalized() * 3.0 + Vector3.UP * 0.3)
+	j.teleportar(p1.global_position + lado.normalized() * 4.6 + Vector3.UP * 0.3)
 	await m._esperar(0.12)
 	var acendeu := p1.acendido
 	j.teleportar(p1.ponto())
 	await m._esperar(0.3)
-	ok = m._conferir("passar a 3 m do posto, sem encostar na bandeira, já acende", acendeu
+	ok = m._conferir("passar a 4,6 m do posto, sem encostar na bandeira, já acende", acendeu
 			and j.ponto_retorno.distance_to(p1.ponto()) < 0.1) and ok
 	j.teleportar(Vector3(30, 0, -60))
 	await m._esperar(1.5)

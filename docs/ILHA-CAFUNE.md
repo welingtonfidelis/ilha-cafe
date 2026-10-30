@@ -914,6 +914,7 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 - O `--faisca-fase` confere que todos os postos e o começo da fase passam nessa conta, e que depois de cair o Faísca fica de pé no posto.
 - A mesma correção foi para o `posto.gd` do projeto Faísca separado.
 - **Área maior (pedido do usuário em 2026-10-29: "a area que ativa a bandeira de checkpoint precisa aumentar"):** a área que acende o posto passou de 1,6 m de raio e 3 m de altura para `Posto.RAIO_AREA` (3,2 m) e `ALTURA_AREA` (6 m), começando 1 m abaixo do pé da bandeira. Passar a 3 m da bandeira já acende; antes precisava chegar a uns 2 m. O `--faisca-fase` confere isso, e a mudança também foi para o projeto Faísca separado.
+- **Área ainda maior (pedido do usuário em 2026-10-30: "aumenta mais o raio de acionamento dos checkpoints"):** agora são 5 m de raio e 8 m de altura, começando 1,5 m abaixo do pé da bandeira (`Posto.ABAIXO_AREA`). É mais que as bandeiras da ilha, que têm 4 m. O `--faisca-fase` confere que passar a 4,6 m já acende.
 - **Bandeiras da ilha:** com o Faísca, elas não acendiam, porque só reconheciam o `Player`, que fica guardado e sem colisão. Agora o `Checkpoint` aceita o `Jogador` também, e o `--parte2` confere.
 
 **Como testar:**
@@ -1360,8 +1361,22 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
 - **Fotos:** `--faisca-fase-captura`, `--faisca-fase-1-2-captura` e `--faisca-fase-2-1-captura` tiram uma foto de cima da fase toda, uma de cada playground de cima e de dentro, e a da arena.
 - **Saves antigos:** as estrelinhas são contadas pela ordem em que a fase cria cada uma. Num save de antes, as já pegas aparecem apagadas em outros lugares, mas o total de cada fase continua certo.
 
+### Inimigos novos (pedido do usuário em 2026-10-30)
+
+O pedido: "precisamos de novos inimigos, cria prompts pra eu gerar em 2d assets iniciais pra validação de novos inimigos, não precisam ser muitos, uns 3 ou 4 inimigos base inspirados no do astro bot".
+
+Os prompts estão em `docs/inimigos/prompts-inimigos-faisca.md`, com a foto de referência `docs/inimigos/referencia-bolota.png` para anexar no gerador. A foto sai do `tools/foto_bolota.gd`, que precisa de janela.
+
+São quatro primas da Bolota, e cada uma ensina um jeito de vencer:
+- **Escudeira:** pirulito na frente como escudo; ensina a pisar.
+- **Confeitada:** espinhos de jujuba; ensina a socar, porque o pisão quica.
+- **Balão:** voa em três balões e solta chicletes; ensina o laser.
+- **Rolona:** dispara dentro de uma bola de hamster; ensina a desviar e a agarrar quando ela bate e fica tonta.
+
+Ainda falta o usuário gerar as folhas e aprovar. Nada foi feito no jogo.
+
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
-- Se o Faísca pode dirigir o kart e andar de skate.
+- Se o Faísca pode dirigir o kart.

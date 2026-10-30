@@ -5,15 +5,17 @@ extends Area3D
 ## O ponto de volta é chão firme perto da bandeira, com folga de MARGEM até qualquer beira: o posto
 ## procura sozinho (na frente primeiro, depois girando para os lados e para trás), para nunca devolver o
 ## Faísca na beirada, onde ele cairia de novo (o usuário viu isso na 1-1 em 2026-10-28).
-## A área que acende é larga (RAIO_AREA) e alta, para passar perto ou por cima já valer (pedido de 2026-10-29).
+## A área que acende é larga (RAIO_AREA) e alta, para passar perto ou por cima já valer (pedidos de 2026-10-29 e 2026-10-30).
 
 signal aceso(posto: Posto)
 
 ## Distância do ponto de volta até a beira mais perto, em todas as direções.
 const MARGEM := 1.6
-## Raio e altura da área que acende a bandeira (era 1,6 x 3 m; a das bandeiras da ilha tem 4 m de raio).
-const RAIO_AREA := 3.2
-const ALTURA_AREA := 6.0
+## Raio e altura da área que acende a bandeira (era 1,6 x 3 m, depois 3,2 x 6 m; a das bandeiras da ilha tem 4 m de raio).
+const RAIO_AREA := 5.0
+const ALTURA_AREA := 8.0
+## Quanto a área desce abaixo do pé da bandeira.
+const ABAIXO_AREA := 1.5
 ## Ordem de procura: distância da bandeira e giro a partir da frente (em oitavos de volta).
 const DISTANCIAS := [1.8, 2.6, 1.2, 3.4]
 const GIROS := [0, 1, -1, 2, -2, 3, -3, 4]
@@ -34,7 +36,7 @@ func _ready() -> void:
 	forma.height = ALTURA_AREA
 	cs.shape = forma
 	# Um pouco abaixo do pé da bandeira também conta (chegando por uma rampa ou degrau mais baixo).
-	cs.position.y = ALTURA_AREA * 0.5 - 1.0
+	cs.position.y = ALTURA_AREA * 0.5 - ABAIXO_AREA
 	add_child(cs)
 	_apagada = load(Fase.PLATAFORMA + "flag_A_blue.gltf").instantiate()
 	_acesa = load(Fase.PLATAFORMA + "flag_A_yellow.gltf").instantiate()
