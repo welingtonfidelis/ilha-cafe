@@ -33,8 +33,7 @@ const CLAREIRA := Vector2(40, -180)
 const VILA := Vector2(115, -160)
 ## Pasto dos cavalos, a oeste da cidade.
 ## Atividades extras (pedido do usuário em 2026-10-26, pacotes do Kenney, CC0): pista de kart na campina a
-## leste do Morro e pista de skate na campina a oeste (Mini Skate, peças de 1 m ampliadas 5x). As áreas ficam
-## sem árvores, pedras, arbustos e grama. A pista de kart foi refeita em 2026-10-29: um 8 com ponte, montado
+## leste do Morro (a pista de skate saiu em 2026-10-29). As áreas ficam sem árvores, pedras, arbustos e grama. A pista de kart foi refeita em 2026-10-29: um 8 com ponte, montado
 ## aqui por código a partir do traçado de scripts/kart_circuit.gd (antes era um oval de peças do City Kit Roads).
 ## Vagas do box (o jogo põe os veículos nelas).
 const KART_SPOTS := 5
@@ -48,13 +47,12 @@ const KART_BARRIER_H := 0.9
 const KART_BARRIER_W := 0.35
 ## Espessura da ponte (o vão do cruzamento).
 const KART_DECK := 0.7
-## A pista de skate fica perto da cidade (a noroeste, entrada virada para as ruas; pedido do usuário) e a
-## fazenda foi para a campina a oeste do Morro, onde a pista ficava antes.
+## Onde ficava a pista de skate, perto da cidade (a noroeste). Ela saiu em 2026-10-29 (pedido do usuário: "remove
+## a pista de skate e o skate"), mas a campina continua limpa: assim o sorteio do resto da ilha não muda.
 const SKATE := Vector2(-98, 66)
 const SKATE_TILE := 5.0
 const SKATE_N := 8
 const PISTA := "res://assets/pista/%s.glb"
-const SKATE_PIECES := "res://assets/skate/%s.glb"
 const CARROS := "res://assets/carros/%s.glb"
 const PASTURE := Vector2(-120, -6)
 const PASTURE_R := 11.0
@@ -153,7 +151,6 @@ func _init() -> void:
 	_kart_mask()
 	_clear_activity_areas()
 	_kart_circuit()
-	_skate_park()
 	_grass()
 	_markers()
 	var packed := PackedScene.new()
@@ -556,6 +553,12 @@ func _city() -> void:
 						_prop(props, FOREST % "Tree_3_A_Color1", Vector3(xa + 20, 0, za + 20), rng.randf_range(0, 360), 1.4, "tronco")
 						_prop(props, CITY % "bench", Vector3(xa + 20, 0, za + 24), 0.0, CITY_SCALE, "caixa")
 						continue
+					if cx == 1:
+						# Viela de 10 m de norte a sul até o jardinzinho (pedido do usuário em 2026-10-29, "andar entre
+						# os prédios"): sem o prédio do meio dos lados das ruas. O sorteio do modelo continua, para
+						# não mudar o resto da ilha.
+						rng.randi()
+						continue
 					var rot := 0.0
 					if cz == 0:
 						rot = 180.0
@@ -599,13 +602,14 @@ func _city() -> void:
 	var center := Vector3(PLAZA.position.x + 20, 0, PLAZA.position.y + 20)
 	_prop(plaza, PLAT % "red/platform_4x4x1_red", center + Vector3(-2, 0, -12), 0.0, 1.0, "caixa")
 	_prop(plaza, PLAT % "blue/platform_4x4x1_blue", center + Vector3(2, 0, -12), 0.0, 1.0, "caixa")
-	_prop(plaza, PLAT % "yellow/arch_wide_yellow", center + Vector3(0, 1, -13.6), 0.0, 1.0)
+	_prop(plaza, PLAT % "yellow/arch_wide_yellow", center + Vector3(0, 1, -13.6), 0.0, 1.0, "malha")
 	var balls := ["red/ball_red", "blue/ball_blue", "yellow/ball_yellow", "green/ball_green"]
 	for k in 8:
 		var a := TAU * k / 8.0
 		var p := center + Vector3(cos(a) * 13.0, 0, sin(a) * 13.0)
 		_prop(plaza, PLAT % "neutral/pillar_1x1x4", p, 0.0, 0.6, "caixa")
-		_prop(plaza, PLAT % balls[k % balls.size()], p + Vector3(0, 3.4, 0), 0.0, 0.6)
+		# A bola em cima também é sólida: o Faísca pula e flutua até essa altura.
+		_prop(plaza, PLAT % balls[k % balls.size()], p + Vector3(0, 3.4, 0), 0.0, 0.6, "caixa")
 	for k in 4:
 		var a := TAU * k / 4.0 + PI / 4.0
 		_prop(plaza, CITY % "bench", center + Vector3(cos(a) * 7.0, 0, sin(a) * 7.0), rad_to_deg(-a), CITY_SCALE, "caixa")
@@ -630,11 +634,11 @@ func _festa() -> void:
 		["doces/present_sphere_A_green", -7.6, -11.9, 0.0], ["doces/present_E_white", -5.4, -12.2, 35.0],
 		["doces/present_sphere_B_red", -6.9, -14.0, 0.0], ["doces/present_F_red", -8.2, -12.6, 80.0]]
 	for spec in presents:
-		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), spec[3], 1.5)
-	_prop(festa, FESTA % "doces/present_A_yellow", at.call(-6.5, -12.7) + Vector3.UP * 0.99, 15.0, 1.3)
+		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), spec[3], 1.5, "caixa")
+	_prop(festa, FESTA % "doces/present_A_yellow", at.call(-6.5, -12.7) + Vector3.UP * 0.99, 15.0, 1.3, "caixa")
 	var train := ["doces/train_locomotive", "doces/train_tender_presents_A", "doces/train_wagon", "doces/train_tender_presents_B"]
 	for k in train.size():
-		_prop(festa, FESTA % train[k], at.call(5.2 + k * 1.5, -12.6), 90.0, 1.8)
+		_prop(festa, FESTA % train[k], at.call(5.2 + k * 1.5, -12.6), 90.0, 1.8, "caixa")
 	# Lanternas enfeitadas nos cantos do palco e na entrada da praça.
 	for spot in [Vector2(-4.8, -9.4), Vector2(4.8, -9.4), Vector2(-3.5, 13.6), Vector2(3.5, 13.6)]:
 		_prop(festa, FESTA % "doces/lantern_decorated", at.call(spot.x, spot.y), 0.0, 0.8, "tronco")
@@ -665,7 +669,7 @@ func _festa() -> void:
 	_prop(festa, EXTRAS % "moradores/bruxa/Broom", at.call(-13.6, -10.9), 15.0, 1.1)
 	# Cantinho do palhaço (sudeste): pódio, arco e brinquedos no chão.
 	_prop(festa, FESTA % "circo/circus_podium", at.call(12.4, 7.0), 0.0, 0.8, "caixa")
-	_prop(festa, FESTA % "circo/circus_hoop", at.call(13.4, 10.6), -30.0, 0.8)
+	_prop(festa, FESTA % "circo/circus_hoop", at.call(13.4, 10.6), -30.0, 0.8, "malha")
 	for spec in [["circo/juggling_pin_red", 11.0, 9.0], ["circo/juggling_pin_blue", 11.3, 9.3], ["circo/juggling_pin_yellow", 10.8, 9.5]]:
 		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 40.0, 1.3)
 	_prop(festa, FESTA % "circo/clown_ball", at.call(10.6, 5.2), 0.0, 1.0)
@@ -934,11 +938,23 @@ func _pasture() -> void:
 		if k == 3:
 			continue  # porteira aberta
 		var p := PASTURE + Vector2(cos(a), sin(a)) * PASTURE_R
+		# A cerca com colisão (pedido do usuário em 2026-10-29: "o jogador atravessa como se não tivesse cerca"):
+		# o corpo fica sem escala e a caixa acompanha a madeira esticada.
+		var body := StaticBody3D.new()
+		body.name = "Cerca"
+		body.position = Vector3(p.x, ground(p.x, p.y), p.y) + Basis(Vector3.UP, -a) * Vector3(FENCE_OFFSET * 3.0, 0, 0)
+		body.rotation.y = -a
+		_add(pasture, body)
 		var rail: Node3D = load(CAIS % "fence_wood_straight").instantiate()
-		rail.position = Vector3(p.x, ground(p.x, p.y), p.y) + Basis(Vector3.UP, -a) * Vector3(FENCE_OFFSET * 3.0, 0, 0)
-		rail.rotation.y = -a
 		rail.scale = Vector3(3.0, 2.0, 4.3)
-		_add(pasture, rail)
+		_add(body, rail)
+		var caixa := _model_aabb(rail)
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = (caixa.size * rail.scale).max(Vector3(0.5, 0.5, 0.5))
+		cs.shape = forma
+		cs.position = caixa.get_center() * rail.scale
+		_add(body, cs)
 	# Sítio: estábulo de frente para o pasto, moinho, poço, bebedouro e feno (Medieval Hexagon).
 	var farm := func(model: String, offset: Vector2, rot: float, s: float, collider := "caixa") -> void:
 		var fp := PASTURE + offset
@@ -1406,7 +1422,7 @@ func _kart_circuit() -> void:
 	var back: Vector3 = box.pad - box.to_track * 6.0
 	var tyres: Vector3 = back - box.along * 3.0
 	for k in 3:
-		_prop(group, CARROS % "wheel-racing", Vector3(tyres.x, ground(tyres.x, tyres.z) + 0.3 * 1.6 + k * 0.62, tyres.z), 0.0, 1.6)
+		_prop(group, CARROS % "wheel-racing", Vector3(tyres.x, ground(tyres.x, tyres.z) + 0.3 * 1.6 + k * 0.62, tyres.z), 0.0, 1.6, "caixa")
 	var crate: Vector3 = back + box.along * 2.5
 	_prop(group, CARROS % "box", Vector3(crate.x, ground(crate.x, crate.z), crate.z), 20.0, 1.8, "caixa")
 
@@ -1459,41 +1475,6 @@ func _kart_quad(st: SurfaceTool, faces: PackedVector3Array, a: Vector3, b: Vecto
 		st.add_vertex(v)
 	if solid:
 		faces.append_array(PackedVector3Array([a, b, c, a, c, d]))
-
-
-## Pista de skate: chão de concreto, half-pipe de 4 m (dois quarter-pipes de frente um para o outro), rampas,
-## caixote e corrimão para manobras, escada com corrimão, rampa longa de lado e cerca em volta com a entrada
-## no meio do lado sul. Tudo com a colisão no formato das peças.
-func _skate_park() -> void:
-	var group := _group(ilha, "PistaDeSkate")
-	var t := SKATE_TILE
-	var o := Vector3(SKATE.x - SKATE_N * t * 0.5, 0, SKATE.y - SKATE_N * t * 0.5)
-	var at := func(i: float, j: float) -> Vector3:
-		return o + Vector3(i * t, 0, j * t)
-	for i in SKATE_N:
-		for j in SKATE_N:
-			var fp: Vector3 = at.call(i + 0.5, j + 0.5)
-			_prop(group, SKATE_PIECES % "floor-concrete", fp + Vector3.UP * 0.03, 0.0, t)
-	# Half-pipe: o quarter-pipe sobe para o norte; o de frente, girado 180°, sobe para o sul.
-	for i in range(1, 5):
-		_prop(group, SKATE_PIECES % "half-pipe", at.call(i + 0.5, 0.5), 0.0, t, "malha")
-		_prop(group, SKATE_PIECES % "half-pipe", at.call(i + 0.5, 3.5), 180.0, t, "malha")
-	# Rampas para pular, caixote, corrimão e escada.
-	_prop(group, SKATE_PIECES % "ramp", at.call(6.5, 1.5), 0.0, t, "malha")
-	_prop(group, SKATE_PIECES % "ramp", at.call(6.5, 5.5), 180.0, t, "malha")
-	_prop(group, SKATE_PIECES % "obstacle-box-grind", at.call(4.0, 5.5), 90.0, t, "malha")
-	_prop(group, SKATE_PIECES % "rail-low", at.call(2.0, 6.0), 90.0, t, "malha")
-	_prop(group, SKATE_PIECES % "steps-rail", at.call(6.5, 3.5), 90.0, t, "malha")
-	_prop(group, SKATE_PIECES % "slope-smooth", at.call(0.5, 6.0), 0.0, t, "malha")
-	# Cerca em volta, com a entrada no meio do lado sul.
-	for k in SKATE_N:
-		_prop(group, SKATE_PIECES % "fence", at.call(k + 0.5, 0.0), 0.0, t, "caixa")
-		_prop(group, SKATE_PIECES % "fence", at.call(0.0, k + 0.5), 90.0, t, "caixa")
-		_prop(group, SKATE_PIECES % "fence", at.call(SKATE_N, k + 0.5), 90.0, t, "caixa")
-		if k < 3 or k > 4:
-			_prop(group, SKATE_PIECES % "fence", at.call(k + 0.5, SKATE_N), 0.0, t, "caixa")
-	for k in 2:
-		_prop(group, SKATE_PIECES % "bench", at.call(2.0 + k * 4.0, SKATE_N + 0.9), 180.0, 3.0, "caixa")
 
 
 ## Grama em MultiMesh (milhares de tufos sem pesar).
@@ -1625,7 +1606,6 @@ func _markers() -> void:
 		var vp: Vector3 = box.pad + box.along * ((k - 2) * 4.2)
 		var v := _marker(spots, "Vaga%d" % (k + 1), vp.x, vp.z)
 		v.rotation.y = atan2(box.to_track.x, box.to_track.z)
-	_marker(fun, "Skate", SKATE.x, SKATE.y + SKATE_N * SKATE_TILE * 0.5 + 3.0)
 	_pasture()
 
 	# Bichos soltos (Quaternius, CC0): modelo, tamanho, raio do passeio e se foge do aventureiro.

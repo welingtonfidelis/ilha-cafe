@@ -77,7 +77,7 @@ A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e 
 | Lugar | Onde | Como é |
 |---|---|---|
 | Ilha | elipse de ~380 x 490 m com costa recortada | praia de areia em volta; terreno low-poly em grade de 4 m com cores por região |
-| Cidade | sul, x de −60 a 60, z de 110 a 190 (terreno plano até a beira, mesmo no canto sudeste, onde antes a costa afundava o chão e as ruas flutuavam) | ruas do City Builder Bits em grade (4 x 3), prédios em volta dos quarteirões virados para a rua, carros, postes, lixeiras, caixa-d'água | As peças de rua ficam 4,5 cm afundadas: o asfalto do modelo está a 7 cm e a calçada a 10 cm, e o personagem pisa no terreno, a 0; assim o pé quase encosta no asfalto. Caixas e lixeiras soltas não caem em cima das ruas, e os postes de balão da comemoração não nascem na rua nem na água.
+| Cidade | sul, x de −60 a 60, z de 110 a 190 (terreno plano até a beira, mesmo no canto sudeste, onde antes a costa afundava o chão e as ruas flutuavam) | ruas do City Builder Bits em grade (4 x 3), prédios em volta dos quarteirões virados para a rua, com uma viela de 10 m de norte a sul no meio de cada quarteirão até o jardinzinho (desde 2026-10-29), carros, postes, lixeiras, caixa-d'água | As peças de rua ficam 4,5 cm afundadas: o asfalto do modelo está a 7 cm e a calçada a 10 cm, e o personagem pisa no terreno, a 0; assim o pé quase encosta no asfalto. Caixas e lixeiras soltas não caem em cima das ruas, e os postes de balão da comemoração não nascem na rua nem na água.
 | Praça da festa | quarteirão central do sul (x −20 a 20, z 150 a 190; as ruas ocupam 5 m de cada lado, então o miolo livre vai de −15 a 15 e tudo da festa fica dentro dele) | palco vermelho e azul, arco amarelo, 8 balões em postes, bancos e árvores; o jogo começa aqui |
 | Cais | sai da praia para o mar (z 206 a 255) | módulos de madeira do Animated Cute Fish Pack (Quaternius, CC0), pedido do usuário: dois `Dock_Long` e o `Dock_Wide` na ponta, a 0,75x, com estacas enfiadas na água e corda de corrimão; piso a 0,45 m (o piso do módulo fica 3,8 m acima do pé das estacas). Colisão: caixa no piso, paredes invisíveis no lugar da corda e uma rampa na areia. O pescador fica na ponta: a linha da vara (`fishing_rod_line`, com a boia e o anzol) é esticada até a água, a boia balança na superfície e o anzol fica embaixo |
 | Praia do Cais | a oeste do cais (−30, 212) | areia aberta, sem enfeites: é onde acontece a defesa do prólogo (pedido do usuário: na praça, com a festa, a luta ficava confusa) |
@@ -607,10 +607,36 @@ Feitas com os pacotes do Kenney (Car Kit, City Kit Roads, Mini Skate e Watercraf
 - **Corrida**: entrar na pista pela LARGADA, vindo de fora, põe o veículo na largada (logo depois do arco, virado para a frente da pista), com contagem 3, 2, 1, "Já!" e **3 voltas contra o relógio** (uns 25 s por volta na pista em 8); cada volta só conta passando pelas 3 marcas (sem atalho), e a chegada é no arco. Na chegada: tempo, recorde (salvo) e **15 moedas, mais 10 com recorde novo**; depois continua dirigindo (andar na pista não começa outra corrida; para correr de novo, sair e entrar pela LARGADA). Descer no meio da corrida cancela.
 - **Descer** (B / E): **dentro da pista**, o aventureiro vai para fora dela (no box) e o veículo volta para a vaga; **pela ilha**, o veículo fica onde parou, o aventureiro desce do lado, e o veículo **volta sozinho para a vaga quando o aventureiro se afasta 50 m** (com confete). Cair no mar com o veículo: ele volta para a vaga e o aventureiro faz o "tchibum" de sempre.
 - A colisão do veículo é uma cápsula deitada (uma caixa enganchava nas emendas das peças). Estacionado, ele fica na camada do mundo (o aventureiro esbarra); dirigindo, bate em parede, mureta, outros veículos e moradores.
+- **A pista de skate e o skate saíram em 2026-10-29** (pedido do usuário: "remove a pista de skate e o skate"). Os três itens abaixo ficam como registro.
 - **Pista de skate** (gerada, ao lado da cidade, a noroeste, centro (−98, 66), uns 40 m da esquina da cidade, com a entrada virada para as ruas; antes ficava na campina a oeste do Morro, onde agora está a fazenda): 40 x 40 m de concreto com cerca e entrada no sul, half-pipe de 4 m de altura e 20 m de comprimento (dois quarter-pipes de frente), duas rampas de pulo, caixote, corrimão, escada com corrimão e uma rampa longa; bancos do lado de fora. Peças de 1 m do Mini Skate ampliadas 5x, com colisão no formato delas.
 - **Skate** (`Player.start_skating`, `scripts/skate_park.gd`, `scripts/skate_rider.gd`; refeito depois do segundo teste do usuário): o skate fica no chão na entrada da pista. Chegar perto (ou estar dentro da pista com ele lá) e apertar B / E **pega o skate** (some do chão e aparece debaixo dos pés) e **dá para andar pela ilha inteira**. Descer (B / E) deixa o skate no chão onde parou; **longe dele (50 m), ele volta para a entrada da pista** (com confete). Cair no mar ou ficar tonto também manda o skate de volta. No skate, o golpe dos esqueletos tira coração do mesmo jeito, mas sem o empurrão de quem está a pé: o skate perde o embalo. Andar para a frente dá impulso, para trás freia, esquerda e direita viram; a ladeira puxa (no half-pipe vai e volta sozinho), rampas de até 76° viram chão e o aventureiro inclina junto com a rampa. Pular (A / espaço) faz o ollie; no ar, esquerda e direita giram. Saindo pela borda do half-pipe, sobe reto e volta para a rampa. Pousar atravessado é tombo ("Caiu!").
 - **Perna empurrando** (pedido do usuário; o KayKit não tem animação de skate): `SkateRider`, um `SkeletonModifier3D` por cima da animação parada. Os quadris baixam (joelhos dobrados), o pé esquerdo fica firme na tábua e, ao dar impulso, o direito desce para o chão ao lado do skate, arrasta para trás e volta para a tábua (ciclo de 0,75 s); os pés são encaixados com conta de perna de duas partes (coxa e canela), joelho dobrando para a frente, e ficam retos. O skate só ganha velocidade enquanto o pé está no chão: uns 4 empurrões até a velocidade máxima, e perdendo um pouco de embalo ele empurra de novo. No ar, os dois pés ficam na tábua e o corpo encolhe. (O modificador aplica a pose e depois a desfaz; quem quiser medir o pé de fora usa `SkateRider.right_foot_drop`.)
 - **Sessão de pontos**: passar de skate pela marca dourada "SESSÃO" dentro da pista começa **60 s** em que cada pulo pousado vale 200 pontos por segundo no ar mais 100 por meia volta ("Giro 360" = 400 com 1 s no ar); sair de perto da pista cancela. No fim, recorde salvo e **1 moeda a cada 100 pontos (até 25)**, e continua no skate. A mira e o painel de armas somem enquanto se anda.
+
+### Ajustes na ilha (pedido do usuário em 2026-10-29)
+
+O pedido: "a cerca dos animais está sem física", "alguns cubos verdes, pilastra com balão em cima, também não têm física", "remove a pista de skate e o skate", "na cidade é possível andar entre os prédios? apenas se isso não gerar bugs de câmera e colisão" e "é possível colocar mais 1 ou 2 corredores na pista? pilotando com IA".
+
+- **O que o jogador atravessava:** `tools/sem_fisica.gd` lista as peças da ilha com tamanho de obstáculo que nenhuma colisão cobre (`godot --headless --path . -s res://tools/sem_fisica.gd`). Ganharam colisão no gerador:
+  - a cerca do pasto (o corpo fica sem escala e a caixa acompanha a madeira esticada);
+  - as bolas em cima dos postes da praça (o Faísca pula e flutua até lá);
+  - os presentes e o trenzinho da festa, os pneus empilhados do box;
+  - o arco amarelo da praça e o arco do palhaço, com colisão no formato (dá para passar por dentro).
+  - Continuam sem colisão, de propósito: arbustos da mata, as esferas mágicas das lanternas, a vassoura da bruxa e o arco de chegada da pista de kart.
+- **Sem skate:** saíram a pista (o gerador não monta mais, e o marcador `Skate` sumiu), `scripts/skate_park.gd`, `scripts/skate_rider.gd`, o skate do `Player`, os avisos, as fotos e os testes de skate, e as peças em `assets/skate/`. A campina continua limpa, sem árvores nem grama, para o sorteio do resto da ilha não mudar.
+- **Vielas na cidade:** em cada quarteirão saíram os dois prédios do meio dos lados norte e sul. Fica uma viela de 10 m de rua a rua, passando pelo jardinzinho do miolo. O sorteio do modelo de cada prédio continua sendo feito, para o resto da ilha ficar igual.
+  - A ilha regenerada foi comparada peça por peça com a anterior: só sumiram a pista de skate e os 10 prédios.
+  - A câmera é um `SpringArm3D` que encosta nas paredes, então não entra nos prédios. O `--ilha` confere isso andando pela viela de uma rua à outra.
+- **Rivais na corrida de kart:** dois karts do box largam ao lado do jogador, com a outra criança e o Mago no banco (`Kart.drive_ai`; o `Kart` lê `ai_throttle` e `ai_steer` em vez do controle).
+  - A `KartRace` guia cada um para um ponto da linha do meio 11 m à frente, na faixa dele (3 m para cada lado), e tira o pé nas curvas fechadas.
+  - O progresso na pista é contado procurando a amostra só um pouco à frente da última, porque no cruzamento do 8 valem as duas pistas.
+  - São fantasmas: ficam na camada de quem dirige e não batem em ninguém.
+  - Velocidades de 15,8 e 16,5 m/s (o kart do jogador vai a 17), com elástico: até 10% mais devagar na frente do jogador e até 8% mais rápido atrás.
+  - Preso parado por 2,5 s ou fora da pista, o rival volta para o meio dela ali mesmo.
+  - A faixa de cima mostra a posição ("2º de 3"). A chegada mostra o lugar, e o 1º lugar dá mais 5 moedas.
+  - Depois da chegada, os rivais andam mais 4 s e voltam para as vagas. Saindo da corrida, voltam na hora.
+  - O `--pista-kart` confere: os rivais no grid, a volta inteira deles junto com o jogador (pela ponte, sem sair da pista nem precisar voltar ao meio), a posição na faixa, o 3º lugar sem o bônus e a volta para as vagas.
+- **Fotos:** `--atividades-captura` ganhou `a03d_largada_com_rivais`, `a16_vielas_da_cidade` e `a17_dentro_da_viela`, e perdeu as do skate.
 
 ### Dia e noite (2026-10-29, pedido do usuário)
 
@@ -912,6 +938,8 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 
 ### Fase 1-2: Túneis do Morro (aprovada e construída em 2026-10-29)
 
+> **Substituído em 2026-10-29:** a fase foi refeita no padrão de playgrounds (ver "Padrão de level design das fases", mais abaixo). O texto desta seção fica como registro de como ela era.
+
 **Como ficou:**
 - **Código:** `scripts/faisca/fases/fase_1_2.gd` (`Fase12`), uma função por trecho, com as peças da caverna no fim:
   - `rocha`: a pedra escura sólida;
@@ -1017,6 +1045,8 @@ Trechos:
 
 ### Fases mais compridas (pedido do usuário em 2026-10-29: "as fases do faisca estão muito curtas")
 
+> **Substituído em 2026-10-29:** a 1-1 e a 1-2 foram refeitas no padrão de playgrounds (ver "Padrão de level design das fases", mais abaixo). O texto desta seção fica como registro de como ela era.
+
 As duas fases tinham uns 130 m (1-1) e 200 m (1-2): quem já sabe jogar passava cada uma em 1 a 2 minutos, e o plano era de 4 a 7. Cada uma ganhou cinco trechos novos no meio do caminho, com brincadeiras novas (peças do Platformer Pack que faltavam: esteira, argola, botão, alavanca e canhão; o resto feito por código). Os trechos antigos andaram para a frente sem mudar por dentro. As próximas fases já nascem nesse tamanho.
 
 **1-1 Pulinhos nas Nuvens (de uns 130 m para uns 300 m, 3 postos, 101 estrelinhas):**
@@ -1052,6 +1082,8 @@ As duas fases tinham uns 130 m (1-1) e 200 m (1-2): quem já sabe jogar passava 
 - `--faisca-fase-captura` ganhou as fotos `03b`, `07b`, `09b`, `09c` e `10b` a `10d`. O `--faisca-fase-1-2-captura` ganhou `09b` a `09e` e `12b` a `12d`.
 
 ### Fase 2-1: Cozinha Gigante (feita em 2026-10-29, pedido do usuário: "pode fazer a próxima fase")
+
+> **Substituído em 2026-10-29:** a fase foi refeita no padrão de playgrounds (ver "Padrão de level design das fases", mais abaixo). O texto desta seção fica como registro de como ela era.
 
 A porta do 2º andar do farol, que pede 60 estrelinhas. `scripts/faisca/fases/fase_2_1.gd`, com as peças do Restaurant Bits (em `assets/faisca/cozinha/`) ampliadas 8 vezes: a bancada tem 8 m, o prato 7,6 m e a geladeira 20 m. A faca ficou de fora (tema infantil).
 - **O caminho:**
@@ -1224,6 +1256,109 @@ O Faísca usava só uns poucos sons emprestados das crianças, e pegar estrelinh
 - **Testes e prévia:**
   - O `--faisca-controle` confere que o zumbido toca e para com o voo, e que cada ação tocou o seu som (`Sfx.logging`).
   - Uma prévia com todos os sons em sequência fica em `tools/capturas/faisca/sons_do_faisca.wav` (fora do git).
+
+### Padrão de level design das fases (aprovado pelo usuário em 2026-10-29)
+
+Toda fase do Faísca segue este padrão. O documento ilustrado está em `docs/level-design/molde-das-fases.html` (abre no navegador; também publicado como artifact privado em https://claude.ai/artifact/Vz5M6GjcTFuAMAJoK64VjM). As duas maquetes 3D em blocos que mostram o padrão também estão em `docs/level-design/`:
+- `maquete-2-2-nuvens-de-algodao-doce.html`, uma fase de céu (https://claude.ai/artifact/7VWLwjDfRYUUySyx7ppCog);
+- `maquete-2-3-quarto-de-brinquedos.html`, uma fase de chão (https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V).
+
+As páginas carregam a three.js do jsDelivr, então precisam de internet. A pasta tem `.gdignore`.
+
+**Como se chegou nele:**
+- A primeira proposta era uma espinha de trechos, com uma praça e três galhos. O usuário achou que parecia "um trilho de trem, muito linear".
+- Ele mandou os princípios de level design do Astro Bot:
+  - playgrounds;
+  - caminho mostrado pelo cenário;
+  - marco para se orientar;
+  - poucos movimentos;
+  - nada ambíguo.
+- A versão em playgrounds foi aprovada ("ficou mais divertido").
+
+**O padrão:**
+- **Marco:** um objeto enorme do tema (bolo-montanha, castelo de blocos, torre de nuvens, geladeira), com a Estrela Grande no alto, visível de toda a fase.
+- **Quatro playgrounds em volta do marco, subindo em espiral.** Cada um tem 40 a 60 m, uma ideia só da novidade e um mini-marco próprio.
+  1. Apresenta: sem risco, com chão embaixo, e a dica do Vovô. Posto P0.
+  2. Desenvolve: risco leve e mais de um caminho. Vaga-lume 1. Posto P1.
+  3. Central: o maior, com coração extra e o poder da fase quando houver. Vaga-lume 2 num bolso alto. Posto P2.
+  4. Reviravolta: sobe pelo próprio marco e guarda o segredo com o vaga-lume 3. Posto P3.
+- **Arena:** no alto do marco, com três Bolotas ou um mini-chefe guardando o baú.
+- **Três viagens** entre os playgrounds (nuvem-carro, canhão, trenzinho, carrinho de mina...). Duram 10 a 20 s e não têm risco. A última vai e volta e serve de atalho.
+- **Dentro de cada playground:**
+  - posto na entrada;
+  - trilha creme no chão até um arco grande de saída, visível de qualquer ponto;
+  - uma fileira (postes, bengalas) apontando para a saída;
+  - estrelinhas como migalhas;
+  - bolsos em cima, embaixo e atrás das coisas;
+  - Bolotas em espaço aberto.
+- **Poucos movimentos:** pular, flutuar, socar, mais os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo. A variedade vem das peças de cada fase e de **um poder por fase**, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete na 2-2, Ioiô na 2-3). A 1-1, a 1-2 e a 2-1 não têm poder.
+- **Nada ambíguo:**
+  - sombra redonda de pouso sempre embaixo do Faísca;
+  - degrau de até 1,6 m no caminho (2 m nos bolsos);
+  - vão de 3 a 4 m pulando e de 7 a 9 m flutuando;
+  - plataforma de pouso de 3 × 3 m ou maior;
+  - mais de 4 m de altura sem mola tem que parecer claramente alto demais;
+  - Bolotas em lugar estreito só no playground 4.
+- **Cores com um papel só cada:**
+
+  | Cor | Quer dizer |
+  |---|---|
+  | creme | caminho |
+  | dourado | pega |
+  | laranja | mexe ou faz alguma coisa (molas, botões, arcos de saída, argolas do ioiô) |
+  | roxo | inimigo |
+  | lilás | cuidado, some |
+  | ciano | Faísca e lugar seguro |
+  | verde-limão | segredo por perto |
+
+- **Céu e chão:**
+  - Nas fases de céu, cair no vazio custa um coração.
+  - Nas fases de chão, o chão é a rede de segurança: cair de um móvel só faz descer, sem perder coração, e uma escada (livros, pratos, caixas) leva de volta.
+  - O risco no chão vem de uma brincadeira, como "o chão é lava": encostar conta como cair.
+- **Tamanho:**
+  - 10 a 12 min no caminho para uma criança;
+  - 80 a 100 estrelinhas, metade no caminho e metade nos bolsos;
+  - 3 vaga-lumes, nos playgrounds 2, 3 e 4;
+  - 2 ou 3 Bolotas por playground, mais a arena;
+  - 1 ou 2 corações extras.
+
+**As fases prontas no padrão novo** (pedido do usuário no mesmo dia: "reconstrói as fases que já temos para atender o novo design"):
+
+| Parte | 1-1 Pulinhos nas Nuvens | 1-2 Túneis do Morro | 2-1 Cozinha Gigante |
+|---|---|---|---|
+| Marco | Torre de Nuvens, com a Ilha do Baú no alto | Poço do Cristal, um cristal gigante aceso no meio da caverna | a Geladeira |
+| Novidade | pular, flutuar e o laser | o laser acende tochas | tampas que pulam |
+| 1 · Apresenta | Ilha dos Pulinhos: pulo alto e esteiras | Salão das Tochas: três tochas abrem a porta | Mesa do Café: pratos de degrau e a primeira tampa |
+| 2 · Desenvolve | Ilhas das Argolas: flutuar sobre vãos e as primeiras Bolotas | Mina de Ouro: a ponte da tocha, os tablados e a parede rachada | Bancada das Panelas: rolos e a tampa do vão |
+| 3 · Central | Jardim das Flores: laser nas flores e botões | Sala das Alavancas, com a sala escura e o depósito como bolsos | Fogão e Pizza: a pizza que gira, as bocas e a tampa até os livros |
+| 4 · Reviravolta | nuvens que somem e plataformas que se mexem, subindo pela torre | cristais que jogam para o alto, subindo pelo poço | Pia e Prateleira: pratos e bolhas na pia, bolhas de degrau e o sorvete |
+| Arena | Ilha do Baú | a Bolotona | em cima da geladeira |
+
+**Como ficaram as três (refeitas e testadas em 2026-10-29; ninguém jogou com controle ainda):**
+- **Peças do padrão, no `Fase`:**
+  - `playground(nome, centro, raio, entrada)` registra cada playground (os testes usam);
+  - `trilha_creme(pontos)` desenha a trilha creme no chão, um quadro depois de montar, seguindo o relevo;
+  - `arco_de_saida(pe, giro, cor)` põe o arco do Platformer em 2x, e `saidas` guarda as saídas (na caverna, as saídas são a porta das tochas, o elevador e a grade amarela);
+  - `brilho_de_marco(base, altura)` faz a coluna de luz dourada do baú, que aparece de toda a fase;
+  - `chao_largo(tamanho, topo, escala)` estica um morro em X e Z.
+- **Sombra de pouso:** o Faísca tem uma sombra redonda embaixo dele (`Jogador._atualizar_sombra`), que diminui e clareia com a altura.
+- **Viagens que esperam:** `movel_peca` e o `elevador` da 1-2 ganharam `pausa` (o pedaço do vaivém parado em cada ponta). Sem isso, o prato voltava no instante em que chegava, e quem descia andando caía no vão.
+- **1-1 Pulinhos nas Nuvens:** marco na Torre de Nuvens, em (0, 0, -96), com a arena a 22 m. Tem 82 estrelinhas soltas (118 com as das Bolotas), 12 Bolotas, 3 postos, 5 esteiras, 4 argolas, 3 botões, 5 nuvens que somem, o canhão e 3 plataformas que se mexem. `--faisca-fase` confere 44 pontos.
+- **1-2 Túneis do Morro:**
+  - o marco é o Poço do Cristal, em (0, 0, -66): um prisma de cristal de 10 m de largura, aceso, do fundo do poço (-24 m) até a arena (30 m);
+  - Salão das Tochas no chão, carrinho subindo a rampa até a Mina de Ouro (8 m), elevador até a Sala das Alavancas (16 m), balsa até o Poço dos Cristais (16 m) e três cristais até a arena;
+  - os lados das grades ganharam colisão (`_lados_da_grade`), e o chão passa por baixo das portas e das paredes rachadas;
+  - 83 estrelinhas soltas (122 com as das Bolotas), 13 Bolotas (com a Bolotona e as filhas), 19 tochas (12 já acesas), 2 paredes rachadas, 1 ponte, 3 postos;
+  - `--faisca-fase-1-2` confere 58 pontos, com os pulos de verdade nos caixotes, nos tablados do abismo, no caixote da alavanca e nos três cristais.
+- **2-1 Cozinha Gigante:**
+  - a geladeira fica no meio da cozinha, em (0, 0, -70), com a arena em cima (20 m);
+  - Mesa do Café ao sul, ponte de tábuas de cortar até a Bancada das Panelas (oeste), prato que leva até o Fogão e Pizza (norte), prato que vai e volta por trás da geladeira até a Pia e Prateleira (leste), e o sorvete na prateleira encostada na geladeira;
+  - a pizza fica afundada na mesa (`pizza` ganhou `escala`; em 6, com 12 m), para subir nela com um pulo;
+  - o V3 fica na prateleira que dobra atrás da geladeira;
+  - 81 estrelinhas soltas (108 com as das Bolotas), 9 Bolotas, 3 tampas, 4 bocas, 2 rolos, 4 pratos que se mexem, 5 bolhas, 3 postos;
+  - `--faisca-fase-2-1` confere 39 pontos, com os pulos de verdade na caixa de cereal, na pizza, nas três tampas, nas bolhas de degrau e no sorvete.
+- **Fotos:** `--faisca-fase-captura`, `--faisca-fase-1-2-captura` e `--faisca-fase-2-1-captura` tiram uma foto de cima da fase toda, uma de cada playground de cima e de dentro, e a da arena.
+- **Saves antigos:** as estrelinhas são contadas pela ordem em que a fase cria cada uma. Num save de antes, as já pegas aparecem apagadas em outros lugares, mas o total de cada fase continua certo.
 
 ### Em aberto
 

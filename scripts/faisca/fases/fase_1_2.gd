@@ -4,15 +4,19 @@ extends Fase
 ## Estrela Grande na mina velha dos Ossinhos, por baixo do Morro dos Ventos, e as tochas que os esqueletos
 ## deixaram estão apagadas. Fase do chão, no escuro azulado da caverna, com as peças do Dungeon Pack em
 ## 1,5x (módulos de 6 m) e sem teto: em cima, o escuro faz a vez da rocha e a câmera fica solta.
-## Novidades: tochas que o laser acende (clareiam; três abrem a porta; as do abismo sobem a ponte),
-## paredes rachadas que três golpes quebram e elevadores de madeira. Plano na seção 11 do docs/ILHA-CAFUNE.md.
-## O caminho vai para -Z, subindo em quatro níveis (chão a 0, 8, 16 e 28 m). Em 2026-10-29 o usuário achou a
-## fase muito curta (uns 200 m) e ela ganhou cinco trechos novos (marcados com *), passando de uns 380 m:
-##   1 Boca do túnel (o Ossinho acena)  2 Corredor das tochas (V1 atrás da parede rachada)
-##   3 Poço dos andaimes (V2 numa viga alta)  4 Abismo: as tochas sobem a ponte (P1 antes; V3 embaixo)
-##   5 Mina de ouro (P2)  *6 Carrinho de mina (P3 na chegada)  *7 Sala escura  8 Elevadores
-##   9 Porta das três tochas  *10 Alavancas  *11 Poço dos cristais  *12 Arena da Bolotona (P4)
-##   13 Câmara do Baú
+## Novidade: o laser acende tochas (clareiam, abrem portas e levantam pontes). Refeita em 2026-10-29 no padrão
+## de playgrounds (docs/level-design/molde-das-fases.html): quatro salas em volta do marco, o Poço do Cristal (um
+## cristal gigante aceso no meio da caverna), subindo até a arena da Bolotona no alto dele.
+##   1 Salão das Tochas (chão, ao sul): três tochas abrem a porta do carrinho; andaime com estrelinhas
+##   viagem: carrinho de mina subindo a rampa
+##   2 Mina de Ouro (8 m, a oeste): abismo com a ponte da tocha ou os tablados; V1 atrás da parede rachada (P1)
+##   viagem: elevador
+##   3 Sala das Alavancas (16 m, ao norte): três grades; a da saída, a da sala escura (V2) e a do depósito
+##     (coração) (P2)
+##   viagem: balsa que vai e volta (atalho)
+##   4 Poço dos Cristais (16 m, a leste): cristais que jogam para o alto, subindo até a arena; V3 atrás da
+##     parede rachada (P3)
+##   Arena no alto do cristal (30 m): a Bolotona; vencida com as filhas, a grade da alcova do baú abre
 
 ## Escala das peças de construção e o tamanho de um módulo.
 const S := 1.5
@@ -21,6 +25,8 @@ const COR_ROCHA := Color("3b3550")
 const COR_MADEIRA := Color("7a4a2a")
 ## Altura das paredes invisíveis acima das que se veem.
 const LIMITE := 16.0
+## O marco: o meio do Poço do Cristal (o cristal vai de 24 m abaixo até 24 m acima; a arena fica em cima).
+const CRISTAL := Vector3(0, 0, -66)
 
 var _mat_rocha: StandardMaterial3D
 var _paredes: StaticBody3D
@@ -34,8 +40,8 @@ var _grade_da_arena: Grade
 
 func _montar() -> void:
 	nome = "1-2 Túneis do Morro"
-	inicio = Vector3(0, 0.1, 2.5)
-	limite_queda = -6.0
+	inicio = Vector3(-3, 0.1, -16)
+	limite_queda = -12.0
 	_mat_rocha = _material(COR_ROCHA)
 	_mat_rocha.roughness = 1.0
 	_paredes = StaticBody3D.new()
@@ -44,35 +50,93 @@ func _montar() -> void:
 	_limites.collision_layer = CAMADA_LIMITE
 	_limites.collision_mask = 0
 	add_child(_limites)
-	_boca_do_tunel()
-	_corredor_das_tochas()
-	_poco_dos_andaimes()
-	_abismo()
+	_poco_do_cristal()
+	_salao_das_tochas()
+	_carrinho_ate_a_mina()
 	_mina_de_ouro()
-	_carrinho_de_mina()
+	_elevador_ate_as_alavancas()
+	_sala_das_alavancas()
 	_sala_escura()
-	_elevadores()
-	_porta_das_tres_tochas()
-	_alavancas()
+	_deposito()
+	_balsa_ate_os_cristais()
 	_poco_dos_cristais()
-	_arena_da_bolotona()
-	_camara_do_bau()
+	_arena_no_cristal()
 
 
-## 1. Logo depois da entrada: atrás, o arco claro da saída com a luz do dia; na frente, o Ossinho mineiro
-## acenando, barris, caixotes, a trilha de estrelinhas e uma Bolota dormindo.
-func _boca_do_tunel() -> void:
-	rocha(-15.0, 15.0, 7.5, -66.0, 0.0, -2.0)
-	chao([-3.0, 3.0], 3.0, -3.0, 0.0)
-	parede_z(6.75, 3.0, -39.0, 0.0)
-	parede_z(-6.75, 3.0, -21.0, 0.0)
-	parede_z(-6.75, -33.0, -39.0, 0.0)
-	# A entrada: o vão sem a porta, com a claridade lá fora (fechado por uma parede invisível).
-	var vao := peca_de(MASMORRA, "wall_doorway", Vector3(0, 0, 6.75), PI, S, false)
+## O marco: o cristal gigante aceso no meio do poço, sólido, com a luz azul que chega em todas as salas. Lá no
+## fundo, cristaizinhos dão a ideia de fundura.
+func _poco_do_cristal() -> void:
+	var corpo := StaticBody3D.new()
+	corpo.position = CRISTAL
+	var cs := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = 5.0
+	cil.height = 48.0
+	cs.shape = cil
+	corpo.add_child(cs)
+	add_child(corpo)
+	var cristal := _material(Color("7fd8ff"))
+	cristal.emission_enabled = true
+	cristal.emission = Color("2fa8ff")
+	cristal.emission_energy_multiplier = 0.8
+	cristal.roughness = 0.15
+	cristal.metallic_specular = 0.9
+	# Prismas de seis lados (as faces pegam a luz das tochas): o grande e quatro menores grudados nele.
+	var principal := MeshInstance3D.new()
+	principal.mesh = _prisma(4.9, 48.0, 4.5)
+	principal.material_override = cristal
+	principal.position = CRISTAL
+	add_child(principal)
+	for spec in [[Vector3(4.6, -8, 2.0), 1.6, 14.0, 0.35], [Vector3(-4.4, 2, -2.5), 1.4, 12.0, -0.3],
+			[Vector3(2.8, 12, -4.2), 1.2, 10.0, 0.25], [Vector3(-3.6, -14, 3.8), 1.8, 16.0, -0.4]]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = _prisma(spec[1], spec[2], spec[1] * 0.25)
+		mi.material_override = cristal
+		mi.position = CRISTAL + spec[0]
+		mi.rotation = Vector3(spec[3], 0.4, -spec[3])
+		add_child(mi)
+	for y in [-6.0, 14.0]:
+		var luz := OmniLight3D.new()
+		luz.light_color = Color("5fc8ff")
+		luz.light_energy = 2.2
+		luz.omni_range = 34.0
+		luz.position = CRISTAL + Vector3(0, y, 0)
+		add_child(luz)
+	var sorteio := RandomNumberGenerator.new()
+	sorteio.seed = 12
+	for i in 16:
+		var mi := MeshInstance3D.new()
+		var tam := sorteio.randf_range(0.8, 1.8)
+		mi.mesh = _prisma(0.35 * tam, 2.0 * tam, 0.05)
+		mi.material_override = cristal
+		mi.position = CRISTAL + Vector3(sorteio.randf_range(-16.0, 16.0), -24.0 + tam, sorteio.randf_range(-16.0, 16.0))
+		mi.rotation = Vector3(sorteio.randf_range(-0.4, 0.4), 0, sorteio.randf_range(-0.4, 0.4))
+		add_child(mi)
+
+
+## Prisma de cristal de seis lados (raio embaixo, altura e raio em cima).
+func _prisma(raio: float, altura: float, topo: float) -> CylinderMesh:
+	var p := CylinderMesh.new()
+	p.radial_segments = 6
+	p.rings = 1
+	p.bottom_radius = raio
+	p.top_radius = topo
+	p.height = altura
+	return p
+
+
+## Playground 1 · Salão das Tochas (apresenta): a sala da entrada, no chão, com a claridade do dia atrás e a beira do
+## poço na frente (dá para ver o cristal e o brilho do baú lá no alto). Três tochas apagadas abrem a porta do
+## carrinho: uma no caminho, uma do outro lado e uma em cima dos caixotes (pulo alto e voo). O andaime do canto
+## leste é o bolso, com estrelinhas no alto. O Ossinho mineiro acena; uma Bolota dorme.
+func _salao_das_tochas() -> void:
+	playground("1 · Salão das Tochas", Vector3(0, 0, -30), 18.0, inicio)
+	rocha(-18.0, 18.0, -12.0, -48.0, 0.0)
+	chao([-15.0, -9.0, -3.0, 3.0, 9.0, 15.0], -15.0, -45.0, 0.0)
+	parede_x(-11.25, [-15.0, -9.0, 3.0, 9.0, 15.0], 0.0)
+	var vao := peca_de(MASMORRA, "wall_doorway", Vector3(-3.0, 0, -11.25), PI, S, false)
 	vao.find_child("wall_doorway_door", true, false).queue_free()
-	peca_de(MASMORRA, "wall_half", Vector3(3.0, 0, 6.75), 0.0, S, false)
-	peca_de(MASMORRA, "wall_half", Vector3(-3.0, 0, 6.75), PI, S, false)
-	_muro(Vector3(0, 0, 6.75), Vector3(12.0, M, 1.5))
+	_muro(Vector3(-3.0, 0, -11.25), Vector3(6.0, M, 1.5))
 	var dia := MeshInstance3D.new()
 	var quadro := QuadMesh.new()
 	quadro.size = Vector2(6.0, 6.0)
@@ -81,246 +145,209 @@ func _boca_do_tunel() -> void:
 	claro.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	claro.albedo_color = Color("e4f3ff")
 	dia.material_override = claro
-	dia.position = Vector3(0, 3.0, 7.8)
+	dia.position = Vector3(-3.0, 3.0, -10.2)
 	dia.rotation.y = PI
 	add_child(dia)
 	var luz_do_dia := OmniLight3D.new()
 	luz_do_dia.light_color = Color("cfe6ff")
 	luz_do_dia.light_energy = 2.5
 	luz_do_dia.omni_range = 13.0
-	luz_do_dia.position = Vector3(0, 3.5, 5.0)
+	luz_do_dia.position = Vector3(-3.0, 3.5, -13.0)
 	add_child(luz_do_dia)
-	_ossinho(Vector3(-3.4, 0, -3.0), 0.5)
-	enfeite_m("barrel_large", Vector3(-4.8, 0, 4.6))
-	enfeite_m("barrel_small_stack", Vector3(4.6, 0, 4.8), 1.2, 0.4)
-	enfeite_m("crates_stacked", Vector3(4.7, 0, -1.6), 1.2, -0.3)
-	enfeite_m("bucket_pickaxes", Vector3(-4.9, 0, 1.4), 1.2, 0.8)
-	trilha(Vector3(0, 1.0, 0.0), Vector3(0, 1.0, -7.0), 4)
-	bolota(Vector3(2.3, 0, -4.6), true)
+	parede_z(-18.75, -15.0, -21.0, 0.0)
+	parede_z(-18.75, -33.0, -45.0, 0.0)
+	parede_z(18.75, -15.0, -45.0, 0.0)
+	# Mureta na beira do poço.
+	rocha(-18.0, 18.0, -47.2, -48.0, 0.9, 0.0)
+
+	var ta := tocha(Vector3(-11.0, 0, -23.0))
+	var tb := tocha(Vector3(9.0, 0, -36.0))
+	caixote(Vector3(-12.0, 0, -40.0), Vector3(1.8, 1.6, 1.8))
+	caixote(Vector3(-15.0, 0, -41.0), Vector3(3.0, 3.0, 3.0))
+	var tc := tocha(Vector3(-15.8, 3.0, -41.8), false)
+	saidas.append(porta_das_tochas(Vector3(-18.75, 0, -27.0), PI / 2.0, [ta, tb, tc]))
+	ponto_de_dica(Vector3(-6.0, 0.5, -22.5), 2.6, "tocha")
+	tocha(Vector3(-16.4, 0, -14.0), true, true)
+	trilha_creme([Vector3(-3, 0, -15), Vector3(-4, 0, -21), Vector3(-9, 0, -26), Vector3(-17.5, 0, -27)])
+	trilha(Vector3(-3.5, 1.0, -18.0), Vector3(-8.0, 1.0, -25.5), 4)
+	estrelinha(Vector3(-12.0, 2.6, -40.0))
+	estrelinha(Vector3(-14.2, 4.0, -40.2))
+
+	# Bolso: o andaime do canto leste, com estrelinhas no alto.
+	tablado(Vector3(13.0, 1.6, -16.5), Vector2(4, 4))
+	tablado(Vector3(13.0, 3.2, -21.5), Vector2(4, 4))
+	tablado(Vector3(8.0, 4.8, -21.5), Vector2(4, 4))
+	roda(Vector3(8.0, 5.8, -21.5), 1.2, 4)
+	trilha(Vector3(2.0, 1.0, -17.5), Vector3(9.0, 1.0, -15.5), 3)
+	estrelinha(Vector3(13.0, 2.6, -16.5))
+	estrelinha(Vector3(13.0, 4.2, -21.5))
+
+	_ossinho(Vector3(-7.0, 0, -15.0), 0.5)
+	bolota(Vector3(3.0, 0, -22.0), true)
+	enfeite_m("barrel_large", Vector3(-15.8, 0, -18.0))
+	enfeite_m("barrel_small_stack", Vector3(15.6, 0, -40.0), 1.2, 0.4)
+	enfeite_m("crates_stacked", Vector3(16.0, 0, -30.0), 1.2, -0.3)
+	enfeite_m("bucket_pickaxes", Vector3(-15.9, 0, -33.0), 1.2, 0.8)
+	enfeite_m("rocks", Vector3(4.0, 0, -44.5), 1.3, 1.0)
 
 
-## 2. Corredor de mina com andaimes atravessados, cada vez mais escuro. A primeira tocha apagada fica no
-## caminho (o Vovô mostra o laser na tocha); a parede rachada da esquerda esconde o V1 num nicho com velas.
-func _corredor_das_tochas() -> void:
-	chao([-3.0, 3.0], -9.0, -39.0, 0.0)
-	for z in [-6.0, -18.0, -30.0]:
-		peca_de(MASMORRA, "scaffold_pillars_connected", Vector3(0, 0, z), 0.0, Vector3(12.6 / 7.0, S, S), false)
-		for lado in [-1.0, 1.0]:
-			_muro(Vector3(5.6 * lado, 0, z), Vector3(0.6, 5.4, 0.6), false)
-	ponto_de_dica(Vector3(0, 0.5, -7.5), 3.0, "tocha")
-	tocha(Vector3(-3.6, 0, -11.0))
-	tocha(Vector3(3.8, 0, -21.0))
-	tocha(Vector3(-3.8, 0, -35.0))
-	tocha(Vector3(3.8, 0, -40.0))
-	trilha(Vector3(0, 1.0, -12.0), Vector3(0, 1.0, -21.0), 4)
-	bolota(Vector3(-2.0, 0, -17.0))
-	bolota(Vector3(2.4, 0, -32.0))
-	# A parede rachada e o nicho atrás dela.
-	parede_rachada(Vector3(-6.75, 0, -27.0), PI / 2.0)
-	_muro(Vector3(-6.75, M, -27.0), Vector3(1.5, LIMITE, 6.0), true)
-	ponto_de_dica(Vector3(-3.4, 0.5, -27.0), 2.6, "golpe")
-	chao([-10.5], -27.0, -27.0, 0.0)
-	parede_z(-14.25, -27.0, -27.0, 0.0, 1, "wall_inset_candles", PI / 2.0)
-	parede_x(-23.25, [-10.5], 0.0)
-	parede_x(-30.75, [-10.5], 0.0)
+## Viagem 1: o carrinho de mina, da estação do lado de fora da porta das tochas, sobe a rampa até a mina (8 m).
+func _carrinho_ate_a_mina() -> void:
+	rocha(-24.0, -18.0, -24.0, -30.0, 0.0)
+	chao_pedaco(Vector3(-21.0, 0.0, -27.0), Vector2(6.0, 6.0))
+	var de := Vector3(-21.5, 0.0, -28.5)
+	var ate := Vector3(-21.5, 8.0, -46.0)
+	carrinho(de, ate)
+	caixote(Vector3(-23.4, 0.0, -25.4), Vector3(1.2, 0.7, 1.2))
+	estrelinha(de + Vector3(0, 2.4, 0))
+	for i in 4:
+		estrelinha(de.lerp(ate, (i + 1) / 5.0) + Vector3(0, 2.1, 0))
+	tocha(Vector3(-23.2, 0.0, -29.4), true, true)
+	# Chegada: a plataforma da mina, com o P1.
+	rocha(-24.0, -18.0, -46.0, -52.0, 8.0)
+	chao_pedaco(Vector3(-21.0, 8.0, -49.0), Vector2(6.0, 6.0))
+	posto(Vector3(-21.0, 8.0, -50.5))
+
+
+## Playground 2 · Mina de Ouro (desenvolve): uma sala larga a 8 m, cortada no meio por um abismo. Pelo meio, a tocha
+## da beira levanta a ponte; pela esquerda, dois tablados de pulo. Dentro do abismo, uma beiradinha com
+## estrelinhas e uma mola de volta (bolso embaixo). A parede rachada do oeste esconde o V1 num nicho com velas.
+## Três Bolotas, o monte de ouro (mini-marco) e o elevador no canto nordeste.
+func _mina_de_ouro() -> void:
+	playground("2 · Mina de Ouro", Vector3(-39.0, 8.0, -63.0), 20.0, Vector3(-21.0, 8.0, -49.0))
+	rocha(-54.0, -24.0, -42.0, -54.0, 8.0)
+	rocha(-54.0, -24.0, -66.0, -84.0, 8.0)
+	chao([-51.0, -45.0, -39.0, -33.0, -27.0], -45.0, -51.0, 8.0)
+	chao([-51.0, -45.0, -39.0, -33.0, -27.0], -69.0, -81.0, 8.0)
+	parede_x(-41.25, [-51.0, -45.0, -39.0, -33.0, -27.0], 8.0)
+	parede_z(-54.75, -45.0, -69.0, 8.0)
+	parede_z(-54.75, -81.0, -81.0, 8.0)
+	parede_x(-84.75, [-51.0, -45.0, -39.0, -33.0], 8.0)
+	# Mureta na beira do poço (o lado leste, menos a chegada do carrinho).
+	rocha(-24.8, -24.0, -42.0, -46.0, 8.9, 8.0)
+	rocha(-24.8, -24.0, -52.0, -54.0, 8.9, 8.0)
+	rocha(-24.8, -24.0, -66.0, -84.0, 8.9, 8.0)
+
+	# O abismo: a ponte da tocha pelo meio e os tablados pela esquerda.
+	var t1 := tocha(Vector3(-36.0, 8.0, -52.5))
+	ponte_da_tocha(t1, Vector3(-39.0, 8.0, -54.0), Vector3(-39.0, 8.0, -66.0))
+	trilha(Vector3(-39.0, 9.0, -55.5), Vector3(-39.0, 9.0, -64.5), 3)
+	tablado(Vector3(-50.0, 8.0, -57.5), Vector2(3.5, 3.0), -14.0, false)
+	tablado(Vector3(-50.0, 8.0, -62.5), Vector2(3.5, 3.0), -14.0, false)
+	estrelinha(Vector3(-50.0, 9.1, -57.5))
+	estrelinha(Vector3(-50.0, 9.1, -62.5))
+	rocha(-32.0, -26.0, -58.0, -62.0, 2.0, -2.0)
+	roda(Vector3(-30.0, 3.0, -60.0), 1.0, 3)
+	mola(Vector3(-27.5, 2.0, -60.0), 19.0)
+
+	# O V1 atrás da parede rachada do oeste.
+	parede_rachada(Vector3(-54.75, 8.0, -75.0), PI / 2.0)
+	_muro(Vector3(-54.75, 8.0 + M, -75.0), Vector3(1.5, LIMITE, 6.0), true)
+	ponto_de_dica(Vector3(-51.0, 8.5, -75.0), 2.6, "golpe")
+	rocha(-61.5, -54.0, -72.0, -78.0, 8.0)
+	chao([-58.5], -75.0, -75.0, 8.0)
+	parede_z(-62.25, -75.0, -75.0, 8.0, 1, "wall_inset_candles", PI / 2.0)
+	parede_x(-71.25, [-58.5], 8.0)
+	parede_x(-78.75, [-58.5], 8.0)
 	var velas := OmniLight3D.new()
 	velas.light_color = Color("ffc070")
 	velas.light_energy = 1.2
 	velas.omni_range = 5.0
-	velas.position = Vector3(-12.0, 2.5, -27.0)
+	velas.position = Vector3(-60.0, 10.5, -75.0)
 	add_child(velas)
-	vaga_lume(Vector3(-10.4, 1.2, -27.0))
-	trilha(Vector3(-9.0, 1.0, -25.5), Vector3(-9.0, 1.0, -28.5), 2)
-	trilha(Vector3(0, 1.0, -25.0), Vector3(0, 1.0, -38.0), 5)
-	enfeite_m("rocks", Vector3(-4.7, 0, -15.6), 1.3, 1.0)
-	enfeite_m("rubble_half", Vector3(4.6, 0, -26.0), 1.0, PI / 2.0)
-	enfeite_m("barrel_small", Vector3(4.9, 0, -34.0), 1.2)
-	enfeite_m("box_large", Vector3(-4.9, 0, -39.5), 1.2, 0.3)
+	vaga_lume(Vector3(-58.0, 9.2, -75.0))
+	trilha(Vector3(-52.0, 9.0, -73.5), Vector3(-52.0, 9.0, -76.5), 2)
+
+	bolota(Vector3(-33.0, 8.0, -47.0))
+	bolota(Vector3(-45.0, 8.0, -74.0))
+	bolota(Vector3(-31.0, 8.0, -79.0))
+	trilha_creme([Vector3(-21, 8, -48), Vector3(-30, 8, -49), Vector3(-38, 8, -52.5)])
+	trilha_creme([Vector3(-39, 8, -67), Vector3(-36, 8, -74), Vector3(-29, 8, -81)])
+	trilha(Vector3(-27.0, 9.0, -48.5), Vector3(-34.0, 9.0, -50.0), 3)
+	trilha(Vector3(-38.0, 9.0, -69.0), Vector3(-31.0, 9.0, -78.0), 3)
+	enfeite_m("rocks_gold", Vector3(-46.0, 8.0, -46.5), 2.4, 0.6)
+	enfeite_m("rocks_gold", Vector3(-51.5, 8.0, -81.0), 1.3, 2.0)
+	enfeite_m("bucket_pickaxes", Vector3(-43.0, 8.0, -45.0), 1.2, 0.4)
+	enfeite_m("pickaxe", Vector3(-49.6, 8.05, -45.0), 1.4, 1.2)
+	enfeite_m("keg", Vector3(-25.6, 8.0, -71.0), 1.1, 0.5)
+	tocha(Vector3(-52.6, 8.0, -43.6), true, true)
+	tocha(Vector3(-25.6, 8.0, -76.0), true, true)
 
 
-## 3. Salão alto: tablados de andaime sobem 1,6 m de cada vez (um de frente para o outro) até a passarela
-## da beirada, a 8 m, onde ficam o P1 e a primeira tocha da ponte. Uma mola no chão, ao lado da passarela,
-## é atalho; outra, no canto, leva à viga do V2.
-func _poco_dos_andaimes() -> void:
-	chao([-9.0, -3.0, 3.0, 9.0], -45.0, -63.0, 0.0)
-	parede_x(-42.75, [-9.0, 9.0], 0.0, 2)
-	parede_z(12.75, -45.0, -63.0, 0.0, 2)
-	parede_z(-12.75, -45.0, -63.0, 0.0, 2)
-	parede_x(-66.75, [-9.0, 9.0], 0.0, 2)
-	# A beirada (o chão do abismo começa aqui, a 8 m).
-	rocha(-6.0, 6.0, -66.0, -72.0, 8.0)
-	chao([-3.0, 3.0], -69.0, -69.0, 8.0)
-	parede_z(6.75, -69.0, -69.0, 8.0)
-	parede_z(-6.75, -69.0, -69.0, 8.0)
-	# Um tablado de frente para o outro (sem precisar acertar de lado); o último é uma passarela até a beirada.
-	tablado(Vector3(6.0, 1.6, -47.0), Vector2(4, 4))
-	tablado(Vector3(6.0, 3.2, -52.5), Vector2(4, 4))
-	tablado(Vector3(0.5, 4.8, -52.5), Vector2(4, 4))
-	tablado(Vector3(-5.0, 6.4, -52.5), Vector2(4, 4))
-	tablado(Vector3(-5.0, 8.0, -61.0), Vector2(4, 10))
-	for t in [Vector3(6.0, 1.6, -47.0), Vector3(6.0, 3.2, -52.5), Vector3(0.5, 4.8, -52.5), Vector3(-5.0, 6.4, -52.5), Vector3(-5.0, 8.0, -59.0)]:
-		estrelinha(t + Vector3(0, 1.0, 0))
-	mola(Vector3(-9.6, 0, -60.0), 21.0)
-	# V2: numa viga lá no alto do canto; a mola do canto joga até ela.
-	mola(Vector3(9.0, 0, -64.0), 22.0)
-	tablado(Vector3(9.0, 9.0, -59.5), Vector2(3, 3), 0.0, false)
-	vaga_lume(Vector3(9.0, 10.2, -59.5))
-	bolota(Vector3(2.5, 0, -49.0))
-	bolota(Vector3(-3.0, 0, -61.0))
-	enfeite_m("crates_stacked", Vector3(-10.4, 0, -45.6), 1.3, 0.5)
-	enfeite_m("barrel_large", Vector3(10.6, 0, -45.2))
-	enfeite_m("rocks_decorated", Vector3(-10.2, 0, -63.4), 1.2, 2.0)
-	tocha(Vector3(-10.4, 0, -54.0), true, true)
-	posto(Vector3(-3.5, 8.0, -69.0))
+## Viagem 2: o elevador do canto nordeste da mina sobe até o patamar da Sala das Alavancas (16 m), onde fica o P2.
+func _elevador_ate_as_alavancas() -> void:
+	saidas.append(elevador(Vector3(-27.0, 8.0, -82.0), 8.0, 10.0, 0.0))
+	trilha(Vector3(-27.0, 11.0, -82.0), Vector3(-27.0, 15.0, -82.0), 3)
+	rocha(-30.0, -18.0, -84.0, -90.0, 16.0)
+	chao_pedaco(Vector3(-24.0, 16.0, -87.0), Vector2(12.0, 6.0))
+	posto(Vector3(-25.0, 16.0, -87.0))
 
 
-## 4. O abismo, escuro e sem ponte. Três tochas em linha (na beirada e em cima de dois pilares): cada uma
-## acesa sobe a ponte de tábuas até a próxima. Os vãos têm 13 e 14 m: com o voo de 1 s, o pulo mais longo
-## flutuando chega a uns 12 m. Embaixo da
-## última ponte, numa beiradinha da parede, o V3, com uma mola para voltar.
-func _abismo() -> void:
-	parede_z(6.75, -75.0, -117.0, -4.0, 3)
-	parede_z(-6.75, -75.0, -117.0, -4.0, 3)
-	var t1 := tocha(Vector3(2.6, 8.0, -70.6))
-	ponte_da_tocha(t1, Vector3(0, 8.0, -72.0), Vector3(0, 8.0, -86.0))
-	rocha(-2.5, 2.5, -86.0, -90.0, 8.0)
-	chao_pedaco(Vector3(0, 8.0, -88.0), Vector2(5.0, 4.0))
-	var t2 := tocha(Vector3(1.4, 8.0, -88.6))
-	ponte_da_tocha(t2, Vector3(0, 8.0, -90.0), Vector3(0, 8.0, -104.0))
-	rocha(-2.5, 2.5, -104.0, -107.0, 8.0)
-	chao_pedaco(Vector3(0, 8.0, -105.5), Vector2(5.0, 3.0))
-	var t3 := tocha(Vector3(1.4, 8.0, -105.6))
-	ponte_da_tocha(t3, Vector3(0, 8.0, -107.0), Vector3(0, 8.0, -120.0))
-	# As estrelinhas desenham o caminho por cima do escuro (de longe, mostram para onde a ponte vai).
-	trilha(Vector3(0, 9.0, -74.0), Vector3(0, 9.0, -84.0), 3)
-	trilha(Vector3(0, 9.0, -92.0), Vector3(0, 9.0, -102.0), 3)
-	trilha(Vector3(0, 9.0, -109.0), Vector3(0, 9.0, -118.0), 3)
-	rocha(-6.0, -2.4, -113.0, -117.0, 2.0, -1.0)
-	vaga_lume(Vector3(-4.6, 3.2, -114.1))
-	mola(Vector3(-3.4, 2.0, -116.1), 19.0)
-	# Lá no fundo, cristais azuis apagadinhos dão a ideia de fundura.
-	var cristal := _material(Color("5fd0ff"))
-	cristal.emission_enabled = true
-	cristal.emission = Color("2fa8ff")
-	cristal.emission_energy_multiplier = 1.6
-	var sorteio := RandomNumberGenerator.new()
-	sorteio.seed = 12
-	for i in 18:
-		var mi := MeshInstance3D.new()
-		mi.mesh = Forma.superelipsoide(Vector3(0.3, 0.9, 0.3) * sorteio.randf_range(0.7, 1.6), 0.6, 1.0)
-		mi.material_override = cristal
-		mi.position = Vector3(sorteio.randf_range(-5.0, 5.0), -16.0 + sorteio.randf_range(-1.0, 1.0), sorteio.randf_range(-74.0, -118.0))
-		mi.rotation = Vector3(sorteio.randf_range(-0.4, 0.4), 0, sorteio.randf_range(-0.4, 0.4))
-		add_child(mi)
-	var fundo := OmniLight3D.new()
-	fundo.light_color = Color("4aa8ff")
-	fundo.light_energy = 2.0
-	fundo.omni_range = 24.0
-	fundo.position = Vector3(0, -12.0, -96.0)
-	add_child(fundo)
+## Playground 3 · Sala das Alavancas (central): a maior sala, a 16 m, de frente para o cristal. Três grades na parede:
+## a da saída (leste, alavanca em cima do caixote), a da sala escura (norte, alavanca guardada por duas Bolotas) e
+## a do depósito (norte, alavanca do lado). As duas colunas com ouro e tochas são o mini-marco.
+func _sala_das_alavancas() -> void:
+	playground("3 · Sala das Alavancas", Vector3(0, 16.0, -105.0), 22.0, Vector3(-22.0, 16.0, -87.5))
+	rocha(-24.0, 24.0, -90.0, -121.5, 16.0)
+	chao([-21.0, -15.0, -9.0, -3.0, 3.0, 9.0, 15.0, 21.0], -93.0, -117.0, 16.0, "floor_tile_large")
+	parede_z(-24.75, -93.0, -117.0, 16.0)
+	parede_x(-120.75, [-21.0, -15.0, -3.0, 3.0, 9.0, 21.0], 16.0)
+	parede_z(24.75, -99.0, -117.0, 16.0)
+	rocha(-18.0, 24.0, -90.0, -90.8, 16.9, 16.0)
+	ponto_de_dica(Vector3(-18.0, 16.5, -94.0), 2.6, "alavanca")
 
+	caixote(Vector3(19.5, 16.0, -101.5), Vector3(3.0, 1.6, 3.0))
+	saidas.append(portao_de_grade(Vector3(24.75, 16.0, -93.0), PI / 2.0, Vector3(20.0, 17.6, -102.6), "yellow"))
+	_lados_da_grade(Vector3(24.75, 16.0, -93.0), true)
+	estrelinha(Vector3(19.0, 18.8, -100.8))
+	portao_de_grade(Vector3(-9.0, 16.0, -120.75), 0.0, Vector3(-3.0, 16.0, -114.0), "red")
+	portao_de_grade(Vector3(15.0, 16.0, -120.75), 0.0, Vector3(11.0, 16.0, -116.5), "blue")
+	_lados_da_grade(Vector3(-9.0, 16.0, -120.75), false)
+	_lados_da_grade(Vector3(15.0, 16.0, -120.75), false)
+	bolota(Vector3(-6.0, 16.0, -111.0))
+	bolota(Vector3(1.0, 16.0, -112.0))
+	bolota(Vector3(6.0, 16.0, -100.0))
 
-## 5. Caverna larga da mina de ouro, a 8 m: P2, pedras de ouro, baldes com picaretas, caixotes, três
-## Bolotas acordadas, um coração extra e duas tochas que os Ossinhos deixaram acesas.
-func _mina_de_ouro() -> void:
-	rocha(-13.5, 13.5, -120.0, -162.0, 8.0)
-	chao([-9.0, -3.0, 3.0, 9.0], -123.0, -147.0, 8.0)
-	parede_x(-119.25, [-9.0, 9.0], 8.0)
-	parede_z(12.75, -123.0, -147.0, 8.0)
-	parede_z(-12.75, -123.0, -147.0, 8.0)
-	parede_x(-150.75, [-9.0, 9.0], 8.0)
-	posto(Vector3(-7.5, 8.0, -124.5))
-	tocha(Vector3(-10.6, 8.0, -128.0), true, true)
-	tocha(Vector3(10.6, 8.0, -140.0), true, true)
-	tocha(Vector3(-10.4, 8.0, -148.0))
 	for x in [-6.0, 6.0]:
-		peca_de(MASMORRA, "pillar", Vector3(x, 8.0, -135.0), 0.0, S, false)
-		_muro(Vector3(x, 8.0, -135.0), Vector3(2.2, M, 2.2), false)
-	enfeite_m("rocks_gold", Vector3(-9.6, 8.0, -134.0), 1.3, 0.6)
-	enfeite_m("rocks_gold", Vector3(9.8, 8.0, -131.0), 1.2, 2.0)
-	enfeite_m("rocks_gold", Vector3(-9.4, 8.0, -144.5), 1.1, 3.6)
-	enfeite_m("rocks_decorated", Vector3(10.0, 8.0, -146.5), 1.0, 1.0)
-	enfeite_m("bucket_pickaxes", Vector3(-8.2, 8.0, -132.0), 1.2, 0.4)
-	enfeite_m("bucket_pickaxes", Vector3(8.6, 8.0, -134.6), 1.2, 2.4)
-	enfeite_m("pickaxe", Vector3(-7.6, 8.05, -145.0), 1.3, 1.2)
-	enfeite_m("crates_stacked", Vector3(10.4, 8.0, -122.6), 1.2, 0.2)
-	enfeite_m("keg", Vector3(-10.5, 8.0, -138.5), 1.1, 0.5)
-	enfeite_m("barrel_large", Vector3(4.6, 8.0, -148.0), 1.0)
-	bolota(Vector3(4.0, 8.0, -129.0))
-	bolota(Vector3(-4.5, 8.0, -137.0))
-	bolota(Vector3(5.0, 8.0, -143.0))
-	coracao(Vector3(10.0, 9.0, -143.0))
-	trilha(Vector3(0, 9.0, -122.0), Vector3(0, 9.0, -131.0), 4)
-	arco(Vector3(-1.0, 9.0, -133.0), Vector3(-1.0, 9.0, -138.0), 1.6, 3)
-	roda(Vector3(-9.6, 10.6, -134.0), 1.2, 3)
-	trilha(Vector3(0, 9.0, -141.0), Vector3(0, 9.0, -147.0), 3)
+		peca_de(MASMORRA, "pillar", Vector3(x, 16.0, -105.0), 0.0, S, false)
+		_muro(Vector3(x, 16.0, -105.0), Vector3(2.2, M, 2.2), false)
+		enfeite_m("rocks_gold", Vector3(x, 16.0, -102.6), 1.1, x)
+	tocha(Vector3(-22.6, 16.0, -118.6), true, true)
+	tocha(Vector3(22.6, 16.0, -118.6), true, true)
+	tocha(Vector3(-22.6, 16.0, -96.0), true, true)
+	trilha_creme([Vector3(-24, 16, -87), Vector3(-16, 16, -93.5), Vector3(-4, 16, -97), Vector3(10, 16, -96), Vector3(23.5, 16, -93)])
+	trilha(Vector3(-14.0, 17.0, -94.0), Vector3(-2.0, 17.0, -97.0), 4)
+	trilha(Vector3(9.0, 17.0, -96.0), Vector3(15.0, 17.0, -95.0), 2)
+	roda(Vector3(0, 17.0, -105.0), 2.2, 5)
+	enfeite_m("crates_stacked", Vector3(-21.6, 16.0, -108.0), 1.2, 0.2)
+	enfeite_m("barrel_large", Vector3(21.6, 16.0, -111.0), 1.0)
 
 
-## 6*. Carrinho de Mina: na estação, o carrinho espera nos trilhos, com uma estrelinha em cima chamando e um
-## caixote de degrau. Pulando dentro, ele leva o Faísca por um túnel de 60 m, clareado por tochas acesas; as
-## estrelinhas ficam no ar em cima dos trilhos (as mais altas pedem pulo, e pulando ele continua indo junto).
-## Na estação de chegada, o P3.
-func _carrinho_de_mina() -> void:
-	rocha(-7.5, 7.5, -162.0, -228.0, 8.0)
-	chao([-3.0, 3.0], -153.0, -225.0, 8.0)
-	parede_z(6.75, -153.0, -225.0, 8.0)
-	parede_z(-6.75, -153.0, -225.0, 8.0)
-	carrinho(Vector3(0, 8.0, -157.0), Vector3(0, 8.0, -219.0))
-	caixote(Vector3(-2.4, 8.0, -155.0), Vector3(1.2, 0.7, 1.2))
-	estrelinha(Vector3(0, 10.4, -157.0))
-	for i in 9:
-		estrelinha(Vector3(0, 12.2 if i % 3 == 2 else 10.1, -165.0 - i * 6.5))
-	var madeira := _material(COR_MADEIRA)
-	for z in [-170.0, -185.0, -200.0, -215.0]:
-		var viga := MeshInstance3D.new()
-		var caixa := BoxMesh.new()
-		caixa.size = Vector3(13.5, 0.5, 0.6)
-		viga.mesh = caixa
-		viga.material_override = madeira
-		viga.position = Vector3(0, 8.0 + 5.8, z)
-		add_child(viga)
-	for spec in [[Vector3(-5.2, 8.0, -156.0)], [Vector3(5.2, 8.0, -177.0)], [Vector3(-5.2, 8.0, -198.0)], [Vector3(5.2, 8.0, -212.0)], [Vector3(-5.2, 8.0, -221.0)]]:
-		tocha(spec[0], true, true)
-	# Chegada: o P3 e o batente no fim dos trilhos.
-	posto(Vector3(3.6, 8.0, -221.5))
-	caixote(Vector3(0, 8.0, -222.8), Vector3(2.6, 0.9, 0.8))
-	enfeite_m("crates_stacked", Vector3(-5.0, 8.0, -160.0), 1.2, 0.3)
-	enfeite_m("barrel_large", Vector3(5.0, 8.0, -159.0), 1.0)
-	enfeite_m("crates_stacked", Vector3(5.0, 8.0, -224.0), 1.1, 1.4)
-
-
-## 7*. Sala Escura: no fundo da mina, a luz da caverna quase apaga quando o Faísca entra. O caminho é uma
-## passarela de tábuas em zigue-zague em cima de um buraco, com uma tocha apagada em cada curva: acesa com o
-## laser, ela clareia o pedaço seguinte. Cair no buraco volta no P3.
+## Bolso da Sala das Alavancas: a sala escura. A luz da caverna quase apaga quando o Faísca entra. O caminho é uma
+## passarela de tábuas em zigue-zague em cima do vazio, com uma tocha apagada em cada curva; no fim, o V2.
 func _sala_escura() -> void:
-	rocha(-7.5, 7.5, -228.0, -231.0, 8.0)
-	chao_pedaco(Vector3(0, 8.0, -229.5), Vector2(13.5, 3.0))
-	for x in [-7.5, 6.0]:
-		rocha(x, x + 1.5, -231.0, -249.0, 8.0)
-	parede_z(6.75, -231.0, -249.0, 8.0)
-	parede_z(-6.75, -231.0, -249.0, 8.0)
-	# Passarela: frente pela esquerda, atravessa, frente pela direita, atravessa de novo e sai pela esquerda.
-	var trechos := [[Vector3(-3.0, 8.0, -233.5), Vector2(3.0, 5.0)], [Vector3(0, 8.0, -237.5), Vector2(9.0, 3.0)],
-		[Vector3(3.0, 8.0, -241.5), Vector2(3.0, 5.0)], [Vector3(0, 8.0, -245.5), Vector2(9.0, 3.0)],
-		[Vector3(-3.0, 8.0, -248.0), Vector2(3.0, 2.0)]]
+	rocha(-18.0, 0.0, -121.5, -124.5, 16.0)
+	chao_pedaco(Vector3(-9.0, 16.0, -123.0), Vector2(18.0, 3.0))
+	parede_z(-18.75, -124.5, -136.5, 16.0)
+	parede_z(0.75, -124.5, -136.5, 16.0)
+	parede_x(-140.25, [-15.0, -9.0, -3.0], 16.0)
+	var trechos := [[Vector3(-12.0, 16.0, -127.0), Vector2(3.0, 5.0)], [Vector3(-9.0, 16.0, -131.0), Vector2(9.0, 3.0)],
+		[Vector3(-6.0, 16.0, -135.0), Vector2(3.0, 5.0)], [Vector3(-9.0, 16.0, -138.5), Vector2(9.0, 2.0)]]
 	for t in trechos:
-		tablado(t[0], t[1], -6.0, false)
-	for p in [Vector3(-3.9, 8.0, -238.2), Vector3(3.9, 8.0, -236.8), Vector3(3.9, 8.0, -246.2), Vector3(-3.9, 8.0, -244.8)]:
+		tablado(t[0], t[1], -14.0, false)
+	for p in [Vector3(-12.9, 16.0, -131.7), Vector3(-5.1, 16.0, -130.3), Vector3(-5.1, 16.0, -137.8)]:
 		tocha(p)
-	trilha(Vector3(-3.0, 9.0, -232.0), Vector3(-3.0, 9.0, -235.0), 2)
-	trilha(Vector3(-1.5, 9.0, -237.5), Vector3(1.5, 9.0, -237.5), 2)
-	trilha(Vector3(3.0, 9.0, -240.0), Vector3(3.0, 9.0, -243.0), 2)
-	trilha(Vector3(1.5, 9.0, -245.5), Vector3(-1.5, 9.0, -245.5), 2)
-	ponto_de_dica(Vector3(0, 8.5, -229.5), 2.4, "tocha")
-	# Escurece só aqui dentro.
+	trilha(Vector3(-12.0, 17.0, -125.5), Vector3(-12.0, 17.0, -128.5), 2)
+	trilha(Vector3(-10.5, 17.0, -131.0), Vector3(-7.5, 17.0, -131.0), 2)
+	vaga_lume(Vector3(-11.0, 17.2, -138.5))
 	var area := Area3D.new()
 	area.collision_layer = 0
 	area.collision_mask = CAMADA_JOGADOR
 	var cs := CollisionShape3D.new()
 	var caixa := BoxShape3D.new()
-	caixa.size = Vector3(13.5, 22.0, 19.0)
+	caixa.size = Vector3(18.0, 22.0, 20.0)
 	cs.shape = caixa
-	cs.position = Vector3(0, 5.0, -240.0)
+	cs.position = Vector3(-9.0, 21.0, -131.0)
 	area.add_child(cs)
 	add_child(area)
 	area.body_entered.connect(func(c: Node3D) -> void:
@@ -341,113 +368,116 @@ func escurecer(sim: bool) -> void:
 	tw.tween_property(_luz_de_cima, "light_energy", 0.03 if sim else 0.18, 0.8)
 
 
-## 8. O poço dos elevadores: duas plataformas de madeira sobem e descem 8 m, com estrelinhas no caminho,
-## até a beirada da porta, a 16 m.
-func _elevadores() -> void:
-	rocha(-7.5, 7.5, -249.0, -264.0, 8.0)
-	chao([-3.0, 3.0], -252.0, -258.0, 8.0)
-	parede_z(6.75, -252.0, -261.0, 8.0, 2)
-	parede_z(-6.75, -252.0, -261.0, 8.0, 2)
-	elevador(Vector3(-3.0, 8.0, -261.5), 8.0, 6.0, 0.0)
-	elevador(Vector3(3.0, 8.0, -261.5), 8.0, 6.0, 3.0)
-	trilha(Vector3(-3.0, 11.0, -261.5), Vector3(-3.0, 15.0, -261.5), 3)
+## Bolso da Sala das Alavancas: o depósito, com o coração extra e estrelinhas.
+func _deposito() -> void:
+	rocha(12.0, 18.0, -121.5, -133.5, 16.0)
+	chao([15.0], -124.5, -130.5, 16.0, "floor_tile_large")
+	parede_z(11.25, -124.5, -130.5, 16.0)
+	parede_z(18.75, -124.5, -130.5, 16.0)
+	parede_x(-134.25, [15.0], 16.0)
+	coracao(Vector3(15.0, 17.0, -130.0))
+	roda(Vector3(15.0, 17.0, -126.5), 1.4, 4)
+	tocha(Vector3(16.6, 16.0, -132.4), true, true)
 
 
-## 9. A sala da porta, a 16 m: três tochas apagadas, uma em cima de caixotes altos (pulo alto e depois
-## flutuar por cima dela). Com as três acesas, a porta de madeira abre.
-func _porta_das_tres_tochas() -> void:
-	rocha(-6.0, 6.0, -264.0, -330.0, 16.0, 8.0)
-	chao([-3.0, 3.0], -267.0, -285.0, 16.0, "floor_tile_large")
-	parede_z(6.75, -267.0, -327.0, 16.0)
-	parede_z(-6.75, -267.0, -327.0, 16.0)
-	var ta := tocha(Vector3(-3.8, 16.0, -271.0))
-	var tb := tocha(Vector3(3.8, 16.0, -275.5))
-	# Os caixotes: um degrau de 1,6 m e a pilha de 3 m com a tocha em cima.
-	caixote(Vector3(-1.4, 16.0, -280.0), Vector3(1.8, 1.6, 1.8))
-	caixote(Vector3(-3.6, 16.0, -280.5), Vector3(2.6, 3.0, 2.6))
-	var tc := tocha(Vector3(-4.2, 19.0, -281.1), false)
-	porta_das_tochas(Vector3(0, 16.0, -288.75), 0.0, [ta, tb, tc])
-	_lados_da_porta(-288.75, 16.0)
-	bolota(Vector3(3.0, 16.0, -283.0))
-	trilha(Vector3(0, 17.0, -266.5), Vector3(0, 17.0, -276.0), 3)
-	estrelinha(Vector3(-1.4, 18.6, -280.0))
-	estrelinha(Vector3(-3.0, 20.0, -279.9))
+## Viagem 3: do lado de fora da grade da saída, a balsa de madeira vai e volta até o Poço dos Cristais (é também o
+## atalho de volta).
+func _balsa_ate_os_cristais() -> void:
+	rocha(24.0, 31.5, -90.0, -96.0, 16.0)
+	chao_pedaco(Vector3(28.5, 16.0, -93.0), Vector2(6.0, 6.0))
+	elevador(Vector3(28.5, 16.0, -88.0), 0.0, 12.0, 0.0, Vector3(0, 0, 8.0))
+	trilha(Vector3(28.5, 17.4, -88.0), Vector3(28.5, 17.4, -81.0), 3)
 
 
-## Meias paredes e colisões dos dois lados de uma porta de 3 m no meio de um corredor de 12 m.
-func _lados_da_porta(z: float, y: float) -> void:
-	peca_de(MASMORRA, "wall_half", Vector3(3.0, y, z), 0.0, S, false)
-	peca_de(MASMORRA, "wall_half", Vector3(-3.0, y, z), PI, S, false)
-	_muro(Vector3(4.5, y, z), Vector3(3.0, M, 1.5))
-	_muro(Vector3(-4.5, y, z), Vector3(3.0, M, 1.5))
-	_muro(Vector3(0, y + M, z), Vector3(12.0, LIMITE, 1.5), true)
-
-
-## 10*. Alavancas: depois da porta, um corredor com três grades. Cada uma abre com um soco na alavanca dela: a
-## primeira logo ao lado, a segunda em cima de um caixote (pula e soca lá de cima) e a terceira guardada por
-## duas Bolotas.
-func _alavancas() -> void:
-	chao([-3.0, 3.0], -291.0, -327.0, 16.0, "floor_tile_large")
-	ponto_de_dica(Vector3(0, 16.5, -292.0), 2.4, "alavanca")
-	portao_de_grade(Vector3(0, 16.0, -297.75), 0.0, Vector3(-3.6, 16.0, -294.0), "yellow")
-	_lados_da_porta(-297.75, 16.0)
-	caixote(Vector3(3.6, 16.0, -304.0), Vector3(2.2, 2.0, 2.2))
-	portao_de_grade(Vector3(0, 16.0, -309.75), 0.0, Vector3(3.6, 18.0, -304.0), "red")
-	_lados_da_porta(-309.75, 16.0)
-	bolota(Vector3(-3.0, 16.0, -303.5), true)
-	trilha(Vector3(0, 17.0, -300.0), Vector3(0, 17.0, -307.0), 3)
-	estrelinha(Vector3(3.6, 19.2, -304.0))
-	portao_de_grade(Vector3(0, 16.0, -321.75), 0.0, Vector3(-3.6, 16.0, -318.0), "blue")
-	_lados_da_porta(-321.75, 16.0)
-	bolota(Vector3(2.4, 16.0, -314.5))
-	bolota(Vector3(-1.0, 16.0, -319.0))
-	coracao(Vector3(4.6, 17.0, -319.5))
-	trilha(Vector3(0, 17.0, -312.0), Vector3(0, 17.0, -318.0), 3)
-	tocha(Vector3(5.0, 16.0, -292.0), true, true)
-	tocha(Vector3(-5.0, 16.0, -312.0), true, true)
-
-
-## 11*. Poço dos Cristais: um poço alto de 16 a 28 m. Os cristais azuis jogam para o alto como molas: do chão
-## para a beirada da direita, dela para a da esquerda e dela para a arena, lá em cima. As estrelinhas
-## mostram o caminho de cada pulo.
+## Playground 4 · Poço dos Cristais (reviravolta): a sala a leste do poço, a 16 m. Os cristais azuis jogam para o
+## alto: do chão da sala para o primeiro tablado dentro do poço, dele para o segundo, e dele para a arena no alto
+## do cristal. A parede rachada do leste esconde o V3, e as estrelinhas no chão levam até ela. Duas Bolotas.
 func _poco_dos_cristais() -> void:
-	rocha(-6.0, 6.0, -330.0, -345.0, 16.0, 8.0)
-	chao([-3.0, 3.0], -333.0, -339.0, 16.0, "floor_tile_large")
-	parede_z(6.75, -333.0, -345.0, 16.0, 3)
-	parede_z(-6.75, -333.0, -345.0, 16.0, 3)
-	tablado(Vector3(4.0, 21.0, -337.0), Vector2(3.5, 4.0), 16.0, false)
-	tablado(Vector3(-4.0, 25.0, -341.5), Vector2(3.5, 4.0), 16.0, false)
-	mola_de_cristal(Vector3(-3.0, 16.0, -335.0), 19.0)
-	mola_de_cristal(Vector3(4.0, 21.0, -338.0), 19.0)
-	mola_de_cristal(Vector3(-4.0, 25.0, -342.5), 15.0)
-	arco(Vector3(-3.0, 19.0, -335.0), Vector3(4.0, 22.5, -337.0), 3.0, 3)
-	arco(Vector3(4.0, 24.0, -338.0), Vector3(-4.0, 26.5, -341.5), 3.0, 3)
-	trilha(Vector3(-4.0, 28.5, -343.0), Vector3(-2.0, 29.5, -346.0), 2)
+	playground("4 · Poço dos Cristais", Vector3(26.0, 22.0, -63.0), 16.0, Vector3(28.0, 16.0, -76.0))
+	rocha(24.0, 42.0, -48.0, -78.0, 16.0)
+	chao([27.0, 33.0, 39.0], -51.0, -75.0, 16.0, "floor_tile_large")
+	parede_x(-47.25, [27.0, 33.0, 39.0], 16.0)
+	parede_x(-78.75, [33.0, 39.0], 16.0)
+	parede_z(42.75, -51.0, -57.0, 16.0)
+	parede_z(42.75, -69.0, -75.0, 16.0)
+	posto(Vector3(29.0, 16.0, -74.0))
+	mola_de_cristal(Vector3(25.5, 16.0, -59.0), 19.0)
+	tablado(Vector3(19.5, 21.0, -59.0), Vector2(5.0, 5.0), -14.0, false)
+	mola_de_cristal(Vector3(18.2, 21.0, -60.8), 19.0)
+	tablado(Vector3(14.0, 25.0, -66.0), Vector2(5.0, 5.0), -14.0, false)
+	mola_de_cristal(Vector3(12.6, 25.0, -66.0), 19.0)
+	arco(Vector3(25.5, 19.0, -59.0), Vector3(20.5, 22.5, -59.0), 3.0, 3)
+	arco(Vector3(18.2, 24.0, -60.8), Vector3(14.5, 26.5, -65.0), 3.0, 3)
+	arco(Vector3(12.6, 28.0, -66.0), Vector3(6.0, 31.0, -66.0), 2.0, 3)
+	rocha(24.0, 24.8, -48.0, -56.5, 16.9, 16.0)
+	rocha(24.0, 24.8, -61.5, -78.0, 16.9, 16.0)
+	bolota(Vector3(34.0, 16.0, -56.0))
+	bolota(Vector3(37.0, 16.0, -70.0))
+	trilha_creme([Vector3(28, 16, -76), Vector3(30, 16, -68), Vector3(26.5, 16, -61)])
+	trilha(Vector3(29.5, 17.0, -71.0), Vector3(27.0, 17.0, -63.5), 3)
+
+	# Segredo: a parede rachada do leste, com o V3 no nicho.
+	parede_rachada(Vector3(42.75, 16.0, -63.0), -PI / 2.0)
+	_muro(Vector3(42.75, 16.0 + M, -63.0), Vector3(1.5, LIMITE, 6.0), true)
+	rocha(42.0, 49.5, -60.0, -66.0, 16.0)
+	chao([46.5], -63.0, -63.0, 16.0)
+	parede_z(50.25, -63.0, -63.0, 16.0, 1, "wall_inset_candles", -PI / 2.0)
+	parede_x(-59.25, [46.5], 16.0)
+	parede_x(-66.75, [46.5], 16.0)
+	var velas := OmniLight3D.new()
+	velas.light_color = Color("ffc070")
+	velas.light_energy = 1.2
+	velas.omni_range = 5.0
+	velas.position = Vector3(48.0, 18.5, -63.0)
+	add_child(velas)
+	vaga_lume(Vector3(46.0, 17.2, -63.0))
+	trilha(Vector3(35.0, 17.0, -63.0), Vector3(40.5, 17.0, -63.0), 3)
+
+	# Mini-marco: um ninho de cristais no canto.
+	var cristal := _material(Color("7fd8ff"))
+	cristal.emission_enabled = true
+	cristal.emission = Color("2fa8ff")
+	cristal.emission_energy_multiplier = 1.2
+	for spec in [[Vector3(38.5, 16.0, -51.5), Vector3(0.9, 3.6, 0.9), 0.2], [Vector3(40.0, 16.0, -52.5), Vector3(0.6, 2.4, 0.6), -0.35],
+			[Vector3(37.5, 16.0, -53.0), Vector3(0.5, 2.0, 0.5), 0.4]]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = _prisma(spec[1].x, spec[1].y * 2.0, spec[1].x * 0.2)
+		mi.material_override = cristal
+		mi.position = spec[0] + Vector3(0, spec[1].y * 0.8, 0)
+		mi.rotation = Vector3(spec[2], 0, -spec[2])
+		add_child(mi)
+	tocha(Vector3(40.6, 16.0, -76.0), true, true)
 
 
-## 12*. Arena da Bolotona, a 28 m: o P4 na entrada e a Bolotona dormindo no meio. Derrotada, ela se desfaz em
-## três Bolotas pequenas; vencidas todas, a grade do fundo abre para a câmara do baú.
-func _arena_da_bolotona() -> void:
-	rocha(-9.75, 9.75, -345.0, -372.0, 28.0, 16.0)
-	chao([-6.0, 0.0, 6.0], -348.0, -366.0, 28.0, "floor_tile_large")
-	parede_z(9.75, -348.0, -366.0, 28.0)
-	parede_z(-9.75, -348.0, -366.0, 28.0)
-	parede_x(-345.0, [-9.0, 9.0], 28.0)
-	posto(Vector3(-5.5, 28.0, -349.0))
-	var grande := bolotona(Vector3(0, 28.0, -358.0))
+## Arena no alto do cristal (30 m): a Bolotona dorme no meio. Derrotada, ela se desfaz em três Bolotas pequenas;
+## vencidas todas, a grade da alcova do baú abre. A coluna de luz do baú aparece de toda a caverna.
+func _arena_no_cristal() -> void:
+	rocha(-9.0, 9.0, -57.0, -75.0, 30.0, 24.0)
+	chao([-6.0, 0.0, 6.0], -60.0, -72.0, 30.0, "floor_tile_large")
+	var grande := bolotona(Vector3(0, 30.0, -64.0))
 	for b in [grande] + grande.filhas:
 		b.derrotada.connect(func(_a: Alvo) -> void: _ver_arena(grande))
-	coracao(Vector3(7.0, 29.0, -365.0))
-	roda(Vector3(0, 28.9, -358.0), 5.5, 6)
-	for p in [Vector3(-8.2, 28.0, -347.5), Vector3(8.2, 28.0, -347.5), Vector3(-8.2, 28.0, -367.5), Vector3(8.2, 28.0, -367.5)]:
+	coracao(Vector3(7.0, 31.0, -58.5))
+	roda(Vector3(0, 30.9, -64.0), 5.5, 6)
+	for p in [Vector3(-8.0, 30.0, -58.0), Vector3(8.0, 30.0, -74.0), Vector3(-8.0, 30.0, -74.0)]:
 		tocha(p, true, true)
-	peca_de(MASMORRA, "wall_doorway", Vector3(0, 28.0, -369.75), 0.0, S, false).find_child("wall_doorway_door", true, false).queue_free()
+	rocha(-9.8, -9.0, -56.2, -75.8, 30.9, 24.0)
+	rocha(-9.0, 9.8, -56.2, -57.0, 30.9, 24.0)
+	rocha(-9.0, -3.75, -75.0, -75.8, 30.9, 24.0)
+	rocha(3.75, 9.8, -75.0, -75.8, 30.9, 24.0)
+	rocha(-3.0, 3.0, -75.0, -81.0, 30.0, 24.0)
+	chao([0.0], -78.0, -78.0, 30.0, "floor_tile_large")
+	parede_z(-3.75, -78.0, -78.0, 30.0)
+	parede_z(3.75, -78.0, -78.0, 30.0)
+	parede_x(-81.75, [0.0], 30.0, 1, "wall_inset_candles")
+	peca_de(MASMORRA, "wall_doorway", Vector3(0, 30.0, -75.75), 0.0, S, false).find_child("wall_doorway_door", true, false).queue_free()
 	_grade_da_arena = Grade.new()
-	_grade_da_arena.position = Vector3(0, 28.0, -369.75)
+	_grade_da_arena.position = Vector3(0, 30.0, -75.75)
 	add_child(_grade_da_arena)
 	grades.append(_grade_da_arena)
-	_lados_da_porta(-369.75, 28.0)
-	parede_x(-369.75, [-9.0, 9.0], 28.0)
+	_lados_da_grade(Vector3(0, 30.0, -75.75), false)
+	colocar_bau(Vector3(0, 30.0, -78.5), 0.0, true)
+	brilho_de_marco(Vector3(0, 31.5, -78.5), 30.0)
 
 
 func _ver_arena(grande: Bolotona) -> void:
@@ -455,18 +485,15 @@ func _ver_arena(grande: Bolotona) -> void:
 		_grade_da_arena.abrir()
 
 
-## 13. A câmara do baú dourado, com duas tochas acesas no fundo (os guardas agora são a Bolotona).
-func _camara_do_bau() -> void:
-	rocha(-6.0, 6.0, -372.0, -390.0, 28.0, 16.0)
-	chao([-3.0, 3.0], -375.0, -387.0, 28.0, "floor_tile_large")
-	parede_z(6.75, -375.0, -387.0, 28.0)
-	parede_z(-6.75, -375.0, -387.0, 28.0)
-	parede_x(-390.75, [-3.0], 28.0, 1, "wall_inset_candles")
-	parede_x(-390.75, [3.0], 28.0, 1, "wall_inset_candles")
-	colocar_bau(Vector3(0, 28.0, -384.0), 0.0, true)
-	roda(Vector3(0, 28.9, -384.0), 3.4, 3)
-	tocha(Vector3(-4.6, 28.0, -388.8), true, true)
-	tocha(Vector3(4.6, 28.0, -388.8), true, true)
+## Colisão dos dois lados do vão de uma grade (a parede da porta é só desenho) e a parede invisível em cima.
+## `ao_longo_de_z`: a porta está numa parede que corre ao longo de z (girada de 90 graus).
+func _lados_da_grade(pos: Vector3, ao_longo_de_z: bool) -> void:
+	var lado := Vector3(0, 0, 2.25) if ao_longo_de_z else Vector3(2.25, 0, 0)
+	var tamanho := Vector3(1.5, M, 1.5)
+	_muro(pos + lado, tamanho)
+	_muro(pos - lado, tamanho)
+	_muro(pos + Vector3.UP * M, Vector3(1.5, LIMITE, 6.0) if ao_longo_de_z else Vector3(6.0, LIMITE, 1.5), true)
+	_muro(pos + Vector3.UP * 4.1, Vector3(1.5, M - 4.1, 3.0) if ao_longo_de_z else Vector3(3.0, M - 4.1, 1.5))
 
 
 # --- peças da caverna ------------------------------------------------------------------
@@ -613,8 +640,9 @@ func tablado(topo: Vector3, tamanho: Vector2, chao_y := 0.0, com_pernas := true)
 	return corpo
 
 
-## Plataforma de madeira que sobe `subida` metros e volta, a cada `periodo` segundos.
-func elevador(topo: Vector3, subida: float, periodo: float, atraso: float) -> AnimatableBody3D:
+## Plataforma de madeira que sobe `subida` metros e volta, a cada `periodo` segundos, parando um pouco em cada
+## ponta (`pausa`, como no `movel_peca`). Com `caminho`, anda esse caminho em vez de subir (a balsa da viagem 3).
+func elevador(topo: Vector3, subida: float, periodo: float, atraso: float, caminho := Vector3.ZERO, pausa := 0.2) -> AnimatableBody3D:
 	var corpo := AnimatableBody3D.new()
 	corpo.position = topo
 	var tabuas: Node3D = _cena(MASMORRA + "floor_wood_large.gltf").instantiate()
@@ -645,7 +673,7 @@ func elevador(topo: Vector3, subida: float, periodo: float, atraso: float) -> An
 	cs.position.y = -0.3
 	corpo.add_child(cs)
 	add_child(corpo)
-	_moveis.append([corpo, corpo.position, Vector3(0, subida, 0), periodo, atraso])
+	_moveis.append([corpo, corpo.position, caminho if caminho != Vector3.ZERO else Vector3(0, subida, 0), periodo, atraso, pausa])
 	moveis.append(corpo)
 	return corpo
 

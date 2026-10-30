@@ -53,7 +53,7 @@ var rapido := false
 
 var _em_cena := false
 var _trocando := false
-## Kart ou skate com o Faísca: a criança guardada sai vestida de Faísca (Player.set_robo_skin) e ele some até
+## Kart com o Faísca: a criança guardada sai vestida de Faísca (Player.set_robo_skin) e ele some até
 ## ela descer (vestir_crianca).
 var _vestida := false
 var _guardado := {}
@@ -184,7 +184,7 @@ func _ligar_corpo_dividido(ligar: bool) -> void:
 
 
 ## Com o Faísca na ilha, da interface das crianças ficam os corações (divididos) e a faixa de cima (ondas da Festa
-## sem fim, corrida e sessão de skate); mira, blasters e moedas somem.
+## sem fim e corrida); mira, blasters e moedas somem.
 func _hud_da_ilha() -> void:
 	game.set_hud_visible(false)
 	game.hearts_bar.visible = true
@@ -206,8 +206,8 @@ func _voltou_na_bandeira() -> void:
 		faisca.controle_ligado = true
 
 
-## Kart e skate com o Faísca (pedido do usuário em 2026-10-29): quem anda é a criança guardada, vestida de
-## Faísca (o mesmo esqueleto do KayKit, então o volante e o skate funcionam iguais), e ele some até ela descer.
+## Kart com o Faísca (pedido do usuário em 2026-10-29): quem dirige é a criança guardada, vestida de
+## Faísca (o mesmo esqueleto do KayKit, então o volante funciona igual), e ele some até ela descer.
 ## Desligar põe o Faísca de volta onde ela desceu.
 func vestir_crianca(ligar: bool) -> void:
 	if ligar == _vestida or not faisca_ativo or lugar != "ilha":

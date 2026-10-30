@@ -21,8 +21,6 @@ signal out_of_ammo
 signal weapon_locked(id: String)
 ## Apertou a seta da pistola de novo, mas só tem uma pistola (para usar duas, precisa comprar outra).
 signal dual_locked
-## Skate: pousou de um pulo (tempo no ar, quanto girou em radianos, se pousou de pé).
-signal skate_landed(air_time: float, spin: float, clean: bool)
 
 ## Os dois personagens jogáveis: o menino de boné amarelo (Protagonist_B) e a menina de boné branco e óculos
 ## (Protagonist_A) do pacote "The Protagonists" (KayKit Mystery Monthly Series 5). Usam o mesmo Rig_Medium dos
@@ -87,7 +85,7 @@ const HIDDEN_MESH_HINTS := ["Sword", "Shield", "Axe", "Staff", "Bow", "Crossbow"
 @export var vibration := true
 
 var character_name := ""
-## Faísca de kart ou de skate na ilha (pedido do usuário em 2026-10-29): o modelo vira o Robo, no mesmo esqueleto
+## Faísca de kart na ilha (pedido do usuário em 2026-10-29): o modelo vira o Robo, no mesmo esqueleto
 ## do KayKit, e o personagem (character_name) continua o da criança. Ver set_robo_skin.
 var robo_skin := false
 ## O Faísca andando pela ilha com a criança guardada: os golpes que chegam nela tiram os corações dela (na ilha
@@ -100,8 +98,6 @@ var input_enabled := true
 ## Usados pelo modo de captura automática para mirar e atirar sem mouse.
 var force_aim := false
 var force_fire := false
-## Testes e fotos: dá impulso no skate como se segurasse para a frente.
-var force_skate_push := false
 ## Nos testes automáticos, ignora golpes (para o tonto não travar o teste).
 var god_mode := false
 var hearts := 5
@@ -165,20 +161,6 @@ var _auto_reload_delay := 0.0
 var _switch_left := 0.0
 var _throw_cooldown := 0.0
 var _melee_cooldown := 0.0
-## Andando de skate (pista de skate): embalo, ladeira puxando, pulo (ollie) e giros no ar.
-var skating := false
-var _board: Node3D
-var _skate_heading := 0.0
-var _airborne := false
-var _air_time := 0.0
-var _air_spin := 0.0
-var _last_floor_normal := Vector3.UP
-## Velocidade do skate na direção da tábua (negativa: de costas). Guardada aqui porque o move_and_slide
-## zera a parte da velocidade que desce a rampa.
-var _skate_speed := 0.0
-var _rider: SkateRider
-## Tempo desde que o jogador mexeu a câmera (no skate, ela só volta para trás depois de um tempinho).
-var _look_idle := 10.0
 ## Dirigindo um veículo (kart): o aventureiro fica escondido, acompanhando o veículo. Leva golpe do mesmo
 ## jeito (quem pisca é o piloto no banco); sem corações, fica tonto e desce.
 var in_vehicle := false
@@ -289,10 +271,9 @@ func set_character(char_name: String) -> void:
 	character_changed.emit(char_name)
 
 
-## Veste (ou tira) o Faísca: o modelo vira o Robo, com as mesmas animações, o mesmo skate e os blasters
-## escondidos. Só a pé, fora do skate (o skate prende uma pose no esqueleto do modelo).
+## Veste (ou tira) o Faísca: o modelo vira o Robo, com as mesmas animações e os blasters escondidos.
 func set_robo_skin(on: bool) -> void:
-	if on == robo_skin or skating:
+	if on == robo_skin:
 		return
 	robo_skin = on
 	_install_model(Robo.new() if on else load(model_path()).instantiate())
@@ -542,7 +523,7 @@ static func left_grip(sk: Skeleton3D, def: Dictionary) -> Transform3D:
 	return Transform3D((back * right * flip).scaled(Vector3.ONE * def.escala), back * def.pos)
 
 
-## Mostra ou esconde os blasters das mãos (Pirulitão, skate, celular).
+## Mostra ou esconde os blasters das mãos (Pirulitão, celular).
 func _show_blasters(on: bool) -> void:
 	if is_instance_valid(_recoil):
 		_recoil.visible = on
@@ -585,11 +566,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var sens := mouse_sensitivity * _zoom_factor()
-		_look_idle = 0.0
 		_yaw -= event.relative.x * sens
 		_pitch = clampf(_pitch - event.relative.y * sens, PITCH_MIN, PITCH_MAX)
-	elif skating:
-		return
 	elif event.is_action_pressed("recarregar"):
 		reload()
 	elif event.is_action_pressed("granada"):
@@ -628,9 +606,6 @@ func _physics_process(delta: float) -> void:
 	var target_fov: float = current_weapon().zoom if zoomed else (55.0 if aiming else 70.0)
 	spring_arm.spring_length = lerpf(spring_arm.spring_length, target_len, smooth)
 	camera.fov = lerpf(camera.fov, target_fov, smooth)
-	if skating:
-		_skate_physics(delta)
-		return
 
 	var input := Vector2.ZERO
 	if control:
@@ -784,8 +759,7 @@ func put_phone_away() -> void:
 		tw.tween_property(anim_tree, "parameters/celular/blend_amount", 0.0, 0.2)
 	if is_instance_valid(_phone):
 		_phone.visible = false
-	if not skating:
-		_show_blasters(true)
+	_show_blasters(true)
 
 
 # --- blasters ----------------------------------------------------------------
@@ -1200,159 +1174,6 @@ func _release_grenade() -> void:
 	get_parent().add_child(Grenade.create(from, launch, self))
 
 
-# --- skate ---------------------------------------------------------------------
-
-const SKATE_PUSH := 9.0
-const SKATE_TURN := 2.4
-const SKATE_SPIN := 6.0
-const SKATE_OLLIE := 7.5
-const SKATE_LIFT := 0.24
-
-
-## Sobe no skate: o tabuleiro aparece debaixo dos pés e rampas íngremes viram chão (dá para subir no half-pipe).
-func start_skating() -> void:
-	if skating:
-		return
-	skating = true
-	_skate_heading = visual.rotation.y
-	_skate_speed = 0.0
-	_airborne = false
-	floor_max_angle = deg_to_rad(76.0)
-	floor_snap_length = 0.6
-	floor_stop_on_slope = false
-	_board = load("res://assets/skate/skateboard.glb").instantiate()
-	_board.scale = Vector3.ONE * 1.5
-	visual.add_child(_board)
-	model.position.y = SKATE_LIFT
-	set_dual(false)
-	_rider = SkateRider.new()
-	_rider.lift = SKATE_LIFT
-	(model.find_child("Skeleton3D", true, false) as Skeleton3D).add_child(_rider)
-	_cancel_reload()
-	_show_blasters(false)
-
-
-func stop_skating() -> void:
-	if not skating:
-		return
-	skating = false
-	floor_max_angle = deg_to_rad(45.0)
-	floor_snap_length = 0.1
-	floor_stop_on_slope = true
-	if is_instance_valid(_board):
-		_board.queue_free()
-	_board = null
-	if is_instance_valid(_rider):
-		_rider.queue_free()
-	_rider = null
-	model.position.y = 0.0
-	visual.rotation = Vector3(0, visual.rotation.y, 0)
-	_show_blasters(true)
-
-
-func _skate_physics(delta: float) -> void:
-	var control := _can_control()
-	var input := Input.get_vector("esquerda", "direita", "frente", "tras") if control else Vector2.ZERO
-	var on_floor := is_on_floor()
-	if not on_floor and not _airborne and _last_floor_normal.y < 0.6:
-		# Saiu pela borda de uma rampa quase em pé (o half-pipe): sobe reto e volta para a rampa, em vez de
-		# passar por cima da borda.
-		var hn := Vector3(_last_floor_normal.x, 0, _last_floor_normal.z).normalized()
-		var out := velocity.dot(-hn)
-		if out > 0.0:
-			velocity += hn * out
-	if on_floor:
-		var n := get_floor_normal()
-		var head := Vector3(sin(_skate_heading), 0, cos(_skate_heading))
-		var dir := (head - n * head.dot(n)).normalized()
-		if _airborne:
-			_skate_land()
-			_skate_speed = velocity.dot(dir)
-		_last_floor_normal = n
-		_skate_heading -= input.x * SKATE_TURN * delta
-		head = Vector3(sin(_skate_heading), 0, cos(_skate_heading))
-		dir = (head - n * head.dot(n)).normalized()
-		var along := _skate_speed
-		# A ladeira puxa (o half-pipe vai e volta); as rodinhas não deixam escorregar de lado.
-		var g := Vector3.DOWN * _gravity * 0.5
-		along += (g - n * g.dot(n)).dot(dir) * delta
-		# Impulso com a perna: só empurra enquanto o pé está no chão (SkateRider), mais forte nesse trecho.
-		var push := input.y < -0.2 or force_skate_push
-		# Uns 4 empurrões até a velocidade máxima; perdendo um pouco de embalo, empurra de novo.
-		if is_instance_valid(_rider):
-			_rider.pushing = push and (along < SKATE_PUSH * 0.95 or not _rider.foot_down() and _rider.phase > 0.05)
-			_rider.airborne = false
-		if push and along < SKATE_PUSH and (not is_instance_valid(_rider) or _rider.foot_down()):
-			along = move_toward(along, SKATE_PUSH, 7.0 * maxf(-input.y, 1.0 if force_skate_push else 0.0) * delta)
-		elif input.y > 0.2:
-			along = move_toward(along, 0.0, 10.0 * input.y * delta)
-		along = move_toward(along, 0.0, 0.35 * delta)
-		_skate_speed = along
-		velocity = dir * along
-		if control and Input.is_action_just_pressed("pular"):
-			velocity += n * SKATE_OLLIE
-			Sfx.play(get_parent(), "pulo")
-		visual.global_basis = _skate_basis(n, dir if along >= 0.0 else dir)
-	else:
-		if is_instance_valid(_rider):
-			_rider.pushing = false
-			_rider.airborne = true
-		velocity.y -= _gravity * 0.5 * delta
-		var spin := -input.x * SKATE_SPIN * delta
-		_skate_heading += spin
-		_air_spin += absf(spin)
-		_air_time += delta
-		visual.global_basis = visual.global_basis.slerp(Basis(Vector3.UP, _skate_heading), 1.0 - exp(-6.0 * delta))
-	_airborne = not on_floor
-	var wanted := velocity.length()
-	move_and_slide()
-	# Bateu em parede (caixote, cerca): perde o embalo.
-	if on_floor and get_slide_collision_count() > 0:
-		for i in get_slide_collision_count():
-			if absf(get_slide_collision(i).get_normal().y) < 0.3 and get_real_velocity().length() < wanted * 0.5:
-				_skate_speed = get_real_velocity().length() * signf(_skate_speed)
-				break
-	# A câmera é livre (analógico direito ou mouse); 1,5 s depois de soltar, volta devagar para trás do skate.
-	if _look_idle > 1.5:
-		_yaw = lerp_angle(_yaw, _skate_heading + PI, 1.0 - exp(-1.5 * delta))
-	if is_instance_valid(anim_tree):
-		anim_tree.set("parameters/loco/blend_position", Vector2.ZERO)
-		var air := "chao" if is_on_floor() else "ar"
-		if air != _air_state:
-			_air_state = air
-			anim_tree.set("parameters/chao_ar/transition_request", air)
-		anim_tree.set("parameters/mira/blend_amount", 0.0)
-	_update_invulnerability(delta)
-	_update_shake(delta)
-
-
-## Inclina o aventureiro junto com a rampa (cima = normal do chão, frente = para onde o skate vai).
-func _skate_basis(up: Vector3, fwd: Vector3) -> Basis:
-	var right := up.cross(fwd).normalized()
-	var front := right.cross(up).normalized()
-	if right.length() < 0.1:
-		return Basis(Vector3.UP, _skate_heading)
-	return Basis(right, up, front)
-
-
-## Pousou: conta o pulo se ficou um tempinho no ar; pousar de lado (o skate atravessado na direção em que
-## vai) é tombo.
-func _skate_land() -> void:
-	var flat := Vector3(velocity.x, 0, velocity.z)
-	var head := Vector3(sin(_skate_heading), 0, cos(_skate_heading))
-	var clean := flat.length() < 2.0 or absf(flat.normalized().dot(head)) > 0.6
-	if _air_time > 0.25 or _air_spin > 0.8:
-		skate_landed.emit(_air_time, _air_spin, clean)
-	if not clean:
-		velocity *= 0.3
-		Sfx.play(get_parent(), "bonk", -2.0)
-		# Endireita o skate na direção em que está indo.
-		if flat.length() > 0.5:
-			_skate_heading = atan2(flat.x, flat.z)
-	_air_time = 0.0
-	_air_spin = 0.0
-
-
 ## Golpe com o Pirulitão (F ou R3): interrompe a recarga, vira para a mira e acerta no meio do movimento.
 func melee() -> bool:
 	if dizzy or _melee_cooldown > 0.0:
@@ -1513,9 +1334,6 @@ func take_damage(amount: int, from: Vector3, source := "") -> void:
 	_invulnerable = invulnerable_time
 	if parked and is_instance_valid(stand_in):
 		stand_in.call("levar_golpe_na_ilha", from, invulnerable_time)
-	elif skating:
-		# No skate não tem empurrão: perde o embalo (no veículo, quem dá o tranco é ele).
-		_skate_speed *= 0.4
 	elif not in_vehicle:
 		var away := global_position - from
 		away.y = 0.0
@@ -1594,7 +1412,6 @@ func _look_with_stick(delta: float) -> void:
 		_yaw = lerp_angle(_yaw, atan2(-d.x, -d.z), t)
 		_pitch = lerpf(_pitch, atan2(d.y, Vector2(d.x, d.z).length()), t)
 	_snap_time -= delta
-	_look_idle = 0.0 if look.length() > 0.02 else _look_idle + delta
 	_yaw -= look.x * stick_speed.x * factor * delta
 	_pitch = clampf(_pitch - look.y * stick_speed.y * factor * delta, PITCH_MIN, PITCH_MAX)
 

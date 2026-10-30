@@ -159,6 +159,9 @@ var _som_laser: AudioStreamPlayer
 var _som_carga: AudioStreamPlayer
 var _som_danca: AudioStreamPlayer
 var _tempo_no_ar := 0.0
+## Sombra redonda de pouso, sempre no chão embaixo dele (padrão de level design de 2026-10-29: "nada ambíguo"
+## no pulo; a criança vê onde vai cair).
+var _sombra: MeshInstance3D
 
 
 func _ready() -> void:
@@ -183,6 +186,7 @@ func _ready() -> void:
 	_montar_camera()
 	_montar_lasers()
 	_montar_giro_forte()
+	_montar_sombra()
 	_som_laser = AudioStreamPlayer.new()
 	var zumbido := Sfx.stream("faisca_laser").duplicate() as AudioStreamWAV
 	zumbido.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -399,6 +403,7 @@ func _physics_process(delta: float) -> void:
 	_decolando -= delta
 	_pousando -= delta
 	_atualizar_lasers()
+	_atualizar_sombra()
 	_atualizar_animacao()
 
 
@@ -690,6 +695,50 @@ func _frente() -> Vector3:
 	var f := visual.global_basis.z
 	f.y = 0.0
 	return f.normalized()
+
+
+# --- sombra de pouso ------------------------------------------------------------------
+
+func _montar_sombra() -> void:
+	var gradiente := Gradient.new()
+	gradiente.set_color(0, Color(1, 1, 1, 0.55))
+	gradiente.set_color(1, Color(1, 1, 1, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = gradiente
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 64
+	tex.height = 64
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_texture = tex
+	mat.albedo_color = Color(0.08, 0.05, 0.16)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+	_sombra = MeshInstance3D.new()
+	var plano := PlaneMesh.new()
+	plano.size = Vector2(1.7, 1.7)
+	_sombra.mesh = plano
+	_sombra.material_override = mat
+	_sombra.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_sombra.top_level = true
+	add_child(_sombra)
+
+
+## Põe a sombra no chão logo embaixo (deitada na inclinação do chão), menor e mais clara quanto mais alto ele está.
+func _atualizar_sombra() -> void:
+	var de := global_position + Vector3.UP * 0.4
+	var batida := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(de, de + Vector3.DOWN * 60.0, 1, [get_rid()]))
+	_sombra.visible = not batida.is_empty() and visible
+	if not _sombra.visible:
+		return
+	var n: Vector3 = batida.normal
+	var altura: float = de.y - (batida.position as Vector3).y
+	var x := n.cross(Vector3.FORWARD).normalized() if absf(n.dot(Vector3.FORWARD)) < 0.99 else Vector3.RIGHT
+	_sombra.global_transform = Transform3D(Basis(x, n, x.cross(n)), batida.position + n * 0.04)
+	_sombra.scale = Vector3.ONE * clampf(1.15 - altura * 0.03, 0.55, 1.15)
+	(_sombra.material_override as StandardMaterial3D).albedo_color.a = clampf(1.0 - altura * 0.025, 0.35, 1.0)
 
 
 # --- giro forte, agarrar e dancinha ------------------------------------------------

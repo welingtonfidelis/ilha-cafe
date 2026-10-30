@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Molde das Fases do Faísca</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: uma coluna de leitura (65ch) com os diagramas mais largos, como um caderno de level design. */
+:root {
+  --bg: #f4f1fb;
+  --card: #ffffff;
+  --ink: #241b3a;
+  --muted: #5f5679;
+  --line: #d8d0ec;
+  --sky: #e3efff;
+  --ground: #cdeedb;
+  --ground-edge: #3f8f62;
+  --marco: #f7cfe2;
+  --marco-edge: #b23c79;
+  --creme: #f3dfa6;
+  --star: #ffc61a;
+  --star-edge: #b88400;
+  --orange: #f26b1d;
+  --cyan: #12a8c9;
+  --purple: #8a4fd8;
+  --lilac: #b79cf0;
+  --firefly: #7fcf3c;
+  --heart: #ef3b5d;
+  --wall: #a99fc4;
+  --lava: #ff6a2b;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15111d; --card: #1f1a2b; --ink: #f0ebff; --muted: #a99fc4; --line: #362e4a;
+    --sky: #1b2740; --ground: #1e3a2c; --ground-edge: #5fb585; --marco: #4a2a3d; --marco-edge: #ff8fc4; --creme: #8a7a45;
+    --star: #ffd23f; --star-edge: #ffe58a; --orange: #ff8a45; --cyan: #7fe9ff; --purple: #b98cff; --lilac: #8f78c9;
+    --firefly: #b6f06a; --heart: #ff6b85; --wall: #6d6488; --lava: #ff8a50; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15111d; --card: #1f1a2b; --ink: #f0ebff; --muted: #a99fc4; --line: #362e4a;
+  --sky: #1b2740; --ground: #1e3a2c; --ground-edge: #5fb585; --marco: #4a2a3d; --marco-edge: #ff8fc4; --creme: #8a7a45;
+  --star: #ffd23f; --star-edge: #ffe58a; --orange: #ff8a45; --cyan: #7fe9ff; --purple: #b98cff; --lilac: #8f78c9;
+  --firefly: #b6f06a; --heart: #ff6b85; --wall: #6d6488; --lava: #ff8a50; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; }
+.pagina {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+  display: grid; gap: 56px;
+}
+.texto { max-width: 66ch; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.4rem, 6vw, 3.8rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: clamp(1.6rem, 3.6vw, 2.2rem); font-weight: 700; }
+h3 { font-size: 1.2rem; font-weight: 700; }
+p { margin: 0; }
+a { color: var(--cyan); }
+.rotulo { font-family: var(--font-data); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.secao { display: grid; gap: 18px; }
+.secao > .texto { display: grid; gap: 14px; }
+.abertura { display: grid; gap: 22px; }
+.abertura .lede { font-size: 1.25rem; max-width: 62ch; }
+.estrela-titulo { color: var(--orange); }
+.versao { font-size: 0.95rem; color: var(--muted); max-width: 66ch; }
+.ficha { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--card); }
+.ficha div { padding: 14px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 2px; min-width: 0; }
+.ficha dt { font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ficha dd { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.15; }
+.ficha dd small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+figure { margin: 0; display: grid; gap: 10px; }
+.quadro { overflow-x: auto; border: 2px solid var(--ink); border-radius: 14px; background: var(--card); }
+.quadro svg { display: block; width: 100%; height: auto; min-width: 720px; }
+figcaption { font-size: 0.95rem; color: var(--muted); max-width: 70ch; }
+
+.ceu { fill: var(--sky); }
+.area { fill: var(--ground); stroke: var(--ground-edge); stroke-width: 3; }
+.marco { fill: var(--marco); stroke: var(--marco-edge); stroke-width: 3; }
+.trilha { fill: none; stroke: var(--creme); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+.bolso { fill: var(--cyan); opacity: 0.22; stroke: var(--cyan); stroke-width: 2; }
+.bolso-linha { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 2 8; stroke-linecap: round; }
+.viagem { fill: none; stroke: var(--ink); stroke-width: 3; stroke-dasharray: 10 8; }
+.vista { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 2 6; }
+.estrelinha { fill: var(--star); stroke: var(--star-edge); stroke-width: 1; }
+.bolota { fill: var(--purple); }
+.olho { fill: #ffffff; }
+.vagalume { fill: var(--firefly); }
+.halo { fill: var(--firefly); opacity: 0.28; }
+.coracao { fill: var(--heart); }
+.posto-haste { stroke: var(--ink); stroke-width: 2.5; }
+.posto-bandeira { fill: var(--cyan); }
+.arco-saida { fill: none; stroke: var(--orange); stroke-width: 6; stroke-linecap: round; }
+.poder { fill: var(--orange); }
+.parede { fill: var(--wall); }
+.racha { fill: none; stroke: var(--ink); stroke-width: 2; }
+.mola { fill: none; stroke: var(--orange); stroke-width: 3.5; stroke-linejoin: round; }
+.mola-tampa { fill: var(--orange); }
+.nuvem-some { fill: var(--lilac); }
+.trajeto { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 6 6; }
+.faisca-cabeca { fill: #ffffff; stroke: var(--ink); stroke-width: 2; }
+.faisca-visor { fill: #1b1d2a; }
+.faisca-corpo { fill: var(--orange); }
+.sombra { fill: var(--ink); opacity: 0.35; }
+.selo { fill: var(--card); stroke: var(--ink); stroke-width: 2.5; }
+.selo-letra { font-family: var(--font-display); font-weight: 800; font-size: 20px; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.txt { font-family: var(--font-body); font-size: 15px; fill: var(--ink); }
+.txt-forte { font-family: var(--font-display); font-weight: 700; font-size: 17px; fill: var(--ink); }
+.txt-mudo { font-family: var(--font-body); font-size: 13px; fill: var(--muted); }
+.txt-dado { font-family: var(--font-data); font-size: 12px; fill: var(--muted); }
+.eixo { stroke: var(--line); stroke-width: 1.5; }
+.grade { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 6; }
+.curva { fill: none; stroke: var(--orange); stroke-width: 5; stroke-linecap: round; }
+.curva-area { fill: var(--orange); opacity: 0.12; }
+.curva-opcional { fill: none; stroke: var(--cyan); stroke-width: 4; stroke-dasharray: 8 7; stroke-linecap: round; }
+.ponto { fill: var(--card); stroke: var(--orange); stroke-width: 3; }
+.faixa { fill: var(--sky); }
+.faixa-alt { fill: var(--bg); }
+.lava { fill: var(--lava); }
+.seta { fill: var(--ink); }
+.seta-cyan { fill: var(--cyan); }
+
+.partes { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; }
+.parte { display: grid; grid-template-columns: 44px 1fr; gap: 4px 14px; padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.parte .letra { grid-row: span 3; width: 40px; height: 40px; border-radius: 50%; border: 2.5px solid var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; }
+.parte.viagem-item { border-style: dashed; }
+.parte.viagem-item .letra { border-style: dashed; font-size: 0.8rem; }
+.parte.marco-item { border: 2px solid var(--marco-edge); }
+.parte h3 { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.parte .medida { font-family: var(--font-data); font-size: 0.78rem; font-weight: 500; color: var(--muted); }
+.parte p, .parte ul { min-width: 0; }
+.parte ul { margin: 6px 0 0; padding-left: 1.1em; display: grid; gap: 4px; }
+
+.tabela-caixa { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 0.97rem; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 700; }
+.amostra { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 8px; border: 1px solid var(--ink); }
+.regras { display: grid; gap: 10px; padding-left: 1.2em; margin: 0; }
+.regras li::marker { color: var(--orange); font-weight: 700; }
+.regras strong { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.lista-checagem { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.lista-checagem li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
+.lista-checagem li::before { content: ""; width: 16px; height: 16px; margin-top: 4px; border: 2px solid var(--ink); border-radius: 4px; }
+.duas-colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.cartao { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+.cartao p { color: var(--muted); }
+.maquetes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.maquetes a { display: grid; gap: 6px; padding: 16px 18px; border: 2px solid var(--ink); border-radius: 12px; background: var(--card); color: var(--ink); text-decoration: none; }
+.maquetes a:hover, .maquetes a:focus-visible { border-color: var(--orange); outline: none; }
+.maquetes a span { color: var(--muted); font-size: 0.95rem; }
+.rodape { color: var(--muted); font-size: 0.95rem; border-top: 1px solid var(--line); padding-top: 18px; }
+@media (prefers-reduced-motion: no-preference) {
+  .pulsa { animation: pulsa 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes pulsa { 0%, 100% { opacity: 0.28; } 50% { opacity: 0.55; } }
+}
+</style>
+</head>
+<body style="margin:0">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-estrela" viewBox="-10 -10 20 20"><path class="estrelinha" d="M0,-9 L2.6,-3 L9,-2.8 L4,1.3 L5.6,8 L0,4.4 L-5.6,8 L-4,1.3 L-9,-2.8 L-2.6,-3 Z"/></symbol>
+    <symbol id="i-bolota" viewBox="-10 -10 20 20"><circle class="bolota" r="9"/><circle class="olho" cx="0" cy="-1.5" r="3.4"/><circle fill="#1b1530" cx="0" cy="-1.5" r="1.6"/></symbol>
+    <symbol id="i-vagalume" viewBox="-14 -14 28 28"><circle class="halo pulsa" r="13"/><circle class="vagalume" r="5.5"/></symbol>
+    <symbol id="i-coracao" viewBox="-10 -10 20 20"><path class="coracao" d="M0,8 C-9,1 -9,-6 -4.5,-7 C-2,-7.5 0,-5 0,-3.5 C0,-5 2,-7.5 4.5,-7 C9,-6 9,1 0,8 Z"/></symbol>
+    <symbol id="i-posto" viewBox="0 0 20 30"><line class="posto-haste" x1="3" y1="2" x2="3" y2="29"/><path class="posto-bandeira" d="M4,3 L18,8 L4,13 Z"/></symbol>
+    <symbol id="i-arco" viewBox="-14 -16 28 18"><path class="arco-saida" d="M-11,2 L-11,-6 A11,11 0 0 1 11,-6 L11,2"/></symbol>
+    <symbol id="i-poder" viewBox="-12 -12 24 24"><circle class="poder" r="10"/><path fill="#ffffff" d="M0,-6 L1.8,-1.8 L6,-1.6 L2.7,1 L3.8,5.5 L0,3 L-3.8,5.5 L-2.7,1 L-6,-1.6 L-1.8,-1.8 Z"/></symbol>
+    <symbol id="i-faisca" viewBox="-12 -16 24 32"><circle class="faisca-corpo" cx="0" cy="8" r="6.5"/><rect class="faisca-cabeca" x="-10" y="-14" width="20" height="16" rx="5"/><rect class="faisca-visor" x="-7" y="-11" width="14" height="9" rx="3"/></symbol>
+    <marker id="m-seta" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="seta" d="M0,0 L10,5 L0,10 Z"/></marker>
+    <marker id="m-seta-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path class="seta-cyan" d="M0,0 L10,5 L0,10 Z"/></marker>
+  </defs>
+</svg>
+
+<main class="pagina">
+
+  <header class="abertura">
+    <p class="rotulo">Ilha Cafuné · Parte 2 · level design · versão 2 (playgrounds)</p>
+    <h1>Molde das Fases do <span class="estrela-titulo">Faísca</span></h1>
+    <p class="lede">Toda fase é um colar de <strong>quatro playgrounds</strong> em volta de um <strong>marco</strong> que se vê de qualquer lugar, subindo em espiral até a <strong>arena</strong> no alto do marco. Cada playground brinca com uma ideia só da novidade da fase, tem <strong>bolsos</strong> para explorar e uma <strong>saída</strong> grande. Entre um playground e outro, uma <strong>viagem</strong> curta e sem risco.</p>
+    <p class="versao">A versão 1 era uma espinha de trechos com galhos saindo dela, e parecia trilho de trem. Esta versão segue o jeito do Astro Bot: playgrounds no lugar do corredor, caminho mostrado pelo cenário, um marco para se orientar, poucos movimentos (a variedade vem da fase) e nada ambíguo no pulo.</p>
+    <dl class="ficha">
+      <div><dt>Playgrounds</dt><dd>4 + arena<small>cada um de 40 a 60 m, com uma ideia só</small></dd></div>
+      <div><dt>Tempo</dt><dd>10 a 12 min<small>criança no caminho; até 15 achando tudo</small></dd></div>
+      <div><dt>Postos</dt><dd>P0 a P3<small>na entrada de cada playground</small></dd></div>
+      <div><dt>Estrelinhas</dt><dd>80 a 100<small>metade no caminho, metade nos bolsos</small></dd></div>
+      <div><dt>Vaga-lumes</dt><dd>3<small>um bolso nos playgrounds 2, 3 e 4</small></dd></div>
+      <div><dt>Novidade e poder</dt><dd>1 + 0 ou 1<small>o poder é pego no playground 3</small></dd></div>
+      <div><dt>Viagens</dt><dd>3<small>10 a 20 s cada, sem risco</small></dd></div>
+      <div><dt>Bolotas</dt><dd>2 ou 3 por playground<small>mais 3 (ou um mini-chefe) na arena</small></dd></div>
+    </dl>
+  </header>
+
+  <section class="secao" aria-labelledby="t-mapa">
+    <div class="texto">
+      <p class="rotulo">O desenho</p>
+      <h2 id="t-mapa">Quatro playgrounds em volta do marco</h2>
+      <p>Visto de cima, a fase é uma volta em espiral: o playground 1 embaixo, os outros subindo em volta do marco, e o 4 subindo pelo próprio marco até a arena no alto dele. De qualquer playground se vê o marco com a Estrela Grande, então a criança sempre sabe onde está o fim.</p>
+    </div>
+    <figure>
+      <div class="quadro">
+        <svg viewBox="0 0 1000 700" role="img" aria-labelledby="mapa-titulo mapa-desc">
+          <title id="mapa-titulo">O padrão da fase visto de cima</title>
+          <desc id="mapa-desc">O marco fica no meio. Em volta dele, quatro playgrounds: 1 embaixo, 2 à esquerda, 3 em cima e 4 à direita, colado no marco. Viagens tracejadas ligam um ao outro. Cada playground tem a trilha creme do posto até o arco de saída, bolsos em azul e Bolotas. O 4 sobe pelo marco até a arena.</desc>
+          <rect class="ceu" x="0" y="0" width="1000" height="700"/>
+          <line class="vista" x1="500" y1="600" x2="500" y2="330"/>
+          <line class="vista" x1="190" y1="380" x2="470" y2="340"/>
+          <line class="vista" x1="470" y1="110" x2="495" y2="300"/>
+
+          <!-- marco -->
+          <circle class="marco" cx="500" cy="345" r="92"/>
+          <circle class="marco" cx="500" cy="345" r="62" style="opacity:0.85"/>
+          <circle class="marco" cx="500" cy="345" r="34"/>
+          <g transform="translate(500,345)"><use href="#i-estrela" x="-20" y="-20" width="40" height="40"/></g>
+          <text class="txt-forte" x="500" y="465" text-anchor="middle">Marco · arena no alto</text>
+
+          <!-- playground 1 -->
+          <ellipse class="area" cx="480" cy="608" rx="190" ry="72"/>
+          <path class="trilha" d="M640,630 C560,640 470,620 400,600 C350,585 320,570 300,560"/>
+          <use href="#i-posto" x="636" y="590" width="18" height="28"/>
+          <use href="#i-arco" x="282" y="540" width="36" height="24"/>
+          <circle class="bolso" cx="560" cy="575" r="22"/><use href="#i-estrela" x="553" y="568" width="14" height="14"/>
+          <circle class="bolso" cx="410" cy="650" r="20"/><use href="#i-estrela" x="403" y="643" width="14" height="14"/>
+          <use href="#i-bolota" x="470" y="594" width="18" height="18"/>
+          <circle class="selo" cx="700" cy="640" r="17"/><text class="selo-letra" x="700" y="640">1</text>
+          <text class="txt-forte" x="724" y="646">Apresenta</text>
+
+          <!-- playground 2 -->
+          <ellipse class="area" cx="175" cy="370" rx="130" ry="125"/>
+          <path class="trilha" d="M210,480 C150,440 120,390 140,330 C155,290 180,270 200,255"/>
+          <use href="#i-posto" x="214" y="452" width="18" height="28"/>
+          <use href="#i-arco" x="186" y="232" width="36" height="24"/>
+          <circle class="bolso" cx="90" cy="420" r="22"/><use href="#i-vagalume" x="76" y="406" width="28" height="28"/>
+          <circle class="bolso" cx="245" cy="350" r="20"/><use href="#i-estrela" x="238" y="343" width="14" height="14"/>
+          <use href="#i-bolota" x="165" y="380" width="18" height="18"/><use href="#i-bolota" x="190" y="400" width="18" height="18"/>
+          <circle class="selo" cx="60" cy="250" r="17"/><text class="selo-letra" x="60" y="250">2</text>
+          <text class="txt-forte" x="84" y="256">Desenvolve</text>
+
+          <!-- playground 3 -->
+          <ellipse class="area" cx="480" cy="110" rx="200" ry="78"/>
+          <path class="trilha" d="M320,120 C380,140 450,140 520,120 C580,104 620,96 650,92"/>
+          <use href="#i-posto" x="316" y="96" width="18" height="28"/>
+          <use href="#i-arco" x="644" y="70" width="36" height="24"/>
+          <use href="#i-poder" x="400" y="72" width="26" height="26"/>
+          <circle class="bolso" cx="520" cy="58" r="22"/><use href="#i-vagalume" x="506" y="44" width="28" height="28"/>
+          <circle class="bolso" cx="600" cy="150" r="18"/><use href="#i-estrela" x="593" y="143" width="14" height="14"/>
+          <use href="#i-bolota" x="460" y="140" width="18" height="18"/><use href="#i-bolota" x="545" y="120" width="18" height="18"/>
+          <use href="#i-coracao" x="372" y="128" width="16" height="16"/>
+          <circle class="selo" cx="720" cy="40" r="17"/><text class="selo-letra" x="720" y="40">3</text>
+          <text class="txt-forte" x="744" y="46">Central · poder</text>
+
+          <!-- playground 4: sobe pelo marco -->
+          <path class="area" d="M640,250 C720,190 860,220 880,320 C900,430 800,480 700,460 C640,450 600,420 588,400 C640,380 630,280 640,250 Z"/>
+          <path class="trilha" d="M800,250 C850,300 840,380 780,420 C720,450 650,430 600,395"/>
+          <use href="#i-posto" x="796" y="222" width="18" height="28"/>
+          <circle class="bolso" cx="850" cy="420" r="22"/><use href="#i-vagalume" x="836" y="406" width="28" height="28"/>
+          <path class="bolso-linha" d="M600,395 C570,380 560,370 548,360" marker-end="url(#m-seta-cyan)"/>
+          <use href="#i-bolota" x="760" y="330" width="18" height="18"/><use href="#i-bolota" x="700" y="410" width="18" height="18"/>
+          <circle class="selo" cx="900" cy="230" r="17"/><text class="selo-letra" x="900" y="230">4</text>
+          <text class="txt-forte" x="836" y="200">Reviravolta</text>
+          <text class="txt-mudo" x="812" y="490">sobe pelo marco</text>
+
+          <!-- viagens -->
+          <path class="viagem" d="M300,560 C250,540 230,510 222,488" marker-end="url(#m-seta)"/>
+          <path class="viagem" d="M200,250 C220,190 260,150 310,128" marker-end="url(#m-seta)"/>
+          <path class="viagem" d="M660,92 C730,110 780,160 796,212" marker-end="url(#m-seta)"/>
+          <text class="txt-mudo" x="252" y="522">viagem</text>
+          <text class="txt-mudo" x="214" y="170">viagem</text>
+          <text class="txt-mudo" x="752" y="120">viagem</text>
+          <use href="#i-faisca" x="652" y="610" width="24" height="32"/>
+
+          <!-- legenda -->
+          <g transform="translate(18,520)">
+            <rect x="0" y="0" width="200" height="164" rx="12" fill="var(--card)" stroke="var(--line)"/>
+            <line x1="16" y1="22" x2="50" y2="22" class="trilha" style="stroke-width:8"/><text class="txt-mudo" x="60" y="26">trilha creme</text>
+            <use href="#i-arco" x="18" y="34" width="30" height="20"/><text class="txt-mudo" x="60" y="50">arco de saída</text>
+            <circle class="bolso" cx="33" cy="70" r="9"/><text class="txt-mudo" x="60" y="74">bolso</text>
+            <line x1="16" y1="94" x2="50" y2="94" class="viagem" style="stroke-width:2.5"/><text class="txt-mudo" x="60" y="98">viagem</text>
+            <use href="#i-posto" x="26" y="104" width="12" height="18"/><text class="txt-mudo" x="60" y="120">posto</text>
+            <use href="#i-poder" x="24" y="128" width="18" height="18"/><text class="txt-mudo" x="60" y="142">poder da fase</text>
+            <use href="#i-vagalume" x="22" y="146" width="22" height="22"/><text class="txt-mudo" x="60" y="160">vaga-lume</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>As linhas pontilhadas finas são linhas de vista até a Estrela Grande, no alto do marco. As viagens (tracejadas) não têm risco: são troca de capítulo.</figcaption>
+    </figure>
+
+    <ol class="partes" aria-label="As partes da fase, na ordem">
+      <li class="parte marco-item">
+        <span class="letra" aria-hidden="true">M</span>
+        <h3>Marco <span class="medida">visível de toda a fase</span></h3>
+        <p>Um objeto enorme do tema da fase (bolo-montanha, castelo de blocos, torre de nuvens, geladeira), com a Estrela Grande brilhando no alto. Os playgrounds ficam em volta dele, e o último sobe por ele. Cada playground também tem um mini-marco próprio (um carrossel, um foguete, um abajur), para a criança saber em que parte está.</p>
+      </li>
+      <li class="parte">
+        <span class="letra" aria-hidden="true">1</span>
+        <h3>Playground 1 · Apresenta <span class="medida">2 min · sem risco · P0</span></h3>
+        <p>A novidade num lugar largo onde errar não custa nada: chão embaixo de tudo. O Vovô mostra o desenho dela na chegada. Dois bolsos fáceis, para ensinar desde o começo que vale olhar em volta.</p>
+      </li>
+      <li class="parte viagem-item">
+        <span class="letra" aria-hidden="true">v</span>
+        <h3>Viagem <span class="medida">10 a 20 s · sem risco</span></h3>
+        <p>Uma carona com a cara da fase: nuvem-carro, trenzinho, carrinho de mina. Vale como troca de capítulo e descanso.</p>
+      </li>
+      <li class="parte">
+        <span class="letra" aria-hidden="true">2</span>
+        <h3>Playground 2 · Desenvolve <span class="medida">2 a 3 min · risco leve · P1</span></h3>
+        <p>A novidade com um pouco de risco e misturada com uma mecânica de apoio de outra fase. Mais de um caminho até a saída. Primeiro grupo de Bolotas com espaço. Bolso com o vaga-lume 1.</p>
+      </li>
+      <li class="parte viagem-item">
+        <span class="letra" aria-hidden="true">v</span>
+        <h3>Viagem <span class="medida">10 a 20 s</span></h3>
+        <p>Canhão, avião de papel, elevador.</p>
+      </li>
+      <li class="parte">
+        <span class="letra" aria-hidden="true">3</span>
+        <h3>Playground 3 · Central <span class="medida">3 min · respiro e poder · P2</span></h3>
+        <p>O maior playground, com o mini-marco mais bonito e um coração extra. Quando a fase tem poder, ele é pego aqui (balão, ioiô) e já abre um bolso alto com o vaga-lume 2. Três Bolotas; a primeira que fica tonta ensina o agarrar.</p>
+      </li>
+      <li class="parte viagem-item">
+        <span class="letra" aria-hidden="true">v</span>
+        <h3>Viagem <span class="medida">10 a 20 s · vai e volta</span></h3>
+        <p>Teleférico, trenzinho, pista de carrinho. A última viagem vai e volta, e serve de atalho para quem quiser voltar atrás de um vaga-lume.</p>
+      </li>
+      <li class="parte">
+        <span class="letra" aria-hidden="true">4</span>
+        <h3>Playground 4 · Reviravolta <span class="medida">2 a 3 min · risco médio · P3</span></h3>
+        <p>A novidade de um jeito que surpreende (some depois de usar, tem tempo, junta com o poder) e subindo pelo próprio marco. O segredo da fase fica aqui, com o vaga-lume 3. É o trecho mais difícil.</p>
+      </li>
+      <li class="parte">
+        <span class="letra" aria-hidden="true">A</span>
+        <h3>Arena <span class="medida">1 min · clímax</span></h3>
+        <p>No alto do marco. Três Bolotas, ou um mini-chefe, guardam o baú. Três golpes abrem o baú, sobe a Estrela Grande e vem a tela de fim, com estrelinhas e vaga-lumes contados.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="secao" aria-labelledby="t-anatomia">
+    <div class="texto">
+      <p class="rotulo">Um playground por dentro</p>
+      <h2 id="t-anatomia">Uma caixa de brinquedos com saída à vista</h2>
+      <p>Cada playground é uma área larga em volta de uma ideia só. O caminho até a saída é mostrado pelo cenário: a trilha creme no chão, uma fileira de postes ou bengalas apontando e o arco grande da saída, que se vê de qualquer ponto. A exploração acontece dentro do próprio playground: em cima, embaixo e atrás das coisas.</p>
+    </div>
+    <figure>
+      <div class="quadro">
+        <svg viewBox="0 0 1000 440" role="img" aria-labelledby="ana-titulo ana-desc">
+          <title id="ana-titulo">Anatomia de um playground</title>
+          <desc id="ana-desc">Uma área larga. O Faísca entra pela esquerda, no posto. A trilha creme curva até o arco de saída à direita, passando pelo mini-marco. Uma fileira de postes aponta para a saída. Há uma rota por cima, com estrelinhas, um bolso alto, um bolso embaixo, um segredo atrás do mini-marco e um grupo de Bolotas num espaço aberto.</desc>
+          <rect class="ceu" x="0" y="0" width="1000" height="440"/>
+          <path class="area" d="M60,250 C60,120 220,60 480,60 C760,60 940,110 940,240 C940,370 760,400 480,400 C220,400 60,370 60,250 Z"/>
+          <path class="trilha" d="M110,300 C220,300 300,260 420,250 C540,240 640,270 760,250 C820,240 860,220 890,205"/>
+          <use href="#i-posto" x="98" y="262" width="20" height="30"/>
+          <text class="txt-mudo" x="80" y="330">entrada · posto</text>
+          <use href="#i-faisca" x="122" y="268" width="24" height="32"/>
+          <ellipse class="sombra" cx="134" cy="302" rx="10" ry="3"/>
+          <use href="#i-arco" x="866" y="170" width="54" height="36"/>
+          <text class="txt" x="830" y="160">arco de saída</text>
+          <!-- mini-marco -->
+          <rect x="500" y="120" width="24" height="120" rx="6" fill="var(--marco)" stroke="var(--marco-edge)" stroke-width="3"/>
+          <circle cx="512" cy="112" r="34" fill="var(--marco)" stroke="var(--marco-edge)" stroke-width="3"/>
+          <text class="txt" x="546" y="104">mini-marco</text>
+          <!-- linha que guia -->
+          <g fill="var(--ink)">
+            <rect x="600" y="276" width="5" height="22"/><rect x="660" y="282" width="5" height="22"/><rect x="720" y="278" width="5" height="22"/><rect x="780" y="268" width="5" height="22"/>
+          </g>
+          <g fill="var(--star)"><circle cx="602" cy="274" r="5"/><circle cx="662" cy="280" r="5"/><circle cx="722" cy="276" r="5"/><circle cx="782" cy="266" r="5"/></g>
+          <text class="txt-mudo" x="620" y="326">fileira que aponta a saída</text>
+          <!-- rota por cima -->
+          <path class="bolso-linha" d="M200,290 C220,200 300,160 380,150 C420,146 450,160 470,180"/>
+          <use href="#i-estrela" x="250" y="196" width="14" height="14"/><use href="#i-estrela" x="300" y="166" width="14" height="14"/><use href="#i-estrela" x="350" y="152" width="14" height="14"/>
+          <text class="txt-mudo" x="220" y="140">rota por cima (estrelinhas)</text>
+          <!-- bolso alto -->
+          <circle class="bolso" cx="700" cy="110" r="34"/>
+          <use href="#i-vagalume" x="684" y="94" width="32" height="32"/>
+          <text class="txt" x="742" y="104">bolso alto</text>
+          <text class="txt-mudo" x="742" y="122">mola ou poder</text>
+          <!-- bolso embaixo -->
+          <circle class="bolso" cx="300" cy="380" r="28"/>
+          <use href="#i-estrela" x="293" y="373" width="14" height="14"/>
+          <text class="txt" x="336" y="384">bolso embaixo</text>
+          <text class="txt-mudo" x="336" y="402">beirada, debaixo da mesa</text>
+          <!-- segredo atrás -->
+          <rect class="parede" x="420" y="150" width="40" height="46" rx="4"/>
+          <path class="racha" d="M436,152 L430,170 L440,182 L434,196"/>
+          <use href="#i-vagalume" x="396" y="158" width="24" height="24"/>
+          <text class="txt" x="300" y="226">segredo atrás</text>
+          <!-- Bolotas -->
+          <use href="#i-bolota" x="560" y="200" width="20" height="20"/><use href="#i-bolota" x="590" y="214" width="20" height="20"/><use href="#i-bolota" x="565" y="230" width="20" height="20"/>
+          <text class="txt-mudo" x="540" y="190">Bolotas com espaço</text>
+          <use href="#i-estrela" x="200" y="292" width="12" height="12"/><use href="#i-estrela" x="320" y="268" width="12" height="12"/><use href="#i-estrela" x="440" y="246" width="12" height="12"/>
+        </svg>
+      </div>
+      <figcaption>A trilha creme é o caminho fácil, pelo chão. A rota por cima e os bolsos são para quem gosta de explorar. O segredo dá dois sinais antes de ser achado: a rachadura e o brilho do vaga-lume.</figcaption>
+    </figure>
+  </section>
+
+  <section class="secao" aria-labelledby="t-astro">
+    <div class="texto">
+      <p class="rotulo">As regras do Astro, no nosso jogo</p>
+      <h2 id="t-astro">Cinco princípios que valem em toda fase</h2>
+    </div>
+    <div class="duas-colunas">
+      <div class="cartao"><h3>Playgrounds, não corredor</h3><p>A fase é feita de áreas largas, cada uma com uma ideia só. O caminho atravessa o playground; não corre do lado dele. Explorar é brincar dentro do lugar.</p></div>
+      <div class="cartao"><h3>Caminho pelo cenário</h3><p>Trilha creme no chão, estrelinhas como migalhas, fileiras que apontam e um arco grande de saída. Nenhuma seta nem linha na tela.</p></div>
+      <div class="cartao"><h3>Marco para se orientar</h3><p>O marco com a Estrela Grande aparece de toda a fase, e cada playground tem um mini-marco.</p></div>
+      <div class="cartao"><h3>Poucos movimentos</h3><p>Pular, flutuar, socar, e os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo: a variedade vem das peças da fase e de um poder por fase.</p></div>
+      <div class="cartao"><h3>Nada ambíguo</h3><p>Sombra redonda embaixo do Faísca, plataformas com borda escura, degraus e vãos de tamanho padrão, e uma cor e uma forma para cada perigo.</p></div>
+      <div class="cartao"><h3>Poder da fase</h3><p>Um objeto que só existe naquela fase, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete, Ioiô). A 1-1 não tem poder: é onde se aprende o básico.</p></div>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="t-ritmo">
+    <div class="texto">
+      <p class="rotulo">Ritmo</p>
+      <h2 id="t-ritmo">Desafio, viagem, desafio maior</h2>
+      <p>Cada playground começa calmo (posto, estrelinhas fáceis) e sobe até a saída. As viagens são os vales: descanso garantido. O playground 3 começa com o maior respiro (o poder, o coração, a vista), e o 4 e a arena formam o pico.</p>
+    </div>
+    <figure>
+      <div class="quadro">
+        <svg viewBox="0 0 1000 380" role="img" aria-labelledby="ritmo-titulo ritmo-desc">
+          <title id="ritmo-titulo">Curva de intensidade ao longo da fase</title>
+          <desc id="ritmo-desc">A intensidade sobe dentro de cada playground e cai em cada viagem. O playground 4 e a arena são o pico, e a comemoração fecha.</desc>
+          <line class="grade" x1="60" y1="92" x2="960" y2="92"/>
+          <line class="grade" x1="60" y1="196" x2="960" y2="196"/>
+          <line class="eixo" x1="60" y1="40" x2="60" y2="300"/>
+          <line class="eixo" x1="60" y1="300" x2="960" y2="300"/>
+          <text class="txt-dado" x="20" y="96">alta</text>
+          <text class="txt-dado" x="16" y="200">média</text>
+          <text class="txt-dado" x="22" y="304">0</text>
+          <path class="curva-area" d="M60,270 C110,262 160,215 210,205 C230,201 245,262 270,262 C300,262 350,180 400,165 C420,160 432,258 455,258 C480,258 500,236 520,232 C560,224 600,160 630,150 C648,146 660,256 680,256 C720,256 770,110 810,96 C840,88 860,48 890,52 C915,56 925,230 940,262 L940,300 L60,300 Z"/>
+          <path class="curva" d="M60,270 C110,262 160,215 210,205 C230,201 245,262 270,262 C300,262 350,180 400,165 C420,160 432,258 455,258 C480,258 500,236 520,232 C560,224 600,160 630,150 C648,146 660,256 680,256 C720,256 770,110 810,96 C840,88 860,48 890,52 C915,56 925,230 940,262"/>
+          <path class="curva-opcional" d="M560,224 C575,170 600,150 612,170"/>
+          <text class="txt-mudo" x="570" y="140" style="fill:var(--cyan)">bolso alto</text>
+          <use href="#i-posto" x="52" y="236" width="16" height="24"/>
+          <use href="#i-posto" x="262" y="228" width="16" height="24"/>
+          <use href="#i-posto" x="447" y="224" width="16" height="24"/>
+          <use href="#i-posto" x="672" y="222" width="16" height="24"/>
+          <text class="txt-forte" x="150" y="328" text-anchor="middle">1</text>
+          <text class="txt-forte" x="240" y="328" text-anchor="middle">v</text>
+          <text class="txt-forte" x="340" y="328" text-anchor="middle">2</text>
+          <text class="txt-forte" x="440" y="328" text-anchor="middle">v</text>
+          <text class="txt-forte" x="560" y="328" text-anchor="middle">3</text>
+          <text class="txt-forte" x="660" y="328" text-anchor="middle">v</text>
+          <text class="txt-forte" x="780" y="328" text-anchor="middle">4</text>
+          <text class="txt-forte" x="890" y="328" text-anchor="middle">arena</text>
+          <text class="txt-mudo" x="150" y="352" text-anchor="middle">apresenta</text>
+          <text class="txt-mudo" x="240" y="352" text-anchor="middle">viagem</text>
+          <text class="txt-mudo" x="340" y="352" text-anchor="middle">desenvolve</text>
+          <text class="txt-mudo" x="440" y="352" text-anchor="middle">viagem</text>
+          <text class="txt-mudo" x="560" y="352" text-anchor="middle">central</text>
+          <text class="txt-mudo" x="660" y="352" text-anchor="middle">viagem</text>
+          <text class="txt-mudo" x="780" y="352" text-anchor="middle">reviravolta</text>
+          <text class="txt-mudo" x="890" y="352" text-anchor="middle">e comemora</text>
+        </svg>
+      </div>
+      <figcaption>Os postos ficam na entrada de cada playground, logo depois das viagens: errar no pico custa pouco.</figcaption>
+    </figure>
+  </section>
+
+  <section class="secao" aria-labelledby="t-tempos">
+    <div class="texto">
+      <p class="rotulo">A novidade da fase</p>
+      <h2 id="t-tempos">Quatro tempos, um em cada playground</h2>
+      <p>A novidade é ensinada sem texto: <strong>apresenta</strong> no playground 1, <strong>desenvolve</strong> no 2, ganha uma <strong>reviravolta</strong> no 4 e <strong>conclui</strong> na subida para a arena. No 3 ela divide o palco com o poder da fase. No exemplo, a novidade é a mola.</p>
+    </div>
+    <figure>
+      <div class="quadro">
+        <svg viewBox="0 0 1000 300" role="img" aria-labelledby="tempos-titulo tempos-desc">
+          <title id="tempos-titulo">Os quatro tempos de uma novidade, com a mola de exemplo</title>
+          <desc id="tempos-desc">Um: a mola em chão firme. Dois: a mola atravessa um vão. Três: a mola joga numa nuvem lilás que some. Quatro: mola, nuvem e Bolota juntas.</desc>
+          <rect class="faixa" x="10" y="10" width="232" height="232" rx="12"/>
+          <rect class="area" x="20" y="196" width="212" height="40" rx="6"/>
+          <rect class="area" x="150" y="112" width="70" height="20" rx="5"/>
+          <polyline class="mola" points="62,196 72,188 52,180 72,172 52,164"/><rect class="mola-tampa" x="48" y="158" width="28" height="7" rx="3"/>
+          <use href="#i-faisca" x="50" y="126" width="24" height="32"/>
+          <path class="trajeto" d="M64,150 C80,60 160,50 182,108" marker-end="url(#m-seta)"/>
+          <use href="#i-estrela" x="168" y="90" width="14" height="14"/>
+          <rect class="faixa" x="256" y="10" width="232" height="232" rx="12"/>
+          <rect class="area" x="266" y="196" width="78" height="40" rx="6"/>
+          <rect class="area" x="410" y="150" width="68" height="86" rx="6"/>
+          <polyline class="mola" points="306,196 316,188 296,180 316,172 296,164"/><rect class="mola-tampa" x="292" y="158" width="28" height="7" rx="3"/>
+          <use href="#i-faisca" x="294" y="126" width="24" height="32"/>
+          <path class="trajeto" d="M308,150 C330,50 410,60 438,144" marker-end="url(#m-seta)"/>
+          <rect class="faixa" x="502" y="10" width="232" height="232" rx="12"/>
+          <rect class="area" x="512" y="196" width="72" height="40" rx="6"/>
+          <ellipse class="nuvem-some" cx="652" cy="120" rx="34" ry="12" opacity="0.85"/>
+          <rect class="area" x="680" y="80" width="46" height="18" rx="5"/>
+          <polyline class="mola" points="548,196 558,188 538,180 558,172 538,164"/><rect class="mola-tampa" x="534" y="158" width="28" height="7" rx="3"/>
+          <use href="#i-faisca" x="536" y="126" width="24" height="32"/>
+          <path class="trajeto" d="M550,150 C560,60 620,50 642,104" marker-end="url(#m-seta)"/>
+          <path class="trajeto" d="M662,104 C672,70 690,60 700,74" marker-end="url(#m-seta)"/>
+          <rect class="faixa" x="748" y="10" width="242" height="232" rx="12"/>
+          <rect class="area" x="758" y="196" width="64" height="40" rx="6"/>
+          <rect class="area" x="904" y="140" width="76" height="96" rx="6"/>
+          <polyline class="mola" points="790,196 800,188 780,180 800,172 780,164"/><rect class="mola-tampa" x="776" y="158" width="28" height="7" rx="3"/>
+          <use href="#i-faisca" x="778" y="126" width="24" height="32"/>
+          <ellipse class="nuvem-some" cx="868" cy="104" rx="26" ry="10"/>
+          <path class="trajeto" d="M792,150 C800,60 846,54 862,90" marker-end="url(#m-seta)"/>
+          <path class="trajeto" d="M876,92 C892,70 912,80 922,130" marker-end="url(#m-seta)"/>
+          <use href="#i-bolota" x="944" y="118" width="22" height="22"/>
+          <text class="txt-forte" x="126" y="270" text-anchor="middle">Playground 1</text>
+          <text class="txt-forte" x="372" y="270" text-anchor="middle">Playground 2</text>
+          <text class="txt-forte" x="618" y="270" text-anchor="middle">Playground 4</text>
+          <text class="txt-forte" x="869" y="270" text-anchor="middle">Subida à arena</text>
+          <text class="txt-mudo" x="126" y="292" text-anchor="middle">apresenta: chão embaixo</text>
+          <text class="txt-mudo" x="372" y="292" text-anchor="middle">desenvolve: sobre um vão</text>
+          <text class="txt-mudo" x="618" y="292" text-anchor="middle">reviravolta: nuvem que some</text>
+          <text class="txt-mudo" x="869" y="292" text-anchor="middle">conclui: tudo junto</text>
+        </svg>
+      </div>
+    </figure>
+  </section>
+
+  <section class="secao" aria-labelledby="t-ceu-chao">
+    <div class="texto">
+      <p class="rotulo">Céu e chão</p>
+      <h2 id="t-ceu-chao">O mesmo padrão, dois tipos de fase</h2>
+      <p>Nas fases de céu, o vazio é o perigo e cair custa um coração. Nas fases de chão, o chão é a rede de segurança: cair de um móvel só faz descer, e uma escada (livros, pratos, caixas) leva de volta. Para ter risco no chão, a fase usa uma brincadeira, como “o chão é lava”.</p>
+    </div>
+    <figure>
+      <div class="quadro">
+        <svg viewBox="0 0 1000 300" role="img" aria-labelledby="corte-titulo corte-desc">
+          <title id="corte-titulo">Corte lateral de uma fase de céu e de uma fase de chão</title>
+          <desc id="corte-desc">À esquerda, a fase de céu: ilhas em alturas diferentes sobre o vazio; cair é perder um coração. À direita, a fase de chão: o chão do quarto embaixo, uma mesa e uma escrivaninha; cair só desce, e uma escada de livros leva de volta. Um trecho do chão é lava de brincadeira.</desc>
+          <rect class="faixa" x="10" y="10" width="480" height="280" rx="12"/>
+          <rect class="area" x="40" y="200" width="90" height="22" rx="6"/>
+          <rect class="area" x="190" y="150" width="90" height="22" rx="6"/>
+          <rect class="area" x="340" y="100" width="110" height="22" rx="6"/>
+          <path class="trajeto" d="M110,196 C140,140 170,140 200,146" marker-end="url(#m-seta)"/>
+          <path class="trajeto" d="M260,146 C300,90 330,90 350,96" marker-end="url(#m-seta)"/>
+          <path class="trajeto" d="M300,172 C300,220 290,250 280,276" marker-end="url(#m-seta)"/>
+          <use href="#i-coracao" x="290" y="246" width="18" height="18"/>
+          <text class="txt-forte" x="30" y="40">Céu</text>
+          <text class="txt-mudo" x="310" y="262">cair: perde 1 coração</text>
+          <rect class="faixa-alt" x="510" y="10" width="480" height="280" rx="12"/>
+          <rect x="520" y="250" width="460" height="30" fill="var(--creme)" opacity="0.6"/>
+          <rect class="lava" x="830" y="250" width="140" height="10"/>
+          <rect class="area" x="560" y="180" width="120" height="16" rx="3"/>
+          <rect x="570" y="196" width="8" height="54" fill="var(--wall)"/><rect x="662" y="196" width="8" height="54" fill="var(--wall)"/>
+          <rect class="area" x="730" y="110" width="140" height="16" rx="3"/>
+          <rect x="740" y="126" width="8" height="124" fill="var(--wall)"/><rect x="852" y="126" width="8" height="124" fill="var(--wall)"/>
+          <g fill="var(--orange)"><rect x="690" y="234" width="26" height="16"/><rect x="690" y="218" width="26" height="16" opacity="0.8"/></g>
+          <path class="trajeto" d="M670,182 C700,200 700,230 702,246" marker-end="url(#m-seta)"/>
+          <text class="txt-forte" x="530" y="40">Chão</text>
+          <text class="txt-mudo" x="590" y="160">cair: só desce</text>
+          <text class="txt-mudo" x="686" y="210">escada de livros</text>
+          <text class="txt-mudo" x="840" y="242">o chão é lava</text>
+        </svg>
+      </div>
+    </figure>
+  </section>
+
+  <section class="secao" aria-labelledby="t-medidas">
+    <div class="texto">
+      <p class="rotulo">Nada ambíguo</p>
+      <h2 id="t-medidas">Medidas padronizadas</h2>
+      <p>O caminho principal tem que dar para uma criança de 6 anos com folga, e só pede pular, flutuar e socar. Giro forte, agarrar e o poder da fase abrem bolsos, segredos e atalhos.</p>
+    </div>
+    <div class="tabela-caixa">
+      <table>
+        <thead><tr><th>Medida</th><th>Caminho principal</th><th>Bolsos e segredos</th></tr></thead>
+        <tbody>
+          <tr><td>Degrau sem mola</td><td>até 1,6 m</td><td>até 2 m</td></tr>
+          <tr><td>Vão só pulando</td><td>3 a 4 m</td><td>até 4,6 m</td></tr>
+          <tr><td>Vão flutuando</td><td>7 a 9 m</td><td>até 10,5 m</td></tr>
+          <tr><td>Fora de alcance (de propósito)</td><td colspan="2">mais de 4 m de altura sem mola nem poder: tem que parecer claramente alto demais</td></tr>
+          <tr><td>Plataforma de pouso</td><td>3 × 3 m ou maior</td><td>até 1,6 × 1,6 m</td></tr>
+          <tr><td>Bolotas em lugar estreito</td><td>só no playground 4</td><td>à vontade</td></tr>
+          <tr><td>Sombra de pouso</td><td colspan="2">uma sombra redonda sempre embaixo do Faísca, em toda fase</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tabela-caixa">
+      <table>
+        <thead><tr><th>Cor</th><th>Quer dizer</th><th>Exemplos</th></tr></thead>
+        <tbody>
+          <tr><td><span class="amostra" style="background:var(--creme)"></span>Creme</td><td>caminho</td><td>trilha no chão, almofadas seguras</td></tr>
+          <tr><td><span class="amostra" style="background:var(--star)"></span>Dourado</td><td>pega</td><td>estrelinhas, Estrela Grande, baú</td></tr>
+          <tr><td><span class="amostra" style="background:var(--orange)"></span>Laranja</td><td>mexe ou faz alguma coisa</td><td>molas, botões, alavancas, canhões, arcos de saída, argolas do ioiô</td></tr>
+          <tr><td><span class="amostra" style="background:var(--purple)"></span>Roxo</td><td>inimigo</td><td>Bolotas, Bolotona</td></tr>
+          <tr><td><span class="amostra" style="background:var(--lilac)"></span>Lilás</td><td>cuidado, some</td><td>nuvens e bolhas que somem</td></tr>
+          <tr><td><span class="amostra" style="background:var(--cyan)"></span>Ciano</td><td>Faísca e lugar seguro</td><td>laser, postos acesos, cristais que jogam para o alto</td></tr>
+          <tr><td><span class="amostra" style="background:var(--firefly)"></span>Verde-limão</td><td>segredo por perto</td><td>vaga-lume piscando</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="t-fases">
+    <div class="texto">
+      <p class="rotulo">As fases que já existem</p>
+      <h2 id="t-fases">A 1-1, a 1-2 e a 2-1 no padrão novo</h2>
+      <p>As três fases prontas são refeitas nesse padrão, guardando as peças e as brincadeiras que já têm. Nenhuma delas tem poder: o poder começa na 2-2.</p>
+    </div>
+    <div class="tabela-caixa">
+      <table>
+        <thead><tr><th>Parte</th><th>1-1 Pulinhos nas Nuvens (céu)</th><th>1-2 Túneis do Morro (caverna)</th><th>2-1 Cozinha Gigante (chão)</th></tr></thead>
+        <tbody>
+          <tr><td>Marco</td><td>Torre de Nuvens, com a Ilha do Baú no alto</td><td>Poço do Cristal, um cristal gigante aceso no meio da caverna</td><td>a Geladeira, a coisa mais alta da cozinha</td></tr>
+          <tr><td>Novidade</td><td>pular, flutuar e o laser</td><td>o laser acende tochas</td><td>tampas que pulam</td></tr>
+          <tr><td>1 · Apresenta</td><td>Ilha dos Pulinhos: pulo alto e esteiras, com chão embaixo</td><td>Corredor das Tochas: acender para clarear</td><td>Mesa do Café: as primeiras tampas</td></tr>
+          <tr><td>2 · Desenvolve</td><td>Ilhas das Argolas: flutuar sobre vãos e as primeiras Bolotas</td><td>Mina de Ouro: tochas que abrem caminhos e a parede rachada</td><td>Bancada das Panelas: tampas sobre vãos e rolos de macarrão</td></tr>
+          <tr><td>3 · Central</td><td>Jardim das Flores: laser nas flores e botões que fazem a ponte</td><td>Sala das Alavancas: grades e a sala escura como bolso</td><td>Fogão e Pizza: bocas que acendem e a pizza giratória</td></tr>
+          <tr><td>4 · Reviravolta</td><td>nuvens que somem e plataformas que se mexem, subindo pela torre</td><td>cristais que jogam para o alto, subindo pelo poço</td><td>bolhas da pia e o sorvete que joga para o alto da geladeira</td></tr>
+          <tr><td>Arena</td><td>Ilha do Baú, no alto da torre</td><td>a Bolotona, no alto do poço</td><td>em cima da geladeira</td></tr>
+          <tr><td>Viagens</td><td>esteira grande, canhão de nuvem, plataforma que leva</td><td>carrinho de mina, elevador de mina, cristal gigante</td><td>carrinho de chá, colher-catapulta, bandeja que escorrega</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="t-maquetes">
+    <div class="texto">
+      <p class="rotulo">Exemplos em 3D</p>
+      <h2 id="t-maquetes">As duas maquetes do padrão</h2>
+    </div>
+    <div class="maquetes">
+      <a href="https://claude.ai/artifact/7VWLwjDfRYUUySyx7ppCog"><strong>Nuvens de Algodão-Doce (2-2)</strong><span>Fase de céu: bolo-montanha no meio, nuvens que quicam e o Balão de Chiclete.</span></a>
+      <a href="https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V"><strong>Quarto de Brinquedos (2-3)</strong><span>Fase de chão: castelo de blocos no meio, dados que rolam, o Ioiô e o chão que é lava.</span></a>
+    </div>
+  </section>
+
+  <section class="secao" aria-labelledby="t-checagem">
+    <div class="texto">
+      <p class="rotulo">Antes de dar a fase por pronta</p>
+      <h2 id="t-checagem">Lista de conferência</h2>
+    </div>
+    <ul class="lista-checagem texto">
+      <li>O marco com a Estrela Grande aparece de todos os playgrounds.</li>
+      <li>São quatro playgrounds largos, cada um com uma ideia só e um mini-marco.</li>
+      <li>Cada playground tem o posto na entrada, a trilha creme e um arco de saída visível de qualquer ponto dele.</li>
+      <li>A novidade passa pelos quatro tempos e ganha a dica do Vovô no playground 1.</li>
+      <li>O caminho só pede pular, flutuar e socar, dentro das medidas da tabela.</li>
+      <li>Há pelo menos dois bolsos por playground, e os três vaga-lumes ficam nos playgrounds 2, 3 e 4.</li>
+      <li>O segredo do playground 4 dá dois sinais ou mais.</li>
+      <li>As três viagens não têm risco, e a última vai e volta.</li>
+      <li>Fase de chão: o chão é a rede, com escada de volta perto de cada móvel.</li>
+      <li>Se a fase tem poder, ele é pego no playground 3 e usado no 3 e no 4.</li>
+      <li>As estrelinhas somam de 80 a 100, metade no caminho e metade nos bolsos.</li>
+      <li>O teste da fase atravessa os quatro playgrounds com o controle simulado e confere os bolsos.</li>
+    </ul>
+  </section>
+
+  <p class="rodape texto">Proposta para a Parte 2 da Ilha Cafuné, versão 2. As medidas de pulo, voo e mola são as do Faísca no jogo hoje; se a física dele mudar, a tabela muda junto.</p>
+</main>
+
+</body>
+</html>

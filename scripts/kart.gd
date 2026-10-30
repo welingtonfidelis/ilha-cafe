@@ -34,6 +34,11 @@ var driver: Player
 ## Lugar no box; volta para cá quando o aventureiro desce longe ou sai da pista.
 var home := Transform3D.IDENTITY
 var input_enabled := true
+## Rival da corrida (pedido do usuário em 2026-10-29: "mais 1 ou 2 corredores na pista, pilotando com IA"): o
+## acelerador e o volante vêm de ai_throttle e ai_steer (a KartRace guia), não do controle.
+var ai := false
+var ai_throttle := 0.0
+var ai_steer := 0.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
 var _visual: Node3D
 var _bump := 0.0
@@ -120,6 +125,9 @@ func forward() -> Vector3:
 func park() -> void:
 	driving = false
 	driver = null
+	ai = false
+	ai_throttle = 0.0
+	ai_steer = 0.0
 	speed = 0.0
 	velocity = Vector3.ZERO
 	collision_layer = 1
@@ -138,13 +146,29 @@ func park() -> void:
 
 ## Começa a dirigir, com o aventureiro (o mesmo personagem dele, ou o Faísca) no lugar do piloto.
 func drive(who: Player) -> void:
-	driving = true
+	# A criança ou, com o Faísca na ilha, o Robo (no mesmo esqueleto do KayKit).
+	_seat(who.driver_model())
 	driver = who
+	_cam_yaw = 0.0
+	_cam_pitch = 0.0
+	_place_camera(1.0)
+
+
+## Rival da corrida: o computador dirige, com `pilot` (um personagem do KayKit) no banco.
+func drive_ai(pilot: Node3D) -> void:
+	_seat(pilot)
+	ai = true
+	input_enabled = false
+
+
+## Liga o veículo (na camada de quem dirige, que o mundo não vê) com `model` no banco, segurando o volante.
+func _seat(model: Node3D) -> void:
+	driving = true
+	driver = null
 	speed = 0.0
 	collision_layer = 1 << 1
 	set_physics_process(true)
-	# A criança ou, com o Faísca na ilha, o Robo (no mesmo esqueleto do KayKit).
-	_head = who.driver_model()
+	_head = model
 	_head.name = "PilotoNoBanco"
 	for m in _head.find_children("*", "MeshInstance3D", true, false):
 		var n := String(m.name)
@@ -159,9 +183,6 @@ func drive(who: Player) -> void:
 	else:
 		var ap := AnimUtil.make_player(_head, ["ferramentas"])
 		ap.play(&"ferramentas/Holding_A")
-	_cam_yaw = 0.0
-	_cam_pitch = 0.0
-	_place_camera(1.0)
 
 
 ## Quem dirige levou um golpe: o veículo perde o embalo e dá um tranco (o bico afunda, como numa freada).
@@ -189,7 +210,10 @@ func _physics_process(delta: float) -> void:
 	var throttle := 0.0
 	var brake := 0.0
 	var steer := 0.0
-	if input_enabled:
+	if ai:
+		throttle = ai_throttle
+		steer = ai_steer
+	elif input_enabled:
 		throttle = maxf(Input.get_action_strength("frente"), Input.get_action_strength("atirar"))
 		brake = maxf(Input.get_action_strength("tras"), Input.get_action_strength("mirar"))
 		steer = Input.get_action_strength("esquerda") - Input.get_action_strength("direita")
@@ -240,7 +264,8 @@ func _physics_process(delta: float) -> void:
 		_cam_pitch = lerpf(_cam_pitch, 0.0, 1.0 - exp(-2.0 * delta))
 	_spin += speed / maxf(_wheel_radius, 0.1) * delta
 	_pose_wheels()
-	_place_camera(delta)
+	if not ai:
+		_place_camera(delta)
 
 
 ## Mede o chão embaixo das rodas da frente, de trás e dos lados (raios de cima para baixo). A cápsula deitada encosta

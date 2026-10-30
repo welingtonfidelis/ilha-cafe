@@ -52,7 +52,7 @@ var _splashing := false
 ## Comandos mostrados no menu de pausa (não ficam mais na tela durante o jogo).
 const CONTROLS_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
-	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"], ["Kart e skate", "E (entrar e sair)"],
+	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"], ["Kart", "E (entrar e sair)"],
 	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Duas pistolas", "1 de novo (com duas pistolas)"],
 	["Lojinha no celular", "C (fora de luta)"],
 	["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
@@ -70,7 +70,7 @@ const CONTROLS_FAISCA_GAMEPAD := [
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
-	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart e skate", "B (entrar e sair)"],
+	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart", "B (entrar e sair)"],
 	["Blasters", "↑ Paçoca · → Granulado · ↓ Pipoqueira · ← Pé-de-Moleque (Y passa para o próximo)"],
 	["Duas pistolas", "↑ de novo (com duas pistolas)"],
 	["Lojinha no celular", "Select (fora de luta)"], ["Pausa", "Start"],
@@ -143,11 +143,10 @@ var day_night: DayNight
 var shop_menu: ShopMenu
 var shop_marker: ObjectiveMarker
 var coins_bar: CoinsBar
-## Atividades extras: corrida de kart e pista de skate.
+## Atividade extra: corrida de kart (a pista de skate saiu em 2026-10-29, pedido do usuário).
 var kart_race: KartRace
-var skate_park: SkatePark
 var message_label: Label
-## Aviso fixo embaixo, quando dá para fazer algo com o B (ou E): correr de kart, andar de skate.
+## Aviso fixo embaixo, quando dá para fazer algo com o B (ou E): correr de kart.
 var hint_label: Label
 var _shop_back_time := -1.0
 ## Puxando o celular do bolso (meio segundo antes do menu abrir).
@@ -418,14 +417,6 @@ func _ready() -> void:
 		for v in fun.get_node("Vagas").get_children():
 			kart_race.spots.append((v as Node3D).global_transform)
 		add_child(kart_race)
-		skate_park = SkatePark.new()
-		skate_park.name = "PistaDeSkate"
-		skate_park.game = self
-		skate_park.story = story
-		skate_park.entrance = (fun.get_node("Skate") as Node3D).global_position
-		skate_park.center = skate_park.entrance + Vector3(0, 0, -23.0)
-		skate_park.session_spot = _ground_point(skate_park.center + Vector3(3.0, 0, 13.0))
-		add_child(skate_park)
 		story.coins_changed.connect(func(n: int) -> void:
 			coins_bar.set_coins(n, story.coins_ever)
 			if menu_state == "loja":
@@ -859,8 +850,8 @@ func open_menu(state: String) -> void:
 			var inside := parte2 != null and parte2.lugar != "ilha"
 			_pause_exit.visible = inside
 			_pause_exit.text = "Sair da fase" if parte2 and parte2.lugar == "fase" else "Voltar para a ilha"
-			# De kart ou de skate, desce primeiro.
-			_pause_switch.visible = not inside and not player.in_vehicle and not player.skating
+			# De kart, desce primeiro.
+			_pause_switch.visible = not inside and not player.in_vehicle
 			if parte2 and parte2.faisca_ativo:
 				pause_objective.text = "Junte estrelinhas para abrir as portas do farol."
 			elif story:
@@ -916,7 +907,7 @@ func open_phone() -> bool:
 		if parte2.lugar == "ilha":
 			show_message("O celular é das crianças: troque de personagem na pausa", Color("#8ff3ff"), 1.8)
 		return false
-	if player.in_vehicle or player.skating:
+	if player.in_vehicle:
 		show_message("Desça primeiro para usar o celular", Color("#ff9d9d"), 1.6)
 		return false
 	if in_combat():
@@ -1040,7 +1031,7 @@ func exit_vehicle(at: Vector3) -> void:
 		parte2.vestir_crianca(false)
 
 
-## O Faísca andando pela ilha (nem no farol, nem numa cena): ele também anda de kart e de skate e luta na Festa
+## O Faísca andando pela ilha (nem no farol, nem numa cena): ele também anda de kart e luta na Festa
 ## sem fim (pedido do usuário em 2026-10-29).
 func faisca_on_island() -> bool:
 	return parte2 != null and parte2.faisca_ativo and parte2.lugar == "ilha" and not parte2.busy() and not parte2.vestida()
@@ -1108,8 +1099,6 @@ func _physics_process(_delta: float) -> void:
 
 func _splash() -> void:
 	_splashing = true
-	if skate_park:
-		skate_park.splash()
 	Fx.bubble_pop(self, player.global_position + Vector3.UP * 0.8)
 	Fx.confetti(self, player.global_position + Vector3.UP * 0.8, 20, 4.0)
 	Sfx.play(self, "splash", 0.0, 0.0)
@@ -1603,7 +1592,7 @@ func _pause_card_style(color: Color) -> StyleBoxFlat:
 ## A criança encostou na porta do farol com a Parte 2 aberta: abre a troca de personagem já no Faísca, com o
 ## aviso (pedido do usuário em 2026-10-29). Escolhendo o Faísca, ele aparece na porta e entra.
 func ask_for_faisca() -> void:
-	if menu_state != "" or player.dizzy or player.in_vehicle or player.skating or (parte2 and parte2.busy()) \
+	if menu_state != "" or player.dizzy or player.in_vehicle or (parte2 and parte2.busy()) \
 			or (ending and ending.busy()):
 		return
 	_door_choice = true
@@ -1759,15 +1748,11 @@ func _process(_delta: float) -> void:
 			hud = party_mode.hud_text()
 		elif kart_race and kart_race.driving():
 			hud = kart_race.hud_text()
-		elif skate_park and skate_park.riding():
-			hud = skate_park.hud_text()
 		wave_label.text = hud
 		var button := "B" if player.using_gamepad else "E"
 		var hint := ""
 		if menu_state == "" and kart_race and kart_race.state == "a_pe" and kart_race.nearest:
 			hint = "Aperte %s para dirigir: %s" % [button, kart_race.nearest.display_name]
-		elif menu_state == "" and skate_park and skate_park.state == "a_pe" and skate_park.near:
-			hint = "Aperte %s para pegar o skate" % button
 		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
@@ -2549,6 +2534,27 @@ func _run_island_test() -> void:
 	player.global_position = top.global_position + Vector3(0, 0.5, 1.0)
 	await _wait(0.6)
 	all_ok = _check("bandeira do topo do Morro vira ponto de retorno", current_checkpoint == top) and all_ok
+
+	# Vielas da cidade (pedido do usuário em 2026-10-29): de uma rua à outra pelo meio do quarteirão, passando pelo
+	# jardinzinho, com a câmera sempre fora dos prédios.
+	await _stand(Vector3(43.5, 0, 111))
+	var alvo := Vector3(43.5, 0, 152)
+	var camera_fora := true
+	var espaco := player.get_world_3d().direct_space_state
+	var ponto := PhysicsPointQueryParameters3D.new()
+	ponto.collision_mask = 1
+	player.set_yaw(atan2(-(alvo - player.global_position).x, -(alvo - player.global_position).z))
+	Input.action_press("frente")
+	for i in int(10.0 * Engine.physics_ticks_per_second):
+		await get_tree().physics_frame
+		ponto.position = player.camera.global_position
+		camera_fora = camera_fora and espaco.intersect_point(ponto, 1).is_empty()
+		if player.global_position.z > 148.0:
+			break
+	Input.action_release("frente")
+	all_ok = _check("anda pela viela do quarteirão até a rua do outro lado", player.global_position.z > 147.0 and absf(player.global_position.x - 43.5) < 2.5,
+			"(%.1f, %.1f)" % [player.global_position.x, player.global_position.z]) and all_ok
+	all_ok = _check("na viela, a câmera não entra nos prédios", camera_fora) and all_ok
 
 	print("ILHA OK" if all_ok else "ILHA COM FALHAS")
 	get_tree().quit()
@@ -3855,9 +3861,7 @@ func _run_shop_capture() -> void:
 
 ## Atividades extras: barcos no mar; veículos do box (vazios, entrar perto de um, o aventureiro da cintura
 ## para cima no banco, dirigir, LARGADA começa a corrida, voltas, chegada, descer na pista volta para a vaga,
-## deixar pela ilha e se afastar 50 m volta para a vaga, cair no mar); skate (pegar, perna empurrando,
-## marca da sessão, half-pipe, pontos, tombo, fim com moedas, descer deixa no chão, longe volta para a
-## pista). Uso: godot --headless --path . -- --atividades
+## deixar pela ilha e se afastar 50 m volta para a vaga, cair no mar). Uso: godot --headless --path . -- --atividades
 func _run_activities_test() -> void:
 	var all_ok := true
 	player.god_mode = true
@@ -3925,8 +3929,10 @@ func _run_activities_test() -> void:
 			await get_tree().physics_frame
 			await get_tree().physics_frame
 	await _wait(0.3)
-	all_ok = _check("três voltas: chegada com tempo, recorde e moedas, e continua dirigindo", kart_race.state == "dirigindo"
-			and story.records.kart > 0.0 and story.coins == coins0 + KartRace.COINS + KartRace.RECORD_BONUS, "(%d moedas)" % (story.coins - coins0)) and all_ok
+	# Pulando de marca em marca, chega antes dos rivais: 1º lugar, com o bônus.
+	all_ok = _check("três voltas: chegada em 1º com tempo, recorde e moedas, e continua dirigindo", kart_race.state == "dirigindo"
+			and kart_race.place == 1 and story.records.kart > 0.0 and story.coins == coins0 + KartRace.COINS + KartRace.RECORD_BONUS + KartRace.WIN_BONUS,
+			"(%dº, %d moedas)" % [kart_race.place, story.coins - coins0]) and all_ok
 	await _press_key(KEY_E)
 	await _wait(0.3)
 	all_ok = _check("descer na pista: aventureiro fora dela e o carrinho de volta na vaga", kart_race.state == "a_pe" and player.visible
@@ -4001,96 +4007,11 @@ func _run_activities_test() -> void:
 	all_ok = _check("caiu no mar: o carrinho volta para a vaga", kart_race.state == "a_pe" and blue.is_home() and player.visible) and all_ok
 	await _wait_until(func() -> bool: return not _splashing, 4.0)
 
-	# Skate.
-	all_ok = _check("pista de skate perto da cidade", skate_park.center.distance_to(Vector3(-72, 0, 98)) < 50.0,
-			"(%.0f m da esquina)" % skate_park.center.distance_to(Vector3(-72, 0, 98))) and all_ok
-	await _stand(skate_park.board.global_position + Vector3(1.5, 0, 0))
-	await _wait(0.3)
-	all_ok = _check("perto do skate, o aviso chama para pegar", skate_park.near and hint_label.visible and "skate" in hint_label.text) and all_ok
-	await _press_key(KEY_E)
-	await _wait(0.2)
-	all_ok = _check("B / E pega o skate (some do chão, aparece nos pés)", player.skating and skate_park.state == "andando"
-			and not skate_park.board.visible and is_instance_valid(player._board) and is_instance_valid(player._rider)) and all_ok
-	# Perna empurrando: o pé do impulso desce até o chão e o skate ganha velocidade.
-	player.global_position = _ground_point(skate_park.center + Vector3(-8, 0, 14)) + Vector3.UP * 0.3
-	player._skate_heading = PI / 2.0
-	player._skate_speed = 0.0
-	await _wait(0.3)
-	var lowest := INF
-	Input.action_press("frente")
-	var t := 0.0
-	while t < 1.5:
-		await get_tree().process_frame
-		t += get_process_delta_time()
-		lowest = minf(lowest, player._rider.right_foot_drop)
-	Input.action_release("frente")
-	all_ok = _check("dar impulso: o pé direito desce até o chão e o skate anda", player._skate_speed > 3.0
-			and lowest < -Player.SKATE_LIFT * 0.6, "(%.1f m/s, pé %.2f abaixo da tábua)" % [player._skate_speed, -lowest]) and all_ok
-	player.god_mode = false
-	var skate_h := player.hearts
-	var skate_v := player._skate_speed
-	player.take_damage(1, player.global_position + Vector3(1, 0, 0), "teste")
-	player.god_mode = true
-	all_ok = _check("no skate, golpe tira coração e o skate perde o embalo (sem empurrão)", player.hearts == skate_h - 1 and player.skating
-			and player._skate_speed < skate_v * 0.5 and player._knockback == Vector3.ZERO, "(%.1f -> %.1f m/s)" % [skate_v, player._skate_speed]) and all_ok
-	var yaw0 := player.get_yaw()
-	Input.action_press("olhar_direita")
-	await _wait(0.4)
-	Input.action_release("olhar_direita")
-	await _wait(0.5)
-	all_ok = _check("no skate, a câmera gira livre (não volta na hora)", absf(angle_difference(player.get_yaw(), yaw0)) > 0.5,
-			"(%.1f)" % angle_difference(player.get_yaw(), yaw0)) and all_ok
-	# Passar pela marca da sessão.
-	player.global_position = skate_park.session_spot + Vector3.UP * 0.3
-	await _wait(0.2)
-	all_ok = _check("passar pela marca SESSÃO começa a sessão de pontos", skate_park.state == "sessao") and all_ok
-	player.global_position = skate_park.center + Vector3(-5, 0.5, -10)
-	player._skate_heading = PI
-	player._skate_speed = 11.0
-	player.velocity = Vector3(0, 0, -11)
-	await get_tree().physics_frame
-	var top := -INF
-	var came_back := false
-	t = 0.0
-	while t < 4.0:
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
-		top = maxf(top, player.global_position.y)
-		if top > 1.5 and player.velocity.z > 1.0:
-			came_back = true
-	all_ok = _check("no half-pipe o skate sobe a rampa e volta", top > 1.5 and came_back, "(subiu %.1f m)" % top) and all_ok
-	var s0 := skate_park.score
-	player.skate_landed.emit(1.0, TAU * 1.02, true)
-	all_ok = _check("pulo com giro 360 vale pontos (ar + meias voltas)", skate_park.score == s0 + SkatePark.trick_points(1.0, TAU * 1.02)
-			and SkatePark.trick_points(1.0, TAU * 1.02) == 400 and SkatePark.trick_name(TAU * 1.02) == "Giro 360", "(+%d)" % (skate_park.score - s0)) and all_ok
-	var s1 := skate_park.score
-	player.skate_landed.emit(1.0, PI, false)
-	all_ok = _check("pousar atravessado é tombo, sem pontos", skate_park.score == s1) and all_ok
-	var coins1 := story.coins
-	skate_park.time_left = 0.05
-	await _wait(0.2)
-	all_ok = _check("fim da sessão: recorde e moedas, e continua no skate", skate_park.state == "andando" and player.skating
-			and story.records.skate == skate_park.score and story.coins == coins1 + mini(skate_park.score / 100, SkatePark.MAX_COINS),
-			"(%d pontos)" % skate_park.score) and all_ok
-	# Descer pela ilha: o skate fica no chão; longe, volta para a pista.
-	var street := _ground_point(Vector3(-17.5, 0, 130))
-	player.global_position = street + Vector3.UP * 0.3
-	player._skate_speed = 0.0
-	player.velocity = Vector3.ZERO
-	await _wait(0.3)
-	await _press_key(KEY_E)
-	await _wait(0.2)
-	all_ok = _check("B / E desce: o skate fica no chão onde parou", not player.skating and skate_park.state == "a_pe"
-			and skate_park.board.visible and skate_park.board.global_position.distance_to(street) < 3.0 and not is_instance_valid(player._rider),
-			"(skate %s, rua %s, estado %s, skating %s)" % [skate_park.board.global_position.snappedf(0.1), street.snappedf(0.1), skate_park.state, player.skating]) and all_ok
-	await _stand(street + Vector3(0, 0, 60))
-	await _wait(0.3)
-	all_ok = _check("a mais de 50 m o skate volta para a pista", skate_park.board_at_home()) and all_ok
 	print("ATIVIDADES OK" if all_ok else "ATIVIDADES COM FALHAS")
 	get_tree().quit()
 
 
-## Fotos dos veículos com o aventureiro no banco (os dois personagens) e do impulso no skate, de lado (precisa de janela).
+## Fotos dos veículos com o aventureiro no banco (os dois personagens) (precisa de janela).
 ## Uso: godot --path . -- --veiculos-captura
 func _run_vehicles_capture() -> void:
 	player.god_mode = true
@@ -4115,25 +4036,11 @@ func _run_vehicles_capture() -> void:
 					v.global_position + Vector3.UP * 0.8, 50.0)
 			v.park()
 			n += 1
-	# Impulso no skate, de lado, num trecho plano da praça.
-	player.set_character("menina")
-	await _stand(_ground_point(Vector3(112, 0, 0)))
-	player.start_skating()
-	player._skate_heading = PI / 2.0
-	player.visual.rotation.y = PI / 2.0
-	await _wait(0.3)
-	player.force_skate_push = true
-	await _wait(0.4)
-	for k in 8:
-		await _wait(0.05)
-		var p := player.global_position
-		await _art_shot(out + "v1%d_skate_impulso.png" % k, Vector2i(800, 600), p + Vector3(1.2, 1.3, 4.6), p + Vector3(1.0, 0.9, 0), 45.0)
-	player.force_skate_push = false
 	print("capturas dos veículos em tools/capturas/")
 	get_tree().quit()
 
 
-## Fotos das atividades extras (precisa de janela): pista de kart, pista de skate e barcos no mar.
+## Fotos das atividades extras (precisa de janela): pista de kart e barcos no mar.
 ## Uso: godot --path . -- --atividades-captura
 func _run_activities_capture() -> void:
 	player.god_mode = true
@@ -4143,7 +4050,6 @@ func _run_activities_capture() -> void:
 	var size := Vector2i(1280, 720)
 	# A pista em 8 (2026-10-29): de cima, a ponte do cruzamento, a largada com o box e a volta sul com a lombada.
 	var kart := Vector3(118, 0, 0)
-	var skate := skate_park.center
 	var bridge: Vector3 = KartCircuit.at_point(KartCircuit.BRIDGE).pos
 	await _art_shot(out + "a01_kart_de_cima.png", size, kart + Vector3(0, 205, 0.5), kart, 50.0)
 	await _art_shot(out + "a02_kart_ponte.png", size, bridge + Vector3(-30, 6, -12), bridge + Vector3(0, -1, 0), 60.0)
@@ -4151,18 +4057,27 @@ func _run_activities_capture() -> void:
 	await _art_shot(out + "a03b_kart_volta_sul.png", size, Vector3(110, 14, 112), Vector3(130, 0, 60), 60.0)
 	await _art_shot(out + "a03c_kart_rampa_do_box.png", size, kart_race.entry_center + kart_race.entry_out * 14.0 + Vector3(0, 4, 0) - Vector3(kart_race.entry_out.z, 0, -kart_race.entry_out.x) * 10.0,
 			kart_race.entry_center + kart_race.entry_out * 4.0, 60.0)
-	await _art_shot(out + "a04_skate_de_cima.png", size, skate + Vector3(0, 70, 0.5), skate, 50.0)
-	await _art_shot(out + "a05_skate_lado.png", size, skate + Vector3(18, 12, 34), skate + Vector3(-2, 1, -4), 60.0)
-	await _art_shot(out + "a06_half_pipe.png", size, skate + Vector3(-12, 6, -2), skate + Vector3(-8, 1, -16), 60.0)
 	await _art_shot(out + "a07_barcos_cais.png", size, Vector3(0, 8, 228), Vector3(0, 0, 275), 65.0)
-	await _art_shot(out + "a14_skate_e_cidade.png", size, Vector3(-55, 30, 118), skate + Vector3(-5, 0, -5), 55.0)
 	await _art_shot(out + "a15_fazenda_nova.png", size, Vector3(-120, 22, 30), Vector3(-120, 0, -6), 55.0)
 	var sea: SeaTraffic = get_node("Barcos")
 	for k in sea._ships.size():
 		var ship: Node3D = sea._ships[k].no
 		var from := ship.global_position * 0.62 + Vector3.UP * 6.0
 		await _art_shot(out + "a08_navio_%d.png" % k, size, from, ship.global_position + Vector3.UP * 8.0, 40.0)
-	# Em ação: kart andando (câmera do kart) e skate no ar no half-pipe.
+	# Vielas no meio dos quarteirões e a cerca do pasto, agora sólida (2026-10-29).
+	await _art_shot(out + "a16_vielas_da_cidade.png", size, Vector3(78, 34, 96), Vector3(40, 0, 132), 55.0)
+	await _art_shot(out + "a17_dentro_da_viela.png", size, Vector3(42, 2.2, 112), Vector3(40, 1.5, 140), 65.0)
+	# Largada com os dois rivais (2026-10-29), na contagem.
+	await _stand(kart_race.paddock)
+	var grid_car: Kart = kart_race.vehicles[0]
+	kart_race.enter(grid_car)
+	kart_race._start_race()
+	await _wait(0.6)
+	var g := kart_race.start
+	await _art_shot(out + "a03d_largada_com_rivais.png", size, g.origin + g.basis.z.normalized() * 11.0 + Vector3.UP * 3.0, g.origin + Vector3.UP * 0.8, 55.0)
+	kart_race.leave(true)
+	await _wait(0.4)
+	# Em ação: kart andando (câmera do kart).
 	close_menus()
 	await _stand(kart_race.paddock)
 	var car := kart_race.vehicles[0]
@@ -4190,22 +4105,6 @@ func _run_activities_capture() -> void:
 	Input.action_release("frente")
 	kart_race.leave()
 	await _wait(0.4)
-	await _stand(skate_park.entrance + Vector3(0, 0, 4))
-	var to_park := skate_park.center - player.global_position
-	player.set_yaw(atan2(-to_park.x, -to_park.z))
-	await _wait(1.2)
-	await _shot("a11_skate_aviso.png")
-	skate_park.pick()
-	await _wait(0.3)
-	player.global_position = skate_park.center + Vector3(-5, 0.5, -10)
-	player._skate_heading = PI
-	player.set_yaw(0.0)
-	player._skate_speed = 11.0
-	await _wait(1.25)
-	await _shot("a12_skate_no_ar.png")
-	await _wait(0.8)
-	var p := player.global_position
-	await _art_shot(out + "a13_skate_half_pipe.png", size, p + Vector3(9.0, 1.5, 4.0), p + Vector3(0, 0.5, 0), 55.0)
 	print("capturas das atividades em tools/capturas/")
 	get_tree().quit()
 
@@ -4391,7 +4290,7 @@ func _run_endless_test() -> void:
 	get_tree().quit()
 
 
-## O Faísca faz na ilha o que as crianças fazem, menos comprar (pedido do usuário em 2026-10-29): kart, skate e a
+## O Faísca faz na ilha o que as crianças fazem, menos comprar (pedido do usuário em 2026-10-29): kart e a
 ## Festa sem fim, lutando com os golpes dele e dividindo os corações com a criança guardada.
 ## Uso: godot --headless --path . -- --faisca-ilha
 func _run_faisca_island_test() -> void:
@@ -4433,25 +4332,6 @@ func _run_faisca_island_test() -> void:
 	all_ok = _check("B desce: o Faísca volta ao lado do kart, com a câmera dele", not kart_race.driving() and f.visible and not parte2.vestida()
 			and not player.robo_skin and player.parked and f.camera.current and drove > 3.0 and f.global_position.distance_to(v.global_position) < 4.0
 			and not ammo_hud.visible and hearts_bar.visible, "(andou %.1f m)" % drove) and all_ok
-
-	# Skate: sobe vestida de Faísca, com o robô em cima da tábua.
-	await _wait(0.6)
-	f.teleportar(skate_park.board.global_position + Vector3(1.2, 0.3, 0))
-	await _wait(0.5)
-	all_ok = _check("perto do skate, o Faísca vê o aviso", skate_park.near and hint_label.visible) and all_ok
-	await _joy_button(JOY_BUTTON_B)
-	await _wait(0.3)
-	all_ok = _check("B sobe no skate: o robô na tábua, empurrando", skate_park.riding() and player.skating and player.model is Robo
-			and player.visible and not f.visible and player.camera.current) and all_ok
-	var s0 := player.global_position
-	player.force_skate_push = true
-	await _wait(1.5)
-	player.force_skate_push = false
-	var rolled := Vector2(player.global_position.x - s0.x, player.global_position.z - s0.z).length()
-	await _joy_button(JOY_BUTTON_B)
-	await _wait(0.4)
-	all_ok = _check("o skate anda e B desce: o Faísca volta onde parou", rolled > 2.0 and not skate_park.riding() and f.visible
-			and not player.robo_skin and player.parked and f.global_position.distance_to(player.global_position) < 0.6, "(andou %.1f m)" % rolled) and all_ok
 
 	# Festa sem fim: ficar no círculo começa, e o Faísca luta com os golpes dele.
 	var pd := party_mode
@@ -4515,7 +4395,7 @@ func _run_faisca_island_test() -> void:
 	get_tree().quit()
 
 
-## Fotos do Faísca na ilha (v20 a v24): kart, skate, Festa sem fim e a porta do farol com a criança.
+## Fotos do Faísca na ilha (v20 a v24): kart, Festa sem fim e a porta do farol com a criança.
 ## Uso: godot --path . -- --faisca-ilha-captura
 func _run_faisca_island_capture() -> void:
 	story.fast = true
@@ -4542,16 +4422,6 @@ func _run_faisca_island_capture() -> void:
 	await _shot("v21_faisca_no_kart_de_lado.png")
 	kart_race.leave()
 	await _wait(0.6)
-	f.teleportar(skate_park.board.global_position + Vector3(1.2, 0.3, 0))
-	await _wait(0.4)
-	skate_park.pick()
-	player.force_skate_push = true
-	await _wait(1.0)
-	await _shot("v22_faisca_no_skate.png")
-	player.force_skate_push = false
-	await _wait(0.4)
-	skate_park._drop(false)
-	await _wait(0.4)
 	var pd := party_mode
 	f.teleportar(pd.center + Vector3.UP * 0.3)
 	await _wait_until(func() -> bool: return pd.alive.size() >= 3, 10.0)
@@ -4614,7 +4484,14 @@ func _run_kart_track_test() -> void:
 		Input.action_release(action)
 	all_ok = _check("da vaga, o kart sobe a rampa da abertura e começa a corrida", kart_race.state in ["contagem", "correndo"],
 			"(%.1f s, estado %s)" % [drive_t, kart_race.state]) and all_ok
+	# Rivais (2026-10-29): dois karts do box no grid, com piloto, parados até o "Já!".
+	var rivals: Array = kart_race.rivals.map(func(r: Dictionary) -> Kart: return r.kart)
+	all_ok = _check("dois rivais no grid, com piloto e parados na contagem", rivals.size() == 2 and rivals.all(func(v: Kart) -> bool:
+			return v.ai and v.driving and v.speed == 0.0 and KartCircuit.on_track(v.global_position, 0.0) and v != car), "(%d)" % rivals.size()) and all_ok
 	await _wait_until(func() -> bool: return kart_race.state == "correndo", 6.0)
+	var rival_top := [-INF, -INF]
+	var rival_off := [0, 0]
+	var resets0 := kart_race.rival_resets
 	var last_s: float = KartCircuit.nearest(car.global_position).sample.s
 	var total := KartCircuit.length()
 	var run := 0.0
@@ -4661,14 +4538,35 @@ func _run_kart_track_test() -> void:
 			max_tilt = maxf(max_tilt, absf(car._ground_pitch))
 		stuck = stuck + 1.0 / Engine.physics_ticks_per_second if car.speed < 2.0 else 0.0
 		worst_stuck = maxf(worst_stuck, stuck)
+		for k in rivals.size():
+			rival_top[k] = maxf(rival_top[k], (rivals[k] as Kart).global_position.y)
+			if not KartCircuit.on_track((rivals[k] as Kart).global_position, 0.5):
+				rival_off[k] += 1
 	for action in ["frente", "esquerda", "direita"]:
 		Input.action_release(action)
+	var runs: Array = kart_race.rivals.map(func(r: Dictionary) -> float: return r.run)
+	all_ok = _check("os rivais correm a volta junto, pela ponte, sem sair da pista nem enroscar", runs.size() == 2 and runs.all(func(m: float) -> bool:
+			return m > total * 0.8) and rival_top.all(func(y: float) -> bool: return y > 5.5) and rival_off.all(func(c: int) -> bool: return c < 30)
+			and kart_race.rival_resets == resets0, "(%s m, alto %s, fora %s, voltas ao meio %d)" % [str(runs.map(func(m: float) -> int: return int(m))),
+			str(rival_top.map(func(y: float) -> float: return snappedf(y, 0.1))), str(rival_off), kart_race.rival_resets - resets0]) and all_ok
+	all_ok = _check("a faixa de cima mostra a posição na corrida", kart_race.place >= 1 and kart_race.place <= 3 and "º de 3" in kart_race.hud_text(),
+			"(%s)" % kart_race.hud_text()) and all_ok
 	all_ok = _check("no piloto automático o kart dá a volta inteira e a volta conta na chegada", kart_race.lap >= 1 and run > total * 0.9 and run < total * 1.2,
 			"(%.0f m em %.1f s, volta %d)" % [run, t, kart_race.lap]) and all_ok
 	all_ok = _check("o kart sobe a ponte do cruzamento", max_y > 5.5, "(mais alto: %.1f m)" % max_y) and all_ok
 	all_ok = _check("na rampa da ponte o corpo do kart inclina junto com o chão", max_tilt > 0.05, "(%.1f°)" % rad_to_deg(max_tilt)) and all_ok
 	all_ok = _check("sem enroscar nem sair da pista", worst_stuck < 1.0 and off < 30, "(parado %.1f s, %d quadros fora)" % [worst_stuck, off]) and all_ok
+	# Chegada com os dois rivais já chegados: 3º lugar, sem o bônus de 1º.
+	for r in kart_race.rivals:
+		r.done = true
+	var coins0 := story.coins
+	kart_race._finish()
+	all_ok = _check("chegando depois dos dois rivais, fica em 3º e ganha as moedas sem o bônus de 1º", kart_race.place == 3
+			and story.coins - coins0 in [KartRace.COINS, KartRace.COINS + KartRace.RECORD_BONUS], "(%dº, +%d moedas)" % [kart_race.place, story.coins - coins0]) and all_ok
 	kart_race.leave(true)
+	await _wait(0.2)
+	all_ok = _check("saindo da corrida, os rivais voltam para as vagas", kart_race.rivals.is_empty() and rivals.all(func(v: Kart) -> bool:
+			return v.is_home() and not v.ai and not v.driving)) and all_ok
 	print("PISTA-KART OK" if all_ok else "PISTA-KART COM FALHAS")
 	get_tree().quit()
 

@@ -207,8 +207,8 @@ func _tocou(corpo: Node3D) -> void:
 	_aviso_espera = 2.5
 	var game := parte2.game
 	if parte2.aberta:
-		# Abre a troca de personagem já no Faísca (de kart ou de skate, só o aviso).
-		if corpo.in_vehicle or corpo.skating:
+		# Abre a troca de personagem já no Faísca (de kart, só o aviso).
+		if corpo.in_vehicle:
 			game.show_message("Só o Faísca entra no farol! Troque de personagem na pausa", Color("#8ff3ff"), 2.4)
 		else:
 			game.ask_for_faisca()

@@ -83,6 +83,14 @@ var pizzas: Array[PizzaGiratoria] = []
 var bocas: Array[BocaDoFogao] = []
 var aguas: Array[Area3D] = []
 
+## Padrão de playgrounds (aprovado pelo usuário em 2026-10-29; docs/level-design/molde-das-fases.html): os
+## playgrounds na ordem ({nome, centro, raio, entrada}), o marco com o ponto do brilho dele (a coluna de luz que
+## aparece de toda a fase) e os arcos de saída. Os testes e as fotos usam.
+var playgrounds: Array[Dictionary] = []
+var brilho_do_marco := Vector3.ZERO
+var saidas: Array[Node3D] = []
+var _trilhas_por_fazer := []
+
 var _moveis := []  # [corpo, origem, caminho, período, atraso]
 var _tempo := 0.0
 var _mat_estrela: StandardMaterial3D
@@ -119,7 +127,11 @@ func _physics_process(delta: float) -> void:
 	_tempo += delta
 	for m in _moveis:
 		var t: float = (_tempo + m[4]) / m[3]
-		m[0].position = m[1] + m[2] * (0.5 - 0.5 * cos(TAU * t))
+		var s := 0.5 - 0.5 * cos(TAU * t)
+		# Com pausa (as viagens), fica parado um tempo em cada ponta, para dar tempo de subir e descer.
+		if m.size() > 5 and m[5] > 0.0:
+			s = clampf((s - m[5]) / (1.0 - 2.0 * m[5]), 0.0, 1.0)
+		m[0].position = m[1] + m[2] * s
 
 
 func _process(delta: float) -> void:
@@ -284,6 +296,101 @@ func posto(pos: Vector3, giro := 0.0) -> Posto:
 	p.aceso.connect(func(q: Posto): posto_aceso.emit(q))
 	postos.append(p)
 	return p
+
+
+# --- padrão de playgrounds -------------------------------------------------------------
+
+## Registra um playground (para os testes e as fotos): `entrada` é onde o Faísca chega nele.
+func playground(nome_do: String, centro: Vector3, raio: float, entrada: Vector3) -> void:
+	playgrounds.append({"nome": nome_do, "centro": centro, "raio": raio, "entrada": entrada})
+
+
+## Chão largo de um playground: o morro do nome esticado em X e Z (`escala`), sem emendas no meio.
+func chao_largo(tamanho: String, topo: Vector3, escala: Vector2, giro := 0.0) -> Node3D:
+	var altura := float(tamanho.get_slice("x", 2))
+	return peca("Hill_%s_Color1" % tamanho, topo - Vector3(0, altura, 0), giro, Vector3(escala.x, 1.0, escala.y))
+
+
+## Trilha creme pintada no chão: o caminho fácil do playground, da entrada até o arco de saída. Os pontos são
+## no chão; a faixa é montada depois do primeiro quadro de física, encostando cada ponta no chão de verdade.
+func trilha_creme(pontos: Array, largura := 2.4) -> void:
+	_trilhas_por_fazer.append([pontos, largura])
+	if _trilhas_por_fazer.size() == 1:
+		_fazer_trilhas.call_deferred()
+
+
+func _fazer_trilhas() -> void:
+	await get_tree().physics_frame
+	if not is_inside_tree():
+		return
+	var espaco := get_world_3d().direct_space_state
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("f6e2a8")
+	mat.roughness = 1.0
+	for t in _trilhas_por_fazer:
+		var curva := Curve3D.new()
+		for p: Vector3 in t[0]:
+			curva.add_point(p)
+		curva.bake_interval = 0.8
+		var pts := curva.get_baked_points()
+		var meia: float = t[1] * 0.5
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var anterior := []
+		for i in pts.size():
+			var tg := pts[mini(i + 1, pts.size() - 1)] - pts[maxi(i - 1, 0)]
+			tg.y = 0.0
+			var lado := Vector3(-tg.z, 0, tg.x).normalized() * meia
+			var par := []
+			for q: Vector3 in [pts[i] + lado, pts[i] - lado]:
+				var r := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(q + Vector3.UP * 2.0, q + Vector3.DOWN * 3.0, 1))
+				par.append((r.position if not r.is_empty() else q) + Vector3.UP * 0.05)
+			if not anterior.is_empty():
+				for v: Vector3 in [anterior[0], par[0], anterior[1], anterior[1], par[0], par[1]]:
+					st.set_normal(Vector3.UP)
+					st.add_vertex(v)
+			anterior = par
+		var mi := MeshInstance3D.new()
+		mi.mesh = st.commit()
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+	_trilhas_por_fazer.clear()
+
+
+## Arco de saída do playground: o arco do Platformer, duas vezes maior, em pé no `pe` e atravessado no caminho
+## (com `giro` 0 atravessa-se em Z). Aparece de qualquer ponto do playground.
+func arco_de_saida(pe: Vector3, giro := 0.0, cor := "red") -> Node3D:
+	var a := peca("arch_%s" % cor, pe, giro, 2.0)
+	saidas.append(a)
+	return a
+
+
+## O brilho do marco: uma coluna de luz dourada saindo do baú lá no alto, que aparece de toda a fase.
+func brilho_de_marco(base: Vector3, altura := 36.0) -> void:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.85, 0.3, 0.22)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var coluna := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = 0.6
+	cil.bottom_radius = 1.8
+	cil.height = altura
+	coluna.mesh = cil
+	coluna.material_override = mat
+	coluna.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	coluna.position = base + Vector3.UP * altura * 0.5
+	add_child(coluna)
+	var luz := OmniLight3D.new()
+	luz.light_color = Color("ffd86a")
+	luz.light_energy = 2.0
+	luz.omni_range = 16.0
+	luz.position = base + Vector3.UP * 3.0
+	add_child(luz)
+	brilho_do_marco = base + Vector3.UP * altura * 0.6
 
 
 ## Mola amarela: quem cai em cima vai lá para o alto (`forca` em m/s; 17 dá uns 6 m).
@@ -614,9 +721,10 @@ func bolotona_vencida(b: Bolotona) -> bool:
 
 
 ## Como `movel`, com uma peça qualquer de `pasta` (o prato que boia, a frigideira): `tamanho` é a caixa de
-## colisão (ou o cilindro, com `redondo`), com o topo em `topo`.
+## colisão (ou o cilindro, com `redondo`), com o topo em `topo`. `pausa` (de 0 a 0,5) é quanto do vaivém ele
+## fica parado em cada ponta (as viagens usam, para dar tempo de descer andando).
 func movel_peca(pasta: String, arquivo: String, escala: float, topo: Vector3, tamanho: Vector3, caminho: Vector3,
-		periodo := 4.0, atraso := 0.0, redondo := false) -> AnimatableBody3D:
+		periodo := 4.0, atraso := 0.0, redondo := false, pausa := 0.0) -> AnimatableBody3D:
 	var corpo := AnimatableBody3D.new()
 	corpo.position = topo - Vector3(0, tamanho.y, 0)
 	var modelo: Node3D = _cena(pasta + arquivo + ".gltf").instantiate()
@@ -635,7 +743,7 @@ func movel_peca(pasta: String, arquivo: String, escala: float, topo: Vector3, ta
 	cs.position.y = tamanho.y / 2.0
 	corpo.add_child(cs)
 	add_child(corpo)
-	_moveis.append([corpo, corpo.position, caminho, periodo, atraso])
+	_moveis.append([corpo, corpo.position, caminho, periodo, atraso, pausa])
 	moveis.append(corpo)
 	return corpo
 
@@ -670,10 +778,11 @@ func rolo(pos: Vector3, caminho: Vector3, periodo := 4.0, atraso := 0.0) -> Rolo
 	return r
 
 
-## Pizza gigante girando, com o meio de baixo em `pos`.
-func pizza(pos: Vector3, velocidade := 0.35) -> PizzaGiratoria:
+## Pizza gigante girando, com o meio de baixo em `pos` (com `escala` 8 ela tem 16 m e 2,4 de altura).
+func pizza(pos: Vector3, velocidade := 0.35, escala := 8.0) -> PizzaGiratoria:
 	var p := PizzaGiratoria.new()
 	p.velocidade = velocidade
+	p.escala = escala
 	p.position = pos
 	add_child(p)
 	pizzas.append(p)
