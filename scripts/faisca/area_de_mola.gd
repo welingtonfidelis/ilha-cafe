@@ -5,6 +5,9 @@ extends Area3D
 ## sem "entrar" de novo, e antes ficava parado em cima sem pular (achado na 2-1, em 2026-10-29). Joga quem
 ## estiver dentro sem estar subindo, e o `visual` dá a amassadinha.
 
+## Jogou o Faísca para o alto (a nuvem que quica e some usa para sumir).
+signal lancou(corpo: Jogador)
+
 var forca := 17.0
 var visual: Node3D
 var escala_normal := Vector3.ONE
@@ -19,12 +22,14 @@ func _init() -> void:
 
 func _physics_process(delta: float) -> void:
 	_espera -= delta
-	if _espera > 0.0:
+	# Desligada (a nuvem que quica e some, sumida), não joga ninguém.
+	if _espera > 0.0 or not monitoring:
 		return
 	for corpo in get_overlapping_bodies():
 		if corpo is Jogador and (corpo as Jogador).velocity.y <= 1.0:
 			(corpo as Jogador).lancar(forca)
 			_espera = 0.25
+			lancou.emit(corpo)
 			if is_instance_valid(visual):
 				var tw := visual.create_tween()
 				tw.tween_property(visual, "scale", amassado, 0.06)

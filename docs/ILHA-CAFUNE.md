@@ -754,7 +754,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 | 1 Ilhas Fofas | 1 Pulinhos nas Nuvens | céu | Platformer, Forest, nuvens do Medieval | pular, flutuar, golpes, laser (pronta no projeto Faísca) | 0 |
 | 1 | 2 Túneis do Morro | chão | Dungeon Pack | por baixo do Morro dos esqueletos; o laser acende tochas para clarear o caminho | 30 |
 | 2 Doces e Brinquedos | 3 Cozinha Gigante (pronta em 2026-10-29) | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
-| 2 | 4 Nuvens de Algodão-Doce | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), Platformer | bengalas e balas como plataformas, nuvens que quicam | 90 |
+| 2 | 4 Nuvens de Algodão-Doce (pronta em 2026-10-30) | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), pirulitos do Halloween Bits, Platformer | nuvens que quicam e o Balão de Chiclete | 90 |
 | 2 | 5 Quarto de Brinquedos | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que rolam, peões e cartas, carona no trenzinho | 120 |
 | 3 Frio e Vento | 6 Pico Gelado | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | chão escorregadio e bolas de neve | 150 |
 | 3 | 7 Fábrica de Blocos | chão | Block Bits, esteiras e botões do Platformer | esteiras e blocos que aparecem e somem | 180 |
@@ -1317,10 +1317,12 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
   - Nas fases de céu, cair no vazio custa um coração.
   - Nas fases de chão, o chão é a rede de segurança: cair de um móvel só faz descer, sem perder coração, e uma escada (livros, pratos, caixas) leva de volta.
   - O risco no chão vem de uma brincadeira, como "o chão é lava": encostar conta como cair.
-- **Tamanho:**
+- **Tamanho** (o usuário pediu fases maiores em 2026-10-30: as crianças passavam rápido demais; a 2-2 é a primeira nesse tamanho):
+  - cinco playgrounds em vez de quatro;
+  - cada saída só abre com uma tarefa (botões, flores, o poder da fase), não basta seguir o caminho;
   - 10 a 12 min no caminho para uma criança;
-  - 80 a 100 estrelinhas, metade no caminho e metade nos bolsos;
-  - 3 vaga-lumes, nos playgrounds 2, 3 e 4;
+  - 110 a 150 estrelinhas, metade no caminho e metade nos bolsos (eram 80 a 100);
+  - 3 vaga-lumes, nos playgrounds 2, 3 e 4 (na 2-2, no 2, no 3 e no 5);
   - 2 ou 3 Bolotas por playground, mais a arena;
   - 1 ou 2 corações extras.
 
@@ -1430,10 +1432,78 @@ São quatro primas da Bolota, e cada uma ensina um jeito de vencer:
 **Testes e fotos:**
 - `-- --faisca-monstro` confere 21 pontos na 1-1: tipos das 12 Bolotas, modelo, animações, tamanho, cada estado, agarrar com o Y e estourar em 3 estrelinhas, e a regra de cada tipo. O cacto é testado com pisão de verdade; abelha e porco, com o comportamento de verdade.
 - `-- --faisca-monstro-captura` tira 8 fotos em `tools/capturas/faisca/monstro/`: a turma, o cacto espetando, o caranguejo defendendo, o fantasma atravessado pelo soco, o porco disparando e tonto, e a abelha no alto e no rasante.
-- A build do PC ainda não tem os monstros.
+- A build com os monstros foi para o PC em 2026-10-30 (o executável de lá é igual ao `build/linux` do commit 4c20cdb).
+
+### Fase 2-2: Nuvens de Algodão-Doce (feita em 2026-10-30)
+
+Pedido do usuário: "vamos fazer as próximas fases" e "pode começar", seguindo a maquete aprovada (`docs/level-design/maquete-2-2-nuvens-de-algodao-doce.html`). No meio do trabalho veio o pedido de fases mais longas, então ela já nasceu maior que a maquete: cinco playgrounds em vez de quatro, e cada saída só abre com uma tarefa.
+
+A porta do 2º andar do farol pede 90 estrelinhas. O código fica em `scripts/faisca/fases/fase_2_2.gd`, e as peças dos doces em `assets/faisca/doces/` (Holiday Bits, os pirulitos do Halloween Bits e as nuvens do Medieval Hexagon). As ilhas, o bolo, a máquina de chiclete, a cereja e a vela são feitos por código.
+
+- **Marco:** o bolo-montanha no meio, com dois andares e flutuando numa nuvem rosa.
+  - O andar de baixo tem raio de 24 m e vai até 26 m de altura. O anel em cima dele, de 10 m de largura, é o chão do playground 5.
+  - O andar de cima tem raio de 14 m e vai até 40 m. A arena fica no topo.
+- **Novidade, a nuvem que quica** (`NuvemQueQuica`, rosa):
+  - quem cai em cima vai uns 5 m para o alto, com a mesma `AreaDeMola` da mola;
+  - a lilás (`some`) some logo depois do quique e volta 3 s depois, então não dá para quicar duas vezes nela.
+- **Poder da fase, o Balão de Chiclete** (`Jogador.balao_de_chiclete`):
+  - vem da bola de chiclete da máquina da praça e vale até sair da fase (o `Parte2` desliga ao entrar e ao sair);
+  - no ar, segurando o pulo na descida, o balão rosa enche em cima da cabeça e ele sobe devagar (3,6 m/s, por até 3,5 s, uns 12 m acima do pulo);
+  - soltando o botão, ou acabando o tempo, o balão estoura e ele cai, e ainda dá para flutuar com o laser;
+  - é um balão por pulo, e a mola ou a nuvem devolve o balão. Não tem botão novo.
+- **Os playgrounds:**
+  1. **Campo de Algodão** (y 0, ao sul, raio de 30 m, sem risco):
+     - nuvens que quicam espalhadas, e o Vovô mostra o quique (dica nova `quicar`);
+     - tarefa: os três botões, cada um no alto de um pilar de 4,5 m que só se alcança quicando na nuvem do lado. Eles levantam a ponte até a nuvem-carro;
+     - mini-marco: o pirulito gigante;
+     - bolsos: o morro de algodão (uma nuvem mais forte leva lá, com coração e estrelinhas) e a roda atrás do pirulito.
+  2. **Ilhas de Biscoito** (y 7 a 14, a oeste, P1):
+     - seis ilhas ligadas por 11 nuvens que quicam sobre o vazio, com dois caminhos;
+     - tarefa: as três flores, uma na ilha da direita, uma na da esquerda e uma na do fundo, abrem o portão da ponte do canhão;
+     - mini-marco: a casinha de gengibre na ilha do meio;
+     - bolso: a beirada embaixo da ilha do meio, com o V1 e uma nuvem forte de volta.
+  3. **Praça do Carrossel** (y 16, a noroeste, raio de 30 m, P2):
+     - o carrossel gira e leva quem sobe nele (`Carrossel`);
+     - a máquina de chiclete dá o balão, com a dica nova `balao`;
+     - tarefa: a estação do teleférico fica 10 m acima da praça, e só se chega com o balão;
+     - bolsos: o anel de chiclete a 12 m de altura, com o V2, e a aba do telhado do carrossel;
+     - tem coração e três Bolotas: porco, caranguejo e cogumelo.
+  4. **Céu de Chiclete** (y 14 a 26, de nordeste a leste do bolo, P3):
+     - quatro ilhas de chiclete subindo, ligadas por nuvens lilases que somem;
+     - Bolotas nas ilhas estreitas: o cacto na beirada de fora, o pinguim e o morcego;
+     - bolso: a ilha alta com coração, só com o balão;
+     - a saída é a ponte de wafer até o anel do bolo.
+  5. **Subida do Bolo** (y 26 a 40, P4):
+     - a cereja que quica no anel joga até o primeiro biscoito preso no bolo, e a vela que sobe e desce leva até o segundo;
+     - uma fileira de biscoitos a um pulo um do outro (com um pinguim no estreito) termina na cereja que joga para a arena;
+     - quem cai dos biscoitos cai no anel, sem perder coração, e a cereja do outro lado devolve lá para cima;
+     - segredo: a casinha de biscoito no anel, com a parede rachada (três golpes) e o V3 dentro, com a dica do golpe.
+  - **Arena no topo do bolo:** o baú, três Bolotas (alien, porco e abelha) e a coluna de luz.
+- **Viagens:**
+  - a nuvem-carro e o teleférico são `Carona`: esperam o Faísca subir, saem sozinhos e param do outro lado;
+    - vazios por 8 s, voltam para o começo;
+    - descendo e subindo de novo, levam de volta, como atalho;
+  - entre as Ilhas de Biscoito e a praça, o canhão.
+- **Números:** 133 estrelinhas soltas (178 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 20 nuvens que quicam (4 somem), 3 cerejas e 1 vela.
+- **Cores:** as primeiras fotos saíram desbotadas (chão quase branco, com o Faísca branco em cima). A fase tem céu azul com horizonte rosa, menos neblina, saturação 1,15 e chão de algodão em rosa de verdade.
+- **Testes e fotos:**
+  - `--faisca-fase-2-2` confere 61 pontos, com quiques, balão, flutuar e pulos de verdade, das nuvens dos botões até a cereja da arena;
+  - `--faisca-fase-2-2-captura` tira 16 fotos em `tools/capturas/faisca/fase_2_2/`;
+  - `--faisca-jogar-2-2` abre a fase direto;
+  - a foto da porta, `assets/faisca/portas/fase_2_2.jpg`, é a do campo, com o pirulito e o bolo.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se a criança entende o balão;
+  - se os quiques sobre o vazio estão fáceis demais ou difíceis demais;
+  - se os 10 a 12 minutos do padrão batem com o tempo de verdade de uma criança.
 
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
 - Se o Faísca pode dirigir o kart.
+- **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando.
+- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 já nasce maior, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 1-1, a 1-2 e a 2-1 do mesmo jeito.
+- **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Ainda não investigado.
+  - Foram dois fechamentos seguidos, às 17:53:17 e às 17:53:57, os dois por SIGSEGV na thread principal. A pilha repete sempre o mesmo trio de endereços do executável (`+0x3e89ce`, `+0x2c2e402`, `+0x2a61dc6`, `+0x526b10`), o que lembra recursão infinita em GDScript (estouro da pilha; a build de release não escreve o erro no log).
+  - Os coredumps estão no PC (`coredumpctl info 152449` e `154948`). O log da Godot nessas sessões só tem o erro de sempre do `Mage.glb` na abertura.
+  - Para começar: não se sabe se era uma criança ou o Faísca no kart. Rodar o `--atividades` e o `--pista-kart`, e uma volta de kart com o Faísca, na build de debug.

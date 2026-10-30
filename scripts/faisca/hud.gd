@@ -314,6 +314,7 @@ class BotaoA extends Control:
 ## Desenho da dica: o botão A sendo segurado (a barrinha enche) e o que acontece.
 ##   pulo_alto: o Faísca pulando bem alto; flutuar: o laser na descida; laser: o feixe na flor;
 ##   tocha: o feixe na tocha, que pega fogo. No golpe é o X apertado três vezes, na parede rachada.
+##   quicar: a nuvem rosa amassa e joga para cima; balao: o balão de chiclete enche, sobe e estoura (2-2).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -451,6 +452,33 @@ class DesenhoDica extends Control:
 					draw_line(f + Vector2(-26, 8), f + Vector2(26, 8), Color("f4f5f9"), 6.0)
 					for lado in [-1.0, 1.0]:
 						_bolota(f + Vector2((52 + giro * 30) * lado, 24 - sin(giro * PI) * 20))
+			"quicar":
+				# Cai na nuvem rosa, ela amassa e joga o Faísca lá para cima.
+				var pulo := absf(sin(tempo * 2.6))
+				var amassa := 1.0 - maxf(0.0, 0.25 - pulo) * 1.6
+				for bola in [[Vector2(0, 46), 34.0], [Vector2(-24, 42), 20.0], [Vector2(24, 42), 20.0]]:
+					draw_set_transform(f + bola[0], 0.0, Vector2(1.0, 0.45 * amassa))
+					draw_circle(Vector2.ZERO, bola[1], Color("ffb3d9"))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				_faisca(f + Vector2(0, 14 - pulo * 50))
+				if pulo < 0.2:
+					for lado in [-1.0, 1.0]:
+						draw_line(f + Vector2(30 * lado, 30), f + Vector2(42 * lado, 18), Color("ff7a22"), 3.0)
+			"balao":
+				# Segurando A no ar, o balão de chiclete enche e o Faísca sobe devagar; soltando, estoura.
+				var ciclo := fmod(tempo, 1.6)
+				var sobe := clampf(ciclo / 1.2, 0.0, 1.0)
+				var p := f + Vector2(0, 34 - sobe * 46 + (maxf(ciclo - 1.2, 0.0) / 0.4) * 30.0)
+				_faisca(p)
+				if ciclo < 1.2:
+					var r := 8.0 + 12.0 * minf(sobe * 3.0, 1.0)
+					draw_line(p + Vector2(0, -22), p + Vector2(0, -30), Color("c2407e"), 2.0)
+					draw_circle(p + Vector2(0, -30 - r), r, Color("ff79bd"))
+					draw_circle(p + Vector2(-r * 0.4, -30 - r * 1.4), r * 0.2, Color(1, 1, 1, 0.7))
+				else:
+					for i in 6:
+						var a := TAU * i / 6.0
+						draw_line(p + Vector2(0, -46) + Vector2(cos(a), sin(a)) * 8, p + Vector2(0, -46) + Vector2(cos(a), sin(a)) * 18, Color("ff79bd"), 3.0)
 			"golpe":
 				var bate := fmod(tempo * 2.5, 1.0) < 0.35
 				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)

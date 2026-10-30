@@ -82,6 +82,11 @@ const FORCA_ARREMESSO := 16.0
 const ANTENA := 1.45
 ## Dancinha (seta para baixo): dura isto, ou até andar, pular ou golpear.
 const TEMPO_DANCA := 4.0
+## Balão de Chiclete, o poder da 2-2 (pego na máquina da Praça do Carrossel; vale até sair da fase). No ar,
+## segurando o pulo na descida, ele enche o balão e sobe devagar por até TEMPO_BALAO (uns 12 m). Soltando o botão,
+## ou acabando o tempo, o balão estoura e ele cai, e ainda dá para flutuar com o laser. Um balão por pulo.
+const SUBIDA_BALAO := 3.6
+const TEMPO_BALAO := 3.5
 
 var robo: Robo
 var visual: Node3D
@@ -118,6 +123,9 @@ var agarrada: Alvo
 ## Tempo que falta do giro forte e da dancinha.
 var giro_forte := 0.0
 var dancando := 0.0
+## Tem o Balão de Chiclete (a fase liga; o Parte2 desliga ao entrar em outra) e está subindo nele agora.
+var balao_de_chiclete := false
+var no_balao := false
 
 var _coiote := 0.0
 var _memoria_pulo := 0.0
@@ -162,6 +170,9 @@ var _tempo_no_ar := 0.0
 ## Sombra redonda de pouso, sempre no chão embaixo dele (padrão de level design de 2026-10-29: "nada ambíguo"
 ## no pulo; a criança vê onde vai cair).
 var _sombra: MeshInstance3D
+var _balao: Node3D
+var _balao_restante := 0.0
+var _balao_usado := false
 
 
 func _ready() -> void:
@@ -187,6 +198,7 @@ func _ready() -> void:
 	_montar_lasers()
 	_montar_giro_forte()
 	_montar_sombra()
+	_montar_balao()
 	_som_laser = AudioStreamPlayer.new()
 	var zumbido := Sfx.stream("faisca_laser").duplicate() as AudioStreamWAV
 	zumbido.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -343,14 +355,27 @@ func _physics_process(delta: float) -> void:
 		_flutuar_restante = tempo_flutuar
 		_giro_usado = false
 		_impulso_usado = false
+		_balao_usado = false
+		if no_balao:
+			_estourar_balao()
 	else:
 		_coiote -= delta
 	_memoria_pulo -= delta
 
+	# Com o Balão de Chiclete, segurar o pulo na descida enche o balão antes do laser.
+	if not no_chao and not no_balao and balao_de_chiclete and segurando and not _balao_usado and velocity.y <= 0.0 \
+			and girando <= 0.0 and agarrada == null and not pouso_suave:
+		_encher_balao()
 	# Começa a flutuar na descida; depois de começar, segue enquanto segurar (ele sobe um pouquinho).
-	var pode_flutuar := segurando and _flutuar_restante > 0.0 and girando <= 0.0 and (flutuando or velocity.y <= 0.0)
+	var pode_flutuar := segurando and _flutuar_restante > 0.0 and girando <= 0.0 and (flutuando or velocity.y <= 0.0) and not no_balao
 	flutuando = false
-	if _memoria_pulo > 0.0 and _coiote > 0.0:
+	if no_balao and not no_chao:
+		_balao_restante -= delta
+		if segurando and _balao_restante > 0.0:
+			velocity.y = lerpf(velocity.y, SUBIDA_BALAO, 1.0 - exp(-4.0 * delta))
+		else:
+			_estourar_balao()
+	elif _memoria_pulo > 0.0 and _coiote > 0.0:
 		velocity.y = forca_pulo
 		Sfx.play(self, "faisca_pulo", 0.0, 0.08)
 		_memoria_pulo = 0.0
@@ -412,6 +437,7 @@ func _physics_process(delta: float) -> void:
 func teleportar(pos: Vector3) -> void:
 	_soltar_agarrada()
 	_parar_danca()
+	_estourar_balao(false)
 	global_position = pos
 	velocity = Vector3.ZERO
 	_memoria_pulo = 0.0
@@ -426,6 +452,7 @@ func receber_dano(de: Vector3) -> bool:
 		return false
 	_soltar_agarrada()
 	_parar_danca()
+	_estourar_balao()
 	robo.expressao("dor", 0.9)
 	_perder_coracao()
 	var empurrao := global_position - de
@@ -464,6 +491,8 @@ func curar() -> bool:
 
 ## Mola: joga para o alto. Soltar o botão não corta esse pulo, e dá para flutuar na descida.
 func lancar(forca: float) -> void:
+	_estourar_balao()
+	_balao_usado = false
 	velocity.y = forca
 	_pulou = true
 	_cortou_pulo = true
@@ -554,6 +583,7 @@ func _fumacinha() -> void:
 func voltar_ao_inicio() -> void:
 	_soltar_agarrada()
 	_parar_danca()
+	_estourar_balao(false)
 	global_position = ponto_retorno
 	velocity = Vector3.ZERO
 	visual.rotation.y = PI
@@ -561,6 +591,76 @@ func voltar_ao_inicio() -> void:
 	pitch = -0.32
 	golpe_atual = -1
 	girando = 0.0
+
+
+# --- Balão de Chiclete (2-2) ---------------------------------------------------------
+
+## O balão rosa de chiclete em cima da cabeça, preso por uma cordinha, escondido até ele encher.
+func _montar_balao() -> void:
+	_balao = Node3D.new()
+	_balao.position.y = 3.35
+	_balao.visible = false
+	visual.add_child(_balao)
+	var goma := StandardMaterial3D.new()
+	goma.albedo_color = Color("ff79bd")
+	goma.roughness = 0.25
+	goma.rim_enabled = true
+	goma.rim = 0.4
+	var bola := MeshInstance3D.new()
+	var esfera := SphereMesh.new()
+	esfera.radius = 0.95
+	esfera.height = 1.8
+	bola.mesh = esfera
+	bola.material_override = goma
+	_balao.add_child(bola)
+	var brilho := MeshInstance3D.new()
+	var reflexo := SphereMesh.new()
+	reflexo.radius = 0.2
+	reflexo.height = 0.3
+	brilho.mesh = reflexo
+	var branco := StandardMaterial3D.new()
+	branco.albedo_color = Color(1, 1, 1, 0.7)
+	branco.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	branco.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	brilho.material_override = branco
+	brilho.position = Vector3(-0.4, 0.4, 0.55)
+	_balao.add_child(brilho)
+	var corda := MeshInstance3D.new()
+	var fio := CylinderMesh.new()
+	fio.top_radius = 0.025
+	fio.bottom_radius = 0.025
+	fio.height = 0.75
+	corda.mesh = fio
+	var escuro := StandardMaterial3D.new()
+	escuro.albedo_color = Color("c2407e")
+	corda.material_override = escuro
+	corda.position.y = -1.2
+	_balao.add_child(corda)
+
+
+func _encher_balao() -> void:
+	no_balao = true
+	_balao_usado = true
+	_balao_restante = TEMPO_BALAO
+	_cortou_pulo = true
+	_balao.visible = true
+	_balao.scale = Vector3.ONE * 0.15
+	var tw := _balao.create_tween()
+	tw.tween_property(_balao, "scale", Vector3.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	robo.expressao("feliz", 1.0)
+	Sfx.play(self, "bolha", -2.0, 0.08)
+
+
+## O balão estoura (com `barulho`, faz "ploc" e solta pedacinhos rosa) e ele volta a cair.
+func _estourar_balao(barulho := true) -> void:
+	if not no_balao:
+		return
+	no_balao = false
+	_balao.visible = false
+	if barulho and is_inside_tree():
+		Fx.confetti(get_parent(), _balao.global_position, 14, 2.5)
+		Sfx.play(self, "estouro", -2.0, 0.1)
+		_tremer(0.2, 0.3, 0.08)
 
 
 # --- golpes ----------------------------------------------------------------------

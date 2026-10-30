@@ -82,6 +82,9 @@ var rolos: Array[RoloDeMassa] = []
 var pizzas: Array[PizzaGiratoria] = []
 var bocas: Array[BocaDoFogao] = []
 var aguas: Array[Area3D] = []
+## E as da 2-2: nuvens que quicam (e as que quicam e somem) e as viagens que esperam o Faísca (nuvem-carro, teleférico).
+var nuvens_que_quicam: Array[NuvemQueQuica] = []
+var caronas: Array[Carona] = []
 
 ## Padrão de playgrounds (aprovado pelo usuário em 2026-10-29; docs/level-design/molde-das-fases.html): os
 ## playgrounds na ordem ({nome, centro, raio, entrada}), o marco com o ponto do brilho dele (a coluna de luz que
@@ -572,6 +575,33 @@ func nuvem_que_some(topo: Vector3, raio := 1.6, bolha := false) -> NuvemQueSome:
 	add_child(n)
 	nuvens_que_somem.append(n)
 	return n
+
+
+## Nuvem de algodão-doce que quica (rosa), com `topo` onde se pisa; com `some`, é lilás e some depois do quique.
+func nuvem_que_quica(topo: Vector3, raio := 2.2, forca := 16.0, some := false) -> NuvemQueQuica:
+	var n := NuvemQueQuica.new()
+	n.raio = raio
+	n.forca = forca
+	n.some = some
+	n.position = topo
+	add_child(n)
+	nuvens_que_quicam.append(n)
+	return n
+
+
+## Viagem que espera o Faísca subir em `de` e o leva até `ate` (`tipo` "nuvem" ou "cabine"; os dois pontos são o
+## chão dela, onde ele pisa).
+func carona(de: Vector3, ate: Vector3, tipo := "nuvem", velocidade := 5.0) -> Carona:
+	var c := Carona.new()
+	c.de = de
+	c.ate = ate
+	c.tipo = tipo
+	c.velocidade = velocidade
+	# A posição vai antes de entrar na cena: depois, o corpo animado só sai do lugar quando começa a andar.
+	c.position = de
+	add_child(c)
+	caronas.append(c)
+	return c
 
 
 ## Canhão em `pos` que lança o Faísca até `destino` (onde ele pousa).
