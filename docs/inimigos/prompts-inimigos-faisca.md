@@ -1,5 +1,7 @@
 # Inimigos novos do Faísca: prompts para a arte 2D
 
+> **Substituído em 2026-10-30:** o usuário preferiu usar o Cute Monsters Pack da Quaternius (ver "A turma de monstros" em `docs/ILHA-CAFUNE.md`). Este arquivo fica de registro.
+
 Pedido do usuário em 2026-10-30: "precisamos de novos inimigos, cria prompts pra eu gerar em 2d assets iniciais pra validação de novos inimigos, não precisam ser muitos, uns 3 ou 4 inimigos base inspirados no do astro bot".
 
 São quatro primas da Bolota. Cada uma ensina um jeito de vencer, como os inimigos de base dos jogos de plataforma de mascote. Os desenhos são nossos e seguem o tema infantil: elas seguram doces e brinquedos, nunca armas.
@@ -18,7 +20,9 @@ São quatro primas da Bolota. Cada uma ensina um jeito de vencer, como os inimig
 3. Se a Bolota sair diferente da referência, repita com a frase: `Keep the exact same base creature as the attached reference image.`
 4. Sem referência anexada, o próprio prompt descreve a Bolota.
 
-Cada prompt pede uma folha com duas linhas:
+**Folha não vai para o 3D.** As folhas abaixo servem para validar no 2D. Mandada para o gerador 3D, uma folha vira vários modelos do mesmo bicho em posições diferentes, um para cada figura (o usuário viu isso em 2026-10-30). Para o 3D, use os prompts da seção "Para o 3D", que pedem uma Bolota só.
+
+Cada prompt de folha pede duas linhas:
 - em cima, quatro vistas (frente, três quartos, lado e costas);
 - embaixo, quatro poses de jogo (andando, o aviso, tonta e derrotada).
 
@@ -99,12 +103,68 @@ All five share the same base creature from the attached reference: a round purpl
 From left to right: 1) the plain base creature; 2) holding a giant pink and white swirl lollipop in front of it like a shield; 3) covered on top and back with soft gumdrop-candy spikes in pink, mint green and sky blue; 4) floating under three party balloons (cherry red, mint green, turquoise) tied to its antenna, hugging a small bag of gumballs; 5) sitting inside a clear transparent hamster ball with a teal ring around the middle.
 ```
 
-## Depois de aprovar
+## Para o 3D: uma Bolota por imagem
 
-Para virar 3D no Tripo, como foi feito com o corpo do Faísca, troque o parágrafo "Layout" do prompt por:
+O gerador 3D (o Tripo, como no corpo do Faísca) faz um modelo para cada figura da imagem. Por isso estes prompts pedem um personagem só, uma vez, de frente e meio virado, em fundo branco, sem chão e sem sombra. Anexe a `referencia-bolota.png` também.
+
+Se você já gostou de uma folha, dá para recortar só a vista de frente ou a de três quartos e mandar o recorte para o 3D, sem gerar de novo.
+
+### Escudeira
+
+O pirulito fica do lado do corpo, e não na frente, para o modelo ter a cara e a barriga. No jogo, ela levanta o pirulito.
 
 ```text
-Layout: a single front view of the character, full body, centered, neutral standing pose, plain white background, no shadow on the ground.
+One single character only, shown once. Full-body picture of a cute enemy character for a children's 3D platformer game, made as a clean reference for image-to-3D modeling. Stylized toy-like 3D render: smooth rounded shapes, soft glossy vinyl-toy plastic, chunky simple forms, bright candy pastel colors, soft even studio lighting. Friendly and silly, never scary.
+
+The character is a variant of the attached reference creature. If no reference is attached: a round purple blob creature (color #9B5DE5) with one single big white eye with a dark navy pupil in the middle of its face, a thick dark-purple V-shaped eyebrow that makes it look grumpy but cute, a lighter lilac oval belly patch, two tiny stubby dark-purple feet, no mouth, and a thin antenna on top ending in a small pinkish-red ball. Keep that exact body, eye, eyebrow, belly, feet and antenna.
+
+Variant "Shield Bolota": it has two tiny stubby purple arms and holds a giant round swirl lollipop (a thick pink and white spiral candy disc on a short white stick) upright beside its body, at its side, so the face and belly stay fully visible.
+
+Framing: the character facing the camera in a slight three-quarter view, centered, the whole body and everything it holds inside the frame with some margin, nothing covering the body. Plain pure white background, no floor, no shadow, no text. Do not draw other characters, extra views, extra poses or a character sheet.
 ```
 
-O mais provável, porém, é montar por código, como a Bolota de hoje (`scripts/faisca/alvo.gd`): o pirulito, os espinhos, os balões e a bola de hamster são formas simples. Nesse caso, a folha 2D serve de molde para as cores e as proporções.
+### Confeitada
+
+Meio virada, para os espinhos das costas aparecerem.
+
+```text
+One single character only, shown once. Full-body picture of a cute enemy character for a children's 3D platformer game, made as a clean reference for image-to-3D modeling. Stylized toy-like 3D render: smooth rounded shapes, soft glossy vinyl-toy plastic, chunky simple forms, bright candy pastel colors, soft even studio lighting. Friendly and silly, never scary.
+
+The character is a variant of the attached reference creature. If no reference is attached: a round purple blob creature (color #9B5DE5) with one single big white eye with a dark navy pupil in the middle of its face, a thick dark-purple V-shaped eyebrow that makes it look grumpy but cute, a lighter lilac oval belly patch, two tiny stubby dark-purple feet, no mouth, and a thin antenna on top ending in a small pinkish-red ball. Keep that exact body, eye, eyebrow, belly, feet and antenna.
+
+Variant "Candy-spike Bolota": its top and back are covered with soft, rounded cone spikes that look like gumdrop candies in pink, mint green and sky blue, with a light dusting of sugar sparkles, like a cute candy hedgehog. The spikes look soft and sugary, not sharp. The face, eye, eyebrow and belly stay smooth and fully visible. Show it turned enough that the spikes on its back are visible.
+
+Framing: the character facing the camera in a slight three-quarter view, centered, the whole body and everything it holds inside the frame with some margin, nothing covering the body. Plain pure white background, no floor, no shadow, no text. Do not draw other characters, extra views, extra poses or a character sheet.
+```
+
+### Balão
+
+Os balões precisam caber inteiros na imagem. As fitas finas podem sair grossas ou somem no 3D; no jogo dá para refazer as fitas.
+
+```text
+One single character only, shown once. Full-body picture of a cute enemy character for a children's 3D platformer game, made as a clean reference for image-to-3D modeling. Stylized toy-like 3D render: smooth rounded shapes, soft glossy vinyl-toy plastic, chunky simple forms, bright candy pastel colors, soft even studio lighting. Friendly and silly, never scary.
+
+The character is a variant of the attached reference creature. If no reference is attached: a round purple blob creature (color #9B5DE5) with one single big white eye with a dark navy pupil in the middle of its face, a thick dark-purple V-shaped eyebrow that makes it look grumpy but cute, a lighter lilac oval belly patch, two tiny stubby dark-purple feet, no mouth, and a thin antenna on top ending in a small pinkish-red ball. Keep that exact body, eye, eyebrow, belly, feet and antenna.
+
+Variant "Balloon Bolota": it floats in the air, hanging under a bunch of three round shiny party balloons (cherry red, mint green and turquoise) tied to its antenna with short, thick curly ribbons. Its tiny feet dangle below. It has two tiny stubby purple arms hugging a small striped paper candy bag full of colorful round gumballs. The whole balloon bunch fits inside the picture.
+
+Framing: the character facing the camera in a slight three-quarter view, centered, the whole body and everything it holds inside the frame with some margin, nothing covering the body. Plain pure white background, no floor, no shadow, no text. Do not draw other characters, extra views, extra poses or a character sheet.
+```
+
+### Rolona
+
+O gerador 3D não faz plástico transparente: a bola de hamster sairia opaca e esconderia a Bolota. Gere a Bolota sem a bola, na pose de correr. A bola transparente com o anel é uma forma simples e sai melhor feita no jogo.
+
+```text
+One single character only, shown once. Full-body picture of a cute enemy character for a children's 3D platformer game, made as a clean reference for image-to-3D modeling. Stylized toy-like 3D render: smooth rounded shapes, soft glossy vinyl-toy plastic, chunky simple forms, bright candy pastel colors, soft even studio lighting. Friendly and silly, never scary.
+
+The character is a variant of the attached reference creature. If no reference is attached: a round purple blob creature (color #9B5DE5) with one single big white eye with a dark navy pupil in the middle of its face, a thick dark-purple V-shaped eyebrow that makes it look grumpy but cute, a lighter lilac oval belly patch, two tiny stubby dark-purple feet, no mouth, and a thin antenna on top ending in a small pinkish-red ball. Keep that exact body, eye, eyebrow, belly, feet and antenna.
+
+Variant "Hamster-ball Bolota", shown WITHOUT its ball: it wears a small bright teal sporty headband just under the antenna and stands in a running pose, leaning forward, one tiny foot lifted, eyebrow pulled down in a determined look.
+
+Framing: the character facing the camera in a slight three-quarter view, centered, the whole body and everything it holds inside the frame with some margin, nothing covering the body. Plain pure white background, no floor, no shadow, no text. Do not draw other characters, extra views, extra poses or a character sheet.
+```
+
+### No jogo
+
+O pirulito, os balões e a bola mexem sozinhos nas lutas: o pirulito sobe, cada balão estoura e a bola abre ao meio. O mais provável é fazer essas peças separadas no jogo, como a Bolota de hoje (`scripts/faisca/alvo.gd`), que é toda feita de formas simples. Aí o modelo 3D gerado serve para validar o visual, e a folha 2D vira o molde das cores e das proporções.

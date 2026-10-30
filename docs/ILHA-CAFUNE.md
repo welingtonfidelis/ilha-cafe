@@ -388,6 +388,7 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 | Halloween Bits, Forest Nature Pack, Medieval Hexagon | KayKit | completos, da Coleção Completa v6.1 | 1,1 + 5,6 + 0,1 MB (só os usados) | cemitério do Morro (`assets/props/cemiterio/`); árvores e arbustos nas cores 2, 3, 5, 6, 7 e 8 (`assets/env/forest/corN/`), formatos Tree 5, 6 e 7 e morrinhos `Hill_*`; ponte de pedra (`assets/props/ponte/`) |
 | Prototype Bits, RPG Tools Bits | KayKit | completos, da Coleção Completa v6.1 | poucos KB cada | alvos da barraca de tiro (`assets/props/tiro/`), vara e caixa de pesca (`assets/props/pesca/`) |
 | Ultimate Animated Animal Pack, Animated Cute Fish Pack | Quaternius (quaternius.com, pastas do Google Drive) | CC0 | 65 MB brutos em `vendor/quaternius/` | baixados em 2026-10-26 com autorização do usuário: 10 animais em glTF com andar, galope, comer e parado (`assets/animais/`), 17 peixes em FBX com nado e pulo fora d'água (`assets/peixes/`) e os módulos de cais (`assets/props/cais_peixes/`). O KayKit não tem animais além dos cavalos de tabuleiro do Medieval Hexagon, que saíram. O Farm Animal Pack (porco, ovelha, lhama, pug) também foi baixado, mas saiu: o usuário não gostou do visual nem do comportamento (só tinham animação parada) |
+| Cute Monsters Pack (Cute Animated Monsters, ago. 2020) | Quaternius (quaternius.com/packs/cutemonsters.html, pasta do Google Drive) | CC0 | 55 MB em `vendor/quaternius/cute-monsters/` | o Alien foi baixado em 2026-10-30 para o teste; o pacote inteiro, o usuário baixou no mesmo dia (o Drive barrava os downloads seguidos). São 21 monstros em glTF, com a textura dentro do arquivo. Os 17 que andam têm Idle, Walk, Jump, Bite_Front, Bite_InPlace, HitRecieve, Death, No, Yes e Dance (a Árvore não tem Death). Os 4 que voam (Morcego, Abelha, Cthulhu e Dragão Amarelo) têm só Flying, Bite_Front, HitRecieve e Death. O jogo usa as cópias em `assets/faisca/monstros/` |
 | Mystery Monthly (inimigos novos) | KayKit | 1.1, da Coleção Completa v6.1 | 2,1 MB + armas | 2026-10-27: Vampire, Werewolf_Wolf (com a pele `werewolf_B`), FrostGolem e Monstrosity em `assets/characters/inimigos/`; porta do Monstrosity (versão `_Large`) em `assets/weapons/inimigos/`; a espada do vampiro, o forcado e o machado de gelo ficam lá, sem uso desde 2026-10-28 |
 | Brinquedos dos inimigos | KayKit | Holiday Bits 1.0, RPG Tools Bits 1.0, Mystery Monthly 4 (Palhaço) e 5 (Ajudantes), da Coleção Completa v6.1 | 0,2 MB | 2026-10-28: `candycane_large`, `clown_hammer`, `mallet` e `Hammer` (com as texturas) em `assets/weapons/brinquedos/`; o `Hammer`, a `mallet` e a textura dos Ajudantes vieram do Git LFS (`git lfs pull --include=...`) |
 | Mystery Monthly (mais personagens) | KayKit | 1.1, da Coleção Completa v6.1 | ~2 MB | Animatronic, Witch, Superhero, Space Ranger, Caveman, Werewolf (humano) em `assets/characters/moradores/`; Plant Warrior em `assets/characters/guardioes/` com as armas em `assets/weapons/planta/`; boneco de treino do Avian Swordsman |
@@ -1367,13 +1368,69 @@ O pedido: "precisamos de novos inimigos, cria prompts pra eu gerar em 2d assets 
 
 Os prompts estão em `docs/inimigos/prompts-inimigos-faisca.md`, com a foto de referência `docs/inimigos/referencia-bolota.png` para anexar no gerador. A foto sai do `tools/foto_bolota.gd`, que precisa de janela.
 
+A folha com várias vistas é só para validar no 2D: mandada para o gerador 3D, ela vira vários modelos, um por figura (o usuário viu isso em 2026-10-30). O arquivo tem uma seção "Para o 3D" com um prompt de uma Bolota só para cada uma. A Rolona vai sem a bola, porque o 3D não faz plástico transparente.
+
 São quatro primas da Bolota, e cada uma ensina um jeito de vencer:
 - **Escudeira:** pirulito na frente como escudo; ensina a pisar.
 - **Confeitada:** espinhos de jujuba; ensina a socar, porque o pisão quica.
 - **Balão:** voa em três balões e solta chicletes; ensina o laser.
 - **Rolona:** dispara dentro de uma bola de hamster; ensina a desviar e a agarrar quando ela bate e fica tonta.
 
-Ainda falta o usuário gerar as folhas e aprovar. Nada foi feito no jogo.
+**Substituído no mesmo dia:** o usuário preferiu usar o Cute Monsters Pack da Quaternius, e as regras desses quatro viraram as dos monstros do pacote (ver "A turma de monstros"). Os prompts ficam de registro.
+
+### A turma de monstros (pedidos do usuário em 2026-10-30)
+
+**Como começou:**
+- O usuário pediu "vamos fazer um teste com um desses personagens dentro desse pack https://quaternius.com/packs/cutemonsters.html".
+- O primeiro teste foi o Alien do Cute Monsters Pack (Quaternius, CC0) no lugar das Bolotas da 1-1. Foi escolhido por ser o mais parecido com a Bolota: roxo, de antenas e sobrancelha brava. Como todos os monstros do pacote, tem a boca aberta com dentinhos, e a textura é pintada à mão, diferente do plástico liso do resto do jogo.
+- O usuário gostou ("eu gostei, ficou bom") e aprovou usar o pacote. Ele lembrou que os de chifre ou espinho servem para a ideia de que nem todo inimigo apanha igual ("uns não pode pular em cima, outros não pode dar soco").
+- Escolha: o usuário ficou com a sugestão, 11 dos 21 monstros. A folha numerada saiu do `tools/foto_monstros.gd`, que fotografa cada modelo de `assets/faisca/monstros/` ao lado do Faísca.
+- Ficaram de fora: Alien Alto, Galinha, Panda, Veado, Demônio Verde, Yeti e Dragão Amarelo, que repetem regra; e Demônio, Caveira e Cthulhu, que são mais assustadores. Continuam no `vendor`.
+
+**A história não muda:** o Alien é a Bolota de sempre (o nome continua), e os outros são a turma do Rei Bolotão. A Bolotona da 1-2 virou um Alien grande.
+
+**Como é feito:** a `BolotaMonstro` (`scripts/faisca/bolota_monstro.gd`) herda da `Bolota` e troca o corpo pelo modelo. Por isso todos dormem, seguem, encostam, apanham, ficam tontos, são agarrados e arremessados como a Bolota.
+- `Fase.bolota(pos, dormindo, tipo)` cria o tipo pedido; o padrão é o Alien. A `Bolotona` herda da `BolotaMonstro`. A Bolota roxa feita por código ficou só como base e no treino da cena de teste.
+- Os modelos ficam em 0,8x: o corpo fica da largura da Bolota e, com as antenas, o Alien chega a 1,7 m.
+- O material do pacote vem sem luz. Aqui ganha luz e um brilho próprio da textura (0,45, multiplicando), porque a textura pintada ficava escura na fase. Quando apanha, o brilho sobe.
+- A bolotinha que sai quicando depois de derrotada é o próprio monstro pequenininho (o `Alvo` ganhou o `_mini()`).
+- **O golpe diz o tipo:** `receber_golpe(dano, de, forca, tipo)` recebe "soco", "giro", "pisao", "laser" ou "arremesso" (Bolota agarrada ou arremessada). Todo mundo que recebe golpe (baú, parede rachada, alavanca, esqueleto e chefe da ilha) aceita o quarto parâmetro.
+- **Animações:**
+
+  | Estado | Animação |
+  |---|---|
+  | parado | Idle |
+  | dormindo | Idle a 0,35x |
+  | seguindo o Faísca | Walk, mais rápida quanto mais rápido anda |
+  | encostou no Faísca | Bite_InPlace |
+  | levou golpe | HitRecieve |
+  | tonto | No (balança a cabeça) |
+  | agarrado | Jump (esperneia) |
+  | defendeu um golpe | Yes (faz que sim) |
+
+  Os que voam não têm Idle, Walk, Jump, No nem Bite_InPlace: tocam Flying, HitRecieve e Bite_Front no lugar (`SUBSTITUTAS`).
+
+**Os tipos e as regras:**
+
+| Tipo | Monstro | Regra |
+|---|---|---|
+| alien, cogumelo, pinguim | Alien, Mushroom, Penguin | apanham de tudo |
+| cacto, ciclope | Cactus, Cyclops | **espinhos:** pisar em cima espeta, o Faísca perde um coração e é jogado para fora; soco, giro e laser derrubam |
+| caranguejo | Crab | **garras:** soco e giro de frente (até 75° da frente dele) batem nas garras, fazem "escudo" e o Faísca volta; pisão, laser e golpe pelas costas derrubam. Ele vira devagar (`giro_olhar` 1,2), para dar a volta nele |
+| porco | Pig | **investida:** de 1,8 a 8 m do Faísca, pula no lugar 0,8 s e dispara em linha reta (8,5 m/s, até 1,4 s). Para na beirada e, batendo na parede ("bonk") ou cansando, fica tonto |
+| fantasma | Ghost | **fantasma:** meio transparente; soco, giro e pisão atravessam e ele some um instante; só o laser e Bolota arremessada acertam |
+| abelha, morcego | Bee, Bat | **voa:** flutua a 2,3 m da casa, longe do soco, seguindo o Faísca até 9 m da casa. Perto dele, dá um rasante até a altura dele, onde dá para bater e onde encostar machuca. Acertado, cai tonto no chão |
+| arvore | Tree | espinhos, com 2,3 m; reservada para mini-chefe de uma fase de bosque, ainda não usada |
+
+**Onde ficaram (as contagens e as estrelinhas das fases não mudaram, só o tipo):**
+- **1-1:** Cogumelos e Pinguins na ilha do meio, na subida e na arena. Duas Abelhas no Jardim das Flores, onde o Vovô ensina o laser.
+- **1-2:** um Ciclope e um Morcego na mina; o Fantasma perto da grade da sala escura; outro Ciclope na sala das alavancas; outro Morcego no Poço dos Cristais. A Bolotona é um Alien grande, e as filhas, Aliens.
+- **2-1:** o Porco e o Caranguejo na bancada; Cacto e Pinguim na mesa da pizza; outro Caranguejo na pia; outro Cacto na prateleira; Pinguim e Porco em cima da geladeira.
+
+**Testes e fotos:**
+- `-- --faisca-monstro` confere 21 pontos na 1-1: tipos das 12 Bolotas, modelo, animações, tamanho, cada estado, agarrar com o Y e estourar em 3 estrelinhas, e a regra de cada tipo. O cacto é testado com pisão de verdade; abelha e porco, com o comportamento de verdade.
+- `-- --faisca-monstro-captura` tira 8 fotos em `tools/capturas/faisca/monstro/`: a turma, o cacto espetando, o caranguejo defendendo, o fantasma atravessado pelo soco, o porco disparando e tonto, e a abelha no alto e no rasante.
+- A build do PC ainda não tem os monstros.
 
 ### Em aberto
 

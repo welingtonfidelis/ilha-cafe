@@ -258,8 +258,9 @@ func _mina_de_ouro() -> void:
 	vaga_lume(Vector3(-58.0, 9.2, -75.0))
 	trilha(Vector3(-52.0, 9.0, -73.5), Vector3(-52.0, 9.0, -76.5), 2)
 
-	bolota(Vector3(-33.0, 8.0, -47.0))
-	bolota(Vector3(-45.0, 8.0, -74.0))
+	# Na mina: um ciclope (não dá para pisar no chifre) e um morcego.
+	bolota(Vector3(-33.0, 8.0, -47.0), false, "ciclope")
+	bolota(Vector3(-45.0, 8.0, -74.0), false, "morcego")
 	bolota(Vector3(-31.0, 8.0, -79.0))
 	trilha_creme([Vector3(-21, 8, -48), Vector3(-30, 8, -49), Vector3(-38, 8, -52.5)])
 	trilha_creme([Vector3(-39, 8, -67), Vector3(-36, 8, -74), Vector3(-29, 8, -81)])
@@ -304,8 +305,9 @@ func _sala_das_alavancas() -> void:
 	portao_de_grade(Vector3(15.0, 16.0, -120.75), 0.0, Vector3(11.0, 16.0, -116.5), "blue")
 	_lados_da_grade(Vector3(-9.0, 16.0, -120.75), false)
 	_lados_da_grade(Vector3(15.0, 16.0, -120.75), false)
-	bolota(Vector3(-6.0, 16.0, -111.0))
-	bolota(Vector3(1.0, 16.0, -112.0))
+	# O fantasma fica perto da grade da sala escura: só o laser acerta nele.
+	bolota(Vector3(-6.0, 16.0, -111.0), false, "fantasma")
+	bolota(Vector3(1.0, 16.0, -112.0), false, "ciclope")
 	bolota(Vector3(6.0, 16.0, -100.0))
 
 	for x in [-6.0, 6.0]:
@@ -411,7 +413,7 @@ func _poco_dos_cristais() -> void:
 	arco(Vector3(12.6, 28.0, -66.0), Vector3(6.0, 31.0, -66.0), 2.0, 3)
 	rocha(24.0, 24.8, -48.0, -56.5, 16.9, 16.0)
 	rocha(24.0, 24.8, -61.5, -78.0, 16.9, 16.0)
-	bolota(Vector3(34.0, 16.0, -56.0))
+	bolota(Vector3(34.0, 16.0, -56.0), false, "morcego")
 	bolota(Vector3(37.0, 16.0, -70.0))
 	trilha_creme([Vector3(28, 16, -76), Vector3(30, 16, -68), Vector3(26.5, 16, -61)])
 	trilha(Vector3(29.5, 17.0, -71.0), Vector3(27.0, 17.0, -63.5), 3)

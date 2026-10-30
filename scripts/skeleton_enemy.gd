@@ -863,7 +863,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 ## Golpe do Faísca: cada ponto do golpe vale 1,5 de dano (um soco tira mais que um tiro da Paçoca, mas o soco
 ## é mais lento e precisa chegar perto). O escudo não segura; o empurrão não mexe nos pesados. Um instante de
 ## imunidade dá o ritmo do laser, que encosta em todo quadro.
-func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
+func receber_golpe(dano: int, de: Vector3, forca := 6.0, _tipo := "") -> bool:
 	var now := Time.get_ticks_msec() / 1000.0
 	if derrotado or now - _last_punch < 0.3:
 		return false

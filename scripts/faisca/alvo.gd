@@ -31,6 +31,8 @@ var agarrada := false
 var voando := false
 ## Chance de ficar tonta a cada ponto de dano (a Bolotona não fica) e o tempo que ainda falta de tontura.
 var chance_tontura := 0.25
+## Rapidez com que vira para o Faísca (o caranguejo vira devagar, para dar a volta nele).
+var giro_olhar := 5.0
 var tonta := 0.0
 
 var _corpo: Node3D
@@ -115,7 +117,7 @@ func _physics_process(delta: float) -> void:
 	var jogador := get_tree().get_first_node_in_group("jogador") as Node3D
 	if jogador and _olhar_jogador():
 		var d := jogador.global_position - global_position
-		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(d.x, d.z), 1.0 - exp(-5.0 * delta))
+		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(d.x, d.z), 1.0 - exp(-giro_olhar * delta))
 
 
 ## Fica tonta: para de andar, não machuca e balança, com três estrelinhas girando em cima. É a hora de agarrar.
@@ -209,7 +211,7 @@ func _voar(delta: float) -> void:
 			continue
 		var centro: Vector3 = (outro as Node3D).global_position + Vector3.UP * 0.6
 		if meio.distance_to(centro) < 0.62 + float(outro.raio_golpe) + 0.2:
-			outro.receber_golpe(2, global_position, 8.0)
+			outro.receber_golpe(2, global_position, 8.0, "arremesso")
 			_estourar()
 			return
 	# Bateu no chão ou numa parede, caiu longe demais ou voou tempo demais.
@@ -238,8 +240,9 @@ func _olhar_jogador() -> bool:
 	return true
 
 
-## Leva um golpe vindo de `de`. Fica imune um instante, para o laser não tirar vida a cada quadro.
-func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
+## Leva um golpe vindo de `de`. Fica imune um instante, para o laser não tirar vida a cada quadro. O `tipo` diz
+## qual golpe foi ("soco", "giro", "pisao", "laser", "arremesso"): alguns monstros se defendem de uns (BolotaMonstro).
+func receber_golpe(dano: int, de: Vector3, forca := 6.0, _tipo := "") -> bool:
 	if derrotado or _imune > 0.0 or agarrada or voando:
 		return false
 	vida -= dano
@@ -279,20 +282,10 @@ func _derrotar() -> void:
 
 ## Vira uma bolotinha envergonhada que sai quicando para longe e some.
 func _sair_quicando() -> void:
-	var mini := Node3D.new()
+	var mini := _mini()
 	add_child(mini)
 	mini.top_level = true
 	mini.global_position = global_position
-	var corpo := MeshInstance3D.new()
-	corpo.mesh = Forma.superelipsoide(Vector3(0.2, 0.18, 0.2), 0.9, 0.9)
-	corpo.material_override = _material(Color("9b5de5"))
-	corpo.position.y = 0.18
-	mini.add_child(corpo)
-	var olho := MeshInstance3D.new()
-	olho.mesh = _esfera(0.07)
-	olho.material_override = _material(Color.WHITE, 0.2)
-	olho.position = Vector3(0, 0.24, 0.15)
-	mini.add_child(olho)
 	var a := randf() * TAU
 	var passo := Vector3(cos(a), 0, sin(a)) * 1.2
 	mini.rotation.y = atan2(passo.x, passo.z)
@@ -303,6 +296,22 @@ func _sair_quicando() -> void:
 		tw.tween_property(mini, "global_position", de + passo, 0.16).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 	tw.tween_property(mini, "scale", Vector3.ONE * 0.01, 0.2)
 	tw.tween_callback(mini.queue_free)
+
+
+## A bolotinha que sai quicando: o corpo e o olho em tamanho pequeno.
+func _mini() -> Node3D:
+	var mini := Node3D.new()
+	var corpo := MeshInstance3D.new()
+	corpo.mesh = Forma.superelipsoide(Vector3(0.2, 0.18, 0.2), 0.9, 0.9)
+	corpo.material_override = _material(Color("9b5de5"))
+	corpo.position.y = 0.18
+	mini.add_child(corpo)
+	var olho := MeshInstance3D.new()
+	olho.mesh = _esfera(0.07)
+	olho.material_override = _material(Color.WHITE, 0.2)
+	olho.position = Vector3(0, 0.24, 0.15)
+	mini.add_child(olho)
+	return mini
 
 
 func _voltar() -> void:

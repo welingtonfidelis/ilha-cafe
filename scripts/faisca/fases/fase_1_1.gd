@@ -134,8 +134,8 @@ func _ilhas_das_argolas() -> void:
 	# Ilha do meio.
 	morro("12x12x4", Vector3(-58, 3.5, -64))
 	bolota(Vector3(-61, 3.5, -61))
-	bolota(Vector3(-56, 3.5, -60.5))
-	bolota(Vector3(-62, 3.5, -67.5))
+	bolota(Vector3(-56, 3.5, -60.5), false, "cogumelo")
+	bolota(Vector3(-62, 3.5, -67.5), false, "pinguim")
 	morro("4x4x8", Vector3(-53.5, 8.5, -69))
 	peca("flag_A_red", Vector3(-53.5, 8.5, -69), 0.0, 2.5, false)
 	mola(Vector3(-55.5, 3.5, -65.5))
@@ -170,8 +170,9 @@ func _jardim_das_flores() -> void:
 	arvore(1, 8, Vector3(-3, 8, -154), 2.6)
 	coracao(Vector3(-13, 9, -143))
 	bolota(Vector3(-4, 8, -145))
-	bolota(Vector3(5, 8, -142))
-	bolota(Vector3(3, 8, -157))
+	# Abelhas no jardim, onde o Vovô ensina o laser: elas voam alto e só descem no rasante.
+	bolota(Vector3(5, 8, -142), false, "abelha")
+	bolota(Vector3(3, 8, -157), false, "abelha")
 
 	# Flores e o portão do paredão.
 	flor(Vector3(-6, 8, -148))
@@ -232,11 +233,11 @@ func _subida_das_nuvens() -> void:
 		estrelinha(t + n + Vector3(0, 1.2, 0))
 	movel("4x4x1", "yellow", t + Vector3(-8, 13.5, 11.5), Vector3(-3.5, 0, -3.5), 5.0)
 	plataforma("6x6x1", "red", t + Vector3(-15.5, 15, 4))
-	bolota(t + Vector3(-15.5, 15, 4))
+	bolota(t + Vector3(-15.5, 15, 4), false, "cogumelo")
 	movel("4x4x1", "green", t + Vector3(-14.5, 15, -3), Vector3(0, 4, 0), 4.0, 1.0)
 	# A última plataforma encosta na torre, embaixo da beira da arena; a mola fica na ponta de dentro.
 	plataforma("6x6x1", "blue", t + Vector3(-9.5, 19, -8.5))
-	bolota(t + Vector3(-11, 19, -9.5))
+	bolota(t + Vector3(-11, 19, -9.5), false, "pinguim")
 	mola(t + Vector3(-7.5, 19, -6.5))
 	trilha(t + Vector3(-7.5, 22, -6.5), t + Vector3(-4, 24.5, -3), 3)
 
@@ -253,8 +254,8 @@ func _arena() -> void:
 	colocar_bau(topo + Vector3(0, 0, -1.5))
 	brilho_de_marco(topo + Vector3(0, 1.5, -1.5))
 	bolota(topo + Vector3(-3.2, 0, 2.2))
-	bolota(topo + Vector3(3.2, 0, 1.8))
-	bolota(topo + Vector3(0.5, 0, -4.4))
+	bolota(topo + Vector3(3.2, 0, 1.8), false, "pinguim")
+	bolota(topo + Vector3(0.5, 0, -4.4), false, "cogumelo")
 	ponto_de_dica(topo + Vector3(-4, 1, -4), 3.0, "giro_forte")
 	roda(topo + Vector3(0, 0.9, -1.5), 3.4, 3)
 	arvore(4, 5, topo + Vector3(-5, 0, 4.6), 0.9)

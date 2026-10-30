@@ -36,7 +36,7 @@ func _ready() -> void:
 	add_child(cs)
 
 
-func receber_golpe(_dano: int, _de: Vector3, _forca := 6.0) -> bool:
+func receber_golpe(_dano: int, _de: Vector3, _forca := 6.0, _tipo := "") -> bool:
 	if puxada_ja:
 		return false
 	puxar()

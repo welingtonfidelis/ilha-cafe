@@ -38,7 +38,7 @@ func _process(delta: float) -> void:
 	_imune -= delta
 
 
-func receber_golpe(_dano: int, de: Vector3, _forca := 6.0) -> bool:
+func receber_golpe(_dano: int, de: Vector3, _forca := 6.0, _tipo := "") -> bool:
 	if derrotado or _imune > 0.0:
 		return false
 	_imune = 0.3

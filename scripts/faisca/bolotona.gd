@@ -1,7 +1,7 @@
 class_name Bolotona
-extends Bolota
+extends BolotaMonstro
 ## Bolotona, o mini-chefe da 1-2 (pedido do usuário em 2026-10-29, "as fases estão muito curtas"): uma Bolota
-## duas vezes maior, mais devagar e com 8 de vida. Começa dormindo no meio da arena. Derrotada, ela se desfaz
+## (o Alien do Cute Monsters, desde 2026-10-30) duas vezes maior, mais devagar e com 8 de vida. Começa dormindo no meio da arena. Derrotada, ela se desfaz
 ## em três Bolotas pequenas acordadas (as `filhas`, criadas pela fase junto com ela e guardadas escondidas lá
 ## embaixo até a hora, para as estrelinhas delas já contarem no total da fase).
 

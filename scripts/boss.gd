@@ -297,7 +297,7 @@ func hit_player(from: Vector3) -> void:
 # --- dano e derrota ----------------------------------------------------------
 
 ## Golpe do Faísca: 1,5 de dano por ponto do golpe (como nos esqueletos), sem o bloqueio do escudo.
-func receber_golpe(dano: int, _de: Vector3, _forca := 6.0) -> bool:
+func receber_golpe(dano: int, _de: Vector3, _forca := 6.0, _tipo := "") -> bool:
 	var now := Time.get_ticks_msec() / 1000.0
 	if derrotado or now - _last_punch < 0.3:
 		return false

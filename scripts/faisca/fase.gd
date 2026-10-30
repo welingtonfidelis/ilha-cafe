@@ -1066,8 +1066,9 @@ func vaga_lume(pos: Vector3) -> VagaLume:
 	return v
 
 
-func bolota(pos: Vector3, dormindo := false) -> Bolota:
-	var b := Bolota.new()
+## Uma Bolota da turma do Rei Bolotão: `tipo` é um dos BolotaMonstro.TIPOS (o Alien é a Bolota de sempre).
+func bolota(pos: Vector3, dormindo := false, tipo := "alien") -> BolotaMonstro:
+	var b := BolotaMonstro.new(tipo)
 	b.position = pos
 	b.dormindo = dormindo
 	add_child(b)

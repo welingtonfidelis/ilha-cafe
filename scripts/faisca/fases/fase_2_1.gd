@@ -157,8 +157,9 @@ func _bancada_das_panelas() -> void:
 	posto(Vector3(-34.0, 8.0, -21.5))
 	rolo(Vector3(-60.0, 8.0, -38.0), Vector3(26.0, 0, 0), 5.0, 0.0)
 	rolo(Vector3(-60.0, 8.0, -46.5), Vector3(26.0, 0, 0), 6.0, 2.0)
-	bolota(Vector3(-35.0, 8.0, -31.0))
-	bolota(Vector3(-58.0, 8.0, -42.0))
+	# Na bancada: o porco dispara pela bancada e o caranguejo guarda o canto com as garras.
+	bolota(Vector3(-35.0, 8.0, -31.0), false, "porco")
+	bolota(Vector3(-58.0, 8.0, -42.0), false, "caranguejo")
 	# O vão do canto: a panela no banquinho e a prateleira com o V1.
 	bloco(Vector3(-54, 0, -26), Vector3(7.0, 5.0, 5.0), COR_MADEIRA)
 	panela_com_tampa(Vector3(-54.0, 5.0, -26.0), 23.0, 0.6)
@@ -192,8 +193,8 @@ func _fogao_e_pizza() -> void:
 	# Afundada no tampo: em cima dela fica a 9,2 m, um degrau de pulo da beirada.
 	pizza(Vector3(-38.0, 7.4, -82.0), 0.35, 6.0)
 	posto(Vector3(-41.0, 8.0, -72.8))
-	bolota(Vector3(-35.0, 9.2, -82.0))
-	bolota(Vector3(-40.0, 9.2, -85.0))
+	bolota(Vector3(-35.0, 9.2, -82.0), false, "cacto")
+	bolota(Vector3(-40.0, 9.2, -85.0), false, "pinguim")
 	coracao(Vector3(-38.0, 11.0, -82.0))
 	roda(Vector3(-38.0, 11.2, -82.0), 3.8, 6)
 	cozinha("ketchup", Vector3(-49.0, 8.0, -80.0), 0.0, 6.0)
@@ -269,7 +270,7 @@ func _pia_e_prateleira() -> void:
 		add_child(mi)
 
 	# Da bancada do fim, bolhas de degrau sobem até a prateleira encostada na geladeira.
-	bolota(Vector3(26.0, 8.0, -45.0))
+	bolota(Vector3(26.0, 8.0, -45.0), false, "caranguejo")
 	nuvem_que_some(Vector3(19.0, 9.6, -45.5), 2.0, true)
 	nuvem_que_some(Vector3(17.5, 11.2, -48.8), 2.0, true)
 	nuvem_que_some(Vector3(16.5, 12.8, -52.2), 2.0, true)
@@ -278,7 +279,7 @@ func _pia_e_prateleira() -> void:
 	bloco(Vector3(11, 13, -62), Vector3(6, 1, 36), COR_MADEIRA)
 	for z in [-46.0, -58.0, -70.0]:
 		bloco(Vector3(13.4, 9.0, z), Vector3(1.0, 4.0, 1.0), COR_MADEIRA)
-	bolota(Vector3(11.0, 14.0, -50.0))
+	bolota(Vector3(11.0, 14.0, -50.0), false, "cacto")
 	trilha(Vector3(11.0, 15.0, -55.0), Vector3(11.0, 15.0, -66.0), 4)
 	mola_de_sorvete(Vector3(11.0, 14.0, -72.0), 21.0)
 	arco(Vector3(11.0, 18.0, -72.0), Vector3(4.0, 22.0, -72.0), 3.0, 3)
@@ -297,8 +298,8 @@ func _pia_e_prateleira() -> void:
 ## Arena em cima da geladeira (20 m): o baú, duas Bolotas e a coluna de luz que aparece da cozinha toda.
 func _em_cima_da_geladeira() -> void:
 	colocar_bau(Vector3(0, 20.0, -73.0))
-	bolota(Vector3(-4.0, 20.0, -67.0))
-	bolota(Vector3(3.5, 20.0, -66.0))
+	bolota(Vector3(-4.0, 20.0, -67.0), false, "pinguim")
+	bolota(Vector3(3.5, 20.0, -66.0), false, "porco")
 	roda(Vector3(0, 20.9, -73.0), 3.4, 4)
 	cozinha("icecream_cone_stacked", Vector3(-5.5, 20.0, -76.0), 0.0, 4.0, false)
 	brilho_de_marco(Vector3(0, 21.5, -73.0), 26.0)

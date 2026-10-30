@@ -17,11 +17,14 @@ extends Node3D
 ##   --faisca-fase-2-1       2-1: confere a fase de ponta a ponta (ver scripts/faisca/teste_fase_2_1.gd)
 ##   --faisca-fase-2-1-captura  2-1: fotos de cada trecho em tools/capturas/faisca/fase_2_1/
 ##   --faisca-jogar-2-1      2-1 para jogar direto, sem o farol
+##   --faisca-monstro        1-1: confere os monstros do Cute Monsters Pack, as animações e a regra de cada tipo
+##                           (ver scripts/faisca/teste_monstro.gd)
+##   --faisca-monstro-captura   fotos de cada tipo em ação em tools/capturas/faisca/monstro/ (precisa de janela)
 ## As ações de controle (pular, golpe, recomecar...) vêm do _setup_input do main.
 
 const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--faisca-captura", "--faisca-fase", "--faisca-fase-captura",
 		"--faisca-fase-1-2", "--faisca-fase-1-2-captura", "--faisca-jogar-1-2", "--faisca-fase-2-1", "--faisca-fase-2-1-captura",
-		"--faisca-jogar-2-1"]
+		"--faisca-jogar-2-1", "--faisca-monstro", "--faisca-monstro-captura"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -35,6 +38,7 @@ var testando := false
 var _teste: TesteFase
 var _teste12: TesteFase12
 var _teste21: TesteFase21
+var _teste_monstro: TesteMonstro
 
 
 func _ready() -> void:
@@ -95,6 +99,12 @@ func _ready() -> void:
 	elif "--faisca-fase-2-1-captura" in args:
 		_teste21 = TesteFase21.new(self)
 		_teste21.capturar()
+	elif "--faisca-monstro" in args:
+		_teste_monstro = TesteMonstro.new(self)
+		_teste_monstro.rodar()
+	elif "--faisca-monstro-captura" in args:
+		_teste_monstro = TesteMonstro.new(self)
+		_teste_monstro.capturar()
 	elif nivel:
 		_comecar_fase()
 

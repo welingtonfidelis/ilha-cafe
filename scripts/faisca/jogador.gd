@@ -609,7 +609,7 @@ func _atualizar_golpes(delta: float, dir: Vector3) -> void:
 		_golpe_tempo += delta
 		if not _golpe_acertou and _golpe_tempo >= g.acerto:
 			_golpe_acertou = true
-			_acertar(ALCANCE_GOLPE, deg_to_rad(75.0), ALTURA_GOLPE, g.dano, g.empurrao)
+			_acertar(ALCANCE_GOLPE, deg_to_rad(75.0), ALTURA_GOLPE, g.dano, g.empurrao, "soco")
 		if _golpe_tempo >= g.duracao:
 			if _golpe_guardado and golpe_atual < GOLPES.size() - 1:
 				_iniciar_golpe(golpe_atual + 1, dir)
@@ -622,11 +622,11 @@ func _atualizar_golpes(delta: float, dir: Vector3) -> void:
 		visual.rotation.y += TAU / TEMPO_GIRO * delta
 		if not _giro_acertou and girando < TEMPO_GIRO - 0.1:
 			_giro_acertou = true
-			_acertar(ALCANCE_GIRO, PI, 2.4, 1, 6.0)
+			_acertar(ALCANCE_GIRO, PI, 2.4, 1, 6.0, "giro")
 
 
-## Acerta os inimigos dentro do alcance, na frente (até `angulo` para cada lado).
-func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao: float) -> bool:
+## Acerta os inimigos dentro do alcance, na frente (até `angulo` para cada lado). `tipo` é "soco" ou "giro".
+func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao: float, tipo: String) -> bool:
 	var f := _frente()
 	var meio := global_position + Vector3.UP * 1.1
 	var acertou := false
@@ -641,7 +641,7 @@ func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao:
 			continue
 		if angulo < PI and d.length() > 0.3 and f.angle_to(d.normalized()) > angulo:
 			continue
-		if alvo.receber_golpe(dano, global_position, empurrao):
+		if alvo.receber_golpe(dano, global_position, empurrao, tipo):
 			acertou = true
 	if acertou:
 		_tremer(0.3, 0.6, 0.12)
@@ -673,7 +673,7 @@ func _pisao() -> void:
 		var col := get_slide_collision(k)
 		var alvo := col.get_collider()
 		if _inimigo(alvo) and col.get_normal().y > 0.6:
-			if alvo.receber_golpe(2, global_position + Vector3.UP * 2.0, 3.0):
+			if alvo.receber_golpe(2, global_position + Vector3.UP * 2.0, 3.0, "pisao"):
 				Sfx.play(self, "faisca_pisao", 0.0, 0.08)
 				velocity.y = forca_pulo * 0.8
 				_pulou = true
@@ -781,7 +781,7 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 		_acerto_giro_forte -= delta
 		if _acerto_giro_forte <= 0.0:
 			_acerto_giro_forte = 0.25
-			_acertar(ALCANCE_GIRO_FORTE, PI, 2.4, 1, 7.0)
+			_acertar(ALCANCE_GIRO_FORTE, PI, 2.4, 1, 7.0, "giro")
 		_redemoinho.global_position = global_position + Vector3.UP * 1.1
 		_redemoinho.rotation.y += 11.0 * delta
 		_redemoinho.scale = Vector3(1.0, 0.12, 1.0) * (0.9 + 0.1 * sin(giro_forte * 40.0))
@@ -885,7 +885,7 @@ func _atropelar() -> void:
 			continue
 		var centro: Vector3 = (outro as Node3D).global_position + Vector3.UP * 0.6
 		if meio.distance_to(centro) < 0.62 + float(outro.raio_golpe) + 0.1:
-			if outro.receber_golpe(1, global_position, 7.0):
+			if outro.receber_golpe(1, global_position, 7.0, "arremesso"):
 				_tremer(0.3, 0.4, 0.1)
 
 
@@ -1068,7 +1068,7 @@ func _atualizar_lasers() -> void:
 	for r in espaco.intersect_shape(area, 16):
 		var quem: Object = r.collider
 		if _inimigo(quem):
-			if quem.receber_golpe(1, pes, 2.5):
+			if quem.receber_golpe(1, pes, 2.5, "laser"):
 				_tremer(0.2, 0.3, 0.08)
 		elif quem.has_method("acender"):
 			quem.acender()

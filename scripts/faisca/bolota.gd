@@ -57,10 +57,10 @@ func _physics_process(delta: float) -> void:
 		_seguindo = false
 
 
-func receber_golpe(dano: int, de: Vector3, forca := 6.0) -> bool:
+func receber_golpe(dano: int, de: Vector3, forca := 6.0, tipo := "") -> bool:
 	if dormindo:
 		_acordar()
-	var levou := super(dano, de, forca)
+	var levou := super(dano, de, forca, tipo)
 	if levou:
 		_pausa = 0.6
 	return levou
