@@ -756,7 +756,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 | 2 Doces e Brinquedos | 3 Cozinha Gigante (pronta em 2026-10-29) | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
 | 2 | 4 Nuvens de Algodão-Doce (pronta em 2026-10-30) | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), pirulitos do Halloween Bits, Platformer | nuvens que quicam e o Balão de Chiclete | 90 |
 | 2 | 5 Quarto de Brinquedos (pronta em 2026-10-30) | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que tombam com um soco e o Ioiô | 120 |
-| 3 Frio e Vento | 6 Pico Gelado | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | chão escorregadio e bolas de neve | 150 |
+| 3 Frio e Vento | 6 Pico Gelado (maquete em 2026-10-30) | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | gelo que escorrega, bolas de neve e a Luva de Neve | 150 |
 | 3 | 7 Fábrica de Blocos | chão | Block Bits, esteiras e botões do Platformer | esteiras e blocos que aparecem e somem | 180 |
 | 3 | 8 Moinhos do Vento | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que empurra quem flutua | 210 |
 | Topo | 9 Nave Aspiratrão | céu | Space Base Bits, cristais roxos do Resource Bits | o Rei Bolotão | todas as Estrelas Grandes |
@@ -1264,6 +1264,7 @@ O Faísca usava só uns poucos sons emprestados das crianças, e pegar estrelinh
 Toda fase do Faísca segue este padrão. O documento ilustrado está em `docs/level-design/molde-das-fases.html` (abre no navegador; também publicado como artifact privado em https://claude.ai/artifact/Vz5M6GjcTFuAMAJoK64VjM). As duas maquetes 3D em blocos que mostram o padrão também estão em `docs/level-design/`:
 - `maquete-2-2-nuvens-de-algodao-doce.html`, uma fase de céu (https://claude.ai/artifact/7VWLwjDfRYUUySyx7ppCog);
 - `maquete-2-3-quarto-de-brinquedos.html`, uma fase de chão (https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V).
+- `maquete-3-1-pico-gelado.html`, a primeira já no tamanho maior, com cinco playgrounds (https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4).
 
 As páginas carregam a three.js do jsDelivr, então precisam de internet. A pasta tem `.gdignore`.
 
@@ -1571,6 +1572,51 @@ Fase de chão: o chão do quarto é a rede de segurança. Quem cai de um móvel 
   - se a criança entende que o soco tomba o dado e o leva até a marca;
   - se o golpe no ar perto da argola fica claro;
   - se as cartas da lava viram rápido demais.
+
+### Fase 3-1: Pico Gelado (maquete em 2026-10-30, esperando aprovação)
+
+O usuário pediu a maquete antes de construir ("Sim, a maquete"). Ela está em `docs/level-design/maquete-3-1-pico-gelado.html`, também como artifact privado: https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4. É a primeira fase do andar Frio e Vento (porta que pede 150 estrelinhas), fase de céu, já com cinco playgrounds e uma tarefa em cada saída.
+
+- **Marco:** o pico de gelo no meio. O pé dele (raio de 26 m) vai até 30 m, e o anel de neve em cima é o chão do playground 5. O pico de cima (raio de 18 a 11 m) vai até o cume plano, a 46 m, com a arena.
+- **Novidades:**
+  - o gelo escorrega: chão azul bem claro, brilhante e riscado, sempre com a mesma cara, diferente da neve branca e fosca, que é firme. No gelo o Faísca demora a parar e a virar;
+  - as bolas de neve grandes rolam de um lado para o outro e descem as encostas. Encostar empurra.
+- **Poder da fase, a Luva de Neve:**
+  - fica no iglu grande da vila;
+  - com ela, o golpe joga uma bola de neve, que vai sozinha até o sino ou a Bolota mais perto na frente;
+  - os sinos laranja ficam longe e alto, e só ela alcança. A bola de neve conta como arremesso, então também acerta o fantasma. Não tem botão novo.
+- **Os playgrounds e as tarefas:**
+  1. **Lago Congelado** (y 0, ao sul):
+     - neve firme em volta e o lago de gelo no meio;
+     - tarefa: os três botões laranja estão no meio do lago, e é preciso parar em cima de cada um escorregando. Eles levantam a ponte de gelo até o trenó;
+     - mini-marco: o boneco de neve gigante;
+     - bolsos: o iglu pequeno e o monte do coração, subindo pela pilha de bolas de neve.
+  2. **Ilhas de Gelo** (y 7 a 14, a oeste):
+     - ilhas de blocos de neve e de gelo, com pontes estreitas de gelo e degraus de neve, e uma bola de neve rolando na ilha do meio;
+     - tarefa: o laser derrete os três cubos de gelo dos pinguins filhotes, um em cada ponta, e soltos eles deixam o canhão de neve pronto;
+     - bolso: a caverna de gelo embaixo da ilha do meio, com o V1.
+  3. **Vila do Iglu** (y 18, a noroeste):
+     - iglus, bonecos de neve e um laguinho de gelo;
+     - tem a Luva de Neve;
+     - tarefa: três sinos no alto de colunas de 12 m põem a cadeirinha de esqui para andar;
+     - bolsos: um quarto sino, atrás da chaminé do iglu grande, faz aparecer a escada de gelo até a pedra alta do V2. Há também o coração na cabana de esqui;
+     - uma das Bolotas é um fantasma.
+  4. **Encosta das Avalanches** (y 22 a 31, de nordeste a leste do pico):
+     - plataformas de neve com bolas de neve descendo e bonecos de neve como abrigo;
+     - tarefa: três cachoeiras cortam o caminho, e o sino em cima de cada uma congela a água numa rampa de gelo;
+     - bolso: a caverna atrás da segunda cachoeira congelada;
+     - a ponte de gelo leva ao anel do pico.
+  5. **Subida do Pico** (y 30 a 46):
+     - no anel, montes de neve fofa que quicam;
+     - na parede, saliências de gelo e pingentes lilases que caem um instante depois de pisados;
+     - tarefa: a porta de gelo do cume abre com o último sino;
+     - quem cai da parede cai no anel, sem perder coração;
+     - segredo: a gruta de gelo rachada no anel, com o V3.
+  - **Arena no cume** (46 m): o baú e três Bolotas.
+- **Viagens:** o trenó puxado por pinguins, o canhão de neve, a cadeirinha de esqui (vai e volta) e a ponte de gelo.
+- **Números da maquete:** rota principal de uns 579 m, 15 Bolotas e 4 corações. As estrelinhas da maquete (61) são só as de marcar o desenho; no jogo serão de 110 a 150.
+- **Para construir:** peças do Holiday Bits (bonecos de neve, bolas de neve, o canhão de bolas de neve, os trenós dos presentes como enfeite), blocos de neve do Block Bits, a `Carona` (trenó e cadeirinha), o `Canhao`, a `NuvemQueSome` (pingente) e a `NuvemQueQuica` (neve fofa).
+  - Peças novas: o chão de gelo (atrito baixo no `Jogador` enquanto pisa nele), a bola de neve que rola (como o `DadoRolando`, mas empurra), o cubo de gelo que o laser derrete, o sino e a cachoeira que congela, a Luva de Neve (a bola de neve com mira no `Jogador`) e a porta de gelo.
 
 ### Em aberto
 
