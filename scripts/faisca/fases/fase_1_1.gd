@@ -71,7 +71,7 @@ func _ilha_dos_pulinhos() -> void:
 	trilha(Vector3(-8, 2.1, -26.6), Vector3(-14, 2.1, -26.6), 3)
 	arco_de_saida(Vector3(-16.5, 0, -24), PI / 2.0, "yellow")
 	for p in [Vector3(-5, 0, -21), Vector3(-6.5, 0, -27.5)]:
-		peca("signage_arrow_stand_yellow", p, PI, 1.0, false)
+		peca("signage_arrow_stand_yellow", p, PI)
 
 	# Mini-marco e o bolso atrás dele.
 	arvore(1, 8, Vector3(10, 0, -26), 2.6)
@@ -137,7 +137,7 @@ func _ilhas_das_argolas() -> void:
 	bolota(Vector3(-56, 3.5, -60.5), false, "cogumelo")
 	bolota(Vector3(-62, 3.5, -67.5), false, "pinguim")
 	morro("4x4x8", Vector3(-53.5, 8.5, -69))
-	peca("flag_A_red", Vector3(-53.5, 8.5, -69), 0.0, 2.5, false)
+	peca("flag_A_red", Vector3(-53.5, 8.5, -69), 0.0, 2.5)
 	mola(Vector3(-55.5, 3.5, -65.5))
 	roda(Vector3(-53.5, 9.5, -69), 1.0, 4)
 	arvore(4, 7, Vector3(-62.5, 3.5, -59), 0.9)
@@ -185,7 +185,7 @@ func _jardim_das_flores() -> void:
 	for z in [-162.0, -158.0, -154.0, -146.0, -142.0, -138.0, -134.0]:
 		morro("4x4x8", Vector3(13, 14, z))
 	arco_de_saida(Vector3(17.5, 8, -150), PI / 2.0, "green")
-	peca("signage_arrow_stand_green", Vector3(9.5, 8, -147.5), -PI / 2.0, 1.0, false)
+	peca("signage_arrow_stand_green", Vector3(9.5, 8, -147.5), -PI / 2.0)
 
 	# Botões e a ponte do bolso alto (V2).
 	botao(Vector3(-8, 8, -158), "red")

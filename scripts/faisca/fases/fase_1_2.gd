@@ -95,6 +95,8 @@ func _poco_do_cristal() -> void:
 		mi.position = CRISTAL + spec[0]
 		mi.rotation = Vector3(spec[3], 0.4, -spec[3])
 		add_child(mi)
+		# Saem para fora do cilindro do grande: cada um com a colisão no formato dele.
+		mi.create_convex_collision()
 	for y in [-6.0, 14.0]:
 		var luz := OmniLight3D.new()
 		luz.light_color = Color("5fc8ff")
@@ -448,6 +450,7 @@ func _poco_dos_cristais() -> void:
 		mi.position = spec[0] + Vector3(0, spec[1].y * 0.8, 0)
 		mi.rotation = Vector3(spec[2], 0, -spec[2])
 		add_child(mi)
+		mi.create_convex_collision()
 	tocha(Vector3(40.6, 16.0, -76.0), true, true)
 
 
@@ -629,7 +632,7 @@ func tablado(topo: Vector3, tamanho: Vector2, chao_y := 0.0, com_pernas := true)
 	var altura := topo.y - 0.5 - chao_y
 	if com_pernas and altura > 0.5:
 		peca_de(MASMORRA, "scaffold_frame_small", Vector3(topo.x, chao_y, topo.z), 0.0,
-				Vector3(tamanho.x / 3.0, altura / 4.0, tamanho.y / 3.0), false)
+				Vector3(tamanho.x / 3.0, altura / 4.0, tamanho.y / 3.0))
 	elif not com_pernas:
 		# Viga presa na parede: só uma trave grossa por baixo.
 		var trave := MeshInstance3D.new()
@@ -686,9 +689,9 @@ func caixote(base: Vector3, tamanho: Vector3) -> void:
 	_muro(base, tamanho)
 
 
-## Enfeite do Dungeon Pack, sem colisão.
+## Enfeite do Dungeon Pack (barris, caixotes, baldes, pedras), sólido no formato da malha.
 func enfeite_m(arquivo: String, pos: Vector3, escala := 1.0, giro := 0.0) -> Node3D:
-	return peca_de(MASMORRA, arquivo, pos, giro, escala, false)
+	return peca_de(MASMORRA, arquivo, pos, giro, escala)
 
 
 ## O Ossinho mineiro, amigo desde a Parte 1, acenando na entrada (só enfeite, com um corpo para não

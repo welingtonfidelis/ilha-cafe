@@ -618,12 +618,13 @@ Feitas com os pacotes do Kenney (Car Kit, City Kit Roads, Mini Skate e Watercraf
 
 O pedido: "a cerca dos animais está sem física", "alguns cubos verdes, pilastra com balão em cima, também não têm física", "remove a pista de skate e o skate", "na cidade é possível andar entre os prédios? apenas se isso não gerar bugs de câmera e colisão" e "é possível colocar mais 1 ou 2 corredores na pista? pilotando com IA".
 
-- **O que o jogador atravessava:** `tools/sem_fisica.gd` lista as peças da ilha com tamanho de obstáculo que nenhuma colisão cobre (`godot --headless --path . -s res://tools/sem_fisica.gd`). Ganharam colisão no gerador:
+- **O que o jogador atravessava:** o `tools/sem_fisica.gd` listava as peças da ilha com tamanho de obstáculo que nenhuma colisão cobria. Em 2026-10-30 ele deu lugar ao `tools/revisor_fisica.gd`, que confere a ilha, o farol e as fases do Faísca (seção 11, "Revisor de física"). Ganharam colisão no gerador:
   - a cerca do pasto (o corpo fica sem escala e a caixa acompanha a madeira esticada);
   - as bolas em cima dos postes da praça (o Faísca pula e flutua até lá);
   - os presentes e o trenzinho da festa, os pneus empilhados do box;
   - o arco amarelo da praça e o arco do palhaço, com colisão no formato (dá para passar por dentro).
-  - Continuam sem colisão, de propósito: arbustos da mata, as esferas mágicas das lanternas, a vassoura da bruxa e o arco de chegada da pista de kart.
+  - Continuam sem colisão, de propósito: arbustos da mata, as esferas mágicas das lanternas, a vassoura da bruxa e o arco de chegada da pista de kart. Desde 2026-10-30 as esferas, a vassoura e o arco levam o meta `enfeite`, para o revisor não cobrar.
+  - Na revisão de 2026-10-30 ganharam colisão também os pinos de malabares e a bola do palhaço, e o balde do pescador.
 - **Sem skate:** saíram a pista (o gerador não monta mais, e o marcador `Skate` sumiu), `scripts/skate_park.gd`, `scripts/skate_rider.gd`, o skate do `Player`, os avisos, as fotos e os testes de skate, e as peças em `assets/skate/`. A campina continua limpa, sem árvores nem grama, para o sorteio do resto da ilha não mudar.
 - **Vielas na cidade:** em cada quarteirão saíram os dois prédios do meio dos lados norte e sul. Fica uma viela de 10 m de rua a rua, passando pelo jardinzinho do miolo. O sorteio do modelo de cada prédio continua sendo feito, para o resto da ilha ficar igual.
   - A ilha regenerada foi comparada peça por peça com a anterior: só sumiram a pista de skate e os 10 prédios.
@@ -1301,7 +1302,8 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
   - vão de 3 a 4 m pulando e de 7 a 9 m flutuando;
   - plataforma de pouso de 3 × 3 m ou maior;
   - mais de 4 m de altura sem mola tem que parecer claramente alto demais;
-  - Bolotas em lugar estreito só no playground 4.
+  - Bolotas em lugar estreito só no playground 4;
+  - o que parece sólido é sólido: toda peça com tamanho de obstáculo ou de chão tem colisão. O que se atravessa de propósito (aro, chama, água, cabo, luz, o que fica alto demais) leva `Fase.so_enfeite`. O `tools/revisor_fisica.gd` confere (seção "Revisor de física").
 - **Cores com um papel só cada:**
 
   | Cor | Quer dizer |
@@ -1618,14 +1620,65 @@ O usuário pediu a maquete antes de construir ("Sim, a maquete"). Ela está em `
 - **Para construir:** peças do Holiday Bits (bonecos de neve, bolas de neve, o canhão de bolas de neve, os trenós dos presentes como enfeite), blocos de neve do Block Bits, a `Carona` (trenó e cadeirinha), o `Canhao`, a `NuvemQueSome` (pingente) e a `NuvemQueQuica` (neve fofa).
   - Peças novas: o chão de gelo (atrito baixo no `Jogador` enquanto pisa nele), a bola de neve que rola (como o `DadoRolando`, mas empurra), o cubo de gelo que o laser derrete, o sino e a cachoeira que congela, a Luva de Neve (a bola de neve com mira no `Jogador`) e a porta de gelo.
 
+### Revisor de física (pedido do usuário em 2026-10-30)
+
+O pedido: "consegue criar um revisor ou script que teste os itens que deveriam ter física sólida mas não têm? exemplo: doces na fase de algodão doce".
+
+- **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3 e a ilha em uns 4 segundos.
+  - Com nomes depois do `--` (`-- 2-2 ilha`), revisa só esses.
+  - Com `--ver <começo do nome>`, lista os pontos descobertos de cada peça com esse nome (para achar a peça no código).
+  - Sai com código 1 se sobrar algo SEM FÍSICA. Entra na bateria de testes junto com os outros.
+- **Como ele confere:** de cada peça (o modelo inteiro de um pacote, ou cada malha feita por código), sorteia 40 pontos na superfície. Para cada ponto, pergunta à física se tem algo sólido a menos de 35 cm, nas camadas em que o jogador esbarra. A parte dos pontos com algo sólido perto é a cobertura:
+  - **SEM FÍSICA:** menos de 35% coberta; o jogador entra na peça inteira;
+  - **EM PARTE:** de 35% a 75%, só nas peças altas. É aviso, não reprova.
+- **Pontos que não contam** (o jogador não chega neles):
+  - a faixa de baixo das peças altas (senão o chão "cobre" por elas);
+  - as faces viradas para baixo;
+  - as faces com algo sólido logo em cima (enterradas embaixo do chão);
+  - o que fica abaixo da altura de queda da fase.
+- **Peças fora da conta:**
+  - o que é de pegar ou atravessar (dentro de uma `Area3D`) e os personagens;
+  - a luz: material de luz somada, ou transparente sem sombra (vapor, raios);
+  - o miúdo: menos de 0,9 m de altura ou 0,4 m de largura, com exceção do baixo e largo (de 1,5 × 0,8 m para cima), que pode ser uma plataforma falsa;
+  - moitas, grama e flores;
+  - nas fases, o que fica a mais de 14 m de toda estrelinha, vaga-lume, posto, coração e Bolota (o farol ao longe, as nuvens do céu);
+  - o que tem o meta `enfeite`.
+  - Nas árvores, basta o tronco ser sólido.
+- **Um cuidado da física:** com o centro da bola de teste bem em cima de uma colisão feita da malha, a Godot não vê o toque. O revisor afasta cada ponto 8 cm da face antes de perguntar.
+- **O que ele achou na primeira rodada** (152 peças sem física) e como ficou:
+  - **2-2:** os doces eram só desenho, porque `doce()` nascia sem colisão (pirulitos, bengalas, presentes, balas, lanternas da praça). Agora nascem sólidos no formato da malha.
+    - Também ganharam colisão: o cone do telhado e as balas de goma do carrossel (a colisão sobe e desce com cada bala), o teto da cabine do teleférico, as torres do cabo e os escorridos de cobertura do bolo (um pouco abaixo da beira).
+  - **1-2:** os enfeites da mina viraram sólidos: barris, caixotes, baldes, pedras, picareta e o barril de chope. Ganharam colisão também os andaimes dos tablados e os cristais grudados no grande, e o ninho de cristais.
+  - **1-1:** as placas de seta e a bandeira do mini-marco.
+  - **2-1:** as cadeiras, o sorvete em cima da geladeira, o rolo da bancada e a torneira da pia.
+  - **2-3:** os telhados das torres do castelo, as bandeiras, a pista laranja do carrinho de corda e os pés dela (dá para descer andando por ela), e as aletas do foguete.
+  - **Trilhos** (`Fase.trilhos`): ganharam uma faixa sólida rente aos dormentes. A ponte do trenzinho da 2-3 e a rampa do carrinho da 1-2 pareciam caminho e não seguravam.
+  - **Farol:** a lâmpada do topo e o telhadinho dela.
+  - **Ilha:** pinos de malabares, bola do palhaço e balde do pescador.
+- **Enfeite de propósito** (`Fase.so_enfeite`):
+  - o aro (passa-se por dentro) e o canhão (encostar já entra; só a base é sólida);
+  - a chama da tocha (é flutuando em cima dela que o laser acende; o pedestal é sólido);
+  - a argola do ioiô, a água e a espuma da pia, o cabo do teleférico, as nuvens do céu da 2-2, o cabinho das cerejas e o teto do farol;
+  - a cobertura da beira do bolo da 2-2. Sólida, ela vira uma murinha de 0,7 m que fechava a chegada da ponte de wafer e tapava a vista do brilho do baú. Os dois testes da 2-2 pegaram isso.
+- **Avisos que ficaram** (EM PARTE, 22 no fim):
+  - a tampa do baú, mais alta que a caixa dele;
+  - as bolhas e as molas de cristal;
+  - as colunas de algodão da 2-2;
+  - o quadro alto da 2-3;
+  - as rodas do carrinho de corda;
+  - as lanternas da festa na ilha.
+  - Nenhum deles deixa o Faísca entrar inteiro numa peça.
+- **Testes:** depois das colisões novas, `--faisca-fase`, `--faisca-fase-1-2`, `--faisca-fase-2-1`, `--faisca-fase-2-2` e `--faisca-fase-2-3` passaram. A ilha foi regenerada (`tools/gerar_ilha.gd`), e a cena só mudou nas peças acima e nos `unique_id`.
+
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
 - Se o Faísca pode dirigir o kart.
-- **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando.
+- **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando. A parte das peças atravessadas já foi feita no revisor de física de 2026-10-30: as cadeiras, o sorvete, o rolo e a torneira ganharam colisão.
 - **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 e a 2-3 já nascem maiores, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 1-1, a 1-2 e a 2-1 do mesmo jeito.
 - **Teste `--ilha` instável na viela** (visto em 2026-10-30): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
+  - Na bateria de 2026-10-30, depois do revisor de física, falhou de novo no mesmo ponto. Desta vez o `--armas` também falhou uma vez ("com duas pistolas, cada tiro tira 75% do dano", sem valor medido). Sozinhos, os dois passaram.
 - **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Ainda não investigado.
   - Foram dois fechamentos seguidos, às 17:53:17 e às 17:53:57, os dois por SIGSEGV na thread principal. A pilha repete sempre o mesmo trio de endereços do executável (`+0x3e89ce`, `+0x2c2e402`, `+0x2a61dc6`, `+0x526b10`), o que lembra recursão infinita em GDScript (estouro da pilha; a build de release não escreve o erro no log).
   - Os coredumps estão no PC (`coredumpctl info 152449` e `154948`). O log da Godot nessas sessões só tem o erro de sempre do `Mage.glb` na abertura.

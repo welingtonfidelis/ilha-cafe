@@ -134,8 +134,9 @@ func bloco(centro: Vector3, tamanho: Vector3, cor: Color, giro := 0.0) -> Static
 	return corpo
 
 
-## Peça dos doces (Holiday Bits, Halloween Bits e as nuvens do Medieval Hexagon).
-func doce(arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 1.0, solida := false) -> Node3D:
+## Peça dos doces (Holiday Bits, Halloween Bits e as nuvens do Medieval Hexagon), sólida no formato da malha. Até a
+## revisão de física de 2026-10-30 os doces eram só desenho, e o Faísca passava por dentro dos pirulitos e bengalas.
+func doce(arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 1.0, solida := true) -> Node3D:
 	return peca_de(DOCES, arquivo, pos, giro, escala, solida)
 
 
@@ -160,7 +161,7 @@ func cereja(chao: Vector3, forca := 16.0) -> Area3D:
 	bola.height = 1.6
 	_malha(visual, bola, Color.WHITE, Vector3(0, 0.8, 0)).material_override = vermelho
 	var cabo := _cilindro(0.06, 0.08, 1.0)
-	var no_cabo := _malha(visual, cabo, Color("5a9a3a"), Vector3(0.15, 2.0, 0))
+	var no_cabo: MeshInstance3D = so_enfeite(_malha(visual, cabo, Color("5a9a3a"), Vector3(0.15, 2.0, 0)))
 	no_cabo.rotation.z = -0.3
 	var corpo := StaticBody3D.new()
 	var cs0 := CollisionShape3D.new()
@@ -262,15 +263,26 @@ func _bolo() -> void:
 		toro.inner_radius = spec[0] - 0.7
 		toro.outer_radius = spec[0] + 0.7
 		toro.rings = 96
-		_malha(corpo, toro, Color("ffffff"), Vector3(0, spec[1], 0))
-		# Escorrido de cobertura pela parede.
+		# A cobertura da beira se pisa por cima: sólida, ela vira uma murinha de 0,7 m que fecha a chegada da ponte
+		# de wafer e tapa a vista do brilho do baú.
+		so_enfeite(_malha(corpo, toro, Color("ffffff"), Vector3(0, spec[1], 0)))
+		# Escorrido de cobertura pela parede, sólido (calombos na parede), com a colisão um pouco abaixo da beira,
+		# para não virar degrau em cima.
 		var n := int(spec[0] * 1.2)
 		for i in n:
 			var a := TAU * i / n
 			var gota := CapsuleMesh.new()
 			gota.radius = 0.55
 			gota.height = 1.6 + 1.6 * absf(sin(i * 1.7))
-			_malha(corpo, gota, Color("ffffff"), Vector3(cos(a) * (spec[0] + 0.05), spec[1] - gota.height * 0.4, sin(a) * (spec[0] + 0.05)))
+			var onde_gota := Vector3(cos(a) * (spec[0] + 0.05), spec[1] - gota.height * 0.4, sin(a) * (spec[0] + 0.05))
+			_malha(corpo, gota, Color("ffffff"), onde_gota)
+			var cs_gota := CollisionShape3D.new()
+			var capsula := CapsuleShape3D.new()
+			capsula.radius = gota.radius
+			capsula.height = gota.height
+			cs_gota.shape = capsula
+			cs_gota.position = onde_gota + Vector3.DOWN * (gota.height * 0.1 + 0.2)
+			corpo.add_child(cs_gota)
 	# Cerejas na beira da arena, sólidas: parecem de verdade e fazem uma cerquinha.
 	var vermelho := Color("e2304a")
 	for i in 12:
@@ -341,17 +353,8 @@ func _campo_de_algodao() -> void:
 	for p in [Vector3(5, 0, 112.5), Vector3(-3, 0, 103.5), Vector3(-11, 0, 97.5), Vector3(-19, 0, 93.5)]:
 		doce("candycane_large", p, PI * 0.6, 2.2)
 
-	# Mini-marco: o pirulito gigante (com o palito sólido), e a roda de estrelinhas atrás dele.
+	# Mini-marco: o pirulito gigante, e a roda de estrelinhas atrás dele.
 	doce("lollipop_pink", Vector3(-6, 3.9, 84), 0.4, 14.0)
-	var palito := StaticBody3D.new()
-	palito.position = Vector3(-6, 4.0, 84)
-	var cs := CollisionShape3D.new()
-	var cil := CylinderShape3D.new()
-	cil.radius = 0.6
-	cil.height = 8.0
-	cs.shape = cil
-	palito.add_child(cs)
-	add_child(palito)
 	roda(Vector3(-6, 0.9, 81.5), 2.2, 6)
 
 	# Bolso: o morro de algodão (uma nuvem mais forte leva lá para cima).
@@ -580,15 +583,20 @@ func _viagem_teleferico() -> void:
 	var fio := _cilindro(0.08, 0.08, ponta_a.distance_to(ponta_b))
 	cabo.mesh = fio
 	cabo.material_override = _material(Color("3a3150"))
-	add_child(cabo)
+	add_child(so_enfeite(cabo))
 	cabo.look_at_from_position((ponta_a + ponta_b) * 0.5, ponta_b, Vector3.UP)
 	cabo.rotate_object_local(Vector3.RIGHT, PI / 2.0)
 	for p: Vector3 in [ponta_a, ponta_b]:
-		var torre := MeshInstance3D.new()
-		torre.mesh = _cilindro(0.25, 0.35, 6.4)
-		torre.material_override = _material(Color("6a6478"))
+		var torre := StaticBody3D.new()
 		torre.position = p + Vector3.DOWN * 3.0
 		add_child(torre)
+		_malha(torre, _cilindro(0.25, 0.35, 6.4), Color("6a6478"), Vector3.ZERO)
+		var cs_torre := CollisionShape3D.new()
+		var cil_torre := CylinderShape3D.new()
+		cil_torre.radius = 0.35
+		cil_torre.height = 6.4
+		cs_torre.shape = cil_torre
+		torre.add_child(cs_torre)
 	for t in [0.3, 0.55, 0.8]:
 		estrelinha(de.lerp(ate, 0.5 - 0.5 * cos(PI * t)) + Vector3.UP * 4.0)
 
@@ -741,7 +749,7 @@ func _nuvens_de_enfeite() -> void:
 			var q := Vector2(p.x, p.z)
 			perto = perto or q.distance_to(a + (b - a) * clampf((q - a).dot(b - a) / (b - a).length_squared(), 0.0, 1.0)) < 22.0
 		if not perto:
-			doce("cloud_big" if i % 2 else "cloud_small", p, gerador.randf() * TAU, gerador.randf_range(5.0, 9.0))
+			so_enfeite(doce("cloud_big" if i % 2 else "cloud_small", p, gerador.randf() * TAU, gerador.randf_range(5.0, 9.0), false))
 
 
 # --- céu ----------------------------------------------------------------------------

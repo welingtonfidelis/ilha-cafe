@@ -19,7 +19,8 @@ var _modelo: Node3D
 func _ready() -> void:
 	_modelo = load(Fase.PLATAFORMA + "hoop_%s.gltf" % cor).instantiate()
 	_modelo.scale = Vector3.ONE * escala
-	add_child(_modelo)
+	# O aro se atravessa (é para passar por dentro dele).
+	add_child(Fase.so_enfeite(_modelo))
 	var area := Area3D.new()
 	area.collision_layer = 0
 	area.collision_mask = Fase.CAMADA_JOGADOR

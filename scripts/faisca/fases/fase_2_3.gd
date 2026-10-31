@@ -225,7 +225,11 @@ func _castelo() -> void:
 		torre.position = canto
 		add_child(torre)
 		_malha(torre, _cilindro(3.0, 3.0, 15.0), BLOCOS[k], Vector3(0, 7.5, 0))
-		_malha(torre, _cilindro(0.05, 3.6, 5.0), BLOCOS[(k + 2) % 4], Vector3(0, 17.5, 0))
+		var telhado := _malha(torre, _cilindro(0.05, 3.6, 5.0), BLOCOS[(k + 2) % 4], Vector3(0, 17.5, 0))
+		var cs_telhado := CollisionShape3D.new()
+		cs_telhado.shape = telhado.mesh.create_convex_shape()
+		cs_telhado.position = telhado.position
+		torre.add_child(cs_telhado)
 		var tcs := CollisionShape3D.new()
 		var cil := CylinderShape3D.new()
 		cil.radius = 3.0
@@ -233,7 +237,7 @@ func _castelo() -> void:
 		tcs.shape = cil
 		tcs.position.y = 7.5
 		torre.add_child(tcs)
-		do_quarto(["flag_A_red", "flag_A_blue", "flag_A_yellow", "flag_A_green"][k], canto + Vector3(0, 19.6, 0), 0.0, 3.0, false)
+		do_quarto(["flag_A_red", "flag_A_blue", "flag_A_yellow", "flag_A_green"][k], canto + Vector3(0, 19.6, 0), 0.0, 3.0)
 	# A torre do meio, com faixas de blocos e as ameias da arena.
 	bloco(c, Vector3(12, TOPO_TORRE, 12), Color("f2e6d0"))
 	for k in 5:
@@ -286,6 +290,12 @@ func _tapete_da_cidade() -> void:
 		var aleta := _malha(foguete, BoxMesh.new(), Color("e94f4f"), Vector3(cos(a) * 2.6, 1.6, sin(a) * 2.6))
 		(aleta.mesh as BoxMesh).size = Vector3(0.4, 3.0, 2.0)
 		aleta.rotation.y = -a
+		var cs_aleta := CollisionShape3D.new()
+		var caixa_aleta := BoxShape3D.new()
+		caixa_aleta.size = Vector3(0.4, 3.0, 2.0)
+		cs_aleta.shape = caixa_aleta
+		cs_aleta.transform = aleta.transform
+		foguete.add_child(cs_aleta)
 	var fcs := CollisionShape3D.new()
 	var fcil := CylinderShape3D.new()
 	fcil.radius = 2.4
@@ -518,9 +528,11 @@ func _viagem_carrinho() -> void:
 	pista.mesh = Forma.tubo_fechado(pontos, 1.0)
 	pista.material_override = _material(Color("ff7a22"))
 	add_child(pista)
+	# A pista e os pés dela são sólidos: dá para descer andando por ela também.
+	pista.create_trimesh_collision()
 	for i in range(1, caminho.size() - 1):
 		var p: Vector3 = caminho[i]
-		bloco(Vector3(p.x, 0, p.z), Vector3(0.8, p.y - 2.3, 0.8), Color("6a6478"), false)
+		bloco(Vector3(p.x, 0, p.z), Vector3(0.8, p.y - 2.3, 0.8), Color("6a6478"))
 	for t in [0.25, 0.5, 0.75]:
 		var a: Vector3 = caminho[1]
 		var b: Vector3 = caminho[3]

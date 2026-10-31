@@ -119,7 +119,7 @@ func _montar_cabine() -> void:
 		_caixa(Vector3(0.15, 0.7, 3.4), Vector3(lado * 1.62, 0.35, 0), branco, true)
 		for frente in [-1.0, 1.0]:
 			_caixa(Vector3(0.15, 3.3, 0.15), Vector3(lado * 1.62, 1.65, frente * 1.62), ferro, false)
-	_caixa(Vector3(3.8, 0.35, 3.8), Vector3(0, 3.45, 0), rosa, false)
+	_caixa(Vector3(3.8, 0.35, 3.8), Vector3(0, 3.45, 0), rosa, true)
 	_caixa(Vector3(0.12, 1.6, 0.12), Vector3(0, 4.4, 0), ferro, false)
 	_caixa(Vector3(1.0, 0.35, 0.5), Vector3(0, 5.2, 0), ferro, false)
 

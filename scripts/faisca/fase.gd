@@ -204,7 +204,14 @@ func arvore(tipo: int, cor: int, pos: Vector3, escala := 1.0, giro := 0.0) -> No
 
 ## Enfeite sem colisão (moitas, pedrinhas, grama).
 func enfeite(arquivo: String, pos: Vector3, escala := 1.0, giro := 0.0) -> Node3D:
-	return peca(arquivo, pos, giro, escala, false)
+	return so_enfeite(peca(arquivo, pos, giro, escala, false))
+
+
+## Marca um nó (e tudo dentro dele) como enfeite de propósito, que o Faísca atravessa: a água, o cabo do
+## teleférico, a chama da tocha. O revisor de física (tools/revisor_fisica.gd) não cobra colisão dele.
+static func so_enfeite(no: Node3D) -> Node3D:
+	no.set_meta("enfeite", true)
+	return no
 
 
 # --- estrelinhas ------------------------------------------------------------------
@@ -670,7 +677,8 @@ func canhao(pos: Vector3, destino: Vector3, cor := "blue") -> Canhao:
 	return c
 
 
-## Trilhos de `de` até `ate` (no chão, em linha reta): dois trilhos de ferro e dormentes de madeira.
+## Trilhos de `de` até `ate` (no chão, em linha reta): dois trilhos de ferro e dormentes de madeira, com uma
+## faixa sólida rente aos dormentes, para dar para andar neles (a rampa do carrinho, a ponte do trenzinho).
 func trilhos(de: Vector3, ate: Vector3) -> void:
 	var ferro := _material(Color("5a5668"))
 	ferro.metallic = 0.6
@@ -696,6 +704,17 @@ func trilhos(de: Vector3, ate: Vector3) -> void:
 		d.material_override = madeira
 		add_child(d)
 		d.global_transform = Transform3D(base, de.lerp(ate, float(i) / maxf(n, 1)) + Vector3.UP * 0.05)
+	# A faixa vai deitada na rampa (a base dos desenhos fica com o "em pé" sempre para cima, e a colisão não aceita
+	# base torta), com o topo na altura de cima dos dormentes.
+	var corpo := StaticBody3D.new()
+	var cima := dir.cross(lado).normalized()
+	corpo.transform = Transform3D(Basis(lado, cima, dir), (de + ate) * 0.5 + Vector3.UP * 0.1 - cima * 0.1)
+	var cs := CollisionShape3D.new()
+	var faixa := BoxShape3D.new()
+	faixa.size = Vector3(2.0, 0.2, comprimento)
+	cs.shape = faixa
+	corpo.add_child(cs)
+	add_child(corpo)
 
 
 ## Carrinho de mina nos trilhos de `de` até `ate` (o carrinho anda sozinho com o Faísca dentro).
@@ -898,7 +917,7 @@ func agua(centro: Vector3, tamanho: Vector2) -> Area3D:
 	plano.mesh = pm
 	plano.material_override = m
 	plano.position = centro
-	add_child(plano)
+	add_child(so_enfeite(plano))
 	# Espuma: bolinhas brancas boiando.
 	var espuma := StandardMaterial3D.new()
 	espuma.albedo_color = Color("f4fbff")
@@ -913,7 +932,7 @@ func agua(centro: Vector3, tamanho: Vector2) -> Area3D:
 		bola.mesh = esfera
 		bola.material_override = espuma
 		bola.position = centro + Vector3(gerador.randf_range(-0.5, 0.5) * tamanho.x, 0.05, gerador.randf_range(-0.5, 0.5) * tamanho.y)
-		add_child(bola)
+		add_child(so_enfeite(bola))
 	var area := Area3D.new()
 	area.collision_layer = 0
 	area.collision_mask = CAMADA_JOGADOR

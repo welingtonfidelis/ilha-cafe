@@ -26,7 +26,8 @@ func _ready() -> void:
 	rotation.y = atan2(para.x, para.z)
 	_modelo = load(Fase.PLATAFORMA + "cannon_base_%s.gltf" % cor).instantiate()
 	_modelo.scale = Vector3.ONE * 1.2
-	add_child(_modelo)
+	# Só a base é sólida: encostando no cano, o Faísca já entra nele.
+	add_child(Fase.so_enfeite(_modelo))
 	var corpo := StaticBody3D.new()
 	corpo.collision_layer = 1
 	var cs := CollisionShape3D.new()

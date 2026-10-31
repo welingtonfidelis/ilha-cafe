@@ -283,6 +283,18 @@ func _eixo_e_lampada() -> void:
 	telhado.material_override = _material(Color("d8433b"))
 	telhado.position.y = topo + 3.25
 	add_child(telhado)
+	# A lâmpada e o telhadinho dela são sólidos, no mesmo corpo do eixo: no topo, o Faísca não entra no vidro.
+	var cs_lampada := CollisionShape3D.new()
+	var cil_lampada := CylinderShape3D.new()
+	cil_lampada.radius = 1.9
+	cil_lampada.height = 2.6
+	cs_lampada.shape = cil_lampada
+	cs_lampada.position.y = topo + 1.3
+	eixo.add_child(cs_lampada)
+	var cs_telhado := CollisionShape3D.new()
+	cs_telhado.shape = cone.create_convex_shape()
+	cs_telhado.position.y = topo + 3.25
+	eixo.add_child(cs_telhado)
 	var luz := OmniLight3D.new()
 	luz.light_color = FarolModelo.LUZ
 	luz.light_energy = 2.5
@@ -441,7 +453,8 @@ func _teto() -> void:
 	domo.material_override = _material(Color("161f4f"))
 	domo.position.y = ALTURA
 	domo.scale = Vector3(1, 0.55, 1)
-	add_child(domo)
+	# O teto fica alto demais para o pulo (só se vê).
+	add_child(so_enfeite(domo))
 	var acesa := StandardMaterial3D.new()
 	acesa.albedo_color = Color("fff1a8")
 	acesa.emission_enabled = true

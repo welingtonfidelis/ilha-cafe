@@ -117,7 +117,8 @@ func _trocar_modelo(nome: String) -> void:
 	_tocha = load(Fase.MASMORRA + nome + ".gltf").instantiate()
 	_tocha.scale = Vector3.ONE * 1.3
 	_tocha.position.y = _base + 0.52
-	add_child(_tocha)
+	# A chama se atravessa (é flutuando em cima dela que o laser acende); o pedestal é que é sólido.
+	add_child(Fase.so_enfeite(_tocha))
 	if nome == "torch":
 		var cinza := StandardMaterial3D.new()
 		cinza.albedo_color = Color("6a6478")

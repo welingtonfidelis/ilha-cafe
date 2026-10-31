@@ -135,7 +135,7 @@ func _mesa_do_cafe() -> void:
 	trilha(Vector3(-1.5, 9.0, -19.0), Vector3(-8.0, 9.0, -24.5), 3)
 	arco_de_saida(Vector3(-13.5, 8, -26), PI / 2.0, "red")
 	for spec in [[Vector3(-4, 0, -6), PI], [Vector3(6, 0, -6), PI], [Vector3(-4, 0, -38), 0.0], [Vector3(6, 0, -38), 0.0]]:
-		cozinha("chair_A", spec[0], spec[1], K, false)
+		cozinha("chair_A", spec[0], spec[1], K)
 
 
 ## Viagem 1: duas tábuas de cortar, rentes ao tampo, da beirada da mesa até a bancada; um pote gigante segura o meio.
@@ -174,7 +174,7 @@ func _bancada_das_panelas() -> void:
 	trilha(Vector3(-56.0, 9.0, -36.0), Vector3(-56.0, 9.0, -49.0), 3)
 	cozinha("crate_tomatoes", Vector3(-58.5, 8.0, -48.5), 0.4, 2.5)
 	cozinha("mustard", Vector3(-31.5, 8.0, -47.5), 0.2, 5.0)
-	cozinha("rollingpin", Vector3(-50.0, 8.0, -36.0), 1.4, 3.0, false)
+	cozinha("rollingpin", Vector3(-50.0, 8.0, -36.0), 1.4, 3.0)
 	arco_de_saida(Vector3(-40.0, 8.0, -49.0), 0.0, "green")
 
 
@@ -256,18 +256,25 @@ func _pia_e_prateleira() -> void:
 		for x in [15.0, 29.0]:
 			bloco(Vector3(x, 8.0, z), Vector3(2.0, 2.8, 2.2), Color("ffd84a"))
 			bloco(Vector3(x, 10.8, z), Vector3(2.0, 0.5, 2.2), Color("5fc46a"))
-	# A torneira, feita de canos, no canto do fundo.
+	# A torneira, feita de canos (sólidos), no canto do fundo.
 	var cano := _material(COR_ACO)
 	cano.metallic = 0.8
 	cano.roughness = 0.2
 	for spec in [[Vector3(27.5, 9.5, -92.5), Vector3(1.2, 3.0, 1.2)], [Vector3(27.5, 11.6, -89.7), Vector3(1.0, 1.0, 6.0)], [Vector3(27.5, 10.6, -87.1), Vector3(0.9, 1.6, 0.9)]]:
+		var corpo := StaticBody3D.new()
+		corpo.position = spec[0]
 		var mi := MeshInstance3D.new()
 		var caixa := BoxMesh.new()
 		caixa.size = spec[1]
 		mi.mesh = caixa
 		mi.material_override = cano
-		mi.position = spec[0]
-		add_child(mi)
+		corpo.add_child(mi)
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = spec[1]
+		cs.shape = forma
+		corpo.add_child(cs)
+		add_child(corpo)
 
 	# Da bancada do fim, bolhas de degrau sobem até a prateleira encostada na geladeira.
 	bolota(Vector3(26.0, 8.0, -45.0), false, "caranguejo")
@@ -301,7 +308,7 @@ func _em_cima_da_geladeira() -> void:
 	bolota(Vector3(-4.0, 20.0, -67.0), false, "pinguim")
 	bolota(Vector3(3.5, 20.0, -66.0), false, "porco")
 	roda(Vector3(0, 20.9, -73.0), 3.4, 4)
-	cozinha("icecream_cone_stacked", Vector3(-5.5, 20.0, -76.0), 0.0, 4.0, false)
+	cozinha("icecream_cone_stacked", Vector3(-5.5, 20.0, -76.0), 0.0, 4.0)
 	brilho_de_marco(Vector3(0, 21.5, -73.0), 26.0)
 
 

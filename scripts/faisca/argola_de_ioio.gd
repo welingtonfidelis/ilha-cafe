@@ -14,6 +14,8 @@ var _tempo := 0.0
 
 func _ready() -> void:
 	add_to_group(GRUPO)
+	# A argola fica no ar e se atravessa: o ioiô puxa o Faísca para cima dela.
+	Fase.so_enfeite(self)
 	_mat = StandardMaterial3D.new()
 	_mat.albedo_color = Color("ff7a22")
 	_mat.roughness = 0.35

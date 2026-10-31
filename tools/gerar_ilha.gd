@@ -666,13 +666,14 @@ func _festa() -> void:
 	_prop(festa, EXTRAS % "moradores/bruxa/Potionstation_decorated", at.call(-12.8, -8.4), 90.0, 1.0, "caixa")
 	_prop(festa, EXTRAS % "moradores/bruxa/Cauldron", at.call(-10.4, -6.2), 0.0, 1.2, "caixa")
 	_prop(festa, EXTRAS % "moradores/bruxa/Basket_Mushrooms", at.call(-11.0, -10.6), 30.0, 1.2)
-	_prop(festa, EXTRAS % "moradores/bruxa/Broom", at.call(-13.6, -10.9), 15.0, 1.1)
+	# Sem colisão, de propósito (doc, "Ajustes na ilha"): o revisor de física (tools/revisor_fisica.gd) não cobra.
+	_prop(festa, EXTRAS % "moradores/bruxa/Broom", at.call(-13.6, -10.9), 15.0, 1.1).set_meta("enfeite", true)
 	# Cantinho do palhaço (sudeste): pódio, arco e brinquedos no chão.
 	_prop(festa, FESTA % "circo/circus_podium", at.call(12.4, 7.0), 0.0, 0.8, "caixa")
 	_prop(festa, FESTA % "circo/circus_hoop", at.call(13.4, 10.6), -30.0, 0.8, "malha")
 	for spec in [["circo/juggling_pin_red", 11.0, 9.0], ["circo/juggling_pin_blue", 11.3, 9.3], ["circo/juggling_pin_yellow", 10.8, 9.5]]:
-		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 40.0, 1.3)
-	_prop(festa, FESTA % "circo/clown_ball", at.call(10.6, 5.2), 0.0, 1.0)
+		_prop(festa, FESTA % spec[0], at.call(spec[1], spec[2]), 40.0, 1.3, "caixa")
+	_prop(festa, FESTA % "circo/clown_ball", at.call(10.6, 5.2), 0.0, 1.0, "convexo")
 
 
 ## Mesa com coisas em cima (posições relativas ao centro do tampo).
@@ -881,6 +882,8 @@ func _orb(parent: Node, orb_name: String, pos: Vector3, radius: float) -> MeshIn
 	sphere.material = mat
 	mi.mesh = sphere
 	mi.position = pos
+	# Luz mágica: atravessa (o revisor de física, tools/revisor_fisica.gd, não cobra colisão dela).
+	mi.set_meta("enfeite", true)
 	_add(parent, mi)
 	return mi
 
@@ -911,7 +914,7 @@ func _bridge_and_pier() -> void:
 	# Pescador na ponta (o pescador é um morador; o jogo cria): caixa de pesca e balde do lado.
 	var fish_spot := pier_end + Vector3(pier_end_half_w - 0.9, 0, -4.0)
 	_prop(ilha, EXTRAS % "pesca/fishing_tacklebox", fish_spot + Vector3(-1.1, 0, -0.8), 15.0, 1.1)
-	_prop(ilha, EXTRAS % "pesca/bucket_metal", fish_spot + Vector3(-1.0, 0, 0.9), 0.0, 1.0)
+	_prop(ilha, EXTRAS % "pesca/bucket_metal", fish_spot + Vector3(-1.0, 0, 0.9), 0.0, 1.0, "caixa")
 	# Toras do lenhador na margem sul do rio, perto da ponte.
 	var river_s := _river_z(12.0) + RIVER_HALF + RIVER_BANK + 6.0
 	var logs := _group(ilha, "Lenha")
@@ -1404,8 +1407,9 @@ func _kart_circuit() -> void:
 
 	# Arco de chegada (o do Watercraft Kit) em cima da faixa quadriculada.
 	var start: Dictionary = sm[start_i]
+	# Sem colisão, de propósito (doc, "Ajustes na ilha"): o revisor de física (tools/revisor_fisica.gd) não cobra.
 	_prop(group, "res://assets/barcos/gate-finish.glb", Vector3(start.pos.x, hs[start_i], start.pos.z),
-			rad_to_deg(atan2(start.dir.x, start.dir.z)), 2.3)
+			rad_to_deg(atan2(start.dir.x, start.dir.z)), 2.3).set_meta("enfeite", true)
 	# Postes de luz por fora, onde a pista está no chão (fora da ponte e da abertura).
 	for i in range(8, n, 34):
 		var sgn := 1.0 if (i / 34) % 2 == 0 else -1.0
