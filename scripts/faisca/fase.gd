@@ -92,6 +92,11 @@ var dados: Array[DadoQueTomba] = []
 var dados_rolando: Array[DadoRolando] = []
 var argolas_ioio: Array[ArgolaDeIoio] = []
 var cartas: Array[CartaQueVira] = []
+## E as da 3-1: sinos (da Luva de Neve), pinguins presos no gelo, bolas de neve que rolam e cachoeiras que congelam.
+var sinos: Array[Sino] = []
+var cubos_de_gelo: Array[CuboDeGelo] = []
+var bolas_de_neve: Array[BolaDeNeve] = []
+var cachoeiras: Array[Cachoeira] = []
 
 ## Padrão de playgrounds (aprovado pelo usuário em 2026-10-29; docs/level-design/molde-das-fases.html): os
 ## playgrounds na ordem ({nome, centro, raio, entrada}), o marco com o ponto do brilho dele (a coluna de luz que
@@ -664,6 +669,78 @@ func carta(pos: Vector3, modelo := "card_hearts_ace", atraso := 0.0, giro := 0.0
 	add_child(c)
 	cartas.append(c)
 	return c
+
+
+## Sino laranja com o pé do arco em `pe` (o sino fica Sino.ALTURA acima), virado de frente para `giro`.
+func sino(pe: Vector3, giro := 0.0) -> Sino:
+	var s := Sino.new()
+	s.position = pe
+	s.rotation.y = giro
+	add_child(s)
+	sinos.append(s)
+	return s
+
+
+## Pinguim filhote preso num cubo de gelo, com o pé do cubo em `chao`, olhando para `giro`.
+func pinguim_preso(chao: Vector3, giro := 0.0) -> CuboDeGelo:
+	var c := CuboDeGelo.new()
+	c.position = chao
+	c.rotation.y = giro
+	add_child(c)
+	cubos_de_gelo.append(c)
+	return c
+
+
+## Bola de neve grande que rola de `de` até `ate` e volta (os dois no chão, embaixo do meio dela).
+func bola_de_neve(de: Vector3, ate: Vector3, raio := 1.6, periodo := 6.0, atraso := 0.0) -> BolaDeNeve:
+	var b := BolaDeNeve.new()
+	b.raio = raio
+	b.de = de + Vector3.UP * raio
+	b.ate = ate + Vector3.UP * raio
+	b.periodo = periodo
+	b.atraso = atraso
+	b.position = b.de
+	add_child(b)
+	bolas_de_neve.append(b)
+	return b
+
+
+## Cachoeira no vão de `de` até `ate` (as beiradas das duas plataformas, na altura do chão), caindo de `topo` até
+## `fundo`. O sino que a congela é ligado pela fase.
+func cachoeira(de: Vector3, ate: Vector3, topo: float, fundo: float, largura := 3.2) -> Cachoeira:
+	var c := Cachoeira.new()
+	c.de = de
+	c.ate = ate
+	c.topo = topo
+	c.fundo = fundo
+	c.largura = largura
+	c.position = (de + ate) * 0.5
+	add_child(c)
+	cachoeiras.append(c)
+	return c
+
+
+## Monte de neve fofa que quica (a nuvem que quica com o desenho de neve), com `topo` onde se pisa.
+func neve_fofa(topo: Vector3, raio := 2.0, forca := 16.0) -> NuvemQueQuica:
+	var n := NuvemQueQuica.new()
+	n.raio = raio
+	n.forca = forca
+	n.neve = true
+	n.position = topo
+	add_child(n)
+	nuvens_que_quicam.append(n)
+	return n
+
+
+## Pingente de gelo lilás deitado que some um instante depois de pisado (a nuvem que some com o desenho de gelo).
+func pingente(topo: Vector3, raio := 1.7) -> NuvemQueSome:
+	var n := NuvemQueSome.new()
+	n.raio = raio
+	n.pingente = true
+	n.position = topo
+	add_child(n)
+	nuvens_que_somem.append(n)
+	return n
 
 
 ## Canhão em `pos` que lança o Faísca até `destino` (onde ele pousa).

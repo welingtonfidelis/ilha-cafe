@@ -19,6 +19,8 @@ const ALL := [
 	"faisca_soco", "faisca_soco_forte", "faisca_acerto", "bolota_ai", "bolota_estoura", "faisca_giro", "faisca_carga",
 	"faisca_piao", "faisca_pisao", "faisca_agarra", "faisca_arremesso", "faisca_pulo", "faisca_pouso", "faisca_laser_liga",
 	"faisca_laser", "faisca_mola", "faisca_dor", "faisca_curto", "estrelinha", "vaga_lume", "faisca_danca",
+	# 3-1 Pico Gelado.
+	"sino", "gelo",
 ]
 
 ## Nos testes, anota o nome de cada som tocado (não dá para ouvir num teste sem tela).

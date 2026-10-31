@@ -13,6 +13,9 @@ const BOCA := Vector3(0, 2.6, 1.4)
 
 var destino := Vector3.ZERO
 var cor := "blue"
+## Outro modelo no lugar do cannon_base (o canhão de bolas de neve do Holiday Bits na 3-1), com a escala dele.
+var modelo := ""
+var escala_modelo := 1.2
 var voando := false
 var _modelo: Node3D
 var _jogador: Jogador
@@ -24,8 +27,8 @@ var _espera := 0.0
 func _ready() -> void:
 	var para := destino - global_position
 	rotation.y = atan2(para.x, para.z)
-	_modelo = load(Fase.PLATAFORMA + "cannon_base_%s.gltf" % cor).instantiate()
-	_modelo.scale = Vector3.ONE * 1.2
+	_modelo = load(modelo if modelo != "" else Fase.PLATAFORMA + "cannon_base_%s.gltf" % cor).instantiate()
+	_modelo.scale = Vector3.ONE * escala_modelo
 	# Só a base é sólida: encostando no cano, o Faísca já entra nele.
 	add_child(Fase.so_enfeite(_modelo))
 	var corpo := StaticBody3D.new()
@@ -67,9 +70,9 @@ func entrar(j: Jogador) -> void:
 	j.yaw = atan2(-para.x, -para.z)
 	j.visual.rotation.y = j.yaw + PI
 	var tw := create_tween()
-	tw.tween_property(_modelo, "scale", Vector3(1.35, 0.95, 1.35), 0.35).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(_modelo, "scale", Vector3(1.35, 0.95, 1.35) * escala_modelo / 1.2, 0.35).set_trans(Tween.TRANS_SINE)
 	tw.tween_callback(_disparar)
-	tw.tween_property(_modelo, "scale", Vector3.ONE * 1.2, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_modelo, "scale", Vector3.ONE * escala_modelo, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
 func _disparar() -> void:

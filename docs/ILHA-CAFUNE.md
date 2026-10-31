@@ -757,7 +757,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 | 2 Doces e Brinquedos | 3 Cozinha Gigante (pronta em 2026-10-29) | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
 | 2 | 4 Nuvens de Algodão-Doce (pronta em 2026-10-30) | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), pirulitos do Halloween Bits, Platformer | nuvens que quicam e o Balão de Chiclete | 90 |
 | 2 | 5 Quarto de Brinquedos (pronta em 2026-10-30) | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que tombam com um soco e o Ioiô | 120 |
-| 3 Frio e Vento | 6 Pico Gelado (maquete em 2026-10-30) | céu | Holiday Bits (bonecos e bolas de neve), blocos de neve do Block Bits | gelo que escorrega, bolas de neve e a Luva de Neve | 150 |
+| 3 Frio e Vento | 6 Pico Gelado (feita em 2026-10-30) | céu | Holiday Bits (bonecos e bolas de neve, sino, pinheiro), blocos de neve feitos por código | gelo que escorrega, bolas de neve e a Luva de Neve | 150 |
 | 3 | 7 Fábrica de Blocos | chão | Block Bits, esteiras e botões do Platformer | esteiras e blocos que aparecem e somem | 180 |
 | 3 | 8 Moinhos do Vento | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que empurra quem flutua | 210 |
 | Topo | 9 Nave Aspiratrão | céu | Space Base Bits, cristais roxos do Resource Bits | o Rei Bolotão | todas as Estrelas Grandes |
@@ -1295,7 +1295,7 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
   - estrelinhas como migalhas;
   - bolsos em cima, embaixo e atrás das coisas;
   - Bolotas em espaço aberto.
-- **Poucos movimentos:** pular, flutuar, socar, mais os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo. A variedade vem das peças de cada fase e de **um poder por fase**, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete na 2-2, Ioiô na 2-3). A 1-1, a 1-2 e a 2-1 não têm poder.
+- **Poucos movimentos:** pular, flutuar, socar, mais os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo. A variedade vem das peças de cada fase e de **um poder por fase**, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete na 2-2, Ioiô na 2-3, Luva de Neve na 3-1). A 1-1, a 1-2 e a 2-1 não têm poder.
 - **Nada ambíguo:**
   - sombra redonda de pouso sempre embaixo do Faísca;
   - degrau de até 1,6 m no caminho (2 m nos bolsos);
@@ -1575,56 +1575,109 @@ Fase de chão: o chão do quarto é a rede de segurança. Quem cai de um móvel 
   - se o golpe no ar perto da argola fica claro;
   - se as cartas da lava viram rápido demais.
 
-### Fase 3-1: Pico Gelado (maquete em 2026-10-30, esperando aprovação)
+### Fase 3-1: Pico Gelado (feita em 2026-10-30)
 
-O usuário pediu a maquete antes de construir ("Sim, a maquete"). Ela está em `docs/level-design/maquete-3-1-pico-gelado.html`, também como artifact privado: https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4. É a primeira fase do andar Frio e Vento (porta que pede 150 estrelinhas), fase de céu, já com cinco playgrounds e uma tarefa em cada saída.
+O usuário pediu a maquete antes de construir ("Sim, a maquete"). Ela está em `docs/level-design/maquete-3-1-pico-gelado.html`, também como artifact privado: https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4. Depois do revisor de física veio o pedido "commita, push, manda pro pc e segue pra próxima", e a fase foi construída seguindo a maquete.
 
-- **Marco:** o pico de gelo no meio. O pé dele (raio de 26 m) vai até 30 m, e o anel de neve em cima é o chão do playground 5. O pico de cima (raio de 18 a 11 m) vai até o cume plano, a 46 m, com a arena.
+É a primeira fase do andar Frio e Vento: a porta pede 150 estrelinhas, é fase de céu e já tem cinco playgrounds, cada saída com uma tarefa. O código fica em `scripts/faisca/fases/fase_3_1.gd`.
+
+- **Peças:** em `assets/faisca/neve/`, do Holiday Bits: os dois bonecos de neve, a bola de neve, o monte de bolas, o canhão de bolas de neve, o sino, o pinheiro, o lampião e três presentes. Os arquivos estavam completos na coleção, sem LFS.
+- **Feito por código:**
+  - o pico;
+  - as ilhas e os blocos de neve (os do Block Bits estão só no LFS);
+  - as pontes e rampas de gelo;
+  - os iglus, ocos, com casca de colisão dos dois lados e porta;
+  - o forte, a cabana, a gruta, o muro do cume;
+  - o pinguim filhote e a Luva.
+- **Marco:** o pico de gelo no meio.
+  - O pé de pedra azulada tem raio de 26 m e vai até 30 m. O anel de neve em cima dele, de 18 a 26 m do meio, é o chão do playground 5.
+  - O pico de cima afina de raio 18 até 11, no cume plano a 46 m.
+  - Em volta do cume há um muro de gelo de 2,6 m, com a porta de gelo.
 - **Novidades:**
-  - o gelo escorrega: chão azul bem claro, brilhante e riscado, sempre com a mesma cara, diferente da neve branca e fosca, que é firme. No gelo o Faísca demora a parar e a virar;
-  - as bolas de neve grandes rolam de um lado para o outro e descem as encostas. Encostar empurra.
-- **Poder da fase, a Luva de Neve:**
-  - fica no iglu grande da vila;
-  - com ela, o golpe joga uma bola de neve, que vai sozinha até o sino ou a Bolota mais perto na frente;
-  - os sinos laranja ficam longe e alto, e só ela alcança. A bola de neve conta como arremesso, então também acerta o fantasma. Não tem botão novo.
-- **Os playgrounds e as tarefas:**
+  - **o gelo que escorrega** (`Gelo`, `Jogador.ACELERACAO_GELO`):
+    - o chão marcado com `Gelo.marcar` tem sempre o mesmo material, azul e riscado;
+    - em pé nele, o Faísca acelera e freia com 1,8 em vez de 14, e vira devagar;
+    - a neve branca é firme. O gelo mágico transparente (a escada do V2, o cubo do pinguim, a porta) também é firme, porque tem outra cara;
+  - **as bolas de neve que rolam** (`BolaDeNeve`): vão e voltam girando como o `DadoRolando`. Encostar empurra o Faísca para longe (`Jogador.empurrar`), sem tirar coração.
+- **Poder da fase, a Luva de Neve** (`Jogador.luva_de_neve`):
+  - fica dentro do iglu grande da vila;
+  - com ela, cada golpe (o soco no chão e o giro no ar) também joga uma bola de neve (`BolaDaLuva`). Ela vai sozinha até o sino ainda quieto ou a Bolota mais perto, até 30 m, a até 60° da frente, e sem parede no meio;
+  - sem alvo, a bola vai reto e se desfaz;
+  - na Bolota, conta como arremesso, então pega o fantasma;
+  - os sinos (`Sino`) ao alcance balançam e pulsam quando o Faísca tem a luva. Acertado, o sino faz "dlém", fica aceso e avisa a fase;
+  - não tem botão novo;
+  - dicas novas do Vovô: `gelo` (o analógico e o Faísca escorregando) e `luva` (X, a bola indo até o sino).
+- **Sons novos:** `sino` e `gelo`, de `make_neve()` no `tools/gerar_sons.py`. Só essa função rodou, então os sons antigos não mudaram.
+- **Os playgrounds:**
   1. **Lago Congelado** (y 0, ao sul):
-     - neve firme em volta e o lago de gelo no meio;
-     - tarefa: os três botões laranja estão no meio do lago, e é preciso parar em cima de cada um escorregando. Eles levantam a ponte de gelo até o trenó;
+     - tarefa: os três botões ficam no meio do lago de gelo e se apertam escorregando por cima. Para isso, ficam afundados, só com a tampa para fora: a base de 26 cm segurava o Faísca no gelo. Eles sobem a ponte;
+     - mudança da maquete: a ponte até o trenó é de blocos de neve firme, não de gelo, para o playground 1 continuar sem risco;
      - mini-marco: o boneco de neve gigante;
-     - bolsos: o iglu pequeno e o monte do coração, subindo pela pilha de bolas de neve.
-  2. **Ilhas de Gelo** (y 7 a 14, a oeste):
-     - ilhas de blocos de neve e de gelo, com pontes estreitas de gelo e degraus de neve, e uma bola de neve rolando na ilha do meio;
-     - tarefa: o laser derrete os três cubos de gelo dos pinguins filhotes, um em cada ponta, e soltos eles deixam o canhão de neve pronto;
-     - bolso: a caverna de gelo embaixo da ilha do meio, com o V1.
-  3. **Vila do Iglu** (y 18, a noroeste):
-     - iglus, bonecos de neve e um laguinho de gelo;
-     - tem a Luva de Neve;
-     - tarefa: três sinos no alto de colunas de 12 m põem a cadeirinha de esqui para andar;
-     - bolsos: um quarto sino, atrás da chaminé do iglu grande, faz aparecer a escada de gelo até a pedra alta do V2. Há também o coração na cabana de esqui;
-     - uma das Bolotas é um fantasma.
-  4. **Encosta das Avalanches** (y 22 a 31, de nordeste a leste do pico):
-     - plataformas de neve com bolas de neve descendo e bonecos de neve como abrigo;
-     - tarefa: três cachoeiras cortam o caminho, e o sino em cima de cada uma congela a água numa rampa de gelo;
-     - bolso: a caverna atrás da segunda cachoeira congelada;
-     - a ponte de gelo leva ao anel do pico.
-  5. **Subida do Pico** (y 30 a 46):
-     - no anel, montes de neve fofa que quicam;
-     - na parede, saliências de gelo e pingentes lilases que caem um instante depois de pisados;
-     - tarefa: a porta de gelo do cume abre com o último sino;
-     - quem cai da parede cai no anel, sem perder coração;
-     - segredo: a gruta de gelo rachada no anel, com o V3.
-  - **Arena no cume** (46 m): o baú e três Bolotas.
-- **Viagens:** o trenó puxado por pinguins, o canhão de neve, a cadeirinha de esqui (vai e volta) e a ponte de gelo.
-- **Números da maquete:** rota principal de uns 579 m, 15 Bolotas e 4 corações. As estrelinhas da maquete (61) são só as de marcar o desenho; no jogo serão de 110 a 150.
-- **Para construir:** peças do Holiday Bits (bonecos de neve, bolas de neve, o canhão de bolas de neve, os trenós dos presentes como enfeite), blocos de neve do Block Bits, a `Carona` (trenó e cadeirinha), o `Canhao`, a `NuvemQueSome` (pingente) e a `NuvemQueQuica` (neve fofa).
-  - Peças novas: o chão de gelo (atrito baixo no `Jogador` enquanto pisa nele), a bola de neve que rola (como o `DadoRolando`, mas empurra), o cubo de gelo que o laser derrete, o sino e a cachoeira que congela, a Luva de Neve (a bola de neve com mira no `Jogador`) e a porta de gelo.
+     - bolsos: o iglu pequeno, com estrelinhas dentro, e o monte do coração, pela pilha de bolas de neve.
+  2. **Ilhas de Gelo** (y 7 a 14, a oeste, P1):
+     - blocos de neve e dois de gelo, com pontes estreitas de gelo e degraus de neve;
+     - tarefa: o laser derrete os três cubos (`CuboDeGelo`) dos pinguins filhotes, um em cada ponta. Com os três soltos, o monte de neve que entope o canhão some;
+     - mini-marco: o forte de neve, com a bola de neve rolando;
+     - bolso: a beirada embaixo da ilha do meio, com o V1 e a neve fofa de volta.
+  3. **Vila do Iglu** (y 18, a noroeste, P2):
+     - a Luva de Neve fica dentro do iglu grande, e a porta dá para a trilha;
+     - tarefa: os três sinos no alto das colunas de gelo de 12 m destravam a cadeirinha (`Carona.travada`);
+     - bolsos:
+       - o quarto sino fica atrás da chaminé do iglu grande. Pela frente, a cúpula tapa; só se acerta indo por trás. Ele faz aparecer a escada de gelo em volta da pedra alta do V2, sete degraus de 1,6 m;
+       - o coração no telhado da cabana de esqui;
+       - estrelinhas no iglu pequeno;
+     - uma das três Bolotas é o fantasma.
+  4. **Encosta das Avalanches** (y 22 a 31, de nordeste a leste do pico, P3):
+     - tarefa: três cachoeiras (`Cachoeira`) cortam o caminho, e o vão é alto e largo demais para um pulo;
+       - a água empurra de volta para o lado de onde o Faísca veio, sem tirar coração;
+       - o sino na pedra em cima de cada uma congela a água, e a rampa de gelo cresce no vão;
+     - bolas de neve rolam nas plataformas do meio, com um boneco de neve de abrigo em cada;
+     - o último vão (5,6 m) se passa pulando e flutuando;
+     - bolso: a caverna de pedra atrás da segunda cachoeira, com o coração;
+     - a ponte de gelo leva ao anel.
+  5. **Subida do Pico** (y 30 a 46, P4):
+     - no anel, o monte de neve fofa joga até a primeira saliência;
+     - daí em diante há saliências de neve firme e pingentes lilases, que caem um instante depois de pisados, subindo 1,6 m por vez em volta do pico até o degrau na frente da porta;
+     - mudanças da maquete:
+       - a maquete tinha degraus de 3 m e saliências de gelo. Gelo num degrau de 4 m na parede jogaria a criança para fora;
+       - o degrau da porta ficou 1,4 m abaixo do cume, não 2,5;
+     - tarefa: o sino pendurado em cima da porta de gelo abre o muro do cume;
+     - quem cai da parede cai no anel, sem perder coração. A neve fofa do outro lado devolve até a quinta saliência;
+     - segredo: a gruta de gelo encostada no pico, com a parede rachada e o V3.
+  - **Arena no cume** (46 m): o baú, um alien, um porco e uma abelha, dentro do muro.
+- **Viagens:**
+  - o trenó dos pinguins (`Carona` "treno", voando), do lago às ilhas;
+  - o canhão de neve (`Canhao` com o modelo do Holiday Bits), das ilhas à vila;
+  - a cadeirinha de esqui (`Carona` "cadeirinha"), da vila à encosta, que também leva de volta;
+  - a ponte de gelo até o anel.
+- **Peças novas na `Fase`:** `sino`, `pinguim_preso`, `bola_de_neve`, `cachoeira`, `neve_fofa` (a `NuvemQueQuica` com `neve`) e `pingente` (a `NuvemQueSome` com `pingente`).
+- **Neve caindo:** partículas brancas acompanham a câmera. O céu ganhou mais saturação e contraste: nas primeiras fotos, neve, céu e névoa brancos deixavam tudo lavado, e o lago de gelo sumia na neve.
+- **Números:** 129 estrelinhas soltas (174 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 8 sinos, 3 pinguins, 3 cachoeiras, 3 bolas de neve, 3 montes de neve fofa e 3 pingentes.
+- **Testes e fotos:**
+  - `--faisca-fase-3-1` confere 68 pontos com golpes, pulos, laser, bolas de neve e viagens de verdade, do lago até o baú. Entre eles:
+    - quanto o Faísca escorrega no gelo e na neve;
+    - o botão apertado escorregando;
+    - o soco que não alcança o sino sem a luva;
+    - o fantasma que só a bola de neve pega;
+    - o quarto sino que só se acerta por trás;
+    - a cachoeira que empurra de volta;
+    - a porta fechada que segura o Faísca;
+    - o pingente que cai no anel;
+  - `--faisca-fase-3-1-captura` tira 18 fotos em `tools/capturas/faisca/fase_3_1/`, com a da porta (`porta.png`, sem o HUD);
+  - `--faisca-jogar-3-1` abre a fase direto;
+  - a foto da porta no farol, `assets/faisca/portas/fase_3_1.jpg`, é a do lago com o pico atrás;
+  - no revisor de física, a 3-1 sai com 0 sem física. Só a tampa do baú fica "em parte". Na primeira rodada ele pegou os pinguins do trenó e a barra de cima da cadeirinha.
+    - Tropeço: sólidos no meio da frente, os pinguins fecharam o trenó, que já tinha grade dos lados e encosto atrás. A criança ficava presa dentro, e o teste da chegada nas ilhas pegou. Os pinguins foram para as quinas da frente, puxando por cordas, e a frente ficou aberta.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se o gelo escorrega demais para criança;
+  - se dá para entender que a bola de neve sai do golpe;
+  - se o quarto sino atrás do iglu é achável.
 
 ### Revisor de física (pedido do usuário em 2026-10-30)
 
 O pedido: "consegue criar um revisor ou script que teste os itens que deveriam ter física sólida mas não têm? exemplo: doces na fase de algodão doce".
 
-- **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3 e a ilha em uns 4 segundos.
+- **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3, a 3-1 (desde que ela ficou pronta) e a ilha em poucos segundos.
   - Com nomes depois do `--` (`-- 2-2 ilha`), revisa só esses.
   - Com `--ver <começo do nome>`, lista os pontos descobertos de cada peça com esse nome (para achar a peça no código).
   - Sai com código 1 se sobrar algo SEM FÍSICA. Entra na bateria de testes junto com os outros.

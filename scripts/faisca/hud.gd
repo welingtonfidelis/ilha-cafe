@@ -316,6 +316,7 @@ class BotaoA extends Control:
 ##   tocha: o feixe na tocha, que pega fogo. No golpe é o X apertado três vezes, na parede rachada.
 ##   quicar: a nuvem rosa amassa e joga para cima; balao: o balão de chiclete enche, sobe e estoura (2-2).
 ##   dado: o soco tomba o dado; ioio: X no ar perto da argola laranja puxa o Faísca até ela (2-3).
+##   gelo: o analógico empurra e o Faísca escorrega no gelo azul; luva: X joga a bola de neve até o sino laranja (3-1).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -323,13 +324,24 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual in ["golpe", "alavanca", "dado", "ioio"]
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva"]
 		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
 		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
 		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
 		# No golpe o botão pulsa a cada toque; nos outros fica apertado enquanto a barrinha enche.
 		var toque := fmod(tempo, 1.6) < 1.2 and fmod(tempo * 2.5, 1.0) < 0.35 if golpe else false
 		var raio := 32.0 if toque else 36.0
+		if qual == "gelo":
+			# No gelo não tem botão: o analógico empurrado para o lado e solto.
+			var empurra := fmod(tempo, 2.0) < 0.8
+			draw_circle(b + Vector2(0, 4), 36, Color("4a4658"))
+			draw_circle(b, 36, Color("6a6478"))
+			draw_arc(b, 36, 0, TAU, 40, Color("2b2140"), 4.0, true)
+			var pino := b + Vector2(16.0 if empurra else 0.0, 0)
+			draw_circle(pino, 18, Color("2b2140"))
+			draw_circle(pino, 14, Color("8a84a0"))
+			_dica_do_gelo(Vector2(170, size.y * 0.5), tempo)
+			return
 		draw_circle(b + Vector2(0, 4), raio, cores[letra][0])
 		draw_circle(b, raio, cores[letra][1])
 		draw_arc(b, raio, 0, TAU, 40, Color("2b2140"), 4.0, true)
@@ -507,6 +519,28 @@ class DesenhoDica extends Control:
 				_faisca(p)
 				if ciclo > 0.3:
 					draw_line(p + Vector2(10, -10), argola, Color("ff7a22"), 2.5)
+			"luva":
+				# X: a bola de neve sai da mão, faz a curvinha e acerta o sino laranja lá no alto, que balança.
+				var ciclo := fmod(tempo, 1.6)
+				var sino := f + Vector2(44, -40)
+				var bateu := ciclo > 0.75
+				var balanca := sin(tempo * 14.0) * 0.35 if bateu else 0.0
+				draw_line(sino + Vector2(-16, -12), sino + Vector2(16, -12), Color("3a3150"), 3.0)
+				draw_set_transform(sino + Vector2(0, -12), balanca, Vector2.ONE)
+				draw_colored_polygon(PackedVector2Array([Vector2(-6, 0), Vector2(6, 0), Vector2(14, 22), Vector2(-14, 22)]), Color("ff7a22") if not bateu else Color("ffb13d"))
+				draw_circle(Vector2(0, 24), 4, Color("ffd23f"))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				var p := f + Vector2(-34, 24)
+				_faisca(p)
+				if ciclo > 0.15 and not bateu:
+					var t := (ciclo - 0.15) / 0.6
+					var bola := (p + Vector2(14, -8)).lerp(sino + Vector2(0, 8), t) + Vector2(0, -sin(t * PI) * 24)
+					draw_circle(bola, 7, Color.WHITE)
+					draw_arc(bola, 7, 0, TAU, 16, Color("9fb4d2"), 2.0)
+				elif bateu:
+					for i in 5:
+						var a := TAU * i / 5.0 + tempo
+						draw_line(sino + Vector2(cos(a), sin(a)) * 22, sino + Vector2(cos(a), sin(a)) * 30, Color("ffd23f"), 3.0)
 			"golpe":
 				var bate := fmod(tempo * 2.5, 1.0) < 0.35
 				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)
@@ -520,6 +554,19 @@ class DesenhoDica extends Control:
 					for i in 4:
 						var a := -0.8 + i * 0.5
 						draw_line(f + Vector2(14, 16), f + Vector2(14, 16) + Vector2(cos(a + PI), sin(a + PI)) * 14, Color("ffd23f"), 3.0)
+
+	## O gelo: chão azul riscado, e o Faísca escorrega para o lado, deixando os risquinhos (continua indo depois de soltar).
+	func _dica_do_gelo(f: Vector2, tempo: float) -> void:
+		var ciclo := fmod(tempo, 2.0)
+		draw_rect(Rect2(f + Vector2(-70, 44), Vector2(140, 12)), Color("d8f1ff"))
+		draw_rect(Rect2(f + Vector2(-70, 44), Vector2(140, 12)), Color("2b2140"), false, 3.0)
+		for i in 3:
+			draw_line(f + Vector2(-60 + i * 44, 50), f + Vector2(-40 + i * 44, 48), Color.WHITE, 2.0)
+		var x := -50.0 + 100.0 * (1.0 - pow(1.0 - clampf(ciclo / 1.6, 0.0, 1.0), 2.0))
+		var p := f + Vector2(x, 18)
+		_faisca(p)
+		for i in 3:
+			draw_line(p + Vector2(-20 - i * 10, 22 - i * 6), p + Vector2(-34 - i * 10, 22 - i * 6), Color("8fd0ff"), 2.5)
 
 	## Bolota em miniatura: bolinha roxa de um olho, com a antena de bolinha vermelha.
 	func _bolota(p: Vector2) -> void:

@@ -93,6 +93,13 @@ const TEMPO_BALAO := 3.5
 const ALCANCE_IOIO := 14.0
 const VELOCIDADE_IOIO := 18.0
 const TEMPO_MAX_IOIO := 1.6
+## Gelo (3-1 Pico Gelado, 2026-10-30): pisando em chão de gelo (Gelo.marcar), ele acelera e freia com esta força em
+## vez da `aceleracao`, então demora a parar e a virar, e escorrega.
+const ACELERACAO_GELO := 1.8
+## Luva de Neve, o poder da 3-1 (pega no iglu grande da Vila do Iglu; vale até sair da fase): cada golpe joga uma
+## bola de neve que vai sozinha até o sino ou a Bolota mais perto na frente, até ALCANCE_LUVA (ver BolaDaLuva).
+const ALCANCE_LUVA := 30.0
+const ANGULO_LUVA := 1.05
 
 var robo: Robo
 var visual: Node3D
@@ -135,6 +142,9 @@ var no_balao := false
 ## Tem o Ioiô (2-3) e está sendo puxado por ele agora.
 var ioio := false
 var no_ioio := false
+## Tem a Luva de Neve (3-1) e está em pé no gelo agora.
+var luva_de_neve := false
+var no_gelo := false
 
 var _coiote := 0.0
 var _memoria_pulo := 0.0
@@ -358,7 +368,7 @@ func _physics_process(delta: float) -> void:
 	elif giro_forte > 0.0:
 		andar = dir * 0.55
 
-	var acel := aceleracao if no_chao else aceleracao * controle_no_ar
+	var acel := (ACELERACAO_GELO if no_gelo else aceleracao) if no_chao else aceleracao * controle_no_ar
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).lerp(andar * velocidade, 1.0 - exp(-acel * delta))
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
@@ -424,6 +434,7 @@ func _physics_process(delta: float) -> void:
 		flutuando = true
 		velocity.y = -2.5
 	move_and_slide()
+	no_gelo = _pisando_no_gelo()
 	# O chão de depois do movimento: logo depois de teleportar, o de antes ainda é o velho.
 	if pouso_suave and is_on_floor():
 		pouso_suave = false
@@ -439,7 +450,7 @@ func _physics_process(delta: float) -> void:
 	_tempo_no_ar = _tempo_no_ar + delta if no_ar else 0.0
 	_estava_no_ar = no_ar
 	if dir.length() > 0.1 and golpe_atual < 0 and girando <= 0.0 and giro_forte <= 0.0 and agarrada == null and _carga <= 0.0:
-		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-12.0 * delta))
+		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-(4.0 if no_gelo else 12.0) * delta))
 	if global_position.y < limite_queda and not _no_curto:
 		_caiu()
 	if _invencivel > 0.0:
@@ -509,6 +520,32 @@ func curar() -> bool:
 	robo.expressao("coracao", 1.0)
 	Sfx.play(self, "coracao")
 	return true
+
+
+## A bola de neve grande (BolaDeNeve) esbarrou nele: sai empurrado com `vel`, sem perder coração.
+func empurrar(vel: Vector3) -> void:
+	if _no_curto or not controle_ligado:
+		return
+	_estourar_balao()
+	velocity = vel
+	_pulou = true
+	_cortou_pulo = true
+	_coiote = 0.0
+	golpe_atual = -1
+	robo.expressao("surpreso", 0.7)
+	_tremer(0.3, 0.4, 0.12)
+
+
+## Em pé num chão de gelo (Gelo.marcar põe a marca "gelo" no corpo).
+func _pisando_no_gelo() -> bool:
+	if not is_on_floor():
+		return false
+	for k in get_slide_collision_count():
+		var col := get_slide_collision(k)
+		var quem := col.get_collider()
+		if col.get_normal().y > 0.6 and quem is Node and (quem as Node).has_meta("gelo"):
+			return true
+	return false
 
 
 ## Mola: joga para o alto. Soltar o botão não corta esse pulo, e dá para flutuar na descida.
@@ -692,6 +729,7 @@ func tirar_poderes() -> void:
 	_soltar_ioio()
 	balao_de_chiclete = false
 	ioio = false
+	luva_de_neve = false
 
 
 # --- Ioiô (2-3) ----------------------------------------------------------------------
@@ -782,6 +820,8 @@ func _golpear(no_chao: bool, dir: Vector3) -> void:
 			velocity.y = maxf(velocity.y, 3.0)
 			robo.expressao("bravo", 0.6)
 			Sfx.play(self, "faisca_giro", 0.0, 0.08)
+			if luva_de_neve:
+				jogar_bola_de_neve()
 		return
 	if golpe_atual >= 0 and _golpe_tempo < GOLPES[golpe_atual].duracao * 0.6:
 		_golpe_guardado = true
@@ -808,6 +848,38 @@ func _iniciar_golpe(i: int, dir: Vector3) -> void:
 	robo.animar_desde(g.anim, g.inicio, 0.05, g.ritmo)
 	robo.expressao("bravo", g.duracao + 0.4)
 	Sfx.play(self, "faisca_soco_forte" if i == GOLPES.size() - 1 else "faisca_soco", 0.0, 0.1)
+	if luva_de_neve:
+		jogar_bola_de_neve()
+
+
+## Com a Luva de Neve: joga uma bola de neve da mão. Ela vai sozinha até o sino ainda quieto ou a Bolota mais perto,
+## até ALCANCE_LUVA e mais ou menos na frente (ANGULO_LUVA para cada lado, só contando o giro em volta), sem parede no
+## meio; sem nenhum, ela vai reto para a frente e se desfaz. Devolve o alvo (ou nulo).
+func jogar_bola_de_neve() -> Node3D:
+	var mao := global_position + Vector3.UP * 1.5 + _frente() * 0.6
+	var espaco := get_world_3d().direct_space_state
+	var melhor: Node3D = null
+	var menor := ALCANCE_LUVA
+	var candidatos: Array = get_tree().get_nodes_in_group(Sino.GRUPO).filter(func(s: Sino) -> bool: return not s.tocado)
+	candidatos.append_array(get_tree().get_nodes_in_group(Alvo.GRUPO).filter(func(a: Node) -> bool: return a is Bolota and not a.derrotado))
+	for c: Node3D in candidatos:
+		var ponto: Vector3 = BolaDaLuva.ponto_de(c)
+		var d := ponto - mao
+		var plano := Vector3(d.x, 0, d.z)
+		if d.length() > menor or (plano.length() > 0.5 and _frente().angle_to(plano.normalized()) > ANGULO_LUVA):
+			continue
+		var batida := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(mao, ponto, 1, [get_rid()]))
+		if not batida.is_empty() and (batida.position as Vector3).distance_to(ponto) > 1.5:
+			continue
+		menor = d.length()
+		melhor = c
+	var bola := BolaDaLuva.new()
+	bola.alvo = melhor
+	bola.vel = _frente() * BolaDaLuva.VELOCIDADE * 0.7 + Vector3.UP * 4.0
+	get_parent().add_child(bola)
+	bola.global_position = mao
+	Sfx.play(self, "faisca_arremesso", -4.0, 0.1)
+	return melhor
 
 
 func _atualizar_golpes(delta: float, dir: Vector3) -> void:

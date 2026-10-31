@@ -10,6 +10,8 @@ const FORA := 3.0
 var raio := 1.6
 ## Bolha de sabão (a pia da 2-1) em vez de nuvem: a mesma coisa, só o desenho muda.
 var bolha := false
+## Pingente de gelo lilás deitado (a parede do Pico Gelado, 3-1): a placa em cima e a ponta para baixo.
+var pingente := false
 var sumida := false
 var _visual: Node3D
 var _forma: CollisionShape3D
@@ -37,10 +39,39 @@ func _ready() -> void:
 		esfera.material_override = b
 		esfera.position.y = -raio * 0.5
 		_visual.add_child(esfera)
+	if pingente:
+		var gelo := StandardMaterial3D.new()
+		gelo.albedo_color = Color(0.82, 0.72, 1.0, 0.85)
+		gelo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		gelo.roughness = 0.1
+		gelo.rim_enabled = true
+		gelo.rim = 0.7
+		gelo.emission_enabled = true
+		gelo.emission = Color("c9a8ff")
+		gelo.emission_energy_multiplier = 0.25
+		var placa := MeshInstance3D.new()
+		var cil := CylinderMesh.new()
+		cil.top_radius = raio
+		cil.bottom_radius = raio * 0.92
+		cil.height = 0.6
+		placa.mesh = cil
+		placa.material_override = gelo
+		placa.position.y = -0.3
+		_visual.add_child(placa)
+		var ponta := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = raio * 0.85
+		cone.bottom_radius = 0.0
+		cone.height = 2.4
+		ponta.mesh = cone
+		ponta.material_override = gelo
+		ponta.position.y = -1.8
+		# A ponta fica embaixo da placa, onde ninguém pisa.
+		_visual.add_child(Fase.so_enfeite(ponta))
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color("d9c2ff")
 	m.roughness = 1.0
-	for bola in ([] if bolha else [[Vector3(0, -0.35, 0), Vector3(raio, 0.5, raio)], [Vector3(raio * 0.5, -0.2, raio * 0.3), Vector3(raio * 0.6, 0.55, raio * 0.6)],
+	for bola in ([] if bolha or pingente else [[Vector3(0, -0.35, 0), Vector3(raio, 0.5, raio)], [Vector3(raio * 0.5, -0.2, raio * 0.3), Vector3(raio * 0.6, 0.55, raio * 0.6)],
 			[Vector3(-raio * 0.45, -0.25, -raio * 0.35), Vector3(raio * 0.65, 0.5, raio * 0.6)], [Vector3(-raio * 0.2, -0.3, raio * 0.5), Vector3(raio * 0.5, 0.45, raio * 0.5)]]):
 		var mi := MeshInstance3D.new()
 		mi.mesh = Forma.superelipsoide(bola[1], 1.0, 1.0)

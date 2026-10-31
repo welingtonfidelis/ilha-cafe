@@ -4,13 +4,15 @@ extends StaticBody3D
 ## para o alto, como na mola (a `forca` é a mesma conta: 16 dá uns 4,9 m), e ela amassa e volta. Segurando o pulo
 ## na descida, ele flutua como sempre. Com `some`, a nuvem é lilás (a cor do "cuidado, some") e some logo depois
 ## de jogar o Faísca para cima, voltando três segundos depois: não dá para quicar duas vezes nela. O nó fica no
-## meio da parte de cima, onde ele pisa.
+## meio da parte de cima, onde ele pisa. Com `neve` (3-1 Pico Gelado, 2026-10-30), é um monte de neve fofa: branco, com
+## o aro laranja de "isto faz alguma coisa" na beira, para não confundir com a neve firme.
 
 const FORA := 3.0
 
 var raio := 2.2
 var forca := 16.0
 var some := false
+var neve := false
 var sumida := false
 var area: AreaDeMola
 var _visual: Node3D
@@ -23,13 +25,29 @@ func _ready() -> void:
 	_visual = Node3D.new()
 	add_child(_visual)
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color("c4a6ff") if some else Color("ff8cc6")
+	m.albedo_color = Color("c4a6ff") if some else (Color("f8fbff") if neve else Color("ff8cc6"))
 	m.roughness = 1.0
 	m.rim_enabled = true
 	m.rim = 0.3
-	for bola in [[Vector3(0, -0.4, 0), Vector3(raio, 0.55, raio)], [Vector3(raio * 0.55, -0.25, raio * 0.25), Vector3(raio * 0.6, 0.6, raio * 0.6)],
+	if neve:
+		var aro := MeshInstance3D.new()
+		var toro := TorusMesh.new()
+		toro.inner_radius = raio - 0.18
+		toro.outer_radius = raio + 0.12
+		toro.rings = 32
+		aro.mesh = toro
+		var laranja := StandardMaterial3D.new()
+		laranja.albedo_color = Color("ff7a22")
+		laranja.roughness = 0.5
+		aro.material_override = laranja
+		aro.position.y = -0.55
+		_visual.add_child(aro)
+	var bolas := [[Vector3(0, -0.4, 0), Vector3(raio, 0.55, raio)], [Vector3(raio * 0.55, -0.25, raio * 0.25), Vector3(raio * 0.6, 0.6, raio * 0.6)],
 			[Vector3(-raio * 0.5, -0.3, -raio * 0.3), Vector3(raio * 0.62, 0.55, raio * 0.62)], [Vector3(-raio * 0.15, -0.3, raio * 0.5), Vector3(raio * 0.5, 0.5, raio * 0.5)],
-			[Vector3(raio * 0.2, -0.3, -raio * 0.55), Vector3(raio * 0.48, 0.5, raio * 0.48)]]:
+			[Vector3(raio * 0.2, -0.3, -raio * 0.55), Vector3(raio * 0.48, 0.5, raio * 0.48)]]
+	if neve:
+		bolas = [[Vector3(0, -0.45, 0), Vector3(raio * 0.95, 0.5, raio * 0.95)]]
+	for bola in bolas:
 		var mi := MeshInstance3D.new()
 		mi.mesh = Forma.superelipsoide(bola[1], 1.0, 1.0)
 		mi.material_override = m

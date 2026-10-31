@@ -384,6 +384,22 @@ def make_faisca():
     sfx("faisca_danca", mix(4.1, *parts), -7)
 
 
+def make_neve():
+    """Sons da 3-1 Pico Gelado (2026-10-30): o sino que a bola de neve toca e o gelo que racha (o cubo do pinguim
+    derretendo, a cachoeira congelando, a porta do cume)."""
+    random.seed(31)
+    # Sino: parciais fora da série harmônica (o "dlém" de sino), cada uma caindo num tempo, e a batida do badalo.
+    f = midi(79)
+    parts = [(envelope(osc(f * r, f * r, 1.6, "sine"), 0.002, d), 0, g) for r, d, g in
+             [(1.0, 0.9, 0.9), (2.0, 0.6, 0.45), (2.76, 0.4, 0.35), (5.4, 0.2, 0.2), (8.93, 0.1, 0.12)]]
+    parts.append((envelope(highpass(noise(0.02), 3000), 0.001, 0.008), 0, 0.3))
+    sfx("sino", mix(1.6, *parts), -6)
+    # Gelo: estalos agudos espalhados e um brilho de cristal descendo.
+    crack = [x if random.random() < 0.12 else 0.0 for x in highpass(noise(0.45), 2500)]
+    tinkle = [(envelope(osc(midi(m), midi(m), 0.3, "sine"), 0.002, 0.1), i * 0.05, 0.35) for i, m in enumerate([100, 96, 93, 88])]
+    sfx("gelo", mix(0.55, (envelope(crack, 0.002, 0.18), 0, 0.8), *tinkle), -8)
+
+
 # --- música -----------------------------------------------------------------
 
 def make_music():
@@ -446,3 +462,4 @@ if __name__ == "__main__":
     make_sfx()
     make_music()
     make_faisca()
+    make_neve()

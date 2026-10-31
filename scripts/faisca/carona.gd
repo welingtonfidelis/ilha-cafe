@@ -10,6 +10,8 @@ extends AnimatableBody3D
 ## teleférico, pendurada no cabo, com grade dos lados e aberta na frente e atrás. Na 2-3 (2026-10-30) vieram o "trem"
 ## (vagão chato com a locomotiva na frente), o "aviao" (avião de papel) e o "carrinho" (carrinho de corda); com
 ## `caminho` (uma lista de pontos), ela segue a linha por eles em vez da reta de `de` até `ate`, virando nas curvas.
+## Na 3-1 (2026-10-30) vieram o "treno" (trenó vermelho puxado por dois pinguins) e a "cadeirinha" (a cadeirinha de
+## esqui azul, pendurada no cabo, com encosto atrás e grade dos lados).
 
 signal saiu
 signal chegou
@@ -24,6 +26,8 @@ var tipo := "nuvem"
 var caminho: Array = []
 ## em_de, indo, em_ate, voltando
 var estado := "em_de"
+## Travada, ela não sai do lugar (a cadeirinha da 3-1 espera os três sinos da Vila do Iglu).
+var travada := false
 var _andado := 0.0
 var _dentro := 0.0
 var _vazio := 0.0
@@ -55,6 +59,10 @@ func _ready() -> void:
 			_montar_aviao()
 		"carrinho":
 			_montar_carrinho()
+		"treno":
+			_montar_treno()
+		"cadeirinha":
+			_montar_cadeirinha()
 		_:
 			_montar_nuvem()
 	_area = Area3D.new()
@@ -209,6 +217,74 @@ func _montar_carrinho() -> void:
 	_caixa(Vector3(1.4, 0.25, 0.25), Vector3(0, 1.2, -2.4), _material(Color("ffc93a")), false)
 
 
+## Trenó vermelho com esquis amarelos e grade baixa dos lados, puxado por dois pinguins nas quinas da frente (+Z).
+func _montar_treno() -> void:
+	var vermelho := _material(Color("e94f4f"))
+	var amarelo := _material(Color("ffc93a"))
+	_caixa(Vector3(3.2, 0.4, 4.4), Vector3(0, -0.2, 0), vermelho, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.2, 0.6, 4.4), Vector3(lado * 1.5, 0.3, 0), vermelho, true)
+		_caixa(Vector3(0.25, 0.2, 5.2), Vector3(lado * 1.3, -0.75, 0.3), amarelo, false)
+		_caixa(Vector3(0.25, 0.6, 0.2), Vector3(lado * 1.3, -0.45, 2.2), amarelo, false)
+		_caixa(Vector3(0.15, 0.55, 0.15), Vector3(lado * 1.3, -0.45, -1.6), amarelo, false)
+	_caixa(Vector3(3.2, 1.2, 0.3), Vector3(0, 0.6, -2.05), vermelho, true)
+	var azul := _material(Color("1d2340"))
+	var branco := _material(Color("f4fbff"))
+	var laranja := _material(Color("ff8a2a"))
+	# Os pinguins puxam pelas quinas da frente, um de cada lado, e a frente fica aberta para descer andando (com eles
+	# no meio, sólidos, o trenó virava uma caixa fechada: grade dos lados, encosto atrás e pinguins na frente).
+	for lado in [-1.0, 1.0]:
+		var x: float = lado * 2.1
+		var corpo := MeshInstance3D.new()
+		var esfera := SphereMesh.new()
+		esfera.radius = 0.5
+		esfera.height = 1.3
+		corpo.mesh = esfera
+		corpo.material_override = azul
+		corpo.position = Vector3(x, 0.15, 3.0)
+		add_child(corpo)
+		var barriga := MeshInstance3D.new()
+		var b := SphereMesh.new()
+		b.radius = 0.38
+		b.height = 1.0
+		barriga.mesh = b
+		barriga.material_override = branco
+		barriga.position = Vector3(x, 0.1, 3.25)
+		add_child(barriga)
+		var bico := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.0
+		cone.bottom_radius = 0.1
+		cone.height = 0.3
+		bico.mesh = cone
+		bico.material_override = laranja
+		bico.rotation.x = PI / 2.0
+		bico.position = Vector3(x, 0.6, 3.45)
+		add_child(bico)
+		_caixa(Vector3(0.06, 0.06, 1.0), Vector3(lado * 1.75, 0.1, 2.3), _material(Color("3a3150")), false)
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = Vector3(1.0, 1.4, 1.1)
+		cs.shape = forma
+		cs.position = Vector3(x, 0.2, 3.05)
+		add_child(cs)
+
+
+## Cadeirinha de esqui azul: assento com grade dos lados, encosto atrás e a haste até o cabo.
+func _montar_cadeirinha() -> void:
+	var azul := _material(Color("3f8fe0"))
+	var ferro := _material(Color("3a3150"))
+	ferro.metallic = 0.5
+	_caixa(Vector3(3.4, 0.3, 3.2), Vector3(0, -0.15, 0), azul, true)
+	_caixa(Vector3(3.4, 1.6, 0.3), Vector3(0, 0.8, -1.45), azul, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.7, 3.2), Vector3(lado * 1.62, 0.35, 0), azul, true)
+		_caixa(Vector3(0.12, 4.6, 0.12), Vector3(lado * 1.62, 2.6, -1.45), ferro, false)
+	_caixa(Vector3(3.4, 0.15, 0.15), Vector3(0, 4.9, -1.45), ferro, true)
+	_caixa(Vector3(0.12, 2.4, 0.12), Vector3(0, 6.1, -1.45), ferro, false)
+	_caixa(Vector3(1.0, 0.35, 0.5), Vector3(0, 7.4, -1.45), ferro, false)
+
+
 func _caixa(tamanho: Vector3, pos: Vector3, material: Material, solida: bool) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var malha := BoxMesh.new()
@@ -252,7 +328,7 @@ func _physics_process(delta: float) -> void:
 		"em_de", "em_ate":
 			_dentro = _dentro + delta if dentro and _liberada else 0.0
 			_vazio = 0.0 if dentro else _vazio + delta
-			if _dentro > 0.4 or (estado == "em_ate" and _vazio > ESPERA_VAZIA):
+			if not travada and (_dentro > 0.4 or (estado == "em_ate" and _vazio > ESPERA_VAZIA)):
 				estado = "indo" if estado == "em_de" else "voltando"
 				_dentro = 0.0
 				saiu.emit()

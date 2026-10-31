@@ -26,7 +26,8 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/fase_2_2.gd", "imagem": "res://assets/faisca/portas/fase_2_2.jpg"},
 	{"id": "2-3", "nome": "Quarto de Brinquedos", "tipo": "chao", "pede": 120, "andar": 1, "lado": 0,
 		"cena": "res://scripts/faisca/fases/fase_2_3.gd", "imagem": "res://assets/faisca/portas/fase_2_3.jpg"},
-	{"id": "3-1", "nome": "Pico Gelado", "tipo": "ceu", "pede": 150, "andar": 2, "lado": 0, "cena": "", "imagem": ""},
+	{"id": "3-1", "nome": "Pico Gelado", "tipo": "ceu", "pede": 150, "andar": 2, "lado": 0,
+		"cena": "res://scripts/faisca/fases/fase_3_1.gd", "imagem": "res://assets/faisca/portas/fase_3_1.jpg"},
 	{"id": "3-2", "nome": "Fábrica de Blocos", "tipo": "chao", "pede": 180, "andar": 2, "lado": 90, "cena": "", "imagem": ""},
 	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180, "cena": "", "imagem": ""},
 	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270, "cena": "", "imagem": ""},
@@ -481,7 +482,7 @@ func sair_da_fase() -> void:
 	nivel = null
 	_montar_hub(fase_atual)
 	lugar = "hub"
-	# O poder da fase (o Balão de Chiclete da 2-2, o Ioiô da 2-3) fica lá dentro.
+	# O poder da fase (o Balão de Chiclete da 2-2, o Ioiô da 2-3, a Luva de Neve da 3-1) fica lá dentro.
 	faisca.tirar_poderes()
 	faisca.vida = Jogador.VIDA_MAX
 	hud.mostrar_vida(faisca.vida)

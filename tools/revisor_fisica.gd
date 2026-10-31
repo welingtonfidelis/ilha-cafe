@@ -25,7 +25,7 @@ extends SceneTree
 ## Sem nomes, revisa o farol, todas as fases do Faísca e a ilha. Sai com código 1 se achar algo SEM FÍSICA.
 ## Com `--ver <nome>` (o começo do nome de uma peça), lista também os pontos descobertos de cada peça com esse nome.
 
-const NIVEIS := ["farol", "1-1", "1-2", "2-1", "2-2", "2-3", "ilha"]
+const NIVEIS := ["farol", "1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "ilha"]
 const ATRAVESSAVEIS := ["bush", "grass", "flower"]
 const PERTO := 14.0
 const FOLGA := 0.35
@@ -174,6 +174,8 @@ func _criar(id: String) -> Node3D:
 			return Fase22.new()
 		"2-3":
 			return Fase23.new()
+		"3-1":
+			return Fase31.new()
 		"ilha":
 			return load("res://scenes/ilha.tscn").instantiate()
 	return null
