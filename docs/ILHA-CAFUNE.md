@@ -758,7 +758,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 | 2 | 4 Nuvens de Algodão-Doce (pronta em 2026-10-30) | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), pirulitos do Halloween Bits, Platformer | nuvens que quicam e o Balão de Chiclete | 90 |
 | 2 | 5 Quarto de Brinquedos (pronta em 2026-10-30) | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que tombam com um soco e o Ioiô | 120 |
 | 3 Frio e Vento | 6 Pico Gelado (feita em 2026-10-30) | céu | Holiday Bits (bonecos e bolas de neve, sino, pinheiro), blocos de neve feitos por código | gelo que escorrega, bolas de neve e a Luva de Neve | 150 |
-| 3 | 7 Fábrica de Blocos | chão | Block Bits, esteiras e botões do Platformer | esteiras e blocos que aparecem e somem | 180 |
+| 3 | 7 Fábrica de Blocos (feita em 2026-10-31) | chão | Block Bits (blocos, caixotes), esteiras, alavancas e arcos do Platformer | esteiras, blocos-pisca e o Martelinho de Apito | 180 |
 | 3 | 8 Moinhos do Vento | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que empurra quem flutua | 210 |
 | Topo | 9 Nave Aspiratrão | céu | Space Base Bits, cristais roxos do Resource Bits | o Rei Bolotão | todas as Estrelas Grandes |
 
@@ -1266,6 +1266,7 @@ Toda fase do Faísca segue este padrão. O documento ilustrado está em `docs/le
 - `maquete-2-2-nuvens-de-algodao-doce.html`, uma fase de céu (https://claude.ai/artifact/7VWLwjDfRYUUySyx7ppCog);
 - `maquete-2-3-quarto-de-brinquedos.html`, uma fase de chão (https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V).
 - `maquete-3-1-pico-gelado.html`, a primeira já no tamanho maior, com cinco playgrounds (https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4).
+- `maquete-3-2-fabrica-de-blocos.html`, fase de chão com esteiras, blocos-pisca e o Martelinho de Apito (https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh); aprovada pelo usuário em 2026-10-31 ("continua, ficou bom") e construída no mesmo dia.
 
 As páginas carregam a three.js do jsDelivr, então precisam de internet. A pasta tem `.gdignore`.
 
@@ -1295,7 +1296,7 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
   - estrelinhas como migalhas;
   - bolsos em cima, embaixo e atrás das coisas;
   - Bolotas em espaço aberto.
-- **Poucos movimentos:** pular, flutuar, socar, mais os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo. A variedade vem das peças de cada fase e de **um poder por fase**, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete na 2-2, Ioiô na 2-3, Luva de Neve na 3-1). A 1-1, a 1-2 e a 2-1 não têm poder.
+- **Poucos movimentos:** pular, flutuar, socar, mais os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo. A variedade vem das peças de cada fase e de **um poder por fase**, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete na 2-2, Ioiô na 2-3, Luva de Neve na 3-1, Martelinho de Apito na 3-2). A 1-1, a 1-2 e a 2-1 não têm poder.
 - **Nada ambíguo:**
   - sombra redonda de pouso sempre embaixo do Faísca;
   - degrau de até 1,6 m no caminho (2 m nos bolsos);
@@ -1673,11 +1674,109 @@ O usuário pediu a maquete antes de construir ("Sim, a maquete"). Ela está em `
   - se dá para entender que a bola de neve sai do golpe;
   - se o quarto sino atrás do iglu é achável.
 
+### Fase 3-2: Fábrica de Blocos (feita em 2026-10-31)
+
+A maquete veio antes (`docs/level-design/maquete-3-2-fabrica-de-blocos.html`, artifact privado https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh). O usuário aprovou com "continua, ficou bom" e pediu, no meio da construção, "não esquece do cuidado com os itens e física de colisão": o que tem cara de chão ou de obstáculo é sólido, e a fase passou no revisor de física.
+
+É a segunda fase do andar Frio e Vento: a porta pede 180 estrelinhas, é fase de chão, tem cinco playgrounds e cada saída tem uma tarefa. O código fica em `scripts/faisca/fases/fase_3_2.gd`.
+
+- **História:** uma fábrica de brinquedos que faz blocos. As Bolotas desligaram tudo e penduraram a Estrela Grande no gancho do guindaste, no alto da Máquina de Blocos. Cada playground liga de volta uma parte da fábrica.
+- **Peças:** em `assets/faisca/fabrica/`, do Block Bits (os modelos têm 2 m): blocos coloridos, decorados e listrados, caixote, metal, estrutura de metal, cano, pilha e computador. Os `.bin` e a textura vieram do Git LFS da coleção em 2026-10-31. Do Platformer: as esteiras, as alavancas, os arcos e a estrela do gancho.
+- **Feito por código:** o galpão (chão de placas, paredes com janelões), a Máquina de Blocos, as máquinas do playground 2, a impressora, a bancada da oficina, a caixa de ferramentas, a estante, a passarela, o andar da pintura, as latas de tinta e a ponte de blocos.
+- **Fase de chão:** o chão da fábrica é a rede de segurança. Quem cai de uma máquina só desce, sem perder coração, e um monta-carga laranja (`Carona` "montacarga") leva de volta.
+  - Cada monta-carga só anda depois que o posto daquele andar acendeu. Antes disso ele fica travado, para o chão não virar atalho que pula a tarefa (escadas de caixotes, como na 2-3, deixariam subir antes da hora).
+  - A exceção é a tinta rosa do andar da pintura, que conta como cair, como a lava do quarto.
+- **Marco:** a Máquina de Blocos no meio do galpão.
+  - A parte de baixo tem 34 × 34 m e vai até o anel, a 26 m, com corrimão. Tem colunas de blocos coloridos nos cantos e a engrenagem grande na frente.
+  - A parte de cima tem 20 × 20 m e vai até o topo, a 44 m, com corrimão. Na parede oeste, no anel, fica a salinha do segredo.
+  - No topo, o guindaste segura uma Estrela Grande no gancho, à vista de toda a fábrica. Ela some quando o baú abre e a de verdade sobe.
+- **Novidades:**
+  - **as esteiras** (`Esteira`, a mesma da 1-1): na entrada ficam rentes ao chão, em buracos do piso, e levam os blocos. Na 3-2 elas têm uma faixa escura embaixo das setas (`faixa_escura`): no galpão claro, as setas brancas sumiam;
+  - **a esteira expressa:** seis esteiras em linha, inclinadas, do chão da entrada até a máquina A (8 m). Antes da tarefa ela desce a 9 m/s, mais rápido do que o Faísca corre (6,5), e quem tenta subir volta para a entrada. Com a tarefa, `Esteira.mudar` a faz subir a 4 m/s;
+  - **os blocos-pisca** (`BlocoPisca`): lilases, de 3 × 1 × 3 m, em dois grupos que se revezam no tique-taque da fábrica:
+    - cada grupo fica 3 s e some 1,8 s, e os dois ficam juntos por 0,6 s em cada troca;
+    - antes de sumir, o bloco pisca nos últimos 0,7 s;
+    - o contorno lilás fica sempre, mostrando onde ele aparece;
+    - quem manda no relógio é a fase (`definir`, com o `_tempo` dela), e o som `tique` toca a cada troca quando o Faísca está perto;
+  - **os pinos** (`Pino`): pinos laranja de 1,6 m que só afundam com a pancada do martelinho. Pular em cima, socar e o laser não fazem nada. Quando o Faísca tem o martelinho, eles pulsam;
+  - **os pistões** (`Pistao`): uma placa laranja numa coluna, que sobe quando o pino dela é batido. Um contorno laranja mostra até onde. Com `vai_e_volta`, ficam subindo e descendo, como elevador.
+- **Poder da fase, o Martelinho de Apito** (`Jogador.martelinho`):
+  - fica em cima da caixa de ferramentas da oficina (sobe-se por uma escada de caixotes) e vale até sair da fase;
+  - no ar, o golpe vira pancada: o Faísca para um instante, desce reto a 26 m/s e, no chão, afunda o pino embaixo (ou bem do lado, até 2,2 m) e acerta as Bolotas até 2,4 m em volta;
+  - nova regra de Bolota, o capacete (`BolotaMonstro`, tipo "capacete"): o soco, o giro, o pisão e o laser batem no capacete de obra branco e o Faísca volta. Só a pancada (e a Bolota arremessada) derruba;
+  - o dado que tomba ignora a pancada;
+  - não tem botão novo.
+- **Dicas novas do Vovô:** `esteira` e `tinta` (sem botão, só o desenho), `pisca` (A, os dois blocos se revezando) e `martelo` (X, a pancada no pino).
+- **Sons novos:** `martelo` (a pancada e o "piu-piu" do apito), `tique` e `pistao`, de `make_fabrica()` no `tools/gerar_sons.py`. Só essa função rodou.
+- **Os playgrounds:**
+  1. **Esteiras da Entrada** (no chão, ao sul):
+     - tarefa: três blocos de brinquedo (o `DadoQueTomba` com os blocos do Block Bits, de 2,6 m) ficam a duas tombadas a leste das esteiras. O soco tomba o bloco até a esteira; em cima dela ele fica preso e vai até a recebedora, que acende uma luz. Com as três, a esteira expressa passa a subir. Bloco empurrado para longe volta para casa num puf;
+     - mini-marco: a torre de blocos decorados;
+     - bolsos: a escada de caixotes até a prateleira do coração, e a esteira atrás da torre, que entrega o Faísca na porta do nicho com estrelinhas.
+  2. **Blocos-Pisca** (8 m, a oeste, P1):
+     - seis máquinas, com blocos-pisca entre algumas e vigas firmes entre outras (há mais de um caminho até a praça);
+     - tarefa: três alavancas, cada uma em cima de uma máquina, destravam a ponte rolante;
+     - mini-marco: a Impressora de Blocos, que bate o carimbo em cima de um bloco-pisca;
+     - bolso: o cano gigante que sai da parede, oco (colisão dos dois lados), com o V1 lá dentro, pelos blocos-pisca do fundo.
+  3. **Oficina do Martelinho** (14 m, ao norte, P2):
+     - a caixa de ferramentas com o martelinho, a gaveta com o coração e a escada de caixotes;
+     - tarefa: a empilhadeira espera em cima da estante, 6 m acima da bancada. Três pinos, cada um ligado por um cano a um pistão (1,2, 2,8 e 4,4 m), e os três pistões viram a escada até a estante;
+     - uma Bolota de capacete;
+     - bolso alto: o quarto pino, atrás da caixa, liga o pistão alto (8 m, sobe e desce), encostado na prateleira do V2.
+  4. **Andar da Pintura** (20 m, a leste, P3):
+     - o chão é tinta; firmes, só a faixa da entrada e a da saída;
+     - três latas de tinta gigantes de ilha, uma esteira que leva da entrada à primeira lata, blocos-pisca e a esteira larga que empurra para o lado, para a tinta;
+     - tarefa: o pino de cada lata sobe um vão da ponte de blocos;
+     - bolso: a lata tombada, oca, com o coração, por uma esteira e dois blocos-pisca.
+  5. **Subida da Máquina** (do anel a 26 m até o topo a 44 m, P4):
+     - a ponte de blocos sobe em degraus de 1,5 m até o anel;
+     - a subida vai pela parede da parte de cima, no sentido do relógio: saliências de metal, a esteira que sobe pela parede sul, dois blocos-pisca na parede oeste e os pistões;
+     - tarefa: o pino de cada canto liga o pistão logo adiante. O último é o pistão grande, que depois da pancada fica subindo e descendo: embaixo, na altura do canto; em cima, acima do corrimão do topo;
+     - quem cai da parede cai no anel, sem perder coração;
+     - segredo: o painel rachado (a `ParedeRachada`) na parede oeste, no anel, com a luz verde-limão perto. Três golpes abrem a salinha com o V3.
+  - **Arena no topo** (44 m): o baú, um alien, um porco e uma Bolota de capacete, dentro do corrimão.
+- **Viagens:**
+  - a esteira expressa, da entrada à máquina A;
+  - o palete laranja da ponte rolante (`Carona` "palete", pendurado; os trilhos e a viga ficam a 30 m), da máquina F à oficina;
+  - a empilhadeira (`Carona` "empilhadeira"; o Faísca vai no palete do garfo), pela passarela alta com corrimão, da estante da oficina ao andar da pintura, e de volta. A passarela é firme: dá para ir andando também;
+  - a ponte de blocos até o anel.
+- **Mudanças da maquete:**
+  - a viagem 1 é a própria esteira expressa, sem o caixote;
+  - os vãos da ponte de blocos sobem do chão em pistões, em vez de virem de esteiras do lado. As torres dessas esteiras virariam uma escada para o anel sem a tarefa;
+  - as escadas de caixotes de volta viraram monta-cargas que esperam o posto;
+  - a estante da empilhadeira ficou maior (12 m), para a empilhadeira caber de um lado e sobrar onde pousar vindo dos pistões;
+  - o pistão grande do fim virou elevador. Com o pino fora dele, ele subia antes de o Faísca subir nele.
+- **Tropeços da construção:**
+  - degrau de 0,2 m para cima já segura o Faísca andando: a prateleira do V2 ficou na altura do topo do pistão alto;
+  - esteira que termina com vão deixa o Faísca parado na beirada: o chão seguinte começa onde ela acaba;
+  - um degrau de 1,6 m com 1,4 m de vão não se alcança pulando do meio da placa de um pistão: as saliências ficaram a no máximo 0,6 m da placa.
+- **Números:** 123 estrelinhas soltas (168 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 3 blocos de empurrar, 3 alavancas, 10 pinos, 7 pistões, 16 blocos-pisca, 23 esteiras e 5 caronas (a ponte rolante, a empilhadeira e 3 monta-cargas).
+- **Testes e fotos:**
+  - `--faisca-fase-3-2` confere 69 pontos com socos, pancadas, pulos e viagens de verdade, da entrada até o baú. Entre eles:
+    - a expressa que desce antes da tarefa;
+    - os blocos tombados até a esteira e as luzes;
+    - o bloco-pisca que some debaixo do Faísca e a travessia no tempo dos blocos;
+    - o monta-carga travado antes do posto;
+    - o pino que não afunda sem o martelinho e a pancada do lado do pino;
+    - a Bolota de capacete;
+    - a tinta que tira coração;
+    - a esteira larga que empurra para o lado;
+    - a queda da parede no anel;
+  - `--faisca-fase-3-2-captura` tira 18 fotos em `tools/capturas/faisca/fase_3_2/`, com a da porta (`porta.png`, sem o HUD);
+  - `--faisca-jogar-3-2` abre a fase direto;
+  - a foto da porta no farol, `assets/faisca/portas/fase_3_2.jpg`, é a da entrada com a máquina e o guindaste atrás;
+  - no revisor de física, a 3-2 sai com 0 sem física; só o baú fica "em parte". Na primeira rodada ele pegou as cordas do palete e a borda do cano, que viraram enfeite (fininhas, de atravessar).
+- **Luz:** galpão de dia, com o sol entrando por cima. Nas primeiras fotos o chão e as máquinas ficavam quase brancos, e as esteiras sumiam: a luz ambiente baixou, o chão e as paredes escureceram um pouco, e a cena ganhou saturação e contraste.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se a criança entende que a expressa só sobe depois das três luzes;
+  - se o tempo dos blocos-pisca está bom (3 s aceso, 0,6 s com os dois juntos);
+  - se a pancada do martelinho fica clara, e se acertar o pino de cima é fácil.
+
 ### Revisor de física (pedido do usuário em 2026-10-30)
 
 O pedido: "consegue criar um revisor ou script que teste os itens que deveriam ter física sólida mas não têm? exemplo: doces na fase de algodão doce".
 
-- **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3, a 3-1 (desde que ela ficou pronta) e a ilha em poucos segundos.
+- **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3, a 3-1, a 3-2 (cada uma desde que ficou pronta) e a ilha em poucos segundos.
   - Com nomes depois do `--` (`-- 2-2 ilha`), revisa só esses.
   - Com `--ver <começo do nome>`, lista os pontos descobertos de cada peça com esse nome (para achar a peça no código).
   - Sai com código 1 se sobrar algo SEM FÍSICA. Entra na bateria de testes junto com os outros.

@@ -317,6 +317,9 @@ class BotaoA extends Control:
 ##   quicar: a nuvem rosa amassa e joga para cima; balao: o balão de chiclete enche, sobe e estoura (2-2).
 ##   dado: o soco tomba o dado; ioio: X no ar perto da argola laranja puxa o Faísca até ela (2-3).
 ##   gelo: o analógico empurra e o Faísca escorrega no gelo azul; luva: X joga a bola de neve até o sino laranja (3-1).
+##   esteira: a faixa com as setas andando leva o Faísca; pisca: os blocos lilases se revezam e ele pula de um para o
+##   outro; martelo: X no ar, ele desce reto com o martelinho e o pino laranja afunda; tinta: pular de lata em lata, sem
+##   encostar na tinta rosa (3-2).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -324,7 +327,7 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva"]
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo"]
 		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
 		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
 		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
@@ -341,6 +344,10 @@ class DesenhoDica extends Control:
 			draw_circle(pino, 18, Color("2b2140"))
 			draw_circle(pino, 14, Color("8a84a0"))
 			_dica_do_gelo(Vector2(170, size.y * 0.5), tempo)
+			return
+		if qual in ["esteira", "tinta"]:
+			# Sem botão: só o desenho, no meio do balão.
+			_dica_sem_botao(Vector2(120, size.y * 0.5), tempo)
 			return
 		draw_circle(b + Vector2(0, 4), raio, cores[letra][0])
 		draw_circle(b, raio, cores[letra][1])
@@ -541,6 +548,38 @@ class DesenhoDica extends Control:
 					for i in 5:
 						var a := TAU * i / 5.0 + tempo
 						draw_line(sino + Vector2(cos(a), sin(a)) * 22, sino + Vector2(cos(a), sin(a)) * 30, Color("ffd23f"), 3.0)
+			"pisca":
+				# Os dois blocos lilases se revezam (o da esquerda pisca antes de sumir) e o Faísca pula para o outro.
+				var ciclo := fmod(tempo, 2.4)
+				var esq := ciclo < 1.5 and (ciclo < 1.1 or int(tempo * 10.0) % 2 == 0)
+				var dir := ciclo > 0.9
+				for spec in [[Vector2(-40, 30), esq], [Vector2(40, 30), dir]]:
+					var r := Rect2(f + spec[0] - Vector2(22, 0), Vector2(44, 18))
+					if spec[1]:
+						draw_rect(r, Color("c9a7ff"))
+					draw_rect(r, Color("7d55d0"), false, 3.0)
+				var t := clampf((ciclo - 0.9) / 0.5, 0.0, 1.0)
+				_faisca(f + Vector2(-40 + 80 * t, 10 - sin(t * PI) * 28))
+			"martelo":
+				# X no ar: o Faísca desce reto com o martelinho e o pino laranja afunda.
+				var ciclo := fmod(tempo, 1.6)
+				var desce := clampf((ciclo - 0.35) / 0.25, 0.0, 1.0)
+				var bateu := ciclo > 0.6
+				var pino_alto := 8.0 if bateu else 30.0
+				draw_line(f + Vector2(-50, 52), f + Vector2(50, 52), Color("2b2140"), 4.0)
+				draw_rect(Rect2(f + Vector2(-12, 52 - pino_alto), Vector2(24, pino_alto)), Color("ff7a22"))
+				draw_rect(Rect2(f + Vector2(-15, 48 - pino_alto), Vector2(30, 6)), Color("fff6ec"))
+				var p := f + Vector2(0, lerpf(-34.0, 28.0 - pino_alto, desce))
+				_faisca(p)
+				var mao := p + Vector2(18, -4)
+				var ponta := mao + Vector2(0, -26).rotated(-1.2 + desce * 1.9)
+				draw_line(mao, ponta, Color("ffd23f"), 4.0)
+				draw_circle(ponta, 9, Color("e94f4f"))
+				if bateu:
+					for i in 5:
+						var a := -PI + i * PI / 4.0
+						var c := f + Vector2(0, 46)
+						draw_line(c + Vector2(cos(a), sin(a)) * 30, c + Vector2(cos(a), sin(a)) * 40, Color("ffd23f"), 3.0)
 			"golpe":
 				var bate := fmod(tempo * 2.5, 1.0) < 0.35
 				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)
@@ -554,6 +593,24 @@ class DesenhoDica extends Control:
 					for i in 4:
 						var a := -0.8 + i * 0.5
 						draw_line(f + Vector2(14, 16), f + Vector2(14, 16) + Vector2(cos(a + PI), sin(a + PI)) * 14, Color("ffd23f"), 3.0)
+
+	## Dicas sem botão da 3-2: a esteira (as setas andam e levam o Faísca) e a tinta (pular de lata em lata).
+	func _dica_sem_botao(f: Vector2, tempo: float) -> void:
+		if qual == "esteira":
+			var faixa := Rect2(f + Vector2(-90, 34), Vector2(180, 16))
+			draw_rect(faixa, Color("36405a"))
+			draw_rect(faixa, Color("2b2140"), false, 3.0)
+			for i in 6:
+				var c := f + Vector2(fposmod(i * 30.0 + tempo * 40.0, 180.0) - 90.0, 42)
+				draw_polyline(PackedVector2Array([c + Vector2(-5, -6), c + Vector2(4, 0), c + Vector2(-5, 6)]), Color.WHITE, 3.0)
+			_faisca(f + Vector2(-60 + fmod(tempo, 2.0) * 60.0, 12))
+			return
+		draw_rect(Rect2(f + Vector2(-100, 40), Vector2(200, 18)), Color("ff5fae"))
+		for x in [-70.0, 70.0]:
+			draw_rect(Rect2(f + Vector2(x - 22, 22), Vector2(44, 30)), Color("f4f6fb"))
+			draw_rect(Rect2(f + Vector2(x - 22, 22), Vector2(44, 30)), Color("2b2140"), false, 3.0)
+		var ciclo := fmod(tempo, 1.6) / 1.6
+		_faisca(f + Vector2(-70 + 140 * ciclo, 2 - sin(ciclo * PI) * 40))
 
 	## O gelo: chão azul riscado, e o Faísca escorrega para o lado, deixando os risquinhos (continua indo depois de soltar).
 	func _dica_do_gelo(f: Vector2, tempo: float) -> void:

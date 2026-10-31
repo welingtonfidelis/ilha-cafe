@@ -400,6 +400,24 @@ def make_neve():
     sfx("gelo", mix(0.55, (envelope(crack, 0.002, 0.18), 0, 0.8), *tinkle), -8)
 
 
+def make_fabrica():
+    """Sons da 3-2 Fábrica de Blocos (2026-10-31): o martelinho de apito, o tique-taque dos blocos-pisca e o pistão."""
+    random.seed(32)
+    # Martelinho de apito: a pancada surda embaixo e o "piu-piu" do apito de plástico (dois chiados agudos que sobem).
+    thud = envelope(osc(150, 48, 0.22, "sine"), 0.001, 0.07)
+    knock = envelope(lowpass(noise(0.08), 1800), 0.001, 0.025)
+    piu = [(envelope(osc(1900, 2700, 0.09, "tri", vibrato=0.04, vib_rate=40), 0.004, 0.05, 0.4, 0.02), t, 0.3) for t in (0.02, 0.13)]
+    sfx("martelo", mix(0.34, (thud, 0, 1.0), (knock, 0, 0.5), *piu), -4)
+    # Tique: o clique seco de relógio de fábrica (madeira e metal), curtinho.
+    clic = envelope(highpass(noise(0.03), 2000), 0.0005, 0.008)
+    tok = envelope(osc(1250, 1180, 0.05, "sine"), 0.001, 0.015)
+    sfx("tique", mix(0.06, (clic, 0, 0.8), (tok, 0, 0.6)), -12)
+    # Pistão: o chiado do ar subindo e o "tchunc" do fim.
+    chiado = sweep_lowpass(envelope(highpass(noise(0.7), 900), 0.03, 0.5, 0.3, 0.15), 2500, 6000)
+    tchunc = envelope(osc(220, 90, 0.15, "square"), 0.001, 0.05)
+    sfx("pistao", mix(0.85, (chiado, 0, 0.45), (lowpass(tchunc, 1200), 0.62, 0.9)), -6)
+
+
 # --- música -----------------------------------------------------------------
 
 def make_music():
@@ -463,3 +481,4 @@ if __name__ == "__main__":
     make_music()
     make_faisca()
     make_neve()
+    make_fabrica()

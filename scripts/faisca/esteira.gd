@@ -12,6 +12,8 @@ const ALTURA := 1.0
 
 var velocidade := 3.0
 var cor := "blue"
+## Faixa escura por baixo das setas (a 3-2, num galpão claro, onde as setas brancas sumiam na esteira clara).
+var faixa_escura := false
 var _setas: StandardMaterial3D
 
 
@@ -41,6 +43,24 @@ func _ready() -> void:
 	faixa.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	faixa.position.y = ALTURA + 0.02
 	add_child(faixa)
+	if faixa_escura:
+		var fundo := MeshInstance3D.new()
+		var pf := PlaneMesh.new()
+		pf.size = plano.size
+		fundo.mesh = pf
+		var escuro := StandardMaterial3D.new()
+		escuro.albedo_color = Color("3a4560")
+		escuro.roughness = 0.8
+		fundo.material_override = escuro
+		fundo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		fundo.position.y = ALTURA + 0.012
+		add_child(fundo)
+
+
+## Muda a velocidade (negativa leva para o outro lado): a esteira expressa da 3-2 desce até a tarefa e depois sobe.
+func mudar(v: float) -> void:
+	velocidade = v
+	constant_linear_velocity = global_basis.z * velocidade
 
 
 func _process(delta: float) -> void:

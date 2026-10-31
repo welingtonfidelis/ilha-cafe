@@ -21,11 +21,11 @@ extends SceneTree
 ## - enfeite de propósito, com o meta "enfeite" nele ou num pai (`Fase.so_enfeite` põe): a copa das árvores,
 ##   o teto do farol, bandeirinhas no alto.
 ## Árvores (o nome começa com "tree") só precisam do tronco sólido: o revisor confere uma coluna no meio delas.
-## Uso: godot --headless --path . -s res://tools/revisor_fisica.gd [-- farol 1-1 1-2 2-1 2-2 2-3 ilha]
+## Uso: godot --headless --path . -s res://tools/revisor_fisica.gd [-- farol 1-1 1-2 2-1 2-2 2-3 3-1 3-2 ilha]
 ## Sem nomes, revisa o farol, todas as fases do Faísca e a ilha. Sai com código 1 se achar algo SEM FÍSICA.
 ## Com `--ver <nome>` (o começo do nome de uma peça), lista também os pontos descobertos de cada peça com esse nome.
 
-const NIVEIS := ["farol", "1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "ilha"]
+const NIVEIS := ["farol", "1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "ilha"]
 const ATRAVESSAVEIS := ["bush", "grass", "flower"]
 const PERTO := 14.0
 const FOLGA := 0.35
@@ -176,6 +176,8 @@ func _criar(id: String) -> Node3D:
 			return Fase23.new()
 		"3-1":
 			return Fase31.new()
+		"3-2":
+			return Fase32.new()
 		"ilha":
 			return load("res://scenes/ilha.tscn").instantiate()
 	return null

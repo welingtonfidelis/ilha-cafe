@@ -11,7 +11,9 @@ extends AnimatableBody3D
 ## (vagão chato com a locomotiva na frente), o "aviao" (avião de papel) e o "carrinho" (carrinho de corda); com
 ## `caminho` (uma lista de pontos), ela segue a linha por eles em vez da reta de `de` até `ate`, virando nas curvas.
 ## Na 3-1 (2026-10-30) vieram o "treno" (trenó vermelho puxado por dois pinguins) e a "cadeirinha" (a cadeirinha de
-## esqui azul, pendurada no cabo, com encosto atrás e grade dos lados).
+## esqui azul, pendurada no cabo, com encosto atrás e grade dos lados). Na 3-2 (2026-10-31) vieram o "palete" (o
+## palete laranja pendurado no gancho da ponte rolante), a "empilhadeira" (o Faísca vai no palete do garfo) e o
+## "montacarga" (o elevador laranja que leva de volta quem caiu no chão da fábrica, que sobe reto e usa `giro_fixo`).
 
 signal saiu
 signal chegou
@@ -28,6 +30,8 @@ var caminho: Array = []
 var estado := "em_de"
 ## Travada, ela não sai do lugar (a cadeirinha da 3-1 espera os três sinos da Vila do Iglu).
 var travada := false
+## Para onde ela fica virada (radianos); sem ele, vira para o lado em que anda. O monta-carga, que sobe reto, usa.
+var giro_fixo := NAN
 var _andado := 0.0
 var _dentro := 0.0
 var _vazio := 0.0
@@ -49,7 +53,7 @@ func _ready() -> void:
 		de = caminho[0]
 		ate = caminho[caminho.size() - 1]
 		dir = caminho[1] - caminho[0]
-	rotation.y = atan2(dir.x, dir.z)
+	rotation.y = giro_fixo if not is_nan(giro_fixo) else atan2(dir.x, dir.z)
 	match tipo:
 		"cabine":
 			_montar_cabine()
@@ -63,6 +67,12 @@ func _ready() -> void:
 			_montar_treno()
 		"cadeirinha":
 			_montar_cadeirinha()
+		"palete":
+			_montar_palete()
+		"empilhadeira":
+			_montar_empilhadeira()
+		"montacarga":
+			_montar_montacarga()
 		_:
 			_montar_nuvem()
 	_area = Area3D.new()
@@ -283,6 +293,71 @@ func _montar_cadeirinha() -> void:
 	_caixa(Vector3(3.4, 0.15, 0.15), Vector3(0, 4.9, -1.45), ferro, true)
 	_caixa(Vector3(0.12, 2.4, 0.12), Vector3(0, 6.1, -1.45), ferro, false)
 	_caixa(Vector3(1.0, 0.35, 0.5), Vector3(0, 7.4, -1.45), ferro, false)
+
+
+## Palete laranja pendurado no gancho da ponte rolante: chão com grade baixa dos lados, aberto na frente e atrás, e as
+## quatro cordas até o gancho (a viga que corre nos trilhos lá no alto é da fase).
+func _montar_palete() -> void:
+	var laranja := _material(Color("ff7a22"))
+	var escuro := _material(Color("2b2140"))
+	_caixa(Vector3(4.0, 0.4, 4.0), Vector3(0, -0.2, 0), laranja, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.2, 0.7, 4.0), Vector3(lado * 1.9, 0.35, 0), laranja, true)
+	var gancho := Vector3(0, 4.6, 0)
+	for c in [Vector3(-1.8, 0.1, -1.8), Vector3(1.8, 0.1, -1.8), Vector3(1.8, 0.1, 1.8), Vector3(-1.8, 0.1, 1.8)]:
+		_corda(c, gancho, escuro)
+	_caixa(Vector3(0.8, 0.6, 0.8), gancho + Vector3.UP * 0.3, escuro, false)
+
+
+## Empilhadeira laranja: o Faísca vai no palete do garfo, na frente (o nó fica no meio do palete, em cima); atrás dele
+## ficam o mastro e o corpo com a cabine. Grade baixa dos lados do palete; a frente fica aberta para descer andando.
+func _montar_empilhadeira() -> void:
+	var laranja := _material(Color("ff7a22"))
+	var madeira := _material(Color("c49a6c"))
+	var ferro := _material(Color("4a5068"))
+	var escuro := _material(Color("2b2140"))
+	_caixa(Vector3(3.2, 0.35, 3.2), Vector3(0, -0.175, 0), madeira, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.6, 3.2), Vector3(lado * 1.52, 0.3, 0), madeira, true)
+	_caixa(Vector3(2.8, 4.4, 0.3), Vector3(0, 1.8, -1.8), ferro, true)
+	_caixa(Vector3(3.0, 1.8, 3.6), Vector3(0, 0.6, -3.9), laranja, true)
+	_caixa(Vector3(3.0, 0.25, 2.6), Vector3(0, 3.7, -4.2), escuro, true)
+	for lado in [-1.0, 1.0]:
+		for z in [-3.0, -5.4]:
+			_caixa(Vector3(0.15, 2.2, 0.15), Vector3(lado * 1.35, 2.5, z), escuro, false)
+		for z in [-2.6, -5.0]:
+			var roda := MeshInstance3D.new()
+			var cil := CylinderMesh.new()
+			cil.top_radius = 0.5
+			cil.bottom_radius = 0.5
+			cil.height = 0.4
+			roda.mesh = cil
+			roda.material_override = escuro
+			roda.rotation.z = PI / 2.0
+			roda.position = Vector3(lado * 1.6, 0.1, z)
+			add_child(roda)
+
+
+## Monta-carga laranja: plataforma com grade baixa dos lados, aberta na frente e atrás (o poço com as colunas é da fase).
+func _montar_montacarga() -> void:
+	var laranja := _material(Color("ff7a22"))
+	_caixa(Vector3(3.4, 0.4, 3.4), Vector3(0, -0.2, 0), laranja, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.7, 3.4), Vector3(lado * 1.62, 0.35, 0), laranja, true)
+
+
+## Corda fininha (sem colisão, enfeite que se atravessa) de `de` até `ate`.
+func _corda(de: Vector3, ate: Vector3, material: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = 0.04
+	cil.bottom_radius = 0.04
+	cil.height = de.distance_to(ate)
+	mi.mesh = cil
+	mi.material_override = material
+	mi.position = (de + ate) * 0.5
+	mi.basis = Basis(Quaternion(Vector3.UP, (ate - de).normalized()))
+	add_child(Fase.so_enfeite(mi))
 
 
 func _caixa(tamanho: Vector3, pos: Vector3, material: Material, solida: bool) -> MeshInstance3D:

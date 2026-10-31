@@ -3,7 +3,7 @@ extends AnimatableBody3D
 ## Dado grande de brinquedo, a novidade da 2-3 Quarto de Brinquedos (2026-10-30): um soco (ou o giro) tomba o dado
 ## para o lado do golpe, um lado inteiro de cada vez, girando em volta da aresta de baixo. Ele vira degrau (1,8 m: dá
 ## para subir nele com um pulo, e dele subir mais 1,6 m). Fica no grupo dos alvos dos golpes, como o baú; o pisão e o
-## laser não tombam.
+## laser não tombam (nem a pancada do martelinho, da 3-2).
 ## - Com alguma coisa no caminho (parede, móvel, Bolota), ele só balança.
 ## - Tombando para fora de uma beirada, ele cai; se cair mais de 1 m abaixo de onde começou (da mesa para o chão,
 ##   por exemplo), some num puf e volta para a `casa`, para a tarefa nunca ficar impossível.
@@ -17,6 +17,9 @@ const TEMPO := 0.35
 var lado := 1.8
 ## Modelo do dado ("D6_A", "D6_A_red"...), na pasta do quarto.
 var modelo := "D6_A"
+## Pasta e lado do modelo: os dados do quarto têm 0,76 m; os blocos da 3-2 (Block Bits, na pasta da fábrica), 2 m.
+var pasta := Fase.QUARTO
+var lado_modelo := 0.76
 var casa := Vector3.ZERO
 var travado := false
 var tombando := false
@@ -40,8 +43,8 @@ func _ready() -> void:
 	casa = position
 	_visual = Node3D.new()
 	add_child(_visual)
-	var m: Node3D = load(Fase.QUARTO + modelo + ".gltf").instantiate()
-	m.scale = Vector3.ONE * lado / 0.76
+	var m: Node3D = load(pasta + modelo + ".gltf").instantiate()
+	m.scale = Vector3.ONE * lado / lado_modelo
 	_visual.add_child(m)
 	var cs := CollisionShape3D.new()
 	var caixa := BoxShape3D.new()
@@ -51,7 +54,7 @@ func _ready() -> void:
 
 
 func receber_golpe(_dano: int, de: Vector3, _forca := 6.0, tipo := "") -> bool:
-	if tombando or _caindo or travado or tipo == "laser" or tipo == "pisao":
+	if tombando or _caindo or travado or tipo in ["laser", "pisao", "pancada"]:
 		return false
 	var d := global_position - de
 	d.y = 0.0

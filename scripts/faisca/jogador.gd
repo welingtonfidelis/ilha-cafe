@@ -100,6 +100,12 @@ const ACELERACAO_GELO := 1.8
 ## bola de neve que vai sozinha até o sino ou a Bolota mais perto na frente, até ALCANCE_LUVA (ver BolaDaLuva).
 const ALCANCE_LUVA := 30.0
 const ANGULO_LUVA := 1.05
+## Martelinho de Apito, o poder da 3-2 (pego na caixa de ferramentas da Oficina; vale até sair da fase): no ar, o golpe
+## vira pancada. O Faísca para um instante no ar, desce reto a VELOCIDADE_PANCADA e, no chão, afunda o pino laranja
+## embaixo (ou bem do lado) e acerta as Bolotas até RAIO_PANCADA em volta (a de capacete só cai com ela).
+const VELOCIDADE_PANCADA := 26.0
+const ESPERA_PANCADA := 0.14
+const RAIO_PANCADA := 2.4
 
 var robo: Robo
 var visual: Node3D
@@ -145,6 +151,11 @@ var no_ioio := false
 ## Tem a Luva de Neve (3-1) e está em pé no gelo agora.
 var luva_de_neve := false
 var no_gelo := false
+## Tem o Martelinho de Apito (3-2) e está descendo na pancada agora.
+var martelinho := false
+var martelando := false
+var _pancada_espera := 0.0
+var _martelo: Node3D
 
 var _coiote := 0.0
 var _memoria_pulo := 0.0
@@ -222,6 +233,7 @@ func _ready() -> void:
 	_montar_sombra()
 	_montar_balao()
 	_montar_ioio()
+	_montar_martelo()
 	_som_laser = AudioStreamPlayer.new()
 	var zumbido := Sfx.stream("faisca_laser").duplicate() as AudioStreamWAV
 	zumbido.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -433,13 +445,21 @@ func _physics_process(delta: float) -> void:
 	if pouso_suave:
 		flutuando = true
 		velocity.y = -2.5
+	# A pancada do martelinho: um instante parado no ar e depois reto para baixo.
+	if martelando:
+		flutuando = false
+		velocity = Vector3.ZERO if _pancada_espera > 0.0 else Vector3(0, -VELOCIDADE_PANCADA, 0)
+		_pancada_espera -= delta
 	move_and_slide()
 	no_gelo = _pisando_no_gelo()
 	# O chão de depois do movimento: logo depois de teleportar, o de antes ainda é o velho.
 	if pouso_suave and is_on_floor():
 		pouso_suave = false
 		flutuando = false
-	_pisao()
+	if martelando and is_on_floor():
+		_bater_pancada()
+	else:
+		_pisao()
 
 	var no_ar := not is_on_floor()
 	if _estava_no_ar and not no_ar:
@@ -471,6 +491,7 @@ func teleportar(pos: Vector3) -> void:
 	_parar_danca()
 	_estourar_balao(false)
 	_soltar_ioio()
+	_parar_pancada()
 	global_position = pos
 	velocity = Vector3.ZERO
 	_memoria_pulo = 0.0
@@ -598,6 +619,7 @@ func _dar_curto() -> void:
 	velocity = Vector3.ZERO
 	golpe_atual = -1
 	girando = 0.0
+	_parar_pancada()
 	robo.expressao("tonto", 1.8)
 	Sfx.play(self, "faisca_curto")
 	_fumacinha()
@@ -644,6 +666,7 @@ func voltar_ao_inicio() -> void:
 	_parar_danca()
 	_estourar_balao(false)
 	_soltar_ioio()
+	_parar_pancada()
 	global_position = ponto_retorno
 	velocity = Vector3.ZERO
 	visual.rotation.y = PI
@@ -730,6 +753,87 @@ func tirar_poderes() -> void:
 	balao_de_chiclete = false
 	ioio = false
 	luva_de_neve = false
+	martelinho = false
+	_parar_pancada()
+
+
+# --- Martelinho de Apito (3-2) --------------------------------------------------------
+
+## O martelinho na mão (cabo amarelo, cabeça vermelha com a sanfona do apito), escondido até a pancada.
+func _montar_martelo() -> void:
+	_martelo = Node3D.new()
+	_martelo.position = Vector3(0.45, 1.35, 0.15)
+	_martelo.visible = false
+	visual.add_child(_martelo)
+	var amarelo := StandardMaterial3D.new()
+	amarelo.albedo_color = Color("ffd23f")
+	var vermelho := StandardMaterial3D.new()
+	vermelho.albedo_color = Color("e94f4f")
+	var cabo := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = 0.07
+	c.bottom_radius = 0.08
+	c.height = 1.1
+	cabo.mesh = c
+	cabo.material_override = amarelo
+	cabo.position.y = 0.55
+	_martelo.add_child(cabo)
+	for spec in [[0.0, 0.62, vermelho, 0.26], [0.0, 0.2, amarelo, 0.29]]:
+		var mi := MeshInstance3D.new()
+		var cil := CylinderMesh.new()
+		cil.top_radius = spec[3]
+		cil.bottom_radius = spec[3]
+		cil.height = spec[1]
+		mi.mesh = cil
+		mi.material_override = spec[2]
+		mi.rotation.z = PI / 2.0
+		mi.position.y = 1.15
+		_martelo.add_child(mi)
+
+
+func _iniciar_pancada() -> void:
+	martelando = true
+	_pancada_espera = ESPERA_PANCADA
+	girando = 0.0
+	_giro_usado = true
+	_martelo.show()
+	_martelo.rotation.x = -1.6
+	var tw := _martelo.create_tween()
+	tw.tween_property(_martelo, "rotation:x", 0.5, ESPERA_PANCADA + 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	robo.expressao("bravo", 0.8)
+	Sfx.play(self, "faisca_giro", -3.0, 0.08)
+
+
+## A pancada chegou no chão: afunda o pino embaixo (ou bem do lado), acerta as Bolotas em volta e quica um pouquinho.
+func _bater_pancada() -> void:
+	martelando = false
+	var pe := global_position
+	for no in get_tree().get_nodes_in_group(Pino.GRUPO):
+		var p := no as Pino
+		var longe := Vector2(p.global_position.x - pe.x, p.global_position.z - pe.z).length()
+		var acima := p.topo() - pe.y
+		if longe < Pino.RAIO + 1.1 and acima > -0.6 and acima < 2.0:
+			p.bater()
+	for alvo in get_tree().get_nodes_in_group(Alvo.GRUPO):
+		if alvo.derrotado:
+			continue
+		var d: Vector3 = alvo.global_position - pe
+		if absf(d.y) > 1.6 or Vector2(d.x, d.z).length() > RAIO_PANCADA + float(alvo.raio_golpe):
+			continue
+		alvo.receber_golpe(3, pe, 7.0, "pancada")
+	Fx.dust(get_parent(), pe)
+	Sfx.play(self, "martelo", 0.0, 0.05)
+	_tremer(0.5, 0.8, 0.2)
+	velocity.y = 5.0
+	var tw := _martelo.create_tween()
+	tw.tween_interval(0.25)
+	tw.tween_callback(_martelo.hide)
+
+
+func _parar_pancada() -> void:
+	martelando = false
+	if _martelo:
+		_martelo.hide()
 
 
 # --- Ioiô (2-3) ----------------------------------------------------------------------
@@ -813,6 +917,10 @@ func _soltar_ioio() -> void:
 
 func _golpear(no_chao: bool, dir: Vector3) -> void:
 	if not no_chao:
+		if martelinho:
+			if not martelando:
+				_iniciar_pancada()
+			return
 		if not _giro_usado and girando <= 0.0:
 			girando = TEMPO_GIRO
 			_giro_usado = true

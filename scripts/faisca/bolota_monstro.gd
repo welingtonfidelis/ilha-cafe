@@ -12,6 +12,8 @@ extends Bolota
 ##   investida  vê o Faísca, pula no lugar e dispara em linha reta; no fim da corrida fica tonto
 ##   fantasma   soco, giro e pisão atravessam; só o laser e Bolota arremessada acertam
 ##   voa        flutua no alto, longe do soco, e dá rasantes; no rasante dá para bater, e acertado ele cai tonto
+##   capacete   (3-2) usa capacete de obra: soco, giro, pisão e laser batem no capacete e o Faísca volta; só a pancada
+##              do Martelinho de Apito (e Bolota arremessada) derruba
 
 const PASTA := "res://assets/faisca/monstros/"
 const ALIEN := PASTA + "Alien.gltf"
@@ -28,6 +30,7 @@ const TIPOS := {
 	"fantasma": ["Ghost", "fantasma"],
 	"abelha": ["Bee", "voa"],
 	"morcego": ["Bat", "voa"],
+	"capacete": ["Alien", "capacete"],
 }
 ## Os monstros têm uns 2 m de altura; em 0,8x o corpo fica da largura da Bolota.
 const ESCALA := 0.8
@@ -50,6 +53,8 @@ const ALTURA_VOO := 2.3
 const COLEIRA_VOO := 9.0
 const TEMPO_RASANTE := 1.6
 const RASANTE_EMBAIXO := 1.0
+## Altura do capacete (a aba) acima do pé do monstro, já na escala.
+const ALTURA_CAPACETE := 1.35
 
 var tipo := "alien"
 var regra := "base"
@@ -64,6 +69,8 @@ var _correndo := 0.0
 var _dir := Vector3.ZERO
 var _rasante := 0.0
 var _espera_rasante := 1.5
+## O capacete de obra branco (regra "capacete").
+var _capacete: Node3D
 
 
 ## `qual` é um dos TIPOS ou o caminho de um .gltf (a regra fica "base").
@@ -105,11 +112,50 @@ func _montar_visual() -> void:
 				_mat_corpo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 				_mat_corpo.albedo_color.a = 0.8
 		mi.material_override = _mat_corpo
+	if regra == "capacete":
+		_montar_capacete()
 	anim = cena.find_children("*", "AnimationPlayer", true, false)[0]
 	for nome: String in EM_LACO:
 		if anim.has_animation(nome):
 			anim.get_animation(nome).loop_mode = Animation.LOOP_LINEAR
 	_animar("Idle")
+
+
+## Capacete de obra branco, com a aba e uma faixa laranja, em cima da cabeça.
+func _montar_capacete() -> void:
+	_capacete = Node3D.new()
+	_capacete.position.y = ALTURA_CAPACETE
+	_corpo.add_child(_capacete)
+	var branco := StandardMaterial3D.new()
+	branco.albedo_color = Color("f7f7fb")
+	branco.roughness = 0.35
+	var casco := MeshInstance3D.new()
+	var esfera := SphereMesh.new()
+	esfera.radius = 0.58
+	esfera.height = 1.16
+	esfera.is_hemisphere = true
+	casco.mesh = esfera
+	casco.material_override = branco
+	_capacete.add_child(casco)
+	var aba := MeshInstance3D.new()
+	var disco := CylinderMesh.new()
+	disco.top_radius = 0.78
+	disco.bottom_radius = 0.8
+	disco.height = 0.08
+	aba.mesh = disco
+	aba.material_override = branco
+	_capacete.add_child(aba)
+	var faixa := MeshInstance3D.new()
+	var anel := CylinderMesh.new()
+	anel.top_radius = 0.5
+	anel.bottom_radius = 0.59
+	anel.height = 0.14
+	faixa.mesh = anel
+	var laranja := StandardMaterial3D.new()
+	laranja.albedo_color = Color("ff7a22")
+	faixa.material_override = laranja
+	faixa.position.y = 0.1
+	_capacete.add_child(faixa)
 
 
 func _physics_process(delta: float) -> void:
@@ -156,6 +202,8 @@ func _bloqueia(tipo_golpe: String, de: Vector3) -> bool:
 			return tipo_golpe == "pisao"
 		"fantasma":
 			return tipo_golpe in ["soco", "giro", "pisao"]
+		"capacete":
+			return tipo_golpe in ["soco", "giro", "pisao", "laser"]
 		"garras":
 			if not tipo_golpe in ["soco", "giro"]:
 				return false
@@ -194,6 +242,17 @@ func _defender(tipo_golpe: String, _de: Vector3) -> void:
 			if jogador:
 				jogador.velocity = fora * 6.5 + Vector3.UP * 2.5
 				jogador.golpe_atual = -1
+		"capacete":
+			Sfx.play_at(get_parent(), "escudo", global_position, -2.0, 0.1)
+			if _capacete:
+				var tw := _capacete.create_tween()
+				tw.tween_property(_capacete, "rotation:z", 0.35, 0.06)
+				tw.tween_property(_capacete, "rotation:z", 0.0, 0.4).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+			if jogador and tipo_golpe in ["soco", "giro"]:
+				jogador.velocity = fora * 6.5 + Vector3.UP * 2.5
+				jogador.golpe_atual = -1
+			elif jogador and tipo_golpe == "pisao":
+				jogador.velocity = fora * 5.0 + Vector3.UP * 6.0
 		"fantasma":
 			Sfx.play_at(get_parent(), "golpe_ar", global_position, -4.0, 0.1)
 			var tw := create_tween()

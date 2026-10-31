@@ -24,6 +24,8 @@ const MASMORRA := "res://assets/faisca/masmorra/"
 const COZINHA := "res://assets/faisca/cozinha/"
 ## Peças do quarto (Furniture Bits, Board Game Bits e o trenzinho do Holiday Bits), para a 2-3 Quarto de Brinquedos.
 const QUARTO := "res://assets/faisca/quarto/"
+## Peças do Block Bits (blocos coloridos, caixote, metal, cano, pilha), para a 3-2 Fábrica de Blocos. Os modelos têm 2 m.
+const FABRICA := "res://assets/faisca/fabrica/"
 const CAMADA_JOGADOR := 1 << 1
 ## Camada do que o laser dos pés acende (flores de luz). O Faísca não esbarra nela. Na Ilha a camada 4
 ## é a dos pontos de impacto dos esqueletos e a 5 a dos moradores; esta é a 6.
@@ -97,6 +99,10 @@ var sinos: Array[Sino] = []
 var cubos_de_gelo: Array[CuboDeGelo] = []
 var bolas_de_neve: Array[BolaDeNeve] = []
 var cachoeiras: Array[Cachoeira] = []
+## E as da 3-2: pinos que só afundam com o Martelinho de Apito, pistões que eles ligam e blocos-pisca.
+var pinos: Array[Pino] = []
+var pistoes: Array[Pistao] = []
+var blocos_pisca: Array[BlocoPisca] = []
 
 ## Padrão de playgrounds (aprovado pelo usuário em 2026-10-29; docs/level-design/molde-das-fases.html): os
 ## playgrounds na ordem ({nome, centro, raio, entrada}), o marco com o ponto do brilho dele (a coluna de luz que
@@ -479,10 +485,11 @@ func movel(tamanho: String, cor: String, topo: Vector3, caminho: Vector3, period
 ## Esteira rolante com `topo` no meio da faixa, levando para o +Z do `giro` (0 leva para +Z; PI, para -Z). A
 ## faixa fica 3 cm acima de `topo`: quem a esteira leva até a ponta desce um degrauzinho para a plataforma do
 ## lado (na mesma altura, a emenda segurava o Faísca parado ali).
-func esteira(topo: Vector3, giro: float, velocidade := 3.0, cor := "blue") -> Esteira:
+func esteira(topo: Vector3, giro: float, velocidade := 3.0, cor := "blue", faixa_escura := false) -> Esteira:
 	var e := Esteira.new()
 	e.velocidade = velocidade
 	e.cor = cor
+	e.faixa_escura = faixa_escura
 	e.position = topo - Vector3(0, Esteira.ALTURA - 0.03, 0)
 	e.rotation.y = giro
 	add_child(e)
@@ -741,6 +748,38 @@ func pingente(topo: Vector3, raio := 1.7) -> NuvemQueSome:
 	add_child(n)
 	nuvens_que_somem.append(n)
 	return n
+
+
+## Pino laranja de bater (só afunda com a pancada do martelinho), com o pé em `chao`.
+func pino(chao: Vector3) -> Pino:
+	var p := Pino.new()
+	p.position = chao
+	add_child(p)
+	pinos.append(p)
+	return p
+
+
+## Pistão com a placa de `lado` m em pé em `chao`, que sobe `sobe` m quando ligado (com `vai_e_volta`, fica subindo e
+## descendo depois de ligado).
+func pistao(chao: Vector3, sobe: float, lado := 3.0, vai_e_volta := false) -> Pistao:
+	var p := Pistao.new()
+	p.sobe = sobe
+	p.lado = lado
+	p.vai_e_volta = vai_e_volta
+	p.position = chao
+	add_child(p)
+	pistoes.append(p)
+	return p
+
+
+## Bloco-pisca lilás do grupo `grupo` (0 ou 1), com `topo` no meio da face de cima.
+func bloco_pisca(topo: Vector3, grupo := 0) -> BlocoPisca:
+	var b := BlocoPisca.new()
+	b.grupo = grupo
+	b.position = topo
+	add_child(b)
+	blocos_pisca.append(b)
+	return b
 
 
 ## Canhão em `pos` que lança o Faísca até `destino` (onde ele pousa).

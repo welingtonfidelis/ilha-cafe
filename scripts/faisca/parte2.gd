@@ -28,7 +28,8 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/fase_2_3.gd", "imagem": "res://assets/faisca/portas/fase_2_3.jpg"},
 	{"id": "3-1", "nome": "Pico Gelado", "tipo": "ceu", "pede": 150, "andar": 2, "lado": 0,
 		"cena": "res://scripts/faisca/fases/fase_3_1.gd", "imagem": "res://assets/faisca/portas/fase_3_1.jpg"},
-	{"id": "3-2", "nome": "Fábrica de Blocos", "tipo": "chao", "pede": 180, "andar": 2, "lado": 90, "cena": "", "imagem": ""},
+	{"id": "3-2", "nome": "Fábrica de Blocos", "tipo": "chao", "pede": 180, "andar": 2, "lado": 90,
+		"cena": "res://scripts/faisca/fases/fase_3_2.gd", "imagem": "res://assets/faisca/portas/fase_3_2.jpg"},
 	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180, "cena": "", "imagem": ""},
 	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270, "cena": "", "imagem": ""},
 ]
