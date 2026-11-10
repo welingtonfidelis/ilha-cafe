@@ -837,7 +837,7 @@ Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depoi
 | 2 | 5 Quarto de Brinquedos (pronta em 2026-10-30) | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que tombam com um soco e o Ioiô | 120 |
 | 3 Frio e Vento | 6 Pico Gelado (feita em 2026-10-30) | céu | Holiday Bits (bonecos e bolas de neve, sino, pinheiro), blocos de neve feitos por código | gelo que escorrega, bolas de neve e a Luva de Neve | 150 |
 | 3 | 7 Fábrica de Blocos (feita em 2026-10-31) | chão | Block Bits (blocos, caixotes), esteiras, alavancas e arcos do Platformer | esteiras, blocos-pisca e o Martelinho de Apito | 180 |
-| 3 | 8 Moinhos do Vento | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que empurra quem flutua | 210 |
+| 3 | 8 Moinhos do Vento (maquete em 2026-11-10) | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que leva quem flutua e a Pipa | 210 |
 | Topo | 9 Nave Aspiratrão | céu | Space Base Bits, cristais roxos do Resource Bits | o Rei Bolotão | todas as Estrelas Grandes |
 
 - Todos esses pacotes estão na Coleção Completa do KayKit v6.1. As prévias de cada pacote foram olhadas em 2026-10-28 (veja "Arte da coleção" abaixo); as peças de cada fase são conferidas quando ela for planejada.
@@ -1345,6 +1345,7 @@ Toda fase do Faísca segue este padrão. O documento ilustrado está em `docs/le
 - `maquete-2-3-quarto-de-brinquedos.html`, uma fase de chão (https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V).
 - `maquete-3-1-pico-gelado.html`, a primeira já no tamanho maior, com cinco playgrounds (https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4).
 - `maquete-3-2-fabrica-de-blocos.html`, fase de chão com esteiras, blocos-pisca e o Martelinho de Apito (https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh); aprovada pelo usuário em 2026-10-31 ("continua, ficou bom") e construída no mesmo dia.
+- `maquete-3-3-moinhos-do-vento.html`, fase de céu com faixas de vento e a Pipa (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd); feita em 2026-11-10, esperando aprovação.
 
 As páginas carregam a three.js do jsDelivr, então precisam de internet. A pasta tem `.gdignore`.
 
@@ -1899,6 +1900,29 @@ O pedido: "consegue criar um revisor ou script que teste os itens que deveriam t
   - as lanternas da festa na ilha.
   - Nenhum deles deixa o Faísca entrar inteiro numa peça.
 - **Testes:** depois das colisões novas, `--faisca-fase`, `--faisca-fase-1-2`, `--faisca-fase-2-1`, `--faisca-fase-2-2` e `--faisca-fase-2-3` passaram. A ilha foi regenerada (`tools/gerar_ilha.gd`), e a cena só mudou nas peças acima e nos `unique_id`.
+
+### Fase 3-3: Moinhos do Vento (maquete em 2026-11-10, esperando aprovação)
+
+Depois da separação dos jogos, o usuário pediu para seguir ("vamos seguir") nas próximas etapas. A primeira de peso era dar um final ao jogo do Faísca: a porta da nave pede 8 Estrelas Grandes e só havia 7 fases, então faltam a 3-3 e a fase da nave. A maquete da 3-3 veio antes, como nas anteriores: `docs/level-design/maquete-3-3-moinhos-do-vento.html`, também como artifact privado (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd).
+
+É a última fase do andar Frio e Vento: fase de céu, porta pedindo 210 estrelinhas, no tamanho maior (cinco playgrounds, cada saída com uma tarefa). Na maquete: uma rota de uns 730 m, 128 estrelinhas, 3 vaga-lumes, 16 Bolotas (com as 3 da arena), 3 corações e 4 viagens.
+
+- **Peças conferidas na coleção:** o moinho do Medieval Hexagon (`building_windmill_*`, em quatro cores) tem as pás numa peça separada (`building_windmill_top_fan_*`), que dá para girar, e os `.bin` já estão baixados. O pacote tem também nuvens (`cloud_big`, `cloud_small`), torres de vigia, celeiros de moinho d'água e pontes. Biruta, cata-vento, pipa, fardos, silos e balão saem por código.
+- **Marco:** o Moinho Gigante no meio, com a torre de pedra até 30 m e de madeira até 40 m, a sacada de baixo a 30 m, a sacada do topo a 40 m (a arena), o telhado vermelho até 54 m e as pás gigantes viradas para o sul, girando devagar. A Estrela Grande brilha em cima do telhado.
+- **Novidade, o vento:**
+  - **faixas de vento:** riscos brancos correndo para onde ele sopra, setas e birutas laranja nas pontas. No chão quase não empurra; flutuando dentro da faixa, o Faísca é levado e passa vãos de 14 a 18 m (o voo sozinho passa uns 11). Contra o vento, não dá;
+  - **vento de lado** (é preciso mirar contra) e **rajadas** que vão e vêm no corredor dos moinhos, avisadas pelas birutas e pelas folhas.
+- **Poder da fase, a Pipa:** fica no celeiro da fazenda. Com ela, flutuar em cima de uma **coluna de vento** (grade no chão com aro laranja e fitas subindo) leva o Faísca até uns 13 m; sem ela, a coluna só segura a queda. Sem botão novo.
+- **Os playgrounds:**
+  1. **Campina dos Cata-ventos** (y 0, ao sul, P0): um riacho raso de 13 m corta a ilha, e a faixa de vento leva de uma margem à outra (quem cai só se molha e sai pelos degraus). Tarefa: um soco em cada um dos três cata-ventos parados faz girar e abre o portão de feno. Mini-marco: o moinho pequeno amarelo. Bolsos: o celeirinho e os fardos até o coração.
+  2. **Ilhas do Vento** (y 10 a 16, a oeste, P1): ilhas separadas por vãos que só se passam no vento a favor; dois caminhos, um direto e outro pelas ilhotas com vento de lado. Tarefa: atravessar flutuando as três argolas-sino no meio das faixas. Mini-marco: a torre de vigia com a biruta grande. Bolso: a ilhota embaixo da ilha do meio, com o vaga-lume 1, por uma faixa que desce, e um fardo que quica de volta.
+  3. **Fazenda das Nuvens** (y 18, ao norte, P2): pasto de 60 m com celeiro (e a Pipa), silos, cercas e campo de trigo. Tarefa: com a pipa, a coluna de vento ao lado de cada silo leva ao cata-vento do alto (13 m), e um soco faz girar. Bolso alto: o telhado do celeiro, com o vaga-lume 2; coração no paiol. Fardos de feno apontam a saída.
+  4. **Corredor dos Moinhos** (y 22 a 33, a leste, P3): ilhas subindo, cada uma com um moinho médio cujas pás levam gôndolas niveladas, como roda-gigante, e rajadas de lado entre elas. Tarefa: os três moinhos estão travados; a coluna de vento (com a pipa) leva à janela do eixo, onde um soco solta o freio. Segredo: do alto da roda do terceiro moinho, a ilhota escondida com o vaga-lume 3.
+  5. **Subida do Moinho Gigante** (y 30 a 40, P4): da sacada de baixo, a escada de tábuas em espiral por fora da torre. Tarefa: um soco no ferrolho laranja de cada uma das três janelas abre a janela e solta uma coluna de vento até o degrau seguinte; com as três, o alçapão do topo abre. Quem cai da escada cai na sacada de baixo, sem perder coração. Segredo: a parede rachada da sacada de baixo, com o coração.
+  - **Arena:** a sacada do topo, com três Bolotas guardando o baú.
+- **Viagens:** o balão de ar quente (campina para as ilhas), uma nuvem soprada pelo vento (ilhas para a fazenda), o teleférico que vai e volta (fazenda para os moinhos) e a ponte de tábuas até a sacada de baixo do Moinho Gigante.
+- **Bolotas da turma:** abelhas e morcegos (que voam) nas ilhas e nos moinhos, o porco disparando pelo pasto, e cogumelos, pinguins, aliens e um ciclope.
+- **Depois da 3-3:** a fase da nave Aspiratrão, com o Rei Bolotão e o final da história, para o jogo do Faísca ter fim.
 
 ### Em aberto
 

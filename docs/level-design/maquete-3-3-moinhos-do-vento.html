@@ -1,0 +1,1034 @@
+<title>Rascunho da Fase 3-3</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: maquete 3D no topo, botões dos playgrounds logo abaixo e a ficha do escolhido (o mesmo das maquetes 2-2 e 2-3). */
+:root {
+  --bg: #eef4fa;
+  --card: #ffffff;
+  --ink: #1d2340;
+  --muted: #56607f;
+  --line: #d3dcec;
+  --orange: #f26b1d;
+  --cyan: #12a8c9;
+  --vento: #8fd36a;
+  --chip: #e2ebf7;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10141f; --card: #1a2030; --ink: #eaf1ff; --muted: #9eabc8; --line: #2e384f;
+    --orange: #ff8a45; --cyan: #7fe9ff; --vento: #a6e07f; --chip: #222b3e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10141f; --card: #1a2030; --ink: #eaf1ff; --muted: #9eabc8; --line: #2e384f;
+  --orange: #ff8a45; --cyan: #7fe9ff; --vento: #a6e07f; --chip: #222b3e; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1rem; line-height: 1.55; margin: 0; }
+.pagina {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+  display: grid; gap: 16px;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); font-weight: 800; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+.rotulo { font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.topo { display: grid; gap: 6px; }
+.topo p.lede { max-width: 74ch; color: var(--muted); }
+.numeros { display: flex; flex-wrap: wrap; gap: 8px; }
+.numeros span { font-family: var(--font-data); font-size: 0.8rem; background: var(--chip); border-radius: 999px; padding: 4px 10px; font-variant-numeric: tabular-nums; }
+
+.palco { position: relative; border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; background: #cfe6fa; }
+#cena { display: block; width: 100%; height: min(70vh, 640px); min-height: 360px; touch-action: none; }
+.dica-palco {
+  position: absolute; left: 10px; bottom: 10px;
+  font-size: 0.78rem; background: rgba(29, 35, 64, 0.78); color: #fff;
+  padding: 5px 10px; border-radius: 8px; pointer-events: none;
+}
+.legenda {
+  position: absolute; right: 10px; top: 10px;
+  background: rgba(255, 255, 255, 0.92); color: #1d2340;
+  border-radius: 10px; padding: 8px 10px; font-size: 0.78rem; line-height: 1.5;
+  display: grid; gap: 1px; max-width: 46%;
+}
+.legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.25); }
+.legenda .so-largo { display: block; }
+@media (max-width: 640px) { .legenda .so-largo { display: none; } .legenda { font-size: 0.72rem; } }
+
+.botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.botoes button, .alternar button {
+  font: 700 0.92rem var(--font-body);
+  border: 2px solid var(--ink); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer;
+}
+.botoes button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.botoes button.viagem { border-style: dashed; }
+.botoes button:focus-visible, .alternar button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.alternar { display: flex; flex-wrap: wrap; gap: 8px; }
+.alternar button { font-weight: 400; font-size: 0.85rem; border-width: 1px; }
+.alternar button[aria-pressed="true"] { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+
+.ficha { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.ficha .medida { font-family: var(--font-data); font-size: 0.8rem; color: var(--muted); }
+.ficha p { max-width: 74ch; }
+.ficha .grupo { display: grid; gap: 4px; }
+.ficha ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 74ch; }
+
+.principios { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.principio { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.principio p { font-size: 0.95rem; color: var(--muted); }
+.rodape { color: var(--muted); font-size: 0.9rem; max-width: 80ch; }
+</style>
+<main class="pagina">
+  <header class="topo">
+    <p class="rotulo">Ilha Cafuné · Faísca · rascunho em blocos (greybox) · fase de céu, 3º andar</p>
+    <h1>Moinhos do Vento, em playgrounds</h1>
+    <p class="lede">A última fase do andar Frio e Vento: cinco playgrounds em volta de um Moinho Gigante, subindo em espiral até a sacada do topo, e cada saída só abre com uma tarefa. A novidade é o vento: flutuando dentro de uma faixa de vento, o Faísca é levado e atravessa vãos que o voo sozinho não alcança. O poder da fase é a Pipa, que faz as colunas de vento levarem o Faísca para o alto. Arraste para girar, use a roda ou dois dedos para aproximar, e os botões para ir a cada parte.</p>
+    <div class="numeros" id="numeros"></div>
+  </header>
+
+  <div class="palco">
+    <canvas id="cena" aria-label="Maquete 3D da fase Moinhos do Vento em playgrounds"></canvas>
+    <div class="legenda" aria-hidden="true">
+      <span><i style="background:#fff1c9"></i>trilha creme (caminho)</span>
+      <span><i style="background:#f26b1d"></i>arco de saída, cata-vento, argola, freio</span>
+      <span><i style="background:#29c4e6"></i>bolso para explorar</span>
+      <span class="so-largo"><i style="background:#ffffff"></i>faixa de vento (riscos andando para onde sopra)</span>
+      <span class="so-largo"><i style="background:#d8f3ff"></i>coluna de vento (sobe com a Pipa)</span>
+      <span class="so-largo"><i style="background:#8fd36a"></i>pasto (firme); viagem é o tracejado branco</span>
+      <span class="so-largo"><i style="background:#9b5de5"></i>Bolota</span>
+      <span class="so-largo"><i style="background:#9be15d"></i>vaga-lume</span>
+      <span class="so-largo"><i style="background:#3fd0ee"></i>posto</span>
+    </div>
+    <div class="dica-palco">arraste para girar · roda ou pinça para aproximar</div>
+  </div>
+
+  <nav class="botoes" id="botoes" aria-label="Ir para uma parte da fase"></nav>
+  <div class="alternar">
+    <button type="button" id="b-nomes" aria-pressed="true">Nomes</button>
+    <button type="button" id="b-rota" aria-pressed="false">Rota principal (só para o autor)</button>
+    <button type="button" id="b-vista" aria-pressed="false">Linhas de vista até a Estrela Grande</button>
+    <button type="button" id="b-gira" aria-pressed="false">Câmera girando sozinha</button>
+  </div>
+
+  <article class="ficha" id="ficha" aria-live="polite"></article>
+
+  <section class="principios" aria-label="O que esta fase traz">
+    <div class="principio"><h3>Faixas de vento</h3><p>O vento se vê: riscos brancos correndo para onde ele sopra, birutas laranja nas pontas e folhas voando. No chão ele quase não empurra; flutuando dentro dele, o Faísca é levado e passa vãos de 14 a 18 m, que o voo sozinho (uns 11 m) não passa. Contra o vento, não dá. Ele aparece primeiro sobre um riacho raso, sem risco.</p></div>
+    <div class="principio"><h3>Vento de lado e rajadas</h3><p>Depois vêm faixas que sopram de lado (é preciso mirar contra o vento) e, no corredor dos moinhos, rajadas que vão e vêm. Antes de cada rajada as fitas das birutas se agitam e as folhas passam, para a criança esperar.</p></div>
+    <div class="principio"><h3>Poder: a Pipa</h3><p>Pega no celeiro da fazenda. Com ela, flutuar em cima de uma coluna de vento (as grades no chão com fitas subindo) leva o Faísca para o alto, até uns 13 m. Sem a pipa, a coluna só segura a queda. Sem botão novo: é o mesmo flutuar de sempre.</p></div>
+    <div class="principio"><h3>Fase maior</h3><p>Cinco playgrounds, e cada saída só abre com uma tarefa: três cata-ventos girados com um soco, três argolas-sino atravessadas no vento, três cata-ventos no alto dos silos, três freios dos moinhos e três janelas do Moinho Gigante.</p></div>
+    <div class="principio"><h3>Sem dúvida no pulo</h3><p>Plataformas com borda escura, alturas em degraus, a sombra redonda de pouso, o vento sempre com a mesma cara e as gôndolas dos moinhos sempre niveladas, girando devagar.</p></div>
+  </section>
+
+  <p class="rodape">Rascunho em blocos, sem arte. As medidas seguem o Faísca de hoje: pulo de uns 4,8 m, voo de uns 11 m, mola de uns 5,6 m de altura. No jogo, os moinhos e as nuvens vêm do Medieval Hexagon do KayKit (o moinho tem as pás numa peça separada, que gira) e o resto do Platformer. As maquetes anteriores no tamanho maior são o <a href="https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4">Pico Gelado</a> e a <a href="https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh">Fábrica de Blocos</a>, já construídas no jogo.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- partes: câmera, alvo e ficha ----------
+  var PARTES = {
+    geral: { botao: "Visão geral", nome: "Visão geral", medida: "5 playgrounds + arena · 4 viagens · uns 12 min para uma criança",
+      alvo: [-24, 18, 8], cam: [-70, 260, 200],
+      texto: "Os cinco playgrounds ficam em volta do Moinho Gigante e sobem em espiral: a campina dos cata-ventos embaixo, as ilhas do vento, a fazenda das nuvens, o corredor dos moinhos e a subida pelo próprio moinho, até a sacada do topo. A Estrela Grande brilha em cima do telhado do moinho, à vista de qualquer lugar, e as pás gigantes giram devagar. A rota principal está escondida; no jogo quem mostra o caminho é o cenário." },
+    p1: { botao: "1 Campina dos Cata-ventos", nome: "1 · Campina dos Cata-ventos", medida: "apresenta · 2 a 3 min · chão firme embaixo · P0",
+      alvo: [0, 2, 106], cam: [56, 42, 168],
+      texto: "Uma ilha de pasto cortada por um riacho raso de 13 m. Uma faixa de vento sopra de uma margem à outra: flutuando dentro dela, o Faísca é levado até o outro lado. Quem cai no riacho só se molha e sai pelos degraus de pedra. O Vovô mostra o vento logo na chegada. Tarefa: três cata-ventos laranja estão parados do outro lado; um soco em cada um faz girar, e com os três o portão de feno abre. Mini-marco: um moinho pequeno amarelo.",
+      bolsos: ["O celeirinho: estrelinhas lá dentro.", "A pilha de fardos de feno, como escada, até o monte com o coração."],
+      bolotas: "Duas: um cogumelo dormindo perto do celeirinho e um pinguim no caminho." },
+    p2: { botao: "2 Ilhas do Vento", nome: "2 · Ilhas do Vento", medida: "desenvolve · 3 min · risco leve · P1",
+      alvo: [-90, 12, 40], cam: [-154, 58, 98],
+      texto: "Ilhas de pasto sobre o vazio, separadas por vãos de 14 a 18 m que só se passam flutuando no vento a favor. Dois caminhos até a ilha do meio: um direto, com vento a favor, e outro pelas ilhotas, com uma faixa que sopra de lado. Tarefa: três argolas-sino laranja ficam no meio das faixas de vento; atravessar cada uma flutuando faz o sino tocar, e com as três chega a nuvem que leva à fazenda. Mini-marco: a torre de vigia com a biruta grande.",
+      bolsos: ["Embaixo da ilha do meio, uma ilhota com o vaga-lume 1. Uma faixa de vento que desce leva até lá; um fardo que quica devolve para cima."],
+      bolotas: "Três: duas abelhas em volta da ilha do meio e um alien na ilha da saída." },
+    p3: { botao: "3 Fazenda das Nuvens", nome: "3 · Fazenda das Nuvens", medida: "central · 3 min · respiro e poder novo · P2",
+      alvo: [-70, 20, -78], cam: [-132, 68, -16],
+      texto: "Um pasto grande de 60 m com celeiro, silos, cercas e um campo de trigo. No celeiro está o poder da fase, a Pipa. Tarefa: três cata-ventos laranja giram parados no alto dos silos (13 m, alto demais para qualquer pulo); com a pipa, a coluna de vento ao lado de cada silo leva o Faísca até lá, e um soco faz o cata-vento girar. Com os três, o teleférico começa a andar. Uma fileira de fardos de feno aponta para a estação.",
+      bolsos: ["Atrás do celeiro, outra coluna de vento leva ao telhado, com o vaga-lume 2.", "Coração no paiol."],
+      bolotas: "Três, com espaço para o giro forte: um porco que dispara pelo pasto, um cogumelo e um alien." },
+    p4: { botao: "4 Corredor dos Moinhos", nome: "4 · Corredor dos Moinhos", medida: "reviravolta · 3 min · risco médio · P3",
+      alvo: [30, 30, -28], cam: [108, 64, 10],
+      texto: "Uma fileira de ilhas subindo de 22 a 33 m, cada uma com um moinho médio cujas pás levam gôndolas niveladas, como uma roda-gigante. Rajadas de vento de lado vão e vêm entre as ilhas, avisadas pelas birutas. Tarefa: os três moinhos estão travados; em cada um, a coluna de vento (com a pipa) leva até a janela do eixo, onde um soco solta o freio. As pás voltam a girar, e a gôndola leva até a ilha seguinte.",
+      bolsos: ["Segredo: do alto da roda do terceiro moinho dá para pular para uma ilhota escondida atrás dele, com o vaga-lume 3. O brilho aparece lá de cima."],
+      bolotas: "Três: duas nas ilhas e um morcego voando perto das pás." },
+    p5: { botao: "5 Subida do Moinho Gigante", nome: "5 · Subida do Moinho Gigante", medida: "o fim · 3 min · risco médio · P4",
+      alvo: [0, 34, 0], cam: [-58, 70, 48],
+      texto: "A ponte de tábuas chega à sacada de baixo do Moinho Gigante, a 30 m. Daí a subida é por fora da torre, numa escada de tábuas em espiral, até a sacada do topo, a 40 m. Tarefa: o alçapão do topo só abre com as três janelas da torre abertas; um soco no ferrolho laranja de cada janela abre a janela e solta uma coluna de vento, que a pipa usa para chegar ao degrau seguinte. Quem cai da escada cai na sacada de baixo, sem perder coração.",
+      bolsos: ["Segredo: uma parede rachada na sacada de baixo. Três golpes abrem uma salinha com coração e estrelinhas."],
+      bolotas: "Duas: uma abelha na sacada de baixo e um morcego perto das pás." },
+    arena: { botao: "Arena no topo", nome: "Arena no topo", medida: "clímax · 1 min",
+      alvo: [0, 42, 0], cam: [44, 84, 56],
+      texto: "A sacada do topo do Moinho Gigante, em volta do telhado. Três Bolotas guardam o baú; vencidas, três golpes abrem o baú e a Estrela Grande sobe para o céu, passando pelas pás." },
+    viagens: { botao: "Viagens", viagem: true, nome: "Viagens entre os playgrounds", medida: "10 a 20 s cada · sem risco",
+      alvo: [-34, 18, 8], cam: [-30, 250, 80],
+      texto: "Entre um playground e outro, uma viagem curta: o balão de ar quente leva da campina às ilhas, uma nuvem soprada pelo vento leva das ilhas à fazenda, o teleférico leva da fazenda ao corredor dos moinhos (e volta, servindo de atalho), e uma ponte de tábuas liga a última ilha à sacada de baixo do Moinho Gigante. Todas esperam o Faísca subir." }
+  };
+  var ORDEM = ["geral", "p1", "p2", "p3", "p4", "p5", "arena", "viagens"];
+
+  // ---------- cena ----------
+  var canvas = document.getElementById("cena");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var cena = new THREE.Scene();
+  var CEU = new THREE.Color("#cde9fb");
+  cena.background = CEU;
+  cena.fog = new THREE.Fog(CEU, 340, 780);
+  var camera = new THREE.PerspectiveCamera(50, 1, 0.5, 2500);
+  var controles = new THREE.OrbitControls(camera, canvas);
+  controles.enableDamping = true;
+  controles.maxPolarAngle = 1.45;
+  controles.minDistance = 8;
+  controles.maxDistance = 600;
+
+  cena.add(new THREE.HemisphereLight(0xffffff, 0xb8c8e0, 0.9));
+  var sol = new THREE.DirectionalLight(0xffffff, 0.55);
+  sol.position.set(80, 140, 60);
+  cena.add(sol);
+  // Lá embaixo, um mar de nuvens.
+  var mar = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshLambertMaterial({ color: 0xf4f8ff }));
+  mar.rotation.x = -Math.PI / 2;
+  mar.position.y = -45;
+  cena.add(mar);
+
+  var materiais = {};
+  function mat(cor, extra) {
+    var chave = cor + JSON.stringify(extra || {});
+    if (!materiais[chave]) {
+      var m = new THREE.MeshLambertMaterial({ color: cor });
+      if (extra) Object.keys(extra).forEach(function (k) { m[k] = extra[k]; });
+      materiais[chave] = m;
+    }
+    return materiais[chave];
+  }
+  function malha(geo, material, x, y, z) {
+    var m = new THREE.Mesh(geo, material);
+    m.position.set(x || 0, y || 0, z || 0);
+    cena.add(m);
+    return m;
+  }
+
+  var animados = [], rotulos = [], vistas = [], rota = [];
+  var estrelas = 0, bolotas = 0, coracoes = 0;
+
+  var COR = { bolota: 0x9b5de5, estrela: 0xffd23f, vagalume: 0x9be15d, posto: 0x3fd0ee, laranja: 0xf26b1d, bolso: 0x29c4e6,
+    coracao: 0xff4d6d, creme: 0xfff1c9, agua: 0x6fc8f2, vento: 0xffffff, coluna: 0xd8f3ff, feno: 0xf2c94c, madeira: 0xb07a45 };
+  // Superfícies: topo, borda escura (silhueta) e a parte de baixo da ilha.
+  var S = {
+    grama: [0x8fd36a, 0x3f7a3a, 0xa8865f],
+    nuvem: [0xffffff, 0x9fb4d2, 0xe9f0fa],
+    pedra: [0xe9eef5, 0x55607a, 0x9aa7bf]
+  };
+
+  // ---------- peças ----------
+  function ilha(x, y, z, r, sup) {
+    var g = new THREE.Group();
+    var topo = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.97, 1.2, 48), mat(sup[0]));
+    topo.position.y = -0.6;
+    var borda = new THREE.Mesh(new THREE.TorusGeometry(r, 0.24, 6, 64), mat(sup[1]));
+    borda.rotation.x = Math.PI / 2;
+    borda.position.y = -0.08;
+    var h = Math.max(r * 0.75, 2.5);
+    var cone = new THREE.Mesh(new THREE.ConeGeometry(r * 0.92, h, 48), mat(sup[2]));
+    cone.rotation.x = Math.PI;
+    cone.position.y = -1.2 - h / 2;
+    g.add(topo, borda, cone);
+    g.position.set(x, y, z);
+    cena.add(g);
+    return g;
+  }
+  function arvore(x, y, z, alto) {
+    var a = alto || 6;
+    malha(new THREE.CylinderGeometry(0.3, 0.4, a * 0.45, 8), mat(0x7a5236), x, y + a * 0.22, z);
+    malha(new THREE.SphereGeometry(a * 0.3, 12, 10), mat(0x4fa04a), x, y + a * 0.6, z);
+    malha(new THREE.SphereGeometry(a * 0.2, 12, 10), mat(0x66b85a), x + a * 0.12, y + a * 0.82, z - a * 0.05);
+  }
+  // Cata-vento de brinquedo: poste e quatro pás coloridas girando (o laranja é o que a tarefa pede).
+  function cataVento(x, y, z, alto, cores, parado) {
+    var h = alto || 4.5;
+    malha(new THREE.CylinderGeometry(0.12, 0.16, h, 8), mat(0x2b2140), x, y + h / 2, z);
+    var g = new THREE.Group();
+    (cores || [COR.laranja, 0xffffff, COR.laranja, 0xffffff]).forEach(function (c, i) {
+      var pa = new THREE.Mesh(new THREE.BoxGeometry(0.25, 1.6, 0.06), mat(c));
+      pa.position.y = 0.85;
+      var braco = new THREE.Group();
+      braco.add(pa);
+      braco.rotation.z = i * Math.PI / 2;
+      g.add(braco);
+    });
+    var miolo = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), mat(0xffd23f));
+    g.add(miolo);
+    g.position.set(x, y + h, z + 0.2);
+    cena.add(g);
+    if (!parado) animados.push(function (t) { g.rotation.z = -t * 3; });
+    return g;
+  }
+  // Moinho (o do Medieval Hexagon no jogo): torre, telhado e as pás girando na frente, viradas para `giro`.
+  function moinho(x, y, z, e, giro, cor, parado) {
+    var g = new THREE.Group();
+    var torre = new THREE.Mesh(new THREE.CylinderGeometry(1.5 * e, 2.1 * e, 6 * e, 8), mat(0xefe6d8));
+    torre.position.y = 3 * e;
+    var telhado = new THREE.Mesh(new THREE.ConeGeometry(1.9 * e, 2.4 * e, 8), mat(cor || 0xd94f3d));
+    telhado.position.y = 7.2 * e;
+    var porta = new THREE.Mesh(new THREE.BoxGeometry(0.9 * e, 1.6 * e, 0.2), mat(0x6e4a26));
+    porta.position.set(0, 0.8 * e, 2.0 * e);
+    g.add(torre, telhado, porta);
+    var pas = new THREE.Group();
+    for (var i = 0; i < 4; i++) {
+      var b = new THREE.Group();
+      var vara = new THREE.Mesh(new THREE.BoxGeometry(0.18 * e, 4.4 * e, 0.12 * e), mat(0x6e4a26));
+      vara.position.y = 2.2 * e;
+      var vela = new THREE.Mesh(new THREE.BoxGeometry(0.9 * e, 3.2 * e, 0.06 * e), mat(0xfaf3e3));
+      vela.position.set(0.5 * e, 2.6 * e, 0);
+      b.add(vara, vela);
+      b.rotation.z = i * Math.PI / 2;
+      pas.add(b);
+    }
+    pas.position.set(0, 6 * e, 2.0 * e);
+    g.add(pas);
+    g.position.set(x, y, z);
+    g.rotation.y = giro || 0;
+    cena.add(g);
+    if (!parado) animados.push(function (t) { pas.rotation.z = -t * 0.6; });
+    return g;
+  }
+  // Faixa de vento de a até b: um volume claro quase invisível, riscos brancos correndo para onde sopra e setas.
+  // Com `pulsa`, é rajada: some e volta.
+  function faixaVento(a, b, largura, alto, pulsa) {
+    var va = new THREE.Vector3(a[0], a[1], a[2]), vb = new THREE.Vector3(b[0], b[1], b[2]);
+    var comp = va.distanceTo(vb), meio = va.clone().add(vb).multiplyScalar(0.5), dir = vb.clone().sub(va).normalize();
+    var caixa = malha(new THREE.BoxGeometry(largura, alto, comp), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, depthWrite: false }), meio.x, meio.y, meio.z);
+    caixa.lookAt(vb.x, meio.y + (vb.y - va.y) / 2, vb.z);
+    var riscos = [];
+    var mriscos = new THREE.MeshBasicMaterial({ color: COR.vento, transparent: true, opacity: 0.85 });
+    for (var i = 0; i < Math.round(comp * largura / 6) + 4; i++) {
+      var r = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.6 + Math.random() * 1.6), mriscos);
+      var lado = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+      r.userData = { off: Math.random(), lado: (Math.random() - 0.5) * largura, alto: (Math.random() - 0.5) * alto, vel: 0.25 + Math.random() * 0.2 };
+      r.lookAt(r.position.clone().add(dir));
+      cena.add(r);
+      riscos.push([r, lado]);
+    }
+    animados.push(function (t) {
+      var vis = pulsa ? (Math.sin(t * 0.9) > -0.2) : true;
+      caixa.visible = vis;
+      riscos.forEach(function (p) {
+        var r = p[0], u = r.userData, k = (u.off + t * u.vel) % 1;
+        r.visible = vis;
+        r.position.copy(va).lerp(vb, k).addScaledVector(p[1], u.lado);
+        r.position.y += u.alto;
+        r.lookAt(r.position.clone().add(dir));
+      });
+    });
+    // setas creme no chão de ar, a cada 5 m
+    for (var s = 2.5; s < comp; s += 5) {
+      var p = va.clone().lerp(vb, s / comp);
+      var seta = malha(new THREE.ConeGeometry(0.5, 1.2, 3), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }), p.x, p.y - alto / 2 + 0.2, p.z);
+      seta.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    }
+    return caixa;
+  }
+  // Biruta laranja e branca apontando para onde o vento vai.
+  function biruta(x, y, z, dx, dz) {
+    malha(new THREE.CylinderGeometry(0.1, 0.12, 4, 8), mat(0x2b2140), x, y + 2, z);
+    var g = new THREE.Group();
+    for (var i = 0; i < 4; i++) {
+      var anel = new THREE.Mesh(new THREE.CylinderGeometry(0.55 - i * 0.1, 0.45 - i * 0.1, 0.7, 12, 1, true), mat(i % 2 ? 0xffffff : COR.laranja, { side: THREE.DoubleSide }));
+      anel.rotation.x = Math.PI / 2;
+      anel.position.z = 0.4 + i * 0.7;
+      g.add(anel);
+    }
+    g.position.set(x, y + 3.8, z);
+    g.rotation.y = Math.atan2(dx, dz);
+    cena.add(g);
+    animados.push(function (t) { g.rotation.x = Math.sin(t * 5 + x) * 0.08; });
+  }
+  // Argola-sino laranja no meio do vento: atravessar flutuando toca o sino.
+  function argolaSino(x, y, z, dx, dz) {
+    var anel = malha(new THREE.TorusGeometry(2.2, 0.28, 10, 32), mat(COR.laranja), x, y, z);
+    anel.rotation.y = Math.atan2(dx, dz);
+    var sino = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.55, 0.8, 14, 1, true), mat(0xffd23f, { side: THREE.DoubleSide }));
+    sino.position.set(x, y + 2.0, z);
+    cena.add(sino);
+    animados.push(function (t) { sino.rotation.z = Math.sin(t * 3 + x) * 0.25; });
+  }
+  // Coluna de vento: grade no chão com aro laranja e fitas subindo; com a Pipa, leva até `y1`.
+  function colunaVento(x, y0, z, y1) {
+    malha(new THREE.CylinderGeometry(1.7, 1.7, 0.2, 20), mat(0x55607a), x, y0 + 0.1, z);
+    malha(new THREE.TorusGeometry(1.75, 0.16, 6, 24), mat(COR.laranja), x, y0 + 0.2, z).rotation.x = Math.PI / 2;
+    var alt = y1 - y0;
+    malha(new THREE.CylinderGeometry(1.6, 1.6, alt, 20, 1, true), new THREE.MeshBasicMaterial({ color: COR.coluna, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }), x, y0 + alt / 2, z);
+    var fitas = [];
+    for (var i = 0; i < 7; i++) {
+      var f = malha(new THREE.BoxGeometry(0.1, 1.2, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }), x, y0, z);
+      f.userData = { a: i * Math.PI * 2 / 7, off: i / 7 };
+      fitas.push(f);
+    }
+    animados.push(function (t) {
+      fitas.forEach(function (f) {
+        var k = (f.userData.off + t * 0.35) % 1, a = f.userData.a + t * 2;
+        f.position.set(x + Math.cos(a) * 1.1, y0 + k * alt, z + Math.sin(a) * 1.1);
+      });
+    });
+  }
+  // A Pipa flutuando (o poder da fase): losango laranja e branco com rabiola de lacinhos.
+  function pipa(x, y, z) {
+    var g = new THREE.Group();
+    var forma = new THREE.Shape();
+    forma.moveTo(0, 1.6); forma.lineTo(1.1, 0.3); forma.lineTo(0, -1.6); forma.lineTo(-1.1, 0.3); forma.closePath();
+    var corpo = new THREE.Mesh(new THREE.ShapeGeometry(forma), mat(COR.laranja, { side: THREE.DoubleSide }));
+    var meio = new THREE.Shape();
+    meio.moveTo(0, 1.6); meio.lineTo(1.1, 0.3); meio.lineTo(0, 0.3); meio.closePath();
+    var faixa = new THREE.Mesh(new THREE.ShapeGeometry(meio), mat(0xffffff, { side: THREE.DoubleSide }));
+    faixa.position.z = 0.02;
+    g.add(corpo, faixa);
+    for (var i = 0; i < 4; i++) {
+      var laco = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.05), mat(i % 2 ? 0xffd23f : 0x3fd0ee));
+      laco.position.set(Math.sin(i) * 0.3, -1.9 - i * 0.6, 0);
+      g.add(laco);
+    }
+    g.position.set(x, y, z);
+    cena.add(g);
+    brilho(x, y, z, 0xffd9b0, 7, true);
+    animados.push(function (t) { g.rotation.y = Math.sin(t * 0.8) * 0.6; g.position.y = y + Math.sin(t * 1.5) * 0.4; });
+  }
+  function fardo(x, y, z, r) {
+    var m = malha(new THREE.CylinderGeometry(r, r, r * 1.3, 16), mat(COR.feno), x, y + r, z);
+    m.rotation.z = Math.PI / 2;
+    return m;
+  }
+  function cerca(a, b) {
+    var va = new THREE.Vector3(a[0], a[1], a[2]), vb = new THREE.Vector3(b[0], b[1], b[2]);
+    var n = Math.max(2, Math.round(va.distanceTo(vb) / 2.5));
+    for (var i = 0; i <= n; i++) { var p = va.clone().lerp(vb, i / n); malha(new THREE.BoxGeometry(0.25, 1.4, 0.25), mat(0xf4ece0), p.x, p.y + 0.7, p.z); }
+    var tabua = malha(new THREE.BoxGeometry(0.15, 0.25, va.distanceTo(vb)), mat(0xf4ece0), (a[0] + b[0]) / 2, a[1] + 1.0, (a[2] + b[2]) / 2);
+    tabua.lookAt(vb.x, a[1] + 1.0, vb.z);
+  }
+  function celeiro(x, y, z, l, c, h, giro) {
+    var g = new THREE.Group();
+    var paredes = new THREE.Mesh(new THREE.BoxGeometry(l, h, c), mat(0xc8463d));
+    paredes.position.y = h / 2;
+    var forma = new THREE.Shape(); forma.moveTo(-l / 2 - 0.4, 0); forma.lineTo(0, h * 0.55); forma.lineTo(l / 2 + 0.4, 0); forma.closePath();
+    var telhado = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: c + 0.8, bevelEnabled: false }), mat(0x6e4a26));
+    telhado.position.set(0, h, -c / 2 - 0.4);
+    var porta = new THREE.Mesh(new THREE.BoxGeometry(l * 0.4, h * 0.6, 0.2), mat(0xf4ece0));
+    porta.position.set(0, h * 0.3, c / 2 + 0.05);
+    g.add(paredes, telhado, porta);
+    g.position.set(x, y, z);
+    g.rotation.y = giro || 0;
+    cena.add(g);
+    return g;
+  }
+  function silo(x, y, z, alto) {
+    malha(new THREE.CylinderGeometry(2.4, 2.4, alto, 18), mat(0xdfe5ee), x, y + alto / 2, z);
+    malha(new THREE.SphereGeometry(2.4, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xc8463d), x, y + alto, z);
+    ilha(x, y + alto + 2.4, z, 1.8, S.pedra);
+    cataVento(x, y + alto + 2.4, z, 2.2);
+  }
+  function arco(x, y, z, dx, dz) {
+    var n = Math.hypot(dx, dz), px = -dz / n, pz = dx / n, meia = 3.6, alto = 8;
+    [1, -1].forEach(function (s) {
+      malha(new THREE.CylinderGeometry(0.55, 0.65, alto, 12), mat(COR.laranja), x + px * meia * s, y + alto / 2, z + pz * meia * s);
+      malha(new THREE.SphereGeometry(0.7, 12, 8), mat(0xffffff), x + px * meia * s, y + alto, z + pz * meia * s);
+    });
+    var topo = malha(new THREE.TorusGeometry(meia, 0.55, 10, 32, Math.PI), mat(COR.laranja), x, y + alto, z);
+    topo.rotation.y = Math.atan2(-pz, px);
+  }
+  function tabuas(a, b, largura) {
+    var va = new THREE.Vector3(a[0], a[1], a[2]), vb = new THREE.Vector3(b[0], b[1], b[2]);
+    var m = malha(new THREE.BoxGeometry(largura || 3, 0.4, va.distanceTo(vb)), mat(COR.madeira), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 0.2, (a[2] + b[2]) / 2);
+    m.lookAt(vb.x, m.position.y + (vb.y - va.y) / 2, vb.z);
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0x5a3a1e })));
+    return m;
+  }
+  // Moinho médio do corredor: as pás levam gôndolas que ficam niveladas (roda-gigante), girando devagar.
+  function moinhoGondolas(x, y, z, giro, eixo, raio, travado) {
+    moinho(x, y, z, 1.6, giro, 0x3f7fd9, true);
+    var centro = new THREE.Vector3(x + Math.sin(giro) * 3.6, y + eixo, z + Math.cos(giro) * 3.6);
+    var roda = new THREE.Group();
+    roda.position.copy(centro);
+    roda.rotation.y = giro;
+    cena.add(roda);
+    var gondolas = [];
+    for (var i = 0; i < 4; i++) {
+      var braco = new THREE.Mesh(new THREE.BoxGeometry(0.3, raio, 0.3), mat(0x6e4a26));
+      braco.position.y = raio / 2;
+      var b = new THREE.Group(); b.add(braco); b.rotation.z = i * Math.PI / 2; roda.add(b);
+      var gon = malha(new THREE.BoxGeometry(3, 0.5, 3), mat(COR.madeira), 0, 0, 0);
+      gon.add(new THREE.LineSegments(new THREE.EdgesGeometry(gon.geometry), new THREE.LineBasicMaterial({ color: 0x5a3a1e })));
+      gondolas.push([gon, i * Math.PI / 2]);
+    }
+    malha(new THREE.SphereGeometry(0.7, 12, 8), mat(COR.laranja), centro.x, centro.y, centro.z);
+    animados.push(function (t) {
+      var a0 = travado ? 0.4 : -t * 0.3;
+      roda.rotation.z = a0;
+      gondolas.forEach(function (g) {
+        var a = a0 + g[1];
+        var lx = -Math.sin(a) * raio, ly = Math.cos(a) * raio;
+        g[0].position.set(centro.x + Math.cos(giro) * lx, centro.y + ly - 0.6, centro.z - Math.sin(giro) * lx);
+      });
+    });
+    return centro;
+  }
+  // Balão de ar quente (viagem 1).
+  function balao() {
+    var g = new THREE.Group();
+    var cesta = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.4, 2.6), mat(0xb07a45)); cesta.position.y = 0.7;
+    var bola = new THREE.Mesh(new THREE.SphereGeometry(3.2, 20, 14), mat(0xe94f4f)); bola.position.y = 6.2; bola.scale.y = 1.15;
+    var faixa = new THREE.Mesh(new THREE.TorusGeometry(3.1, 0.35, 8, 28), mat(0xffd23f)); faixa.position.y = 6.2; faixa.rotation.x = Math.PI / 2;
+    g.add(cesta, bola, faixa);
+    [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (c) {
+      var corda = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.4, 4), mat(0x2b2140));
+      corda.position.set(c[0] * 1.2, 2.9, c[1] * 1.2); g.add(corda);
+    });
+    cena.add(g);
+    return g;
+  }
+  function nuvemCarro() {
+    var g = new THREE.Group();
+    [[0, 0, 0, 2.4], [2, 0.2, 0.4, 1.8], [-2, 0.1, -0.3, 1.9], [0.6, 0.9, -0.8, 1.6]].forEach(function (b) {
+      var s = new THREE.Mesh(new THREE.SphereGeometry(b[3], 16, 10), mat(0xffffff)); s.position.set(b[0], b[1], b[2]); s.scale.y = 0.6; g.add(s);
+    });
+    cena.add(g);
+    return g;
+  }
+  var texRacha = (function () {
+    var c = document.createElement("canvas"); c.width = 128; c.height = 128;
+    var k = c.getContext("2d");
+    k.fillStyle = "#efe6d8"; k.fillRect(0, 0, 128, 128);
+    k.strokeStyle = "#5a3a1e"; k.lineWidth = 5; k.lineJoin = "round";
+    k.beginPath(); k.moveTo(60, 0); k.lineTo(48, 40); k.lineTo(70, 64); k.lineTo(52, 100); k.lineTo(64, 128); k.stroke();
+    k.beginPath(); k.moveTo(70, 64); k.lineTo(100, 80); k.stroke();
+    return new THREE.CanvasTexture(c);
+  })();
+  function trilha(pontos, largura) {
+    var c = curva(pontos), n = Math.max(20, Math.round(c.getLength() / 1.2));
+    var pos = [], idx = [];
+    for (var i = 0; i <= n; i++) {
+      var p = c.getPointAt(i / n), tg = c.getTangentAt(i / n);
+      var lx = -tg.z, lz = tg.x, l = Math.hypot(lx, lz) || 1;
+      lx = lx / l * largura / 2; lz = lz / l * largura / 2;
+      pos.push(p.x + lx, p.y + 0.08, p.z + lz, p.x - lx, p.y + 0.08, p.z - lz);
+      if (i < n) { var a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    cena.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: COR.creme, side: THREE.DoubleSide })));
+  }
+  function bolota(x, y, z) {
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(0.95, 20, 14), mat(COR.bolota));
+    corpo.position.y = 0.95;
+    var olho = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), mat(0xffffff));
+    olho.position.set(0, 1.15, 0.78);
+    var pupila = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), mat(0x1b1530));
+    pupila.position.set(0, 1.15, 1.08);
+    var haste = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 6), mat(0x3d2e5c));
+    haste.position.y = 2.1;
+    var bola = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), mat(0xff5a6e));
+    bola.position.y = 2.35;
+    g.add(corpo, olho, pupila, haste, bola);
+    g.position.set(x, y, z);
+    g.rotation.y = (x * 7 + z * 3) % 6.28;
+    cena.add(g);
+    bolotas++;
+    animados.push(function (t) { corpo.scale.y = 1 + Math.sin(t * 4 + x) * 0.04; });
+  }
+  var formaEstrela = (function () {
+    var s = new THREE.Shape();
+    for (var i = 0; i < 10; i++) {
+      var a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 === 0 ? 1 : 0.45;
+      if (i === 0) s.moveTo(Math.cos(a) * r, Math.sin(a) * r); else s.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    s.closePath();
+    return s;
+  })();
+  var geoEstrelinha = new THREE.ExtrudeGeometry(formaEstrela, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 1 });
+  geoEstrelinha.center();
+  function estrelinha(x, y, z) {
+    var m = malha(geoEstrelinha, mat(COR.estrela, { emissive: new THREE.Color(0x8a6400) }), x, y, z);
+    m.scale.setScalar(0.5);
+    var fase = (x + z) % 6;
+    animados.push(function (t) { m.rotation.y = t * 1.6 + fase; });
+    estrelas++;
+  }
+  function roda(x, y, z, r, n) { for (var i = 0; i < n; i++) { var a = i * Math.PI * 2 / n; estrelinha(x + Math.cos(a) * r, y, z + Math.sin(a) * r); } }
+  function fila(pontos) { pontos.forEach(function (p) { estrelinha(p[0], p[1], p[2]); }); }
+  var texBrilho = (function () {
+    var c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    var k = c.getContext("2d");
+    var g = k.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(255,255,255,0.45)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    k.fillStyle = g; k.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  function brilho(x, y, z, cor, tamanho, pulsa, atravessa) {
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texBrilho, color: cor, transparent: true, depthWrite: false, depthTest: !atravessa, blending: THREE.AdditiveBlending }));
+    s.position.set(x, y, z);
+    s.scale.setScalar(tamanho);
+    cena.add(s);
+    if (pulsa) animados.push(function (t) { s.material.opacity = 0.55 + 0.45 * Math.sin(t * 3 + x); });
+    return s;
+  }
+  function vagalume(x, y, z, atravessa) {
+    malha(new THREE.SphereGeometry(0.35, 14, 10), new THREE.MeshBasicMaterial({ color: COR.vagalume }), x, y, z);
+    brilho(x, y, z, COR.vagalume, 5, true, atravessa);
+  }
+  function posto(x, y, z, nome) {
+    malha(new THREE.CylinderGeometry(0.12, 0.12, 4, 8), mat(0x2b2140), x, y + 2, z);
+    var forma = new THREE.Shape(); forma.moveTo(0, 0); forma.lineTo(2.2, -0.7); forma.lineTo(0, -1.4); forma.closePath();
+    var bandeira = malha(new THREE.ShapeGeometry(forma), mat(COR.posto, { side: THREE.DoubleSide }), x + 0.1, y + 4, z);
+    animados.push(function (t) { bandeira.rotation.y = Math.sin(t * 2 + x) * 0.35; });
+    rotulo(nome, x, y + 5.4, z, "posto");
+  }
+  var formaCoracao = (function () {
+    var s = new THREE.Shape();
+    s.moveTo(0, -0.9);
+    s.bezierCurveTo(-1.2, 0, -0.9, 1, 0, 0.45);
+    s.bezierCurveTo(0.9, 1, 1.2, 0, 0, -0.9);
+    return s;
+  })();
+  function coracao(x, y, z) {
+    var geo = new THREE.ExtrudeGeometry(formaCoracao, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.08, bevelSegments: 2 });
+    geo.center();
+    var m = malha(geo, mat(COR.coracao, { emissive: new THREE.Color(0x5a0a1a) }), x, y, z);
+    m.scale.setScalar(0.8);
+    animados.push(function (t) { m.rotation.y = t * 1.2; m.position.y = y + Math.sin(t * 2) * 0.2; });
+    coracoes++;
+  }
+  // O Faísca em tamanho real, com a sombra redonda de pouso.
+  function faisca(x, y, z) {
+    var sombra = malha(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0x1d2340, transparent: true, opacity: 0.4 }), x, y + 0.06, z);
+    sombra.rotation.x = -Math.PI / 2;
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12), mat(0xffffff));
+    corpo.scale.y = 1.2; corpo.position.y = 0.95;
+    var cabeca = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.95, 1.0), mat(0xffffff));
+    cabeca.position.y = 1.75;
+    var visor = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.1), mat(0x141622));
+    visor.position.set(0, 1.72, -0.52);
+    var placa = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.1), mat(COR.laranja));
+    placa.position.set(0, 1.05, -0.47);
+    g.add(corpo, cabeca, visor, placa);
+    g.position.set(x, y, z);
+    g.rotation.y = Math.PI * 0.8;
+    cena.add(g);
+    rotulo("Faísca (2,2 m) e a sombra de pouso", x, y + 3.4, z, "pequeno");
+  }
+  function tracejado(pontos, cor) {
+    var c = curva(pontos);
+    var linha = new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(160)), new THREE.LineDashedMaterial({ color: cor, dashSize: 2.4, gapSize: 1.6 }));
+    linha.computeLineDistances();
+    cena.add(linha);
+    return linha;
+  }
+  function curva(pontos) { return new THREE.CatmullRomCurve3(pontos.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); })); }
+  function pontilhado(pontos, cor, raio, passo) {
+    var c = curva(pontos), n = Math.max(1, Math.round(c.getLength() / (passo || 1.4))), lista = [];
+    var geo = new THREE.SphereGeometry(raio || 0.28, 8, 6), m = new THREE.MeshBasicMaterial({ color: cor });
+    for (var i = 0; i <= n; i++) { var p = c.getPointAt(i / n); lista.push(malha(geo, m, p.x, p.y, p.z)); }
+    return lista;
+  }
+  function rotulo(texto, x, y, z, tipo) {
+    var c = document.createElement("canvas");
+    var k = c.getContext("2d");
+    var tam = tipo === "pequeno" || tipo === "posto" ? 34 : 44;
+    k.font = "700 " + tam + "px 'Baloo 2', 'Trebuchet MS', sans-serif";
+    var w = Math.ceil(k.measureText(texto).width) + 40, h = tam + 26;
+    c.width = w; c.height = h;
+    k.font = "700 " + tam + "px 'Baloo 2', 'Trebuchet MS', sans-serif";
+    var fundo = { bolso: "rgba(18,120,150,0.92)", posto: "rgba(20,120,150,0.88)", dica: "rgba(255,255,255,0.95)", viagem: "rgba(255,255,255,0.95)", poder: "rgba(242,107,29,0.92)" }[tipo] || "rgba(29,35,64,0.9)";
+    k.fillStyle = fundo;
+    var r = h / 2;
+    k.beginPath(); k.moveTo(r, 0); k.lineTo(w - r, 0); k.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2); k.lineTo(r, h); k.arc(r, r, r, Math.PI / 2, Math.PI * 1.5); k.fill();
+    k.fillStyle = tipo === "dica" || tipo === "viagem" ? "#1d2340" : "#ffffff";
+    k.textBaseline = "middle";
+    k.fillText(texto, 20, h / 2 + 2);
+    var tex = new THREE.CanvasTexture(c);
+    var fixo = !(tipo === "pequeno" || tipo === "posto");
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true, sizeAttenuation: !fixo }));
+    var alto = tipo === "bolso" || tipo === "dica" || tipo === "viagem" || tipo === "poder" ? 0.034 : 0.042;
+    if (fixo) s.scale.set(alto * w / h, alto, 1); else s.scale.set(w * 0.034, h * 0.034, 1);
+    s.position.set(x, y, z);
+    s.renderOrder = 10;
+    cena.add(s);
+    rotulos.push(s);
+    return s;
+  }
+  function viajante(construir, a, b, vel) {
+    var g = construir();
+    var va = new THREE.Vector3(a[0], a[1], a[2]), vb = new THREE.Vector3(b[0], b[1], b[2]);
+    g.rotation.y = Math.atan2(vb.x - va.x, vb.z - va.z);
+    animados.push(function (t) { g.position.lerpVectors(va, vb, 0.5 - 0.5 * Math.cos(t * (vel || 0.5))); });
+  }
+
+
+  // ---------- o marco: o Moinho Gigante ----------
+  // Torre de pedra (raio 14 embaixo, 10 em cima) de 0 a 40 m, numa ilha de pasto. A 30 m, a sacada de baixo (raio
+  // até 19); a 40 m, a sacada do topo (raio até 15), que é a arena; o telhado vermelho vai de 40 a 54 m. As pás
+  // gigantes, viradas para o sul, giram devagar em volta do eixo a 46 m. A Estrela Grande brilha em cima do telhado.
+  function noMoinho(graus, r, y) { var a = graus * Math.PI / 180; return [r * Math.cos(a), y, -r * Math.sin(a)]; }
+  function moinhoGigante() {
+    ilha(0, 0, 0, 24, S.grama);
+    malha(new THREE.CylinderGeometry(11.5, 14, 30, 16), mat(0xe9eef5), 0, 15, 0);
+    malha(new THREE.CylinderGeometry(10, 11.5, 10, 16), mat(0xc8955a), 0, 35, 0);
+    malha(new THREE.CylinderGeometry(19, 19, 1.0, 40), mat(COR.madeira), 0, 29.5, 0);
+    malha(new THREE.CylinderGeometry(15, 15, 1.0, 40), mat(COR.madeira), 0, 39.5, 0);
+    for (var i = 0; i < 32; i++) {
+      var a = i * Math.PI * 2 / 32;
+      malha(new THREE.BoxGeometry(0.3, 1.4, 0.3), mat(0x6e4a26), Math.cos(a) * 18.7, 30.7, Math.sin(a) * 18.7);
+      if (i % 2 === 0) malha(new THREE.BoxGeometry(0.3, 1.4, 0.3), mat(0x6e4a26), Math.cos(a) * 14.7, 40.7, Math.sin(a) * 14.7);
+    }
+    malha(new THREE.ConeGeometry(12, 14, 16), mat(0xd94f3d), 0, 47, 0);
+    var pas = new THREE.Group();
+    for (var j = 0; j < 4; j++) {
+      var b = new THREE.Group();
+      var vara = new THREE.Mesh(new THREE.BoxGeometry(1.0, 24, 0.8), mat(0x6e4a26));
+      vara.position.y = 12;
+      var vela = new THREE.Mesh(new THREE.BoxGeometry(5.5, 17, 0.3), mat(0xfaf3e3));
+      vela.position.set(3.0, 14.5, 0);
+      b.add(vara, vela);
+      b.rotation.z = j * Math.PI / 2;
+      pas.add(b);
+    }
+    pas.position.set(0, 46, 14);
+    cena.add(pas);
+    malha(new THREE.SphereGeometry(1.8, 14, 10), mat(COR.laranja), 0, 46, 14.2);
+    animados.push(function (t) { pas.rotation.z = -t * 0.12; });
+  }
+
+  // ================= O MOINHO GIGANTE (marco no meio de tudo) =================
+  moinhoGigante();
+
+  // ================= 1 · CAMPINA DOS CATA-VENTOS =================
+  ilha(0, 0, 110, 32, S.grama);
+  faisca(12, 0, 128);
+  posto(17, 0, 124, "P0");
+  rotulo("dica do Vovô: flutue dentro do vento", 6, 5, 120, "dica");
+  // o riacho raso que corta a ilha, com os degraus de pedra de volta, e a faixa de vento de uma margem à outra
+  malha(new THREE.BoxGeometry(62, 0.3, 13), mat(COR.agua), 0, -0.9, 104.5);
+  [[-20, -0.6, 99], [-18, -0.3, 97.5]].forEach(function (p) { malha(new THREE.BoxGeometry(3, 0.6, 1.6), mat(0x9aa7bf), p[0], p[1], p[2]); });
+  faixaVento([2, 2.2, 114], [2, 3.2, 95], 6, 4);
+  biruta(-2.5, 0, 115, 0, -1);
+  biruta(6.5, 0, 94, 0, -1);
+  rotulo("faixa de vento: flutuando, ela leva", 2, 9, 106, "dica");
+  trilha([[12, 0, 124], [7, 0, 119], [2, 0, 115]], 3.2);
+  trilha([[2, 0, 95], [-4, 0, 90], [-14, 0, 87], [-24, 0, 92], [-30, 0, 96]], 3.2);
+  // os três cata-ventos da tarefa e o portão de feno (arco)
+  [[-14, 0, 92], [4, 0, 86], [18, 0, 92]].forEach(function (p) { cataVento(p[0], p[1], p[2], 4.5, null, true); estrelinha(p[0], 1.5, p[2] + 1.8); });
+  rotulo("três cata-ventos: um soco faz girar", 2, 10, 84, "dica");
+  moinho(24, 0, 98, 1.3, -Math.PI * 0.6, 0xffc93c);
+  roda(24, 1.4, 98, 5, 6);
+  arco(-30, 0, 96, -1.4, -0.4);
+  [[-26, 0, 106], [-24, 0, 109], [-27.5, 2.2, 108]].forEach(function (p) { fardo(p[0], p[1], p[2], 1.1); });
+  ilha(-27, 5, 114, 3.4, S.grama);
+  coracao(-27, 6.4, 114);
+  celeiro(-19, 0, 123, 6, 5, 4, Math.PI * 0.3);
+  roda(-19, 1.2, 123, 1.4, 4);
+  bolota(-10, 0, 127); bolota(8, 0, 89);
+  fila([[9, 1.2, 121], [5, 1.4, 117], [2, 3.2, 110], [2, 3.4, 104], [2, 3.2, 99], [-8, 1.2, 88], [-20, 1.2, 89]]);
+  [[24, 0, 122], [-29, 0, 85], [26, 0, 82], [-6, 0, 138]].forEach(function (p) { arvore(p[0], p[1], p[2], 7); });
+  // mais migalhas: em volta do começo, no caminho dos cata-ventos e nos fardos
+  roda(12, 1.2, 128, 2.6, 5);
+  fila([[-2, 1.2, 87], [10, 1.2, 88], [14, 1.2, 91], [-26, 1.2, 94], [-25, 3.4, 106], [-26, 5.6, 110], [2, 3.3, 112], [2, 3.3, 101]]);
+  rotulo("1 · Campina dos Cata-ventos", 0, 16, 112);
+  rotulo("bolso: celeirinho", -19, 9, 123, "bolso");
+  rotulo("bolso: fardos até o coração", -27, 12, 114, "bolso");
+
+  // viagem 1: balão de ar quente, da campina às ilhas
+  viajante(balao, [-43, 0.2, 92], [-63, 10.2, 63], 0.5);
+  tracejado([[-43, 1.2, 92], [-54, 7, 78], [-63, 11.2, 63]], 0xffffff);
+  rotulo("viagem: balão de ar quente", -54, 20, 78, "viagem");
+
+  // ================= 2 · ILHAS DO VENTO =================
+  ilha(-68, 10, 58, 7, S.grama);
+  posto(-70, 10, 62, "P1");
+  ilha(-96, 12, 40, 10, S.grama);
+  ilha(-106, 14, 10, 7, S.grama);
+  // caminho direto: vento a favor da chegada até a ilha do meio, e da ilha do meio até a saída
+  faixaVento([-73, 13, 55], [-88, 14, 46], 6, 4.5);
+  faixaVento([-100, 15.5, 31], [-105, 16.5, 17], 6, 4.5);
+  // caminho das ilhotas: degraus pulando e uma faixa que sopra de lado
+  ilha(-76, 10.5, 70, 3.4, S.grama);
+  ilha(-86, 11, 76, 3.4, S.grama);
+  faixaVento([-93, 13, 71], [-93, 13, 53], 8, 5);
+  rotulo("vento de lado: mire contra ele", -94, 21, 64, "dica");
+  biruta(-71, 10, 54, -1, -0.6);
+  biruta(-101, 12, 33, -0.3, -1);
+  argolaSino(-81, 14.6, 50, -1, -0.6);
+  argolaSino(-103, 17, 24, -0.3, -1);
+  argolaSino(-93, 14.2, 62, 0, -1);
+  rotulo("três argolas-sino: atravesse flutuando", -86, 25, 48, "dica");
+  // torre de vigia (mini-marco) com a biruta grande, na ilha do meio
+  malha(new THREE.CylinderGeometry(1.8, 2.2, 10, 8), mat(0xc8955a), -100, 17, 44);
+  malha(new THREE.ConeGeometry(2.6, 3, 8), mat(0x3f7fd9), -100, 23.5, 44);
+  biruta(-100, 25, 44, -1, -1);
+  bolota(-91, 12, 42); bolota(-96, 12, 35); bolota(-108, 14, 12);
+  fila([[-68, 11.2, 54], [-79, 14.6, 51], [-84, 14.8, 48], [-96, 13.2, 46], [-101, 16.2, 27], [-104, 16.6, 21], [-76, 11.7, 70], [-86, 12.2, 76]]);
+  roda(-92, 13.2, 38, 4, 5);
+  arco(-106, 14, 6, 0.1, -1);
+  // bolso embaixo da ilha do meio: uma faixa que desce leva à ilhota do vaga-lume 1; um fardo que quica devolve
+  ilha(-106, 3, 50, 3.6, S.grama);
+  faixaVento([-102, 11, 48], [-105, 5, 50], 4, 3);
+  vagalume(-106, 4.4, 50);
+  fardo(-104, 3, 51.5, 0.9);
+  // migalhas no meio das faixas de vento: mostram para onde ele leva
+  fila([[-75.5, 13.6, 53.5], [-86, 14.4, 47.2], [-101.5, 16.2, 27.5], [-104, 16.8, 20], [-93, 14, 66.5], [-93, 14, 57.5], [-87, 12.6, 76], [-80, 12.2, 73.5]]);
+  roda(-106, 15.2, 10, 3, 4);
+  rotulo("2 · Ilhas do Vento", -92, 30, 40);
+  rotulo("bolso: ilhota embaixo (vaga-lume 1)", -108, 9, 54, "bolso");
+
+  // viagem 2: nuvem soprada pelo vento, das ilhas para a fazenda
+  viajante(nuvemCarro, [-106, 15, 2], [-80, 19, -50], 0.45);
+  tracejado([[-106, 16, 2], [-96, 24, -24], [-80, 20, -50]], 0xffffff);
+  rotulo("viagem: nuvem soprada pelo vento", -96, 30, -24, "viagem");
+
+  // ================= 3 · FAZENDA DAS NUVENS =================
+  ilha(-70, 18, -78, 30, S.grama);
+  posto(-82, 18, -54, "P2");
+  celeiro(-56, 18, -66, 11, 9, 7, Math.PI * 0.85);
+  pipa(-58, 22, -59);
+  rotulo("poder da fase: a Pipa", -58, 31, -59, "poder");
+  // os três silos com o cata-vento no alto (13 m) e a coluna de vento ao lado de cada um
+  [[-92, -72], [-80, -104], [-46, -92]].forEach(function (s) {
+    silo(s[0], 18, s[1], 11);
+    colunaVento(s[0] + 3.8, 18, s[1] + 1.5, 33);
+    [22, 26, 30].forEach(function (h) { estrelinha(s[0] + 3.8, h, s[1] + 1.5); });
+  });
+  rotulo("três cata-ventos no alto dos silos: a coluna de vento leva com a pipa", -70, 42, -90, "dica");
+  // campo de trigo e as cercas
+  malha(new THREE.BoxGeometry(14, 1.0, 10), mat(0xe9c25a), -72, 18.5, -90);
+  cerca([-80, 18, -84], [-64, 18, -84]);
+  cerca([-80, 18, -96], [-64, 18, -96]);
+  // bolso alto: a coluna de vento atrás do celeiro leva ao telhado (vaga-lume 2); coração no paiol
+  colunaVento(-50, 18, -72, 29);
+  vagalume(-55, 30, -66);
+  (function () { var c = malha(new THREE.BoxGeometry(5, 4, 4), mat(0x8a5a36), -44, 20, -60); c.add(new THREE.LineSegments(new THREE.EdgesGeometry(c.geometry), new THREE.LineBasicMaterial({ color: 0x3d2a14 }))); })();
+  coracao(-44, 23.2, -60);
+  bolota(-80, 18, -70); bolota(-63, 18, -88); bolota(-77, 18, -100);
+  trilha([[-82, 18, -51], [-72, 18, -57], [-62, 18, -60], [-50, 18, -66], [-40, 18, -73]], 3.2);
+  [[-74, -58], [-66, -61], [-58, -64], [-50, -69]].forEach(function (p) { fardo(p[0], 18, p[1] + 4, 0.8); });
+  fila([[-76, 19.2, -55], [-68, 19.2, -58], [-46, 19.2, -70], [-88, 19.2, -84], [-70, 19.2, -96]]);
+  roda(-72, 19.4, -90, 4.5, 6);
+  ilha(-36, 18, -74, 4.5, S.grama);
+  arco(-42, 18, -73.5, 1, 0.1);
+  [[-96, 18, -60], [-60, 18, -106], [-42, 18, -98]].forEach(function (p) { arvore(p[0], p[1], p[2], 7); });
+  roda(-56, 19.4, -66, 8.5, 6);
+  fila([[-50, 23, -72], [-50, 27, -72]]);
+  rotulo("3 · Fazenda das Nuvens", -70, 50, -78);
+  rotulo("bolso alto: telhado do celeiro (vaga-lume 2)", -52, 37, -70, "bolso");
+
+  // viagem 3: teleférico de cesta (vai e volta)
+  (function () {
+    var a = new THREE.Vector3(-36, 18, -74), b = new THREE.Vector3(8, 22, -44);
+    [a, b].forEach(function (p) { malha(new THREE.CylinderGeometry(0.4, 0.6, 9, 10), mat(0x55607a), p.x, p.y + 4.5, p.z); });
+    cena.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.clone().setY(a.y + 8), b.clone().setY(b.y + 8)]), new THREE.LineBasicMaterial({ color: 0x2b2140 })));
+    var g = new THREE.Group();
+    var cesta = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 2.6), mat(0xe94f4f)); cesta.position.y = 0.7;
+    var haste = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6.6, 6), mat(0x2b2140)); haste.position.y = 4.7;
+    g.add(cesta, haste);
+    cena.add(g);
+    animados.push(function (t) { g.position.lerpVectors(a, b, 0.5 - 0.5 * Math.cos(t * 0.45)); });
+  })();
+  rotulo("viagem: teleférico (vai e volta)", -14, 36, -60, "viagem");
+
+  // ================= 4 · CORREDOR DOS MOINHOS =================
+  var g0 = noMoinho(70, 40, 22), g1 = noMoinho(46, 40, 25), g2 = noMoinho(22, 40, 28), g3 = noMoinho(-2, 40, 31), g4 = noMoinho(-26, 36, 33);
+  [g0, g1, g2, g3, g4].forEach(function (p, i) { ilha(p[0], p[1], p[2], i === 0 ? 6 : 5, S.grama); });
+  posto(g0[0] + 1.5, g0[1], g0[2] + 1, "P3");
+  // um moinho de gôndolas em cada uma das três ilhas do meio, com a coluna de vento até a janela do freio
+  [g1, g2, g3].forEach(function (p, i) {
+    var giro = Math.atan2(p[0], p[2]);
+    var eixo = moinhoGondolas(p[0] - Math.sin(giro) * 2, p[1], p[2] - Math.cos(giro) * 2, giro, 9.6, 7, false);
+    colunaVento(p[0] + Math.cos(giro) * 3, p[1], p[2] - Math.sin(giro) * 3, p[1] + 9.6);
+    estrelinha(eixo.x, eixo.y + 1.6, eixo.z);
+  });
+  rotulo("o freio de cada moinho fica na janela do eixo: coluna de vento com a pipa", g2[0] + 16, 50, g2[2] - 6, "dica");
+  // rajadas de lado entre as ilhas (vão e voltam)
+  [[g1, g2], [g2, g3]].forEach(function (par) {
+    var a = par[0], b = par[1], m = [(a[0] + b[0]) / 2, Math.max(a[1], b[1]) + 3, (a[2] + b[2]) / 2];
+    faixaVento([m[0] - 5, m[1], m[2] - 5], [m[0] + 5, m[1], m[2] + 5], 7, 5, true);
+  });
+  biruta(g1[0] + 3, g1[1], g1[2] + 2, 1, 1);
+  biruta(g3[0] + 3, g3[1], g3[2] + 2, 1, 1);
+  bolota(g1[0] - 2, g1[1], g1[2] - 1); bolota(g3[0], g3[1], g3[2] + 2); bolota(g2[0], g2[1] + 9, g2[2] + 4);
+  fila([[g0[0], g0[1] + 1.2, g0[2]], [g1[0], g1[1] + 1.2, g1[2]], [g2[0], g2[1] + 1.2, g2[2]], [g3[0], g3[1] + 1.2, g3[2]], [g4[0], g4[1] + 1.2, g4[2]]]);
+  // segredo: ilhota escondida atrás do terceiro moinho, alcançada do alto da roda (vaga-lume 3)
+  var esc = noMoinho(-6, 50, 41);
+  ilha(esc[0], esc[1], esc[2], 3.2, S.grama);
+  vagalume(esc[0], esc[1] + 1.4, esc[2], true);
+  roda(esc[0], esc[1] + 1.0, esc[2], 1.8, 3);
+  // a ponte de tábuas da última ilha até a sacada de baixo do Moinho Gigante
+  var anel = noMoinho(-26, 18.4, 30);
+  tabuas([g4[0], 33.2, g4[2]], [anel[0], 30.2, anel[2]], 3.4);
+  arco(g4[0] - 2.5, 33, g4[2] + 1.2, -g4[0], -g4[2]);
+  roda(g4[0], g4[1] + 1.2, g4[2], 2.8, 5);
+  [[g0, g1], [g1, g2], [g2, g3], [g3, g4]].forEach(function (par) {
+    var a = par[0], b = par[1];
+    estrelinha((a[0] + b[0]) / 2, Math.max(a[1], b[1]) + 2.6, (a[2] + b[2]) / 2);
+  });
+  rotulo("4 · Corredor dos Moinhos", g2[0] + 22, 58, g2[2] - 10);
+  rotulo("segredo: ilhota atrás do 3º moinho (vaga-lume 3)", esc[0], esc[1] + 8, esc[2], "bolso");
+
+  // ================= 5 · SUBIDA DO MOINHO GIGANTE =================
+  posto(anel[0] - 1, 30, anel[2] - 1.5, "P4");
+  // escada de tábuas em espiral por fora da torre, de 30 a 40 m, no sentido do relógio
+  for (var k = 0; k < 22; k++) {
+    var gr = -40 - k * 12, alt = 30.4 + k * 0.45;
+    var d = noMoinho(gr, 12.6, alt);
+    var deg = malha(new THREE.BoxGeometry(3.2, 0.4, 2.2), mat(COR.madeira), d[0], d[1], d[2]);
+    deg.rotation.y = gr * Math.PI / 180;
+    if (k % 2 === 1) estrelinha(d[0], d[1] + 1.2, d[2]);
+  }
+  // as três janelas com o ferrolho laranja; aberta, cada uma solta uma coluna de vento até o degrau seguinte
+  [[-110, 32], [-200, 35], [-290, 38]].forEach(function (j) {
+    var p = noMoinho(j[0], 11.3, j[1] + 1.5);
+    var jan = malha(new THREE.BoxGeometry(2.4, 2.6, 0.4), mat(0x6e4a26), p[0], p[1], p[2]);
+    jan.rotation.y = (j[0] + 90) * Math.PI / 180;
+    var f = noMoinho(j[0], 11.8, j[1] + 1.5);
+    malha(new THREE.BoxGeometry(0.6, 0.6, 0.6), mat(COR.laranja), f[0], f[1], f[2]);
+    var c = noMoinho(j[0] - 14, 15.5, 0);
+    colunaVento(c[0], j[1] - 1.6, c[2], j[1] + 5);
+  });
+  rotulo("três janelas: um soco no ferrolho abre e solta o vento", -16, 50, -14, "dica");
+  // segredo: a parede rachada da sacada de baixo, com a salinha do coração
+  var racha = noMoinho(-150, 15, 30);
+  var parede = malha(new THREE.BoxGeometry(5, 5, 1), new THREE.MeshLambertMaterial({ map: texRacha }), racha[0], 32.5, racha[2]);
+  parede.rotation.y = (-150 - 90) * Math.PI / 180;
+  coracao(racha[0] * 0.85, 31.4, racha[2] * 0.85);
+  bolota.apply(null, noMoinho(-90, 17, 30));
+  bolota.apply(null, noMoinho(-240, 13, 37));
+  fila([noMoinho(-40, 17, 31.2), noMoinho(-60, 17, 31.2), noMoinho(-120, 17, 31.2), noMoinho(-170, 17, 31.2), noMoinho(-200, 17, 31.2),
+    noMoinho(-230, 17, 31.2), noMoinho(-260, 17, 31.2)]);
+  rotulo("5 · Subida do Moinho Gigante", -30, 62, 12);
+  rotulo("segredo: parede rachada (coração)", racha[0], 39, racha[2], "bolso");
+
+  // ================= ARENA NO TOPO =================
+  bolota(-4, 40, 11); bolota(5, 40, 11); bolota(12, 40, -2);
+  malha(new THREE.BoxGeometry(2.4, 1.6, 1.6), mat(0xffc93a), 0, 40.8, 13);
+  var geoEG = new THREE.ExtrudeGeometry(formaEstrela, { depth: 0.6, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, bevelSegments: 2 });
+  geoEG.center();
+  var estrelaGrande = malha(geoEG, new THREE.MeshBasicMaterial({ color: 0xffd23f }), 0, 62, 0);
+  estrelaGrande.scale.setScalar(4);
+  brilho(0, 62, 0, 0xffe066, 34, true);
+  animados.push(function (t) { estrelaGrande.rotation.y = t * 0.8; });
+  roda(0, 41, 12.5, 3.4, 4);
+  rotulo("Arena no topo", 0, 70, 0);
+
+  // ---------- linhas de autor (escondidas) ----------
+  var pontosRota = [[12, 0.6, 124], [2, 0.6, 115], [2, 3, 104], [2, 0.6, 95], [4, 0.6, 87], [-14, 0.6, 90], [18, 0.6, 90], [-30, 0.6, 96],
+    [-43, 1, 92], [-63, 10.6, 63], [-68, 10.6, 58], [-81, 14.6, 50], [-96, 12.6, 40], [-103, 17, 24], [-106, 14.6, 10], [-96, 24, -24],
+    [-80, 18.6, -50], [-58, 18.6, -61], [-92, 31, -72], [-80, 31, -104], [-46, 31, -92], [-36, 18.6, -74], [8, 22.6, -44], g0, g1, g2, g3, g4,
+    anel, noMoinho(-120, 12.6, 33), noMoinho(-220, 12.6, 37), noMoinho(-300, 12.6, 40), [0, 40.6, 12]];
+  rota = pontilhado(pontosRota, COR.laranja, 0.35, 2.4);
+  rota.forEach(function (m) { m.visible = false; });
+  var comprimentoRota = Math.round(curva(pontosRota).getLength());
+  vistas = [tracejado([[12, 2.5, 128], [0, 62, 0]], 0x1d2340), tracejado([[-70, 20, -78], [0, 62, 0]], 0x1d2340), tracejado([[-96, 15, 40], [0, 62, 0]], 0x1d2340),
+    tracejado([g0, [0, 62, 0]], 0x1d2340)];
+  vistas.forEach(function (v) { v.visible = false; });
+
+  // ---------- números ----------
+  var numeros = document.getElementById("numeros");
+  [["playgrounds", "5 + arena"], ["viagens", 4], ["rota principal", "~" + comprimentoRota + " m"], ["estrelinhas", estrelas], ["vaga-lumes", 3], ["postos", "P0 + 4"], ["Bolotas", bolotas], ["corações extras", coracoes]].forEach(function (n) {
+    var s = document.createElement("span");
+    s.textContent = n[0] + ": " + n[1];
+    numeros.appendChild(s);
+  });
+
+  // ---------- câmera, botões e ficha ----------
+  var voo = null;
+  function irPara(chave) {
+    var t = PARTES[chave];
+    voo = { de: camera.position.clone(), deAlvo: controles.target.clone(), para: new THREE.Vector3().fromArray(t.cam), paraAlvo: new THREE.Vector3().fromArray(t.alvo), t0: performance.now() };
+    var ficha = document.getElementById("ficha");
+    ficha.innerHTML = "";
+    var h = document.createElement("h2"); h.textContent = t.nome;
+    var m = document.createElement("p"); m.className = "medida"; m.textContent = t.medida;
+    var p = document.createElement("p"); p.textContent = t.texto;
+    ficha.append(h, m, p);
+    function grupo(titulo, itens) {
+      var d = document.createElement("div"); d.className = "grupo";
+      var hh = document.createElement("h3"); hh.textContent = titulo;
+      var ul = document.createElement("ul");
+      itens.forEach(function (item) { var li = document.createElement("li"); li.textContent = item; ul.appendChild(li); });
+      d.append(hh, ul);
+      ficha.appendChild(d);
+    }
+    if (t.bolsos) grupo("Bolsos para explorar", t.bolsos);
+    if (t.bolotas) grupo("Bolotas", [t.bolotas]);
+    document.querySelectorAll("#botoes button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.parte === chave ? "true" : "false"); });
+  }
+  var botoes = document.getElementById("botoes");
+  ORDEM.forEach(function (chave) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = PARTES[chave].botao;
+    b.dataset.parte = chave;
+    if (PARTES[chave].viagem) b.className = "viagem";
+    b.addEventListener("click", function () { irPara(chave); });
+    botoes.appendChild(b);
+  });
+  function alternar(id, aoMudar) {
+    var b = document.getElementById(id);
+    b.addEventListener("click", function () {
+      var ligado = b.getAttribute("aria-pressed") !== "true";
+      b.setAttribute("aria-pressed", ligado ? "true" : "false");
+      aoMudar(ligado);
+    });
+  }
+  alternar("b-nomes", function (on) { rotulos.forEach(function (r) { r.visible = on; }); });
+  alternar("b-rota", function (on) { rota.forEach(function (m) { m.visible = on; }); });
+  alternar("b-vista", function (on) { vistas.forEach(function (v) { v.visible = on; }); });
+  alternar("b-gira", function (on) { controles.autoRotate = on; controles.autoRotateSpeed = 0.6; });
+
+  var inicio = (location.hash || "").replace("#", "");
+  if (!PARTES[inicio]) inicio = "geral";
+  camera.position.fromArray(PARTES[inicio].cam);
+  controles.target.fromArray(PARTES[inicio].alvo);
+  irPara(inicio);
+  voo = null;
+
+  function ajustar() {
+    var w = canvas.clientWidth, h = canvas.clientHeight, pr = renderer.getPixelRatio();
+    if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  }
+  var reduzir = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var t0 = performance.now();
+  function quadro(agora) {
+    ajustar();
+    var t = (agora - t0) / 1000;
+    if (!reduzir) animados.forEach(function (f) { f(t); });
+    if (voo) {
+      var k = Math.min((agora - voo.t0) / 900, 1);
+      var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      camera.position.lerpVectors(voo.de, voo.para, e);
+      controles.target.lerpVectors(voo.deAlvo, voo.paraAlvo, e);
+      if (k >= 1) voo = null;
+    }
+    controles.update();
+    renderer.render(cena, camera);
+    requestAnimationFrame(quadro);
+  }
+  requestAnimationFrame(quadro);
+})();
+</script>

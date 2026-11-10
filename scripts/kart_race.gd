@@ -28,7 +28,9 @@ const WIN_BONUS := 5
 ## chega a 17 m/s), a faixa de cada um (metros para o lado da linha do meio) e quantas amostras (de 1 m) ele olha
 ## à frente para virar.
 const RIVALS := 2
-const RIVAL_PILOTS := ["res://assets/characters/adventurers/Mage.glb"]
+## O Mago fica numa pasta própria: a `assets/characters/adventurers/` não vai na build (export_presets.cfg) e, de lá,
+## o `load` vinha nulo no PC e o jogo fechava ao começar a corrida.
+const RIVAL_PILOTS := ["res://assets/characters/pilotos/Mage.glb"]
 const RIVAL_SPEEDS := [15.8, 16.5]
 const RIVAL_LANES := [3.0, -3.0]
 const RIVAL_LOOK := 11

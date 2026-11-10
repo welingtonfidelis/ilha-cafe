@@ -4138,6 +4138,16 @@ func _run_endless_test() -> void:
 ## Pista de kart em 8 (refeita em 2026-10-29): uma corrida de verdade no piloto automático (acelera e vira para
 ## um ponto 12 m à frente na pista), passando por cima da ponte, por baixo dela e pela lombada, até a volta 1
 ## contar na chegada. Uso: godot --headless --path . -- --pista-kart
+## Dos caminhos dados, os que caem no exclude_filter da build (export_presets.cfg): esses não existem no PC.
+func _fora_da_build(caminhos: Array) -> Array:
+	var cfg := ConfigFile.new()
+	cfg.load("res://export_presets.cfg")
+	var filtros := (cfg.get_value("preset.0", "exclude_filter", "") as String).split(",", false)
+	return caminhos.filter(func(c: String) -> bool:
+		var local := c.trim_prefix("res://")
+		return Array(filtros).any(func(f: String) -> bool: return local.match(f.strip_edges())))
+
+
 func _run_kart_track_test() -> void:
 	var all_ok := true
 	story.fast = true
@@ -4145,6 +4155,9 @@ func _run_kart_track_test() -> void:
 	await _wait(0.5)
 	all_ok = _check("pista em 8 com uns 420 m por volta e 13 m de largura", absf(KartCircuit.length() - 420.0) < 25.0 and KartCircuit.WIDTH >= 12.0,
 			"(%.0f m)" % KartCircuit.length()) and all_ok
+	# No PC o jogo fechava ao começar a corrida: o Mago vinha de uma pasta que a build deixa de fora.
+	var fora := _fora_da_build(KartRace.RIVAL_PILOTS)
+	all_ok = _check("os pilotos rivais vêm de pastas que vão na build", fora.is_empty(), "(fora: %s)" % str(fora)) and all_ok
 	await _stand(kart_race.paddock)
 	var car: Kart = kart_race.vehicles[2]
 	kart_race.enter(car)
