@@ -670,7 +670,7 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 2 | **Farol com uso:** mirante com binóculo, no lugar da porta trancada | P/M | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
 | 3 | **Modo Fácil:** mais corações, esqueletos mais lentos, mira mais ajudada | P/M | feito em 2026-11-10 (ver "Modo Fácil") |
 | 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | feito em 2026-11-10 (ver "Objetivo com figura") |
-| 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | |
+| 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | feito em 2026-11-10 (ver "Pescaria no cais"); o aquário ficou na praia, ao lado da entrada do cais |
 | 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | |
 | 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | |
 | 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | |
@@ -684,6 +684,47 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 **Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Pescaria no cais (item 5 da lista, feito em 2026-11-10)
+
+Depois do item 4, o usuário pediu "commita e vamos seguir", e a lista seguiu na ordem sugerida.
+
+- **Onde:**
+  - na ponta do cais, ao lado do pescador: um círculo dourado no chão, o balde, a caixa de pesca e o placar "PESCARIA, N de 17 peixes" (`Pescaria.PONTO`, piso do cais a 0,45 m);
+  - o pescador ganhou a fala "Pegue a vara no círculo dourado e venha pescar comigo!".
+- **Como joga** (`scripts/pescaria.gd`):
+  1. No círculo, B (ou E) pega a vara do KayKit. O aventureiro guarda os blasters e fica na pose `Fishing_Idle` (o nó `pesca` na árvore de animação do `Player`). A câmera vai para trás e à direita dele, olhando o mar.
+  2. A boia voa para a água, a uns 5 m. Um peixe vem nadando por baixo, belisca a boia duas vezes e puxa.
+  3. Quando ele puxa, a boia afunda, toca o alerta, o controle vibra e aparece o **A grande** em cima da boia (no teclado, a tecla "Espaço"). A, ou atirar, fisga. O tempo para isso é 1,8 s, ou 3 s no Modo Fácil.
+  4. **Apertar A sem parar** enche a barra: 6, 8 ou 10 apertos pela raridade, dois a menos no Modo Fácil. A barra esvazia devagar, mas nunca até o fim. A boia e o peixe vêm chegando para o cais, se debatendo.
+  5. O peixe pula na frente da câmera, girando.
+  6. Aparece o **cartão** do peixe:
+     - o peixe de verdade num retrato;
+     - o nome;
+     - de 1 a 3 estrelas;
+     - "NOVO!" quando é o primeiro daquele;
+     - as moedas;
+     - a tira com as 17 bolinhas da coleção;
+     - "Aquário: N de 17".
+  7. Com A (ou sozinho, em 3,4 s), o peixe vai para o balde, fica com o rabo para fora até o próximo, e a boia volta para a água.
+  8. B guarda a vara.
+- **Sem perder:** quem não aperta a tempo vê o peixe escapar, e a boia volta sozinha. Na barra, o peixe não foge.
+- **Bloqueios:** com esqueleto por perto não pega a vara. Pescando, o celular não abre, e a seta do objetivo e a mira somem. A pausa devolve o aventureiro parado (`_parado_no_lugar()`, o mesmo do binóculo). Trocar de personagem pescando passa a vara para a mão do novo.
+- **Os 17 peixes** são os do Animated Cute Fish Pack (Quaternius), os mesmos do mar, com nome em português e raridade:
+  - 8 de uma estrela: palhaço, dourado, azul, tetra, cardeal, betta e os dois cirurgiões;
+  - 5 de duas: borboleta, grama-real, palhaço-zebra, peixe-vaca e papagaio;
+  - 4 de três: ídolo-mouro, carpa koi, mandarim e baiacu.
+- **Sorteio:** 60% das vezes, só entre os que faltam. Os raros saem menos (pesos 6, 3 e 1,5). A coleção anda sempre.
+- **Moedas:** peixe novo dá 5, 8 ou 12 moedas; repetido dá 2. A primeira moeda da campanha pode vir daqui (aparece o aviso da lojinha).
+- **Aquário** (`scripts/aquario.gd`):
+  - um tanque de vidro numa mesa de madeira, na areia ao lado da entrada do cais, de frente para a praça (10, 200), fora do círculo da defesa da praia;
+  - tem água azulzinha, areia, pedrinhas e algas;
+  - cada peixe novo vem nadar ali em oval (`Fish.squash`, com `water_y` próprio e fora do grupo "peixes" do mar);
+  - o placar conta "N de 17" e vira "AQUÁRIO COMPLETO!" no fim.
+- **Campanha:** a chave "peixes" do salvamento guarda quantos de cada; carregar põe os peixes no aquário. Cada peixe pego salva a campanha.
+- **Testes:**
+  - `-- --pescaria` confere 18 pontos: o aviso, a câmera e a vara, a mordida com o A, o fisgar, a barra em até 10 apertos, o cartão e as moedas, o balde, o peixe que escapa, o repetido, sair, salvar e carregar, o sorteio, os peixes dentro do aquário, o Modo Fácil e o celular;
+  - `-- --pescaria-captura` (com janela) tira seis fotos: `pesca_1_cais` até `pesca_6_aquario`.
 
 ### Objetivo com figura (item 4 da lista, feito em 2026-11-10)
 

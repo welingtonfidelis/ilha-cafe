@@ -15,6 +15,12 @@ const JUMP_HEIGHT := 1.3
 @export var depth := 0.5
 @export var speed := 1.2
 @export var can_jump := false
+## Altura da água (o mar e o rio usam a de sempre; o aquário do cais, a dele).
+@export var water_y := WATER_Y
+## Achata o círculo do nado no eixo Z (no aquário, que é mais largo que fundo).
+@export var squash := 1.0
+## Entra no grupo "peixes" (os do mar e do rio); os do aquário ficam de fora.
+@export var cardume := true
 
 var _angle := 0.0
 var _dir := 1.0
@@ -27,7 +33,8 @@ var _anims := {}
 
 
 func _ready() -> void:
-	add_to_group(&"peixes")
+	if cardume:
+		add_to_group(&"peixes")
 	_model = load(MODELS % model_name).instantiate()
 	_model.scale = Vector3.ONE * model_scale
 	add_child(_model)
@@ -54,9 +61,9 @@ func _play(short: String) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	_angle += _dir * speed / maxf(radius, 0.5) * delta
-	var pos := center + Vector3(cos(_angle), 0, sin(_angle)) * radius
-	var tangent := Vector3(-sin(_angle), 0, cos(_angle)) * _dir
-	pos.y = WATER_Y - depth + sin(_time * 1.7) * 0.08
+	var pos := center + Vector3(cos(_angle), 0, sin(_angle) * squash) * radius
+	var tangent := Vector3(-sin(_angle), 0, cos(_angle) * squash) * _dir
+	pos.y = water_y - depth + sin(_time * 1.7) * 0.08
 	if can_jump:
 		_next_jump -= delta
 		if _jump < 0.0 and _next_jump <= 0.0:
@@ -66,7 +73,7 @@ func _process(delta: float) -> void:
 		if _jump >= 0.0:
 			_jump += delta
 			var t := _jump / JUMP_TIME
-			pos.y = WATER_Y - depth + sin(PI * t) * (JUMP_HEIGHT + depth)
+			pos.y = water_y - depth + sin(PI * t) * (JUMP_HEIGHT + depth)
 			if t >= 1.0:
 				_jump = -1.0
 				_next_jump = randf_range(10.0, 25.0)
@@ -81,6 +88,6 @@ func _process(delta: float) -> void:
 
 
 func _splash() -> void:
-	var at := Vector3(global_position.x, WATER_Y + 0.05, global_position.z)
+	var at := Vector3(global_position.x, water_y + 0.05, global_position.z)
 	Fx.bubble_pop(get_parent(), at)
 	Sfx.play_at(get_parent(), "splash", at, -8.0)

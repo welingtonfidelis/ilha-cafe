@@ -48,6 +48,7 @@ const DUAL_DAMAGE := 0.75
 ## para o rosto. O encaixe no osso handslot.r saiu do meio das duas mãos nessa pose (conferido em
 ## tools/foto_celular.gd).
 const PHONE_POSE := "Holding_B"
+const VARA := "res://assets/props/pesca/fishing_rod.gltf"
 const PHONE_OFFSET := Vector3(0.052, 0.243, -0.021)
 const PHONE_ROTATION := Vector3(-18.0, -34.8, -71.3)
 const PITCH_MIN := -1.1345  # -65°
@@ -172,6 +173,10 @@ var _lollipop: Node3D
 ## Lojinha no celular: puxou o celular do bolso (o blaster some e ele segura o celular na frente).
 var using_phone := false
 var _phone: Node3D
+## Pescaria na ponta do cais (item 5 da lista de melhorias): a vara do KayKit na mão direita, os blasters guardados
+## e o corpo na pose de pescar (Fishing_Idle). A Pescaria cuida da linha, da boia e do peixe.
+var pescando := false
+var vara: Node3D
 var _node_melee_speed: AnimationNodeTimeScale
 var _node_aim: AnimationNodeAnimation
 var _shake := 0.0
@@ -333,6 +338,12 @@ func _install_model(new_model: Node3D) -> void:
 	if using_phone:
 		anim_tree.set("parameters/celular/blend_amount", 1.0)
 		_show_blasters(false)
+	vara = null
+	if pescando:
+		# Trocou de personagem pescando: a vara vai para a mão do novo.
+		_criar_vara()
+		anim_tree.set("parameters/pesca/blend_amount", 1.0)
+		_show_blasters(false)
 	if dizzy:
 		anim_tree.set("parameters/estado/transition_request", "tonto")
 	reloading = false
@@ -435,12 +446,19 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	bt.connect_node(&"celular", 0, &"pancada")
 	bt.connect_node(&"celular", 1, &"pose_celular")
 
+	# Pescaria: o corpo todo na pose de pescar (ele fica parado na ponta do cais).
+	var fishing_blend := AnimationNodeBlend2.new()
+	bt.add_node(&"pesca", fishing_blend, Vector2(1470, 250))
+	bt.add_node(&"pose_pesca", _anim("ferramentas/Fishing_Idle"), Vector2(1250, 750))
+	bt.connect_node(&"pesca", 0, &"celular")
+	bt.connect_node(&"pesca", 1, &"pose_pesca")
+
 	var hit := AnimationNodeOneShot.new()
 	hit.fadein_time = 0.05
 	hit.fadeout_time = 0.15
 	bt.add_node(&"golpe", hit, Vector2(1500, 100))
 	bt.add_node(&"anim_golpe", _anim("geral/Hit_A"), Vector2(1250, 300))
-	bt.connect_node(&"golpe", 0, &"celular")
+	bt.connect_node(&"golpe", 0, &"pesca")
 	bt.connect_node(&"golpe", 1, &"anim_golpe")
 
 	var dizzy_state := AnimationNodeTransition.new()
@@ -747,6 +765,49 @@ func pull_phone() -> void:
 		var tw := create_tween()
 		tw.tween_property(anim_tree, "parameters/celular/blend_amount", 1.0, 0.25)
 	Sfx.play(get_parent(), "troca_arma", 0.0, 0.0)
+
+
+## Pega a vara na ponta do cais, virado para `frente`: para de andar, guarda os blasters e fica na pose de pescar.
+func pegar_vara(frente: Vector3) -> void:
+	pescando = true
+	_cancel_reload()
+	aiming = false
+	velocity = Vector3.ZERO
+	_sprint_toggle = false
+	if not is_instance_valid(vara):
+		_criar_vara()
+	vara.visible = true
+	_show_blasters(false)
+	visual.rotation.y = atan2(frente.x, frente.z)
+	if is_instance_valid(anim_tree):
+		var tw := create_tween()
+		tw.tween_property(anim_tree, "parameters/pesca/blend_amount", 1.0, 0.25)
+
+
+## Guarda a vara e volta o blaster para a mão.
+func guardar_vara() -> void:
+	if not pescando:
+		return
+	pescando = false
+	if is_instance_valid(anim_tree):
+		var tw := create_tween()
+		tw.tween_property(anim_tree, "parameters/pesca/blend_amount", 0.0, 0.2)
+	if is_instance_valid(vara):
+		vara.visible = false
+	_show_blasters(true)
+
+
+func _criar_vara() -> void:
+	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false) if is_instance_valid(model) else null
+	if sk == null:
+		return
+	var mao := BoneAttachment3D.new()
+	mao.name = "MaoDaVara"
+	mao.bone_name = "handslot.r"
+	sk.add_child(mao)
+	vara = load(VARA).instantiate()
+	vara.name = "Vara"
+	mao.add_child(vara)
 
 
 ## Guarda o celular e volta o blaster para a mão.

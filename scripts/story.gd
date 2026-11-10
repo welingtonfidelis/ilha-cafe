@@ -582,6 +582,7 @@ func snapshot() -> Dictionary:
 		"segunda_pistola": player.second_pistol,
 		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
 		"hora": game.day_night.t if game.day_night else DayNight.MORNING,
+		"peixes": game.pescaria.pegos.duplicate() if game.pescaria else {},
 	}
 
 
@@ -807,6 +808,8 @@ func restore(data: Dictionary) -> void:
 		records[k] = float(saved_records[k]) if k == "kart" else int(saved_records[k])
 	if game.gallery:
 		game.gallery.set_hits(records.tiro)
+	if game.pescaria:
+		game.pescaria.carregar(data.get("peixes", {}))
 	game.activate_checkpoint(data.get("bandeira", "Praca"))
 	player.respawn(game.current_checkpoint.spawn_position())
 	_set_fast()

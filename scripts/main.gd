@@ -128,6 +128,9 @@ var ending: Ending
 var party_mode: EndlessParty
 ## O farol da ponta sudeste, um mirante com binóculo (o Faísca tem o jogo dele, pelo menu principal). Nulo na arena.
 var farol: FarolIlha
+## Pescaria na ponta do cais e o aquário da praia (item 5 da lista de melhorias). Nulos na arena.
+var pescaria: Pescaria
+var aquario: Aquario
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -297,6 +300,8 @@ var music: AudioStreamPlayer
 const REGEN_FACIL := 6.0
 ## O vovô da praça fala do farol, que virou mirante.
 const FAROL_FALA := "Lá do alto do farol dá para ver a ilha inteira!"
+## O pescador chama para a pescaria do lado dele.
+const PESCADOR_FALA := "Pegue a vara no círculo dourado e venha pescar comigo!"
 ## Os testes automáticos rodam na arena plana (previsível); o jogo de verdade, na ilha.
 const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som", "--armas", "--inimigos", "--inimigos-captura", "--pistolas-captura", "--dardo-captura", "--brinquedos-captura"]
 
@@ -425,6 +430,17 @@ func _ready() -> void:
 		farol.game = self
 		farol.aberto = true
 		add_child(farol)
+		aquario = Aquario.new()
+		aquario.name = "Aquario"
+		add_child(aquario)
+		pescaria = Pescaria.new()
+		pescaria.name = "Pescaria"
+		pescaria.game = self
+		pescaria.aquario = aquario
+		add_child(pescaria)
+		var pescador := get_node_or_null("Pescador") as Townsperson
+		if pescador and not PESCADOR_FALA in pescador.lines:
+			pescador.lines.append(PESCADOR_FALA)
 		var vovo := get_node_or_null("Vovo") as Townsperson
 		if vovo and not FAROL_FALA in vovo.lines:
 			vovo.lines.append(FAROL_FALA)
@@ -580,6 +596,12 @@ func _ready() -> void:
 	elif "--objetivo-captura" in args:
 		select_panel.hide()
 		_run_objective_capture()
+	elif "--pescaria" in args:
+		select_panel.hide()
+		_run_fishing_test()
+	elif "--pescaria-captura" in args:
+		select_panel.hide()
+		_run_fishing_capture()
 	elif SaveGame.go_new:
 		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
 		SaveGame.go_new = false
@@ -777,7 +799,7 @@ func close_menus() -> void:
 	controls_panel.hide()
 	ajustes_panel.hide()
 	menu_dim.hide()
-	crosshair.visible = not player.parked and not _no_mirante()
+	crosshair.visible = not player.parked and not _parado_no_lugar()
 	get_tree().paused = false
 	_game_started = true
 	if was == "loja":
@@ -790,7 +812,7 @@ func close_menus() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo (olhando pelo binóculo do
 	# farol, ele continua parado na porta).
-	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = not _no_mirante())
+	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = not _parado_no_lugar())
 
 
 # --- campanha: continuar e começar de novo ------------------------------------
@@ -802,7 +824,8 @@ func open_shop() -> void:
 
 ## Select (ou C): puxa o celular do bolso e, meio segundo depois, abre a lojinha. Só fora de luta, a pé.
 func open_phone() -> bool:
-	if story == null or menu_state != "" or _phone_opening or player.dizzy or (ending and ending.busy()):
+	if story == null or menu_state != "" or _phone_opening or player.dizzy or (ending and ending.busy()) \
+			or (pescaria and pescaria.pescando()):
 		return false
 	if player.in_vehicle:
 		show_message("Desça primeiro para usar o celular", Color("#ff9d9d"), 1.6)
@@ -1626,6 +1649,8 @@ func _process(_delta: float) -> void:
 			hint = "Aperte %s para dirigir: %s" % [button, kart_race.nearest.display_name]
 		elif menu_state == "" and farol and farol.dica(button) != "":
 			hint = farol.dica(button)
+		elif menu_state == "" and pescaria and pescaria.dica(button) != "":
+			hint = pescaria.dica(button)
 		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
@@ -1636,7 +1661,7 @@ func _process(_delta: float) -> void:
 		wave_label.position = Vector2(view.x * 0.5 - wave_label.size.x * 0.5, top)
 		banner_title.position = Vector2(view.x * 0.5 - banner_title.size.x * 0.5, view.y * 0.2)
 		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
-		var show_target := menu_state == "" and not (ending and ending.busy())
+		var show_target := menu_state == "" and not (ending and ending.busy()) and not (pescaria and pescaria.pescando())
 		var view_cam := get_viewport().get_camera_3d()
 		var target := story.objective_target
 		var shop_target := story.shop_target()
@@ -1682,6 +1707,11 @@ func _regenerar(delta: float) -> void:
 ## Olhando pelo binóculo do farol.
 func _no_mirante() -> bool:
 	return farol != null and farol.no_mirante
+
+
+## Parado num lugar, com outra câmera: no binóculo do farol ou pescando na ponta do cais.
+func _parado_no_lugar() -> bool:
+	return _no_mirante() or (pescaria != null and pescaria.pescando())
 
 
 ## Pausa (ou menu inicial) > "Menu principal": salva e volta para a escolha entre a ilha e o Faísca.
@@ -5441,6 +5471,150 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Pescaria na ponta do cais e o aquário da praia (item 5 da lista de melhorias): o círculo com o aviso, B pega a vara
+## (câmera do cais, boia na água), o peixe morde e o A grande aparece, A fisga, A sem parar enche a barra, o peixe
+## pula, o cartão mostra o novo, as moedas entram e o aquário ganha o peixe; o que escapa volta a lançar; o repetido
+## dá menos moedas; B guarda a vara; a coleção vai para o salvamento e o sorteio prefere os que faltam.
+## Uso: godot --headless --path . -- --pescaria
+func _run_fishing_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.6)
+	all_ok = _check("ponta do cais com círculo, balde, placar e aquário vazio na praia", is_instance_valid(pescaria)
+			and pescaria.balde.is_inside_tree() and "0 de 17" in pescaria.placar.text and aquario.peixes.is_empty()
+			and "0 de 17" in aquario.placar.text and aquario.global_position.y > -1.0, "(aquário em y %.2f)" % aquario.global_position.y) and all_ok
+	await _stand(Pescaria.PONTO + Vector3(0, 0, -1.2))
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso ensina a pescar", hint_label.visible and "pescar" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	pescaria.forcar = "Koi"
+	await _joy_button(JOY_BUTTON_B)
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 4.0)
+	var cam := get_viewport().get_camera_3d()
+	var linha := pescaria._linha()
+	all_ok = _check("B pega a vara: câmera do cais, boia na água, vara na mão, sem mira nem seta", cam == pescaria.camera
+			and player.pescando and is_instance_valid(player.vara) and player.vara.visible and not player.input_enabled
+			and absf(pescaria.boia.global_position.y - Pescaria.AGUA) < 0.2 and not crosshair.visible and not objective_marker.visible
+			and linha != null and linha.global_basis.y.length() > 2.0, "(boia em y %.2f)" % pescaria.boia.global_position.y) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.FISGAR, 6.0)
+	await _wait(0.1)
+	all_ok = _check("o peixe morde: a boia afunda, o A grande aparece e toca o alerta", pescaria.fase == Pescaria.Fase.FISGAR
+			and pescaria.botao_a.visible and pescaria.boia.global_position.y < Pescaria.AGUA - 0.1 and "alerta" in Sfx.played) and all_ok
+	var moedas := story.coins
+	await _joy_button(JOY_BUTTON_A)
+	all_ok = _check("A fisga: aparece a barra", pescaria.fase == Pescaria.Fase.PUXANDO and pescaria.barra.visible) and all_ok
+	var apertos := 0
+	while pescaria.fase == Pescaria.Fase.PUXANDO and apertos < 20:
+		await _joy_button(JOY_BUTTON_A)
+		apertos += 1
+	all_ok = _check("A sem parar enche a barra e o peixe pula", pescaria.fase == Pescaria.Fase.PEGOU and apertos <= 10,
+			"(%d apertos)" % apertos) and all_ok
+	await _wait(0.7)
+	all_ok = _check("o cartão mostra a carpa koi nova, as moedas entram e o aquário ganha o peixe", pescaria.cartao.visible
+			and pescaria.cartao_nome.text == "Carpa koi" and pescaria.cartao_novo.visible
+			and story.coins == moedas + Pescaria.MOEDAS_NOVO[3] and pescaria.pegos.get("Koi", 0) == 1
+			and aquario.peixes.has("Koi") and "1 de 17" in aquario.placar.text and "1 de 17" in pescaria.placar.text,
+			"(%d moedas)" % (story.coins - moedas)) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 6.0)
+	all_ok = _check("o peixe vai para o balde e a boia volta para a água", pescaria.fase == Pescaria.Fase.ESPERANDO
+			and is_instance_valid(pescaria.no_balde) and not pescaria.cartao.visible) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESCAPOU, 10.0)
+	all_ok = _check("sem apertar, o peixe escapa", pescaria.fase == Pescaria.Fase.ESCAPOU and pescaria.pegos.Koi == 1) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 4.0)
+	all_ok = _check("e a boia volta sozinha para a água", pescaria.fase == Pescaria.Fase.ESPERANDO) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.FISGAR, 6.0)
+	moedas = story.coins
+	await _joy_button(JOY_BUTTON_A)
+	apertos = 0
+	while pescaria.fase == Pescaria.Fase.PUXANDO and apertos < 20:
+		await _joy_button(JOY_BUTTON_A)
+		apertos += 1
+	await _wait(0.3)
+	all_ok = _check("a segunda koi não é nova e dá menos moedas", pescaria.pegos.Koi == 2 and not pescaria.cartao_novo.visible
+			and story.coins == moedas + Pescaria.MOEDAS_REPETIDO and aquario.peixes.size() == 1) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait_until(func() -> bool: return not pescaria.pescando(), 3.0)
+	await _wait(0.4)
+	all_ok = _check("B guarda a vara: câmera do aventureiro, mira, blasters e controle de volta", get_viewport().get_camera_3d() == player.camera
+			and not player.pescando and not player.vara.visible and player.input_enabled and crosshair.visible
+			and not pescaria.boia.visible) and all_ok
+	var foto := story.snapshot()
+	all_ok = _check("a coleção vai para o salvamento", foto.get("peixes", {}).get("Koi", 0) == 2) and all_ok
+	pescaria.carregar({"Clownfish": 3, "Puffer": 1, "Bota": 2})
+	all_ok = _check("carregando, o aquário recebe os peixes salvos (e ignora o que não é peixe)", pescaria.pegos.size() == 2
+			and aquario.peixes.has("Puffer") and "2 de 17" in pescaria.placar.text) and all_ok
+	var novos := 0
+	for i in 300:
+		if not pescaria.pegos.has(pescaria.sortear()):
+			novos += 1
+	all_ok = _check("o sorteio prefere os peixes que faltam", novos > 180, "(%d de 300)" % novos) and all_ok
+	var dentro := true
+	for id in aquario.peixes:
+		var f: Fish = aquario.peixes[id]
+		var local := f.global_position - aquario.global_position
+		dentro = dentro and absf(local.x) < Aquario.LARGURA * 0.5 and absf(local.z) < Aquario.FUNDO * 0.5 \
+				and local.y > Aquario.MESA + Aquario.BORDA and f.global_position.y < aquario.agua_y()
+	all_ok = _check("os peixes nadam dentro do aquário", dentro) and all_ok
+	Ajustes.facil = true
+	pescaria.peixe_id = "Puffer"
+	all_ok = _check("no Modo Fácil, mais tempo para fisgar e menos apertos", pescaria.janela() > Pescaria.JANELA
+			and pescaria.puxoes() == Pescaria.PUXOES[3] - 2) and all_ok
+	Ajustes.padrao()
+	await _stand(Pescaria.PONTO + Vector3(0, 0, -1.2))
+	player.pull_phone()
+	await _wait(0.2)
+	all_ok = _check("com o celular na mão, não pega a vara", not pescaria.pode_entrar()) and all_ok
+	player.put_phone_away()
+	print("PESCARIA OK" if all_ok else "PESCARIA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da pescaria (pesca_1 a pesca_6): a ponta do cais com o círculo e o pescador, a boia esperando, o A grande, a
+## barra, o cartão do peixe novo e o aquário da praia com oito peixes. Uso: godot --path . -- --pescaria-captura
+func _run_fishing_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	player.using_gamepad = true
+	await _stand(Pescaria.PONTO + Vector3(1.0, 0, -6.0))
+	var olhar := Pescaria.PONTO - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.0)
+	await _shot("pesca_1_cais.png")
+	await _stand(Pescaria.PONTO + Vector3(0, 0, -1.0))
+	pescaria.forcar = "Clownfish"
+	pescaria.entrar()
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 4.0)
+	await _wait(1.4)
+	await _shot("pesca_2_espera.png")
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.FISGAR, 6.0)
+	await _wait(0.2)
+	await _shot("pesca_3_fisgar.png")
+	for i in 4:
+		await _joy_button(JOY_BUTTON_A)
+		await _wait(0.1)
+	await _wait(0.2)
+	await _shot("pesca_4_puxar.png")
+	var apertos := 0
+	while pescaria.fase == Pescaria.Fase.PUXANDO and apertos < 30:
+		await _joy_button(JOY_BUTTON_A)
+		apertos += 1
+	await _wait(0.9)
+	await _shot("pesca_5_cartao.png")
+	pescaria.sair()
+	await _wait_until(func() -> bool: return not pescaria.pescando(), 3.0)
+	pescaria.carregar({"Clownfish": 1, "Goldfish": 1, "BlueTang": 1, "YellowTang": 1, "Koi": 1, "Puffer": 1, "ButterflyFish": 1,
+			"MandarinFish": 1})
+	var frente := aquario.global_position + Vector3(-1.5, 0, -5.5)
+	await _stand(_ground_point(frente))
+	olhar = aquario.global_position + Vector3.UP * 1.4 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(2.0)
+	await _shot("pesca_6_aquario.png")
 	get_tree().quit()
 
 
