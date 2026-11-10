@@ -8,9 +8,9 @@ extends Fase
 ## na escada e nas sacadas. As 8 estrelinhas do farol ficam na escada e também contam.
 ## Cada porta mostra a imagem da fase, um ícone (nuvem para as do céu, casinha para as do chão) e quantas
 ## estrelinhas pede; fechada tem cadeado. A do topo, para a nave do Rei Bolotão, pede as Estrelas Grandes.
-## O teto é o céu apagado: cada Estrela Grande devolvida acende uma constelação. A porta do sul, no
-## térreo, volta para a ilha.
-## A Parte2 preenche `portas` antes de pôr o hub na árvore e escuta `porta_escolhida` e `saiu`.
+## O teto é o céu apagado: cada Estrela Grande devolvida acende uma constelação.
+## O FaiscaJogo preenche `portas` antes de pôr o hub na árvore e escuta `porta_escolhida`. A porta "saida" (que
+## voltava para a ilha) não é mais usada desde que o menu principal separou os dois jogos (2026-11-10).
 ## Ângulos em graus, como os das portas: 0 norte (-Z), 90 leste (+X), 180 sul, 270 oeste.
 
 signal porta_escolhida(id: String)

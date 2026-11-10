@@ -8,6 +8,10 @@ extends Control
 ##   nova       brilho de estrela            sair      símbolo de desligar
 ##   voltar     seta para a esquerda         objetivo  alvo
 ##   estrela    estrela amarela (sem bolinha)
+##   ajustes    engrenagem                   musica    nota musical
+##   som        alto-falante                 camera    olho
+##   inverter   setas para cima e para baixo vibracao  controle tremendo
+##   binoculo   binóculo
 
 var kind := "continuar"
 var color := Color("#4cc76a")
@@ -64,6 +68,55 @@ func _draw() -> void:
 			draw_circle(c, 11.0 * k, w)
 			draw_circle(c, 7.5 * k, color)
 			draw_circle(c, 4.0 * k, w)
+		"ajustes":
+			for i in 8:
+				var a := TAU * i / 8.0
+				var dente := PackedVector2Array()
+				for p in [Vector2(-2.6, 7.0), Vector2(2.6, 7.0), Vector2(2.0, 12.0), Vector2(-2.0, 12.0)]:
+					dente.append(c + p.rotated(a) * k)
+				draw_colored_polygon(dente, w)
+			draw_circle(c, 8.0 * k, w)
+			draw_circle(c, 3.5 * k, color)
+		"musica":
+			draw_circle(c + Vector2(-6, 7) * k, 4.0 * k, w)
+			draw_circle(c + Vector2(6, 4) * k, 4.0 * k, w)
+			draw_line(c + Vector2(-2.5, 7) * k, c + Vector2(-2.5, -8) * k, w, 2.6 * k, true)
+			draw_line(c + Vector2(9.5, 4) * k, c + Vector2(9.5, -11) * k, w, 2.6 * k, true)
+			draw_colored_polygon(_pts(c, k, [Vector2(-3.8, -8), Vector2(10.8, -11), Vector2(10.8, -6.5), Vector2(-3.8, -3.5)]), w)
+		"som":
+			draw_colored_polygon(_pts(c, k, [Vector2(-11, -4), Vector2(-6, -4), Vector2(1, -10), Vector2(1, 10), Vector2(-6, 4), Vector2(-11, 4)]), w)
+			draw_arc(c + Vector2(1, 0) * k, 5.5 * k, deg_to_rad(-50), deg_to_rad(50), 8, w, 2.4 * k, true)
+			draw_arc(c + Vector2(1, 0) * k, 10.0 * k, deg_to_rad(-50), deg_to_rad(50), 10, w, 2.4 * k, true)
+		"camera":
+			var olho := PackedVector2Array()
+			for i in 17:
+				var t := float(i) / 16.0
+				olho.append(c + Vector2(lerpf(-12, 12, t), -sin(t * PI) * 7.5) * k)
+			for i in range(15, 0, -1):
+				var t := float(i) / 16.0
+				olho.append(c + Vector2(lerpf(-12, 12, t), sin(t * PI) * 7.5) * k)
+			draw_colored_polygon(olho, w)
+			draw_circle(c, 4.5 * k, color)
+			draw_circle(c, 2.0 * k, w)
+		"inverter":
+			draw_line(c + Vector2(-4.5, 9) * k, c + Vector2(-4.5, -5) * k, w, 3.0 * k, true)
+			draw_colored_polygon(_pts(c, k, [Vector2(-10, -4), Vector2(-4.5, -11), Vector2(1, -4)]), w)
+			draw_line(c + Vector2(4.5, -9) * k, c + Vector2(4.5, 5) * k, w, 3.0 * k, true)
+			draw_colored_polygon(_pts(c, k, [Vector2(-1, 4), Vector2(4.5, 11), Vector2(10, 4)]), w)
+		"vibracao":
+			draw_circle(c + Vector2(-4.5, 1.5) * k, 4.5 * k, w)
+			draw_circle(c + Vector2(4.5, 1.5) * k, 4.5 * k, w)
+			draw_rect(Rect2(c + Vector2(-4.5, -3) * k, Vector2(9, 8) * k), w)
+			for lado in [-1.0, 1.0]:
+				draw_polyline(_pts(c, k, [Vector2(11.5 * lado, -7), Vector2(13.5 * lado, -3.5), Vector2(11.5 * lado, 0),
+						Vector2(13.5 * lado, 3.5), Vector2(11.5 * lado, 7)]), w, 1.8 * k, true)
+		"binoculo":
+			draw_circle(c + Vector2(-5.5, 3) * k, 5.5 * k, w)
+			draw_circle(c + Vector2(5.5, 3) * k, 5.5 * k, w)
+			draw_rect(Rect2(c + Vector2(-9, -9) * k, Vector2(7, 10) * k), w)
+			draw_rect(Rect2(c + Vector2(2, -9) * k, Vector2(7, 10) * k), w)
+			draw_circle(c + Vector2(-5.5, 3) * k, 2.6 * k, color)
+			draw_circle(c + Vector2(5.5, 3) * k, 2.6 * k, color)
 
 
 func _pts(c: Vector2, k: float, pts: Array) -> PackedVector2Array:

@@ -29,6 +29,9 @@ const ALL := [
 static var logging := false
 static var played: Array[String] = []
 static var _cache := {}
+## Volume de sempre de cada canal; os Ajustes de quem joga mexem por cima.
+static var _base_musica := -9.0
+static var _base_efeitos := 0.0
 
 
 static func setup_buses(music_db := -9.0, sfx_db := 0.0) -> void:
@@ -38,8 +41,19 @@ static func setup_buses(music_db := -9.0, sfx_db := 0.0) -> void:
 			var idx := AudioServer.bus_count - 1
 			AudioServer.set_bus_name(idx, bus_name)
 			AudioServer.set_bus_send(idx, &"Master")
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(BUS_MUSIC), music_db)
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(BUS_SFX), sfx_db)
+	_base_musica = music_db
+	_base_efeitos = sfx_db
+	aplicar_volumes()
+
+
+## Põe nos canais o volume de sempre mais o dos Ajustes (no zero, o canal fica mudo).
+static func aplicar_volumes() -> void:
+	for spec in [[BUS_MUSIC, _base_musica, Ajustes.musica], [BUS_SFX, _base_efeitos, Ajustes.efeitos]]:
+		var idx := AudioServer.get_bus_index(spec[0])
+		if idx == -1:
+			continue
+		AudioServer.set_bus_volume_db(idx, spec[1] + Ajustes.decibeis(spec[2]))
+		AudioServer.set_bus_mute(idx, spec[2] <= 0)
 
 
 static func stream(sfx_name: String) -> AudioStream:

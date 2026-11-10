@@ -73,9 +73,9 @@ func setup(p_game: Node) -> void:
 func _process(delta: float) -> void:
 	if game == null:
 		return
-	# A noite da festa e a abertura da Parte 2 são do Desfecho: o ciclo espera e, depois, volta de manhã.
+	# A noite da festa é do Desfecho: o ciclo espera e, depois, volta de manhã.
 	var ending: Ending = game.ending
-	var hold: bool = (ending != null and (ending.night or ending.busy())) or (game.parte2 != null and game.parte2.busy())
+	var hold: bool = ending != null and (ending.night or ending.busy())
 	if hold:
 		if not _held:
 			_held = true

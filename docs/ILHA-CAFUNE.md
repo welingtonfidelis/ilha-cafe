@@ -660,6 +660,54 @@ Um escorregador gigante do cemitério do Morro até a mata, por cima do rio, che
 
 ## 10. Decisões em aberto
 
+### Lista de melhorias da ilha (2026-11-10)
+
+Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cria uma lista de sugestões de melhorias ou novidades para implementar no jogo da ilha". A avaliação: história completa e boa de jogar; com o Faísca fora, o pós-jogo encolheu e o farol virou porta trancada; muito texto para quem não lê; sem tela de ajustes; nada para colecionar pela ilha; uma dificuldade só. Tamanho: P (um dia ou menos), M (alguns dias), G (maior).
+
+| # | Melhoria | Tamanho | Situação |
+|---|---|---|---|
+| 1 | **Ajustes:** volume da música e dos efeitos, rapidez da câmera, câmera invertida e vibração, no menu principal e nas pausas | P | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
+| 2 | **Farol com uso:** mirante com binóculo, no lugar da porta trancada | P/M | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
+| 3 | **Modo Fácil:** mais corações, esqueletos mais lentos, mira mais ajudada | P/M | |
+| 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | |
+| 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | |
+| 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | |
+| 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | |
+| 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | |
+| 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | |
+| 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | |
+| 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | |
+| 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | |
+| 13 | **Vozes** gravadas para os momentos principais | M | |
+| 14 | **Pressão nos gatilhos do DualSense** quando ele estiver conectado (pedido do usuário em 2026-11-10): gatilho duro no Pé-de-Moleque, tremidinho na rajada, estalo na escopeta | M | |
+
+**Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
+
+Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Ajustes e o farol mirante (itens 1 e 2 da lista, escolhidos pelo usuário em 2026-11-10)
+
+**Ajustes** (`scripts/ajustes.gd`, `scripts/painel_ajustes.gd`):
+- **O que dá para mudar:** música e efeitos (de 0, mudo, a 10, o volume de sempre), rapidez da câmera (de 1 a 9; 5 é a de sempre, e cada passo multiplica por uns 19%, de 0,5 a 2 vezes), câmera invertida (para cima e para baixo) e vibração.
+- **Onde:** botão "Ajustes" no menu principal (ao lado do Sair), na pausa da ilha (depois de Comandos) e na pausa do Faísca (depois de Sair da fase). É o mesmo painel nos três: uma linha por ajuste com o ícone colorido (engrenagem, nota, alto-falante, olho, setas e controle tremendo, desenhados no `MenuIcon`), barras grossas que o direcional para os lados muda, chaves de Sim e Não, e o Voltar. B ou Esc também voltam, para onde estava, com o botão dos Ajustes marcado.
+- **Vale na hora:** a música abaixa enquanto se mexe, os efeitos tocam um som de amostra e a vibração treme um pouquinho ao ligar.
+- **Valem para os dois jogos:** ficam em `user://ajustes.json`, fora da campanha e do save do Faísca, e são lidos uma vez por partida (`Ajustes.carregar`). Fechar o painel grava.
+- **Quem lê:** o `Sfx` (os volumes, por cima do volume de sempre de cada canal), o `Player`, o `Jogador` e o `Kart` (a câmera, no mouse e no analógico, e a vibração) e o binóculo do farol.
+- Nos testes ficam os valores de sempre e nada é gravado, a não ser com outro arquivo.
+
+**O farol mirante** (`scripts/faisca/farol_ilha.gd`):
+- O farol da ilha fica aceso e sem cadeado, com um binóculo de praça de brinquedo na sacada, virado para a ilha (pé amarelo, corpo azul-piscina, canos brancos, feito por código: a coleção KayKit não tem binóculo).
+- Na porta, o aviso de baixo ensina: "Aperte B para subir no farol e olhar no binóculo". Subindo, a tela escurece e a vista passa a ser a do binóculo, lá do alto: máscara de dois círculos, os nomes dos lugares (Praça da Festa, as lanternas, o Bosque das Copas, o cemitério e a pista de kart) e a seta do objetivo. Os analógicos giram a vista; mirar (LT ou o botão direito) aproxima. B de novo desce, de volta para a porta.
+- A sacada de verdade é estreita (uns 60 cm entre a salinha da lâmpada e a beirada, a 13,6 m), então o aventureiro não anda lá em cima: fica na porta, sem controle e sem mira, enquanto olha (a pausa não devolve o controle).
+- Não dá para subir em luta ("Agora não! Tem esqueleto por perto."). O vovô agora diz: "Lá do alto do farol dá para ver a ilha inteira!".
+- Os nomes têm tamanho fixo na tela, mas o "fixo" da Godot não conta o zoom do binóculo: o tamanho acompanha o campo de visão. A câmera fica do lado de fora do vidro da lâmpada (1,9 m de raio), que pintava a tela toda de azul.
+
+**Testes e fotos:**
+- `-- --farol` confere 12 pontos: farol aceso com o binóculo, os avisos, subir com o B, girar, aproximar, pausa e Ajustes lá de cima, a câmera mais rápida valendo, descer, e a câmera invertida no aventureiro.
+- `-- --menu-principal` ganhou 5 pontos dos Ajustes (abrir, abaixar a música na hora, ligar a câmera invertida, fechar gravando); `-- --faisca-jogo` confere os Ajustes na pausa do Faísca.
+- Fotos: `-- --farol-captura` (`mirante_1` a `mirante_5`), `m_ajustes` no `--menu-principal-captura` e `u05_ajustes` no `--menus-captura`.
+
+
 
 - **Título:** "Ilha Cafuné" é provisório.
 - **Nomes do menino e da menina:** ainda por decidir.
@@ -667,6 +715,36 @@ Um escorregador gigante do cemitério do Morro até a mata, por cima do rio, che
 - **Animação de tiro:** resolvida no papel, pelo KayKit Character Animations; falta baixar e conferir na Godot.
 
 ## 11. Parte 2: Faísca e o Céu Apagado
+
+> **Desde 2026-11-10 o Faísca é um jogo à parte, escolhido no menu principal** (ver "Menu principal: dois jogos" logo abaixo). O que esta seção conta sobre o farol aberto na ilha, a abertura depois dos créditos, o Faísca na troca de personagem e andando pela ilha (kart, Festa sem fim, corações divididos) é história: saiu do jogo. O hub, as portas, as fases, os monstros e as regras de level design continuam valendo.
+
+### Menu principal: dois jogos (pedido do usuário em 2026-11-10)
+
+O pedido: "vamos reviver o projeto, ficou estranho termos o jogo de tiro contra os esqueletos e dentro dele o jogo de plataforma com acesso direto. Pensei em ter um menu principal do jogo que o jogador pode escolher se quer jogar o jogo de tiro contra esqueletos ou o jogo do de plataforma do faisca". Perguntado o que fica do Faísca na ilha, o usuário escolheu **ilha só de tiro**.
+
+- **Menu principal** (`scenes/menu_principal.tscn`, `scripts/menu_principal.gd`, a cena que abre o jogo):
+  - título "Ilha Cafuné" num fundo de noite com estrelinhas piscando;
+  - dois cartões grandes, com o boneco 3D de verdade (`Portrait`), que cresce e dá tchau quando marcado: **Festa na Ilha** (o menino; "Blasters de doce contra os esqueletos") e **Faísca** (o robô; "Pula, voa e acende as estrelas");
+  - embaixo de cada cartão, onde parou: "Continuar · etapa" da campanha ou as estrelinhas e Estrelas Grandes do Faísca ("Começar" sem save);
+  - "Sair do jogo" embaixo. O direcional anda entre os cartões sem dar a volta e desce ao Sair;
+  - escolher escurece a tela e troca de cena. Os dois jogos voltam pela pausa ("Menu principal"); a ilha também pelo menu inicial dela (no lugar do "Sair do jogo");
+  - também é a porta dos testes: quem roda com `-- --algum-teste` vai direto para a cena dele (a ilha ou o Faísca).
+- **Controles:** as ações saíram do `main.gd` para `scripts/controles.gd` (`Controles.configurar()`, uma vez só), porque o InputMap vale para todas as cenas.
+- **O jogo do Faísca** (`scenes/faisca.tscn`, `scripts/faisca/faisca_jogo.gd`, `FaiscaJogo`) ficou com o que era da `Parte2` (que saiu) sobre o farol e as fases:
+  - **Abertura, na primeira vez:** de noite, no mar, sem a ilha. O mesmo `FarolIlha` numa ilhota, o céu da noite do `Ending` com as estrelas pintadas, a nave passando e sugando as estrelas, a lâmpada acendendo e o Faísca saindo pela porta. Termina no térreo do farol com a faixa "Faísca e o Céu Apagado".
+  - **Hub e fases** como antes (`FaiscaJogo.FASES`), menos a porta do sul, que voltava para a ilha: o hub não tem mais saída.
+  - **Pausa própria** (Start ou Esc): Continuar, Sair da fase (só numa fase), Menu principal e Sair do jogo. Não abre durante a tela de fim, a abertura nem as trocas de lugar.
+  - **Save próprio** (`scripts/faisca/faisca_save.gd`, `user://faisca.json`): estrelinhas por fase e da escada, Estrelas Grandes, vaga-lumes e se a abertura passou. **Migração:** quem jogou a Parte 2 dentro da ilha (campanha versão 3, chave "parte2") ganha esse progresso uma vez; o menu principal faz isso ao abrir, antes de a ilha salvar a campanha sem a chave.
+- **A ilha só de tiro:**
+  - o farol da ponta sudeste ficou de enfeite, de cadeado (encostar mostra "O farol está fechado"), e o vovô ainda fala dele;
+  - sem a abertura depois dos créditos: os créditos vão direto para o pós-jogo;
+  - o Faísca saiu da troca de personagem e da pausa; a lojinha, o kart, a Festa sem fim, a seta e o "tchibum" não olham mais para ele;
+  - a pausa troca "Voltar para a ilha" por "Menu principal", e o menu inicial troca "Sair do jogo" por "Menu principal";
+  - a campanha não guarda mais a chave "parte2".
+- **Testes:**
+  - `-- --menu-principal` confere 14 pontos (os cartões, o direcional, cada cartão levando à cena certa, o progresso com saves de teste e, desde os Ajustes, o painel deles); `-- --menu-principal-captura` tira `m_ilha` e `m_faisca` em `tools/capturas/menu/`;
+  - `-- --faisca-jogo` confere 24 pontos (a migração, a abertura, o hub sem saída, a escada andando, a pausa no farol e na fase, as estrelinhas, a Estrela Grande, o save e a 1-2 abrindo com 30); `-- --faisca-jogo-captura` tira `j01` a `j05` em `tools/capturas/faisca/jogo/`;
+  - o `--parte2` e o `--faisca-ilha` (e as fotos deles) saíram com o que testavam; a parte do farol e das fases foi para o `--faisca-jogo`.
 
 **Aprovada pelo usuário em 2026-10-28; a primeira rodada foi feita no mesmo dia, no branch `parte-2-faisca`** (ver "Primeira rodada" abaixo). A Parte 2 vem do projeto Faísca (`Projects/others/faisca`). É um jogo de plataforma 3D no estilo do Astro Bot, feito para o filho do usuário, que já tem o robozinho, uma base de fases reaproveitável e a fase 1-1 jogável. O usuário decidiu juntar o Faísca à Ilha. Decisões dele:
 
@@ -919,7 +997,7 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 - **Área ainda maior (pedido do usuário em 2026-10-30: "aumenta mais o raio de acionamento dos checkpoints"):** agora são 5 m de raio e 8 m de altura, começando 1,5 m abaixo do pé da bandeira (`Posto.ABAIXO_AREA`). É mais que as bandeiras da ilha, que têm 4 m. O `--faisca-fase` confere que passar a 4,6 m já acende.
 - **Bandeiras da ilha:** com o Faísca, elas não acendiam, porque só reconheciam o `Player`, que fica guardado e sem colisão. Agora o `Checkpoint` aceita o `Jogador` também, e o `--parte2` confere.
 
-**Como testar:**
+**Como testar** (o `--faisca-ilha`, o `--parte2` e as fotos deles saíram em 2026-11-10, com a separação dos jogos; ver "Menu principal: dois jogos"):
 - `godot --headless --path . -- --faisca-ilha` confere 16 pontos do Faísca na ilha (2026-10-29): corações divididos; aviso, entrada e saída do kart com o robô no banco; a pausa sem troca dirigindo; o skate; a Festa sem fim começando com ele; socos e laser nos esqueletos; o golpe que tira coração e empurra; o tempo invulnerável; o tonto e a volta na bandeira; a lojinha só das crianças. `godot --path . -- --faisca-ilha-captura` tira `v20` a `v24` (kart, kart de lado, skate, Festa sem fim e a porta do farol pedindo o Faísca).
 - `godot --headless --path . -- --pista-kart` confere 6 pontos da pista em 8: o tamanho, sair da vaga e subir a rampa da abertura dirigindo, e uma volta de verdade no piloto automático, que conta na chegada, sobe a ponte com o corpo do kart inclinado e não enrosca.
 - `godot --headless --path . -- --parte2` confere 44 pontos de ponta a ponta (com a entrada na 1-2 pela porta e, desde a pausa nova, o cartão do Faísca na pausa e na troca). Termina com "PARTE2 OK" e leva uns 2 minutos. Desde 2026-10-29 ele também sobe a escada do farol andando de verdade (o analógico simulado segue a curva), do térreo ao topo. No caminho, confere a sacada do 2º andar, a murinha (empurrando para o vão e pulando), as 8 estrelinhas, a porta da nave e a bandeira da ilha acesa pelo Faísca.

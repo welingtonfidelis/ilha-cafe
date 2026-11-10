@@ -4,7 +4,8 @@ extends CenterContainer
 ## dificuldade). Cada personagem ganha um cartão grande com o boneco 3D de verdade (Portrait) num fundo da cor
 ## dele, o nome embaixo e uma linha do que ele faz. O cartão marcado (direcional, setas ou o mouse em cima)
 ## cresce, ganha a borda dourada e o boneco dá tchau; quem já está jogando tem a etiqueta "Jogando agora". O
-## Faísca só aparece com a Parte 2 aberta. O main.gd decide o que acontece (sinais `chosen` e `back_pressed`).
+## Faísca saiu daqui em 2026-11-10: ele tem o jogo dele, pelo menu principal. O main.gd decide o que acontece
+## (sinais `chosen` e `back_pressed`).
 
 signal chosen(key: String)
 signal back_pressed
@@ -13,7 +14,6 @@ signal back_pressed
 const CARDS := [
 	["menino", "Menino", "Blasters de doce", "res://assets/ui/loja/pacoca.png"],
 	["menina", "Menina", "Blasters de doce", "res://assets/ui/loja/granulado.png"],
-	["faisca", "Faísca", "Pula, voa e solta laser", "estrela"],
 ]
 const CARD_SIZE := Vector2(236, 352)
 const PHOTO_SIZE := Vector2(216, 240)
@@ -23,8 +23,6 @@ var game: Node
 var cards := {}
 var back_button: Button
 var hint: Label
-## Aviso embaixo do título (a porta do farol pede o Faísca).
-var note: Label
 var _portraits := {}
 var _tags := {}
 
@@ -43,12 +41,6 @@ func build() -> void:
 	title.add_theme_font_size_override("font_size", 36)
 	title.add_theme_color_override("font_color", MenuKit.GOLD)
 	box.add_child(title)
-	note = Label.new()
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	note.add_theme_font_size_override("font_size", 22)
-	note.add_theme_color_override("font_color", Color("#8ff3ff"))
-	note.visible = false
-	box.add_child(note)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 22)
@@ -72,16 +64,12 @@ func build() -> void:
 	box.add_child(hint)
 
 
-## Abre marcando quem está jogando (`current`, vazio no começo do jogo: marca o menino, sem etiqueta). Com
-## `suggest`, marca esse cartão e mostra `note` embaixo do título.
-func open(current: String, with_faisca: bool, can_go_back: bool, suggest := "", note_text := "") -> void:
-	cards.faisca.visible = with_faisca
+## Abre marcando quem está jogando (`current`, vazio no começo do jogo: marca o menino, sem etiqueta).
+func open(current: String, can_go_back: bool) -> void:
 	back_button.visible = can_go_back
-	note.text = note_text
-	note.visible = note_text != ""
 	for k in _tags:
 		_tags[k].visible = k == current
-	var target: Button = cards.get(suggest if suggest != "" else current, cards.menino)
+	var target: Button = cards.get(current, cards.menino)
 	if not target.visible:
 		target = cards.menino
 	_link_focus(target)

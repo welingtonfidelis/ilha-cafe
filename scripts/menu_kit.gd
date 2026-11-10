@@ -21,6 +21,13 @@ const ICON_COLORS := {
 	"sair": Color("#e0504f"),
 	"voltar": Color("#6a7390"),
 	"objetivo": Color("#8a5cd6"),
+	"ajustes": Color("#5b6ee0"),
+	"musica": Color("#e05b9b"),
+	"som": Color("#f0a024"),
+	"camera": Color("#2fb5d6"),
+	"inverter": Color("#8a5cd6"),
+	"vibracao": Color("#d65b5b"),
+	"binoculo": Color("#3d8fe0"),
 }
 
 

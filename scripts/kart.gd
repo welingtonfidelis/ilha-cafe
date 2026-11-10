@@ -256,8 +256,8 @@ func _physics_process(delta: float) -> void:
 		var look := Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo")
 		if look.length() > 0.1:
 			_cam_idle = 0.0
-			_cam_yaw -= look.x * CAM_STICK.x * delta
-			_cam_pitch = clampf(_cam_pitch - look.y * CAM_STICK.y * delta, -0.35, 0.9)
+			_cam_yaw -= look.x * CAM_STICK.x * Ajustes.rapidez_camera() * delta
+			_cam_pitch = clampf(_cam_pitch - look.y * CAM_STICK.y * Ajustes.rapidez_camera() * Ajustes.sinal_vertical() * delta, -0.35, 0.9)
 	_cam_idle += delta
 	if _cam_idle > 1.5:
 		_cam_yaw = lerp_angle(_cam_yaw, 0.0, 1.0 - exp(-2.0 * delta))
@@ -304,8 +304,8 @@ func _pose_wheels() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if driving and input_enabled and event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_cam_idle = 0.0
-		_cam_yaw -= event.relative.x * CAM_MOUSE
-		_cam_pitch = clampf(_cam_pitch + event.relative.y * CAM_MOUSE, -0.35, 0.9)
+		_cam_yaw -= event.relative.x * CAM_MOUSE * Ajustes.rapidez_camera()
+		_cam_pitch = clampf(_cam_pitch + event.relative.y * CAM_MOUSE * Ajustes.rapidez_camera() * Ajustes.sinal_vertical(), -0.35, 0.9)
 
 
 func _place_camera(delta: float) -> void:

@@ -203,8 +203,7 @@ func _physics_process(delta: float) -> void:
 	match state:
 		"a_pe":
 			nearest = null
-			# O Faísca também dirige (a criança guardada sai vestida dele).
-			if (player.visible or game.faisca_on_island()) and not player.dizzy:
+			if player.visible and not player.dizzy:
 				var best := ENTER_RADIUS
 				for v in vehicles:
 					var d := v.global_position.distance_to(player.global_position)
@@ -255,8 +254,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Entra no veículo e já sai dirigindo de onde ele está.
 func enter(v: Kart) -> void:
-	if game.faisca_on_island():
-		game.parte2.vestir_crianca(true)
 	kart = v
 	nearest = null
 	v.drive(game.player)

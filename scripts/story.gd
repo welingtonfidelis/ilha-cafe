@@ -563,7 +563,6 @@ func snapshot() -> Dictionary:
 		"loja_visitada": shop_visited, "melhorias": upgrades, "equipados": player.equipped, "entregas": _deliveries_now(),
 		"segunda_pistola": player.second_pistol,
 		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
-		"parte2": game.parte2.snapshot() if game.parte2 else {},
 		"hora": game.day_night.t if game.day_night else DayNight.MORNING,
 	}
 
@@ -797,8 +796,6 @@ func restore(data: Dictionary) -> void:
 		game.ending.start_epilogue(false)
 	elif stage == "fim":
 		game.ending.post_game(false)
-	if game.parte2:
-		game.parte2.restore(data.get("parte2", {}))
 	if game.day_night:
 		game.day_night.t = float(data.get("hora", DayNight.MORNING))
 		game.day_night.apply()

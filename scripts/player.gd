@@ -565,9 +565,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _can_control():
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var sens := mouse_sensitivity * _zoom_factor()
+		var sens := mouse_sensitivity * _zoom_factor() * Ajustes.rapidez_camera()
 		_yaw -= event.relative.x * sens
-		_pitch = clampf(_pitch - event.relative.y * sens, PITCH_MIN, PITCH_MAX)
+		_pitch = clampf(_pitch - event.relative.y * sens * Ajustes.sinal_vertical(), PITCH_MIN, PITCH_MAX)
 	elif event.is_action_pressed("recarregar"):
 		reload()
 	elif event.is_action_pressed("granada"):
@@ -1389,7 +1389,7 @@ func heal(amount: int) -> bool:
 
 
 func rumble(weak: float, strong: float, duration: float) -> void:
-	if vibration and using_gamepad:
+	if vibration and Ajustes.vibracao and using_gamepad:
 		Input.start_joy_vibration(_joy_device, weak, strong, duration)
 
 
@@ -1412,8 +1412,9 @@ func _look_with_stick(delta: float) -> void:
 		_yaw = lerp_angle(_yaw, atan2(-d.x, -d.z), t)
 		_pitch = lerpf(_pitch, atan2(d.y, Vector2(d.x, d.z).length()), t)
 	_snap_time -= delta
-	_yaw -= look.x * stick_speed.x * factor * delta
-	_pitch = clampf(_pitch - look.y * stick_speed.y * factor * delta, PITCH_MIN, PITCH_MAX)
+	var rapidez := Ajustes.rapidez_camera()
+	_yaw -= look.x * stick_speed.x * factor * rapidez * delta
+	_pitch = clampf(_pitch - look.y * stick_speed.y * factor * rapidez * Ajustes.sinal_vertical() * delta, PITCH_MIN, PITCH_MAX)
 
 
 ## Alvo mais perto do centro da mira, dentro do ângulo do auxílio e visível.

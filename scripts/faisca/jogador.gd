@@ -10,7 +10,7 @@ extends CharacterBody3D
 ## Bolota pela antena, gira com ela e, soltando, arremessa; a seta para baixo é a dancinha.
 ## Tem 3 corações: encostar numa Bolota ou cair nas nuvens tira um. Sem corações ele dá um
 ## curto (faisquinhas e fumacinha) e volta no último posto com os 3 de novo; não tem fim de jogo.
-## Base tirada do aventureiro da Ilha Cafuné. Na Parte 2 ele anda também pela ilha (ver Parte2).
+## Base tirada do aventureiro da Ilha Cafuné. Quem cuida do farol e das fases é o FaiscaJogo.
 
 signal vida_mudou(vida: int)
 
@@ -142,7 +142,7 @@ var agarrada: Alvo
 ## Tempo que falta do giro forte e da dancinha.
 var giro_forte := 0.0
 var dancando := 0.0
-## Tem o Balão de Chiclete (a fase liga; o Parte2 desliga ao entrar em outra) e está subindo nele agora.
+## Tem o Balão de Chiclete (a fase liga; o FaiscaJogo desliga ao entrar em outra) e está subindo nele agora.
 var balao_de_chiclete := false
 var no_balao := false
 ## Tem o Ioiô (2-3) e está sendo puxado por ele agora.
@@ -336,8 +336,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("recomecar") and controle_ligado and pode_recomecar:
 		voltar_ao_inicio()
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and controle_ligado:
-		yaw -= event.relative.x * sensibilidade_mouse
-		pitch = clampf(pitch - event.relative.y * sensibilidade_mouse, PITCH_MIN, PITCH_MAX)
+		var sens := sensibilidade_mouse * Ajustes.rapidez_camera()
+		yaw -= event.relative.x * sens
+		pitch = clampf(pitch - event.relative.y * sens * Ajustes.sinal_vertical(), PITCH_MIN, PITCH_MAX)
 
 
 func _physics_process(delta: float) -> void:
@@ -746,7 +747,7 @@ func _estourar_balao(barulho := true) -> void:
 		_tremer(0.2, 0.3, 0.08)
 
 
-## Tira os poderes de fase (o Parte2 chama ao entrar e ao sair de uma fase).
+## Tira os poderes de fase (o FaiscaJogo chama ao entrar e ao sair de uma fase).
 func tirar_poderes() -> void:
 	_estourar_balao(false)
 	_soltar_ioio()
@@ -1468,7 +1469,7 @@ func ponta_do_laser(i: int) -> Vector3:
 
 
 func _tremer(fraco: float, forte: float, duracao: float) -> void:
-	if not vibracao:
+	if not vibracao or not Ajustes.vibracao:
 		return
 	for d in Input.get_connected_joypads():
 		Input.start_joy_vibration(d, fraco, forte, duracao)
@@ -1479,8 +1480,9 @@ func _olhar_com_analogico(delta: float) -> void:
 		return
 	var olhar := Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo")
 	olhar *= olhar.length()
-	yaw -= olhar.x * velocidade_analogico.x * delta
-	pitch = clampf(pitch - olhar.y * velocidade_analogico.y * delta, PITCH_MIN, PITCH_MAX)
+	var rapidez := Ajustes.rapidez_camera()
+	yaw -= olhar.x * velocidade_analogico.x * rapidez * delta
+	pitch = clampf(pitch - olhar.y * velocidade_analogico.y * rapidez * Ajustes.sinal_vertical() * delta, PITCH_MIN, PITCH_MAX)
 
 
 func _atualizar_animacao() -> void:

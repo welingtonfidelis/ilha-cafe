@@ -158,11 +158,10 @@ func _criar(id: String) -> Node3D:
 	match id:
 		"farol":
 			var hub := HubFarol.new()
-			for f in Parte2.FASES:
+			for f in FaiscaJogo.FASES:
 				hub.portas.append({"id": f.id, "nome": f.nome, "tipo": f.tipo, "andar": f.andar, "lado": f.lado, "pede": f.pede,
 					"pede_grandes": int(f.get("pede_grandes", 0)), "falta": 0, "aberta": true, "feita": f.cena != "",
 					"imagem": f.imagem, "grande": false, "achados": 0, "total_vaga_lumes": 3})
-			hub.portas.append({"id": "saida", "nome": "Ilha Cafuné", "tipo": "saida", "andar": 0, "lado": 180})
 			return hub
 		"1-1":
 			return Fase11.new()
