@@ -551,6 +551,10 @@ func _refresh_objective() -> void:
 				if is_instance_valid(game.party_mode) and game.party_mode.running():
 					text = game.party_mode.objective_text()
 					icon = "esqueleto"
+				elif game.esconde and game.esconde.rodando():
+					text = game.esconde.texto_objetivo()
+					icon = "esconde"
+					target = game.esconde.alvo_da_dica()
 				else:
 					text = "Festa sem fim no cemitério, ou explore a ilha à vontade!"
 					icon = "festa"
@@ -583,6 +587,7 @@ func snapshot() -> Dictionary:
 		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
 		"hora": game.day_night.t if game.day_night else DayNight.MORNING,
 		"peixes": game.pescaria.pegos.duplicate() if game.pescaria else {},
+		"esconde": game.esconde.dados_salvos() if game.esconde else {},
 	}
 
 
@@ -810,6 +815,8 @@ func restore(data: Dictionary) -> void:
 		game.gallery.set_hits(records.tiro)
 	if game.pescaria:
 		game.pescaria.carregar(data.get("peixes", {}))
+	if game.esconde:
+		game.esconde.carregar(data.get("esconde", {}))
 	game.activate_checkpoint(data.get("bandeira", "Praca"))
 	player.respawn(game.current_checkpoint.spawn_position())
 	_set_fast()

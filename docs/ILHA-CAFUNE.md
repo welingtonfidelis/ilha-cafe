@@ -671,7 +671,7 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 3 | **Modo Fácil:** mais corações, esqueletos mais lentos, mira mais ajudada | P/M | feito em 2026-11-10 (ver "Modo Fácil") |
 | 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | feito em 2026-11-10 (ver "Objetivo com figura") |
 | 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | feito em 2026-11-10 (ver "Pescaria no cais"); o aquário ficou na praia, ao lado da entrada do cais |
-| 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | |
+| 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | feito em 2026-11-10 (ver "Esconde-esconde dos esqueletos amigos") |
 | 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | |
 | 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | |
 | 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | |
@@ -684,6 +684,31 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 **Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Esconde-esconde dos esqueletos amigos (item 6 da lista, feito em 2026-11-10)
+
+Pedido do usuário depois da pescaria: "pode commitar e seguir". Só existe no pós-jogo (etapa "fim"); `scripts/esconde_esconde.gd`.
+
+- **Onde começa:** na praia, a oeste da entrada do cais, o Ossinho do esconde-esconde fica ao lado de um círculo dourado com a placa "ESCONDE-ESCONDE". O Ossinho diz "Vamos brincar de esconde-esconde? Fique no círculo dourado!". No círculo, B (ou E) começa.
+- **Contagem:** a tela escurece e conta 3, 2, 1, "Lá vou eu!". Enquanto isso, cinco amigos se escondem numa região, uma por rodada e nessa ordem: a cidade, o sítio e o pé do Morro.
+- **Onde se escondem:** os lugares saem das coisas da própria ilha:
+  - prédios e enfeites da cidade (carros, postes, caçambas), as construções e os fardos do sítio, as árvores e as pedras do Morro;
+  - o lugar fica do lado de longe do meio da região, encostado na coisa;
+  - só vale com chão firme, fora d'água e espaço livre para um amigo sentado;
+  - os cinco ficam espalhados: pelo menos 16 m na cidade, 8 m no sítio e 18 m no Morro, e a distância encolhe se faltar lugar.
+  - O amigo fica sentado no chão, virado para a coisa.
+- **Para achar:**
+  - cada amigo toca um sininho de 2,5 a 4 s, ouvido até 26 m; perto (12 m) solta um "hihi" no ar;
+  - no alto da tela, cinco carinhas de caveira tapando os olhos (apagadas até achar);
+  - o termômetro ao lado vai do azul (longe) ao amarelo e ao vermelho pulando (pertinho), pelo mais perto;
+  - passados 45 s sem achar ninguém (20 s no Modo Fácil), a seta do objetivo aponta para o mais perto;
+  - o objetivo da pausa diz "Ache os amigos escondidos na cidade (2 de 5)", com a figura da caveirinha.
+- **Achou:** a 3 m, o amigo levanta, vira para o aventureiro e comemora "Achou!" com confete. Dá 3 moedas, a carinha acende e, 2 s depois, ele vai embora de balão.
+- **Os cinco:** "Achou todo mundo!", mais 15 moedas (30 na rodada) e o cartão da **figurinha nova**: o amigo de verdade comemorando num retrato, o nome e a tira das seis figurinhas. As seis são Ossinho, Guerreiro, Arqueiro, Mago, Lobinho e Conde, uma por rodada na ordem; depois das seis, o cartão só mostra quem foi achado.
+- **Campanha:** a chave "esconde" do salvamento guarda as rodadas (para a região seguinte) e as figurinhas, que o álbum do item 7 vai usar. Rodada largada no meio não fica salva.
+- **Testes:**
+  - `-- --esconde` confere 16 pontos: sem esconde-esconde antes do fim; o Ossinho na praia; os cinco lugares de cada região; o aviso; a contagem; o objetivo sem seta; o termômetro e o sininho; achar um; a seta depois do tempo; o balão; os cinco com a figurinha e as moedas; o salvamento; a rodada no sítio; carregar;
+  - `-- --esconde-captura` (com janela) tira cinco fotos: `esconde_1_ossinho` até `esconde_5_figurinha`.
 
 ### Pescaria no cais (item 5 da lista, feito em 2026-11-10)
 

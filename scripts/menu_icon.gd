@@ -125,6 +125,20 @@ func _draw() -> void:
 			draw_rect(Rect2(c + Vector2(-4.5, -2.8) * k, Vector2(9, 2.6) * k), color)
 		"esqueleto":
 			_cranio(c + Vector2(0, -1) * k, 9.0 * k, w)
+		"esconde":
+			# Esconde-esconde: a caveirinha tapando os olhos com as mãos.
+			_cranio(c + Vector2(0, -1) * k, 9.0 * k, w)
+			draw_circle(c + Vector2(-4.2, -1.6) * k, 3.8 * k, Color("#ffd23f"))
+			draw_circle(c + Vector2(4.2, -1.6) * k, 3.8 * k, Color("#ffd23f"))
+			draw_rect(Rect2(c + Vector2(-6.5, -1.6) * k, Vector2(4.6, 7) * k), Color("#ffd23f"))
+			draw_rect(Rect2(c + Vector2(1.9, -1.6) * k, Vector2(4.6, 7) * k), Color("#ffd23f"))
+		"quente":
+			# Termômetro do quente e frio (a cor do fundo diz o quanto).
+			draw_rect(Rect2(c + Vector2(-2.6, -12) * k, Vector2(5.2, 15) * k), w)
+			draw_circle(c + Vector2(0, -12) * k, 2.6 * k, w)
+			draw_circle(c + Vector2(0, 6) * k, 5.6 * k, w)
+			draw_circle(c + Vector2(0, 6) * k, 3.4 * k, color.darkened(0.15))
+			draw_rect(Rect2(c + Vector2(-1.1, -6) * k, Vector2(2.2, 10) * k), color.darkened(0.15))
 		"ossao":
 			_cranio(c + Vector2(-2.5, -2) * k, 8.0 * k, w)
 			draw_colored_polygon(_pts(c, k, [Vector2(3, 2), Vector2(12, 2), Vector2(12, 7), Vector2(7.5, 12), Vector2(3, 7)]), Color("#ffd23f"))

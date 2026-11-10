@@ -131,6 +131,8 @@ var farol: FarolIlha
 ## Pescaria na ponta do cais e o aquário da praia (item 5 da lista de melhorias). Nulos na arena.
 var pescaria: Pescaria
 var aquario: Aquario
+## Esconde-esconde dos esqueletos amigos, no pós-jogo (item 6 da lista de melhorias). Nulo na arena.
+var esconde: EscondeEsconde
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -438,6 +440,11 @@ func _ready() -> void:
 		pescaria.game = self
 		pescaria.aquario = aquario
 		add_child(pescaria)
+		esconde = EscondeEsconde.new()
+		esconde.name = "EscondeEsconde"
+		esconde.game = self
+		esconde.story = story
+		add_child(esconde)
 		var pescador := get_node_or_null("Pescador") as Townsperson
 		if pescador and not PESCADOR_FALA in pescador.lines:
 			pescador.lines.append(PESCADOR_FALA)
@@ -599,6 +606,12 @@ func _ready() -> void:
 	elif "--pescaria" in args:
 		select_panel.hide()
 		_run_fishing_test()
+	elif "--esconde" in args:
+		select_panel.hide()
+		_run_hide_test()
+	elif "--esconde-captura" in args:
+		select_panel.hide()
+		_run_hide_capture()
 	elif "--pescaria-captura" in args:
 		select_panel.hide()
 		_run_fishing_capture()
@@ -1651,6 +1664,8 @@ func _process(_delta: float) -> void:
 			hint = farol.dica(button)
 		elif menu_state == "" and pescaria and pescaria.dica(button) != "":
 			hint = pescaria.dica(button)
+		elif menu_state == "" and esconde and esconde.dica(button) != "":
+			hint = esconde.dica(button)
 		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
@@ -5471,6 +5486,139 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Esconde-esconde dos esqueletos amigos (item 6 da lista de melhorias): só no pós-jogo, com o Ossinho e o círculo
+## na praia; lugares em cada região (atrás das coisas, no chão, espalhados); B conta 3, 2, 1 e cinco se escondem; o
+## termômetro esquenta perto; o sininho toca; chegar perto acha (moedas, carinha acesa, balão); a seta aparece depois
+## de um tempo sem achar; os cinco dão a figurinha e mais moedas; a campanha guarda; a rodada seguinte é no sítio.
+## Uso: godot --headless --path . -- --esconde
+func _run_hide_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	all_ok = _check("antes do fim não tem esconde-esconde", get_node_or_null("OssinhoDoEsconde") == null and not esconde.pode_comecar()) and all_ok
+	_skip_to_post_game()
+	await _wait(0.5)
+	all_ok = _check("no pós-jogo, o Ossinho e o círculo ficam na praia do cais", is_instance_valid(esconde.anfitriao)
+			and esconde.anfitriao.global_position.distance_to(EscondeEsconde.ANFITRIAO) < 1.5) and all_ok
+	for a: Dictionary in EscondeEsconde.AREAS:
+		var lugares := esconde.lugares_para(a)
+		var ok := lugares.size() == EscondeEsconde.QUANTOS
+		var menor := INF
+		for i in lugares.size():
+			var pos: Vector3 = lugares[i].pos
+			ok = ok and pos.y > -0.2 and Vector2(pos.x - a.centro.x, pos.z - a.centro.y).length() < a.raio + 6.0
+			for j in i:
+				menor = minf(menor, pos.distance_to(lugares[j].pos))
+		all_ok = _check("lugares para esconder %s: cinco, no chão e espalhados" % a.nome, ok and menor > 4.0,
+				"(%d, o mais perto a %.0f m)" % [lugares.size(), menor]) and all_ok
+	await _stand(EscondeEsconde.CIRCULO)
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso chama para brincar", "esconde-esconde" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.4)
+	all_ok = _check("B começa a contagem com a tela escura e cinco escondidos na cidade", esconde.estado == EscondeEsconde.Estado.CONTANDO
+			and esconde.numero.visible and fade.modulate.a > 0.5 and esconde.escondidos.size() == 5 and esconde.area.id == "cidade") and all_ok
+	await _wait_until(func() -> bool: return esconde.estado == EscondeEsconde.Estado.BUSCANDO, 5.0)
+	await _wait(0.5)
+	all_ok = _check("lá vou eu: carinhas no alto, objetivo com a figura e ainda sem seta", esconde.hud.visible and not esconde.numero.visible
+			and "Ache os amigos escondidos na cidade (0 de 5)" == story.objective_text and story.objective_icon == "esconde"
+			and story.objective_target == Vector3.INF, "(%s)" % story.objective_text) and all_ok
+	var alvo: Townsperson = esconde.escondidos[0]
+	var olhar: Vector3 = alvo.get_meta("olhar")
+	await _stand(_ground_point(Vector3(0, 0, 175)))
+	await _wait(0.3)
+	var frio := esconde.calor()
+	await _stand(alvo.global_position - olhar * 7.0 + Vector3.UP * 0.2)
+	Sfx.played.clear()
+	await _wait(4.5)
+	var quente := esconde.calor()
+	all_ok = _check("o termômetro esquenta perto e o sininho toca", quente.r > quente.b and (frio.b > frio.r or frio.r < quente.r)
+			and "sino" in Sfx.played, "(frio %s, quente %s)" % [frio.to_html(false), quente.to_html(false)]) and all_ok
+	var moedas := story.coins
+	await _stand(alvo.global_position - olhar * 1.6 + Vector3.UP * 0.2)
+	await _wait(0.4)
+	all_ok = _check("chegando perto, acha: comemora, dá moedas e acende a carinha", esconde.achados == 1 and alvo.has_meta("achado")
+			and story.coins == moedas + EscondeEsconde.MOEDAS_ACHOU and story.objective_text.ends_with("(1 de 5)")) and all_ok
+	esconde.dica_teste = 0.5
+	await _wait(1.0)
+	var resto := esconde.escondidos.filter(func(h: Townsperson) -> bool: return is_instance_valid(h) and not h.has_meta("achado"))
+	all_ok = _check("sem achar ninguém por um tempo, a seta aponta para um escondido", story.objective_target != Vector3.INF
+			and resto.any(func(h: Townsperson) -> bool: return h.global_position.distance_to(story.objective_target) < 2.0)) and all_ok
+	esconde.dica_teste = -1.0
+	await _wait(7.5)
+	all_ok = _check("o achado vai embora de balão", not is_instance_valid(alvo)) and all_ok
+	moedas = story.coins
+	for h: Townsperson in resto:
+		var o: Vector3 = h.get_meta("olhar")
+		await _stand(h.global_position - o * 1.6 + Vector3.UP * 0.2)
+		await _wait(0.3)
+	await _wait(0.3)
+	all_ok = _check("achando os cinco: figurinha nova, mais moedas e o cartão", esconde.estado == EscondeEsconde.Estado.PARADO
+			and esconde.rodadas == 1 and esconde.figurinhas == ["Skeleton_Minion"] and esconde.cartao.visible
+			and story.coins == moedas + EscondeEsconde.MOEDAS_ACHOU * 4 + EscondeEsconde.MOEDAS_RODADA, "(%d moedas)" % (story.coins - moedas)) and all_ok
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda as rodadas e as figurinhas", foto.get("esconde", {}).get("rodadas", 0) == 1
+			and "Skeleton_Minion" in foto.esconde.figurinhas) and all_ok
+	await _wait(5.0)
+	await _stand(EscondeEsconde.CIRCULO)
+	await _wait(0.3)
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("a rodada seguinte é no sítio", esconde.area.id == "sitio" and esconde.escondidos.size() == 5) and all_ok
+	esconde._cancelar()
+	fade.modulate.a = 0.0
+	esconde.carregar({"rodadas": 2, "figurinhas": ["Lobinho", "Fantasma"]})
+	all_ok = _check("carregando, ignora figurinha que não existe", esconde.rodadas == 2 and esconde.figurinhas == ["Lobinho"]) and all_ok
+	print("ESCONDE OK" if all_ok else "ESCONDE COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do esconde-esconde (esconde_1 a esconde_5): o Ossinho e o círculo na praia, a contagem, um escondido atrás de
+## alguma coisa com o termômetro quente, o "Achou!" e o cartão da figurinha. Uso: godot --path . -- --esconde-captura
+func _run_hide_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(1.0)
+	player.using_gamepad = true
+	var circulo := EscondeEsconde.CIRCULO
+	await _stand(_ground_point(circulo + Vector3(-5.5, 0, 3.5)))
+	var olhar := EscondeEsconde.ANFITRIAO + Vector3(0, 0, 2.0) - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.2)
+	await _shot("esconde_1_ossinho.png")
+	await _stand(circulo)
+	esconde.comecar()
+	await _wait(0.8)
+	await _shot("esconde_2_contagem.png")
+	await _wait_until(func() -> bool: return esconde.estado == EscondeEsconde.Estado.BUSCANDO, 5.0)
+	await _wait(4.5)
+	var alvo: Townsperson = esconde.escondidos[0]
+	var de_lado: Vector3 = alvo.get_meta("olhar")
+	await _stand(alvo.global_position - de_lado * 6.0 + de_lado.cross(Vector3.UP) * 2.0 + Vector3.UP * 0.2)
+	olhar = alvo.global_position - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.5)
+	await _shot("esconde_3_quente.png")
+	await _stand(alvo.global_position - de_lado * 3.6 + Vector3.UP * 0.2)
+	player.set_yaw(atan2(-de_lado.x, -de_lado.z))
+	await _wait(0.3)
+	await _stand(alvo.global_position - de_lado * 2.6 + Vector3.UP * 0.2)
+	await _wait(0.6)
+	await _shot("esconde_4_achou.png")
+	for h: Townsperson in esconde.escondidos.duplicate():
+		if is_instance_valid(h) and not h.has_meta("achado"):
+			var o: Vector3 = h.get_meta("olhar")
+			await _stand(h.global_position - o * 1.6 + Vector3.UP * 0.2)
+			await _wait(0.3)
+	await _wait(1.0)
+	await _shot("esconde_5_figurinha.png")
 	get_tree().quit()
 
 

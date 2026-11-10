@@ -29,6 +29,8 @@ const ICON_COLORS := {
 	"vibracao": Color("#d65b5b"),
 	"binoculo": Color("#3d8fe0"),
 	"facil": Color("#3fbf63"),
+	"esconde": Color("#ff9f43"),
+	"quente": Color("#4aa8ff"),
 	# Figuras dos objetivos (item 4 da lista de melhorias): na seta do objetivo e na pausa.
 	"esqueleto": Color("#6a7390"),
 	"ossao": Color("#e07b39"),
