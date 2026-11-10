@@ -104,6 +104,15 @@ func rodar() -> void:
 	var lvl := j.nivel
 	ok = _conferir("a porta da 1-1 leva à fase, e o Faísca desce do céu até o começo", lvl is Fase11 and f.is_on_floor()
 			and f.global_position.distance_to(lvl.inicio) < 1.5 and f.controle_ligado) and ok
+	# Modo Fácil (Ajustes): cair não tira coração, só volta.
+	Ajustes.facil = true
+	var vida0 := f.vida
+	f.cair()
+	await _esperar(0.5)
+	ok = _conferir("no Modo Fácil, cair não tira coração", f.vida == vida0 and f.global_position.distance_to(f.ponto_retorno) < 2.0,
+			"(vida %d)" % f.vida) and ok
+	Ajustes.padrao()
+	await _esperar(1.2)
 	for k in 5:
 		await _faisca_em(lvl.estrelas[k].global_position - Vector3(0, 1.0, 0), 0.2)
 	# Estrelinhas vizinhas podem vir junto: conta o que a fase contou.

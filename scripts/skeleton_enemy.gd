@@ -198,7 +198,12 @@ var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") 
 
 func _ready() -> void:
 	add_to_group(Alvo.GRUPO)
-	config = TYPES[type_name]
+	config = TYPES[type_name].duplicate()
+	# Modo Fácil (Ajustes): anda mais devagar, demora mais no "!" e espera mais entre um golpe e outro.
+	if Ajustes.facil:
+		config.speed *= 0.8
+		config.windup *= 1.35
+		config.cooldown *= 1.3
 	health = config.health
 	_size = config.get("size", 1.0)
 	raio_golpe = 0.7 * _size

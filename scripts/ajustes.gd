@@ -1,8 +1,11 @@
 class_name Ajustes
 extends RefCounted
 ## Ajustes de quem joga, valendo para os dois jogos (item 1 da lista de melhorias, escolhido pelo usuário em
-## 2026-11-10): volume da música e dos efeitos, rapidez da câmera, câmera invertida (para cima e para baixo) e
-## vibração do controle. Ficam em user://ajustes.json, fora da campanha e do save do Faísca. O PainelAjustes
+## 2026-11-10): volume da música e dos efeitos, rapidez da câmera, câmera invertida (para cima e para baixo),
+## vibração do controle e o Modo Fácil (item 3 da lista, para os menores). O Modo Fácil vale para os dois jogos:
+## na ilha, corações que voltam sozinhos fora de luta, mais tempo piscando depois de um golpe, esqueletos mais lentos
+## e com mais tempo no "!", guardiões com menos vida e mira mais ajudada; no Faísca, cair não tira coração e as
+## Bolotas andam mais devagar. Ficam em user://ajustes.json, fora da campanha e do save do Faísca. O PainelAjustes
 ## mexe aqui; o Sfx aplica os volumes; o Player, o Jogador e o Kart leem a câmera e a vibração na hora de usar.
 ## Os testes usam os valores de sempre e não gravam nada (`carregar(true)`), a não ser o que muda o `path`.
 
@@ -20,6 +23,7 @@ static var efeitos := PASSOS
 static var camera := CAMERA_PADRAO
 static var inverter := false
 static var vibracao := true
+static var facil := false
 static var _carregado := false
 
 
@@ -38,6 +42,7 @@ static func carregar(testando: bool) -> void:
 			camera = clampi(int(dados.get("camera", CAMERA_PADRAO)), CAMERA_MIN, CAMERA_MAX)
 			inverter = bool(dados.get("inverter", false))
 			vibracao = bool(dados.get("vibracao", true))
+			facil = bool(dados.get("facil", false))
 	Sfx.aplicar_volumes()
 
 
@@ -47,7 +52,7 @@ static func salvar() -> void:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({"musica": musica, "efeitos": efeitos, "camera": camera, "inverter": inverter,
-			"vibracao": vibracao}, "\t"))
+			"vibracao": vibracao, "facil": facil}, "\t"))
 
 
 ## Volta tudo para o de sempre (os testes usam).
@@ -57,6 +62,7 @@ static func padrao() -> void:
 	camera = CAMERA_PADRAO
 	inverter = false
 	vibracao = true
+	facil = false
 	Sfx.aplicar_volumes()
 
 

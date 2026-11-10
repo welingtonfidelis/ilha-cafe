@@ -76,8 +76,14 @@ var stage := "antes"
 var defenses := {}
 var lanterns := {}
 var rewards: Array[RewardPickup] = []
+## A figura de cada defesa em andamento: o guardião dela (na praia, um esqueleto qualquer).
+const OBJECTIVE_ICONS := {"praca": "esqueleto", "oeste": "ossao", "leste": "mira_torta", "clareira": "torre", "ventos": "minionzao",
+	"vila": "planta", "cemiterio": "mestre"}
 var objective_text := ""
 var objective_target := Vector3.INF
+## Figura do objetivo (um dos desenhos do MenuIcon), para quem ainda não lê: vai na seta do objetivo e na pausa
+## (item 4 da lista de melhorias, 2026-11-10).
+var objective_icon := ""
 ## Testes: ondas e intervalos curtos.
 var fast := false
 ## Fotos do álbum: {legenda, arquivo, imagem} (a imagem só fica na memória; o arquivo vai para user://album/).
@@ -501,46 +507,58 @@ func running_defense() -> Defense:
 
 func _refresh_objective() -> void:
 	var text := ""
+	var icon := ""
 	var target := Vector3.INF
 	var player: Player = game.player
 	var running := running_defense()
 	if running:
 		text = ("Desafio: %s" if running.id == "vila" else "Defenda: %s") % running.nome
+		icon = OBJECTIVE_ICONS.get(running.id, "esqueleto")
 	elif not rewards.is_empty():
 		text = "Pegue a recompensa"
+		icon = "presente"
 		target = rewards[0].global_position + Vector3.UP * 2.0
 	else:
 		match stage:
 			"antes", "prologo":
 				text = "Vá até a praia do cais e defenda a festa"
+				icon = "esqueleto"
 				target = defenses.praca.center
 			"cidade":
 				var left := CITY.filter(func(id: String) -> bool: return defenses[id].state != Defense.State.VENCIDA)
 				text = "Apague as lanternas da cidade (%d de 2)" % (2 - left.size())
+				icon = "lanterna"
 				target = _nearest(left)
 			"mata":
 				var left := FOREST.filter(func(id: String) -> bool: return defenses[id].state != Defense.State.VENCIDA)
 				if south_of_river(player.global_position):
 					text = "Atravesse a ponte para a mata"
+					icon = "ponte"
 					target = BRIDGE_NORTH
 				else:
 					text = "Apague as lanternas da mata (%d de 2)" % (2 - left.size())
+					icon = "lanterna"
 					target = _nearest(left)
 			"cemiterio":
 				text = "Suba o Morro até o cemitério"
+				icon = "cemiterio"
 				target = CEMETERY + Vector3.UP * 2.0
 			"festa":
 				text = "Aproveite a festa! Fique no círculo dourado na frente do palco para ver o álbum"
+				icon = "festa"
 				target = Ending.CREDITS_SPOT + Vector3.UP * 1.5
 			"fim":
 				if is_instance_valid(game.party_mode) and game.party_mode.running():
 					text = game.party_mode.objective_text()
+					icon = "esqueleto"
 				else:
 					text = "Festa sem fim no cemitério, ou explore a ilha à vontade!"
+					icon = "festa"
 					target = defenses.cemiterio.center + Vector3.UP * 2.0
 	objective_target = target
-	if text != objective_text:
+	if text != objective_text or icon != objective_icon:
 		objective_text = text
+		objective_icon = icon
 		objective_changed.emit(text)
 
 

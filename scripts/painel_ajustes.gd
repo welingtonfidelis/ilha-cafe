@@ -3,7 +3,7 @@ extends CenterContainer
 ## Tela de Ajustes (item 1 da lista de melhorias, 2026-11-10), a mesma no menu principal, na pausa da ilha e na
 ## pausa do Faísca: uma linha por ajuste, com o ícone colorido, o nome, uma barra grossa (música, efeitos e câmera;
 ## o direcional para os lados muda, para cima e para baixo troca de linha) ou uma chave de Sim e Não (câmera
-## invertida e vibração), e o Voltar. Cada mudança vale na hora: a música abaixa enquanto se mexe, os efeitos
+## invertida, vibração e Modo Fácil), e o Voltar. Cada mudança vale na hora: a música abaixa enquanto se mexe, os efeitos
 ## tocam um som de amostra e a vibração treme um pouquinho ao ligar. Fechar grava (Ajustes.salvar). Quem abre
 ## escuta `fechou` e devolve o foco para onde estava; o B ou o Esc de quem abriu chamam `fechar`.
 
@@ -16,6 +16,7 @@ const LINHAS := [
 	["camera", "Câmera", "camera", Ajustes.CAMERA_MIN, Ajustes.CAMERA_MAX],
 	["inverter", "Câmera invertida", "inverter"],
 	["vibracao", "Vibração", "vibracao"],
+	["facil", "Modo fácil", "facil"],
 ]
 
 ## O controle de cada linha pela chave (HSlider ou CheckButton); os testes mexem por aqui.
@@ -153,6 +154,7 @@ func _ler() -> void:
 	(controles.camera as HSlider).value = Ajustes.camera
 	(controles.inverter as CheckButton).button_pressed = Ajustes.inverter
 	(controles.vibracao as CheckButton).button_pressed = Ajustes.vibracao
+	(controles.facil as CheckButton).button_pressed = Ajustes.facil
 	_lendo = false
 	for chave in controles:
 		_mostrar(chave)
@@ -172,6 +174,8 @@ func _mudou(valor: float, chave: String) -> void:
 			Ajustes.inverter = valor > 0.5
 		"vibracao":
 			Ajustes.vibracao = valor > 0.5
+		"facil":
+			Ajustes.facil = valor > 0.5
 	_mostrar(chave)
 	if _lendo:
 		return

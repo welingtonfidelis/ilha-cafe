@@ -11,7 +11,14 @@ extends Control
 ##   ajustes    engrenagem                   musica    nota musical
 ##   som        alto-falante                 camera    olho
 ##   inverter   setas para cima e para baixo vibracao  controle tremendo
-##   binoculo   binóculo
+##   binoculo   binóculo                     facil     coração com um "mais"
+## Figuras dos objetivos (na seta do objetivo e na pausa; item 4 da lista de melhorias, 2026-11-10):
+##   esqueleto  cabeça de esqueleto          ossao     esqueleto com escudo
+##   mira_torta esqueleto com flecha         torre     três cabecinhas empilhadas
+##   minionzao  cabeçona de sobrancelha brava  planta  folha
+##   mestre     esqueleto de coroa           presente  caixa de presente com laço
+##   lanterna   lanterna mágica              ponte     ponte de arco
+##   cemiterio  lápide                       festa     três balões
 
 var kind := "continuar"
 var color := Color("#4cc76a")
@@ -110,6 +117,70 @@ func _draw() -> void:
 			for lado in [-1.0, 1.0]:
 				draw_polyline(_pts(c, k, [Vector2(11.5 * lado, -7), Vector2(13.5 * lado, -3.5), Vector2(11.5 * lado, 0),
 						Vector2(13.5 * lado, 3.5), Vector2(11.5 * lado, 7)]), w, 1.8 * k, true)
+		"facil":
+			draw_circle(c + Vector2(-4, -3) * k, 5.0 * k, w)
+			draw_circle(c + Vector2(4, -3) * k, 5.0 * k, w)
+			draw_colored_polygon(_pts(c, k, [Vector2(-8.9, -1.6), Vector2(8.9, -1.6), Vector2(0, 10)]), w)
+			draw_rect(Rect2(c + Vector2(-1.3, -6) * k, Vector2(2.6, 9) * k), color)
+			draw_rect(Rect2(c + Vector2(-4.5, -2.8) * k, Vector2(9, 2.6) * k), color)
+		"esqueleto":
+			_cranio(c + Vector2(0, -1) * k, 9.0 * k, w)
+		"ossao":
+			_cranio(c + Vector2(-2.5, -2) * k, 8.0 * k, w)
+			draw_colored_polygon(_pts(c, k, [Vector2(3, 2), Vector2(12, 2), Vector2(12, 7), Vector2(7.5, 12), Vector2(3, 7)]), Color("#ffd23f"))
+		"mira_torta":
+			_cranio(c + Vector2(-2, -1) * k, 8.0 * k, w)
+			draw_line(c + Vector2(-11, 11) * k, c + Vector2(10, -10) * k, Color("#ffd23f"), 2.4 * k, true)
+			_arrow_head(c + Vector2(10, -10) * k, -PI / 4.0, k)
+		"torre":
+			for i in 3:
+				_cranio(c + Vector2(0, 8 - i * 7.5) * k, 4.2 * k, w)
+		"minionzao":
+			_cranio(c + Vector2(0, 0) * k, 10.0 * k, w)
+			draw_line(c + Vector2(-8, -7) * k, c + Vector2(-2, -4) * k, color.darkened(0.4), 2.4 * k, true)
+			draw_line(c + Vector2(8, -7) * k, c + Vector2(2, -4) * k, color.darkened(0.4), 2.4 * k, true)
+		"planta":
+			var folha := PackedVector2Array()
+			for i in 13:
+				var t := float(i) / 12.0
+				folha.append(c + Vector2(lerpf(-11, 11, t), -sin(t * PI) * 7.0).rotated(-0.6) * k)
+			for i in range(11, 0, -1):
+				var t := float(i) / 12.0
+				folha.append(c + Vector2(lerpf(-11, 11, t), sin(t * PI) * 7.0).rotated(-0.6) * k)
+			draw_colored_polygon(folha, w)
+			draw_line(c + Vector2(-11, 0).rotated(-0.6) * k, c + Vector2(11, 0).rotated(-0.6) * k, color, 1.6 * k, true)
+		"mestre":
+			_cranio(c + Vector2(0, 2) * k, 8.0 * k, w)
+			draw_colored_polygon(_pts(c, k, [Vector2(-8, -5), Vector2(-8, -12), Vector2(-4, -8), Vector2(0, -13), Vector2(4, -8),
+					Vector2(8, -12), Vector2(8, -5)]), Color("#ffd23f"))
+		"presente":
+			draw_rect(Rect2(c + Vector2(-9, -3) * k, Vector2(18, 13) * k), w)
+			draw_rect(Rect2(c + Vector2(-10, -6) * k, Vector2(20, 4) * k), w)
+			draw_rect(Rect2(c + Vector2(-1.6, -6) * k, Vector2(3.2, 16) * k), Color("#ffd23f"))
+			draw_circle(c + Vector2(-3.5, -8.5) * k, 3.0 * k, Color("#ffd23f"))
+			draw_circle(c + Vector2(3.5, -8.5) * k, 3.0 * k, Color("#ffd23f"))
+		"lanterna":
+			draw_arc(c + Vector2(0, -10) * k, 3.0 * k, PI, TAU, 10, w, 1.8 * k, true)
+			draw_rect(Rect2(c + Vector2(-7, -8) * k, Vector2(14, 2.6) * k), w)
+			draw_colored_polygon(_pts(c, k, [Vector2(-6, -5.5), Vector2(6, -5.5), Vector2(7.5, 6), Vector2(-7.5, 6)]), Color("#ffe6a0"))
+			draw_circle(c + Vector2(0, 0.5) * k, 3.2 * k, Color("#ffd23f"))
+			draw_rect(Rect2(c + Vector2(-8, 6) * k, Vector2(16, 3) * k), w)
+		"ponte":
+			draw_rect(Rect2(c + Vector2(-12, -3) * k, Vector2(24, 3) * k), w)
+			draw_arc(c + Vector2(0, 9) * k, 9.0 * k, PI, TAU, 16, w, 3.0 * k, true)
+			draw_rect(Rect2(c + Vector2(-12, -3) * k, Vector2(3, 12) * k), w)
+			draw_rect(Rect2(c + Vector2(9, -3) * k, Vector2(3, 12) * k), w)
+		"cemiterio":
+			draw_circle(c + Vector2(0, -4) * k, 7.0 * k, w)
+			draw_rect(Rect2(c + Vector2(-7, -4) * k, Vector2(14, 13) * k), w)
+			draw_rect(Rect2(c + Vector2(-1.3, -8) * k, Vector2(2.6, 10) * k), color)
+			draw_rect(Rect2(c + Vector2(-4.5, -5) * k, Vector2(9, 2.6) * k), color)
+			draw_rect(Rect2(c + Vector2(-11, 9) * k, Vector2(22, 2.5) * k), w)
+		"festa":
+			for b in [[Vector2(-6, -3), Color("#ff6b8b")], [Vector2(6, -4), Color("#6bd1ff")], [Vector2(0, -8), Color("#ffe066")]]:
+				draw_line(c + (b[0] + Vector2(0, 5.5)) * k, c + Vector2(0, 11) * k, w, 1.2 * k, true)
+				draw_circle(c + b[0] * k, 5.0 * k, b[1])
+				draw_arc(c + b[0] * k, 5.0 * k, 0, TAU, 16, w, 1.2 * k, true)
 		"binoculo":
 			draw_circle(c + Vector2(-5.5, 3) * k, 5.5 * k, w)
 			draw_circle(c + Vector2(5.5, 3) * k, 5.5 * k, w)
@@ -131,6 +202,18 @@ func _arrow_head(tip: Vector2, angle: float, k: float) -> void:
 	var side := fwd.orthogonal()
 	draw_colored_polygon(PackedVector2Array([tip + fwd * 5.0 * k, tip - fwd * 1.5 * k + side * 5.0 * k,
 			tip - fwd * 1.5 * k - side * 5.0 * k]), Color.WHITE)
+
+
+## Cabeça de esqueleto: crânio branco, mandíbula, olhos e nariz na cor do fundo (parecem buracos) e dentinhos.
+func _cranio(c: Vector2, r: float, w: Color) -> void:
+	draw_circle(c, r, w)
+	draw_rect(Rect2(c + Vector2(-r * 0.6, r * 0.5), Vector2(r * 1.2, r * 0.6)), w)
+	draw_circle(c + Vector2(-r * 0.38, -r * 0.05), r * 0.28, color)
+	draw_circle(c + Vector2(r * 0.38, -r * 0.05), r * 0.28, color)
+	draw_colored_polygon(PackedVector2Array([c + Vector2(0, r * 0.2), c + Vector2(-r * 0.12, r * 0.45), c + Vector2(r * 0.12, r * 0.45)]), color)
+	for i in 3:
+		var x := -r * 0.3 + i * r * 0.3
+		draw_line(c + Vector2(x, r * 0.62), c + Vector2(x, r * 1.05), color, maxf(r * 0.08, 1.0), true)
 
 
 ## Brilho de quatro pontas (o "novo" da nova campanha).

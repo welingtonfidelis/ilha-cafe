@@ -28,6 +28,20 @@ const ICON_COLORS := {
 	"inverter": Color("#8a5cd6"),
 	"vibracao": Color("#d65b5b"),
 	"binoculo": Color("#3d8fe0"),
+	"facil": Color("#3fbf63"),
+	# Figuras dos objetivos (item 4 da lista de melhorias): na seta do objetivo e na pausa.
+	"esqueleto": Color("#6a7390"),
+	"ossao": Color("#e07b39"),
+	"mira_torta": Color("#3fa7d6"),
+	"torre": Color("#8a5cd6"),
+	"minionzao": Color("#d65b5b"),
+	"planta": Color("#3fbf63"),
+	"mestre": Color("#7a4fd6"),
+	"presente": Color("#e05b9b"),
+	"lanterna": Color("#a05be0"),
+	"ponte": Color("#3d8fe0"),
+	"cemiterio": Color("#55607a"),
+	"festa": Color("#f0a024"),
 }
 
 

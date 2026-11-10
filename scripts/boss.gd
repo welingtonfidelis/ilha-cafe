@@ -105,6 +105,9 @@ func _ready() -> void:
 	_setup()
 	add_to_group(Alvo.GRUPO)
 	raio_golpe = 0.5 * body_scale
+	# Modo Fácil (Ajustes): guardião com um quarto a menos de vida.
+	if Ajustes.facil:
+		max_health *= 0.75
 	health = max_health if start_health < 0.0 else minf(start_health, max_health)
 	collision_layer = 1 << 2
 	collision_mask = 1 | (1 << 1)

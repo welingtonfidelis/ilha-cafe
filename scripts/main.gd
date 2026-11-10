@@ -81,6 +81,8 @@ var pause_panel: Control
 var controls_panel: Control
 ## Ajustes de som, câmera e vibração (scripts/painel_ajustes.gd), pela pausa.
 var ajustes_panel: PainelAjustes
+## Modo Fácil: tempo fora de luta desde o último coração que voltou.
+var _regen := 0.0
 ## Comandos em duas colunas: o que faz e, numa etiqueta, o botão ou a tecla.
 var controls_grid: GridContainer
 var menu_dim: ColorRect
@@ -99,6 +101,10 @@ var _pause_portrait: Portrait
 var _pause_name: Label
 var _pause_swap_icon: MenuIcon
 var _pause_goal: Control
+## Figura do objetivo na pausa (a mesma da seta; sem objetivo, o alvo).
+var _pause_goal_icon: MenuIcon
+## Onde o objetivo estava quando o aventureiro chegou nele (o som de chegada toca uma vez por lugar).
+var _chegou_em := Vector3.INF
 var _controls_back: Button
 var _start_buttons: Array[Button] = []
 var _continue_button: Button
@@ -287,6 +293,8 @@ class Crosshair:
 var music: AudioStreamPlayer
 
 
+## Modo Fácil: de quanto em quanto tempo volta um coração fora de luta.
+const REGEN_FACIL := 6.0
 ## O vovô da praça fala do farol, que virou mirante.
 const FAROL_FALA := "Lá do alto do farol dá para ver a ilha inteira!"
 ## Os testes automáticos rodam na arena plana (previsível); o jogo de verdade, na ilha.
@@ -385,8 +393,11 @@ func _ready() -> void:
 		story.name = "Historia"
 		add_child(story)
 		story.setup(self, island)
-		story.objective_changed.connect(func(text: String) -> void: pause_objective.text = "Objetivo: " + text)
+		story.objective_changed.connect(func(text: String) -> void:
+			pause_objective.text = "Objetivo: " + text
+			_mostrar_figura_do_objetivo())
 		pause_objective.text = "Objetivo: " + story.objective_text
+		_mostrar_figura_do_objetivo()
 		ending = Ending.new()
 		ending.name = "Desfecho"
 		add_child(ending)
@@ -560,6 +571,15 @@ func _ready() -> void:
 	elif "--farol-captura" in args:
 		select_panel.hide()
 		_run_lighthouse_capture()
+	elif "--facil" in args:
+		select_panel.hide()
+		_run_easy_test()
+	elif "--objetivo" in args:
+		select_panel.hide()
+		_run_objective_test()
+	elif "--objetivo-captura" in args:
+		select_panel.hide()
+		_run_objective_capture()
 	elif SaveGame.go_new:
 		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
 		SaveGame.go_new = false
@@ -1421,7 +1441,8 @@ func _build_pause_menu(layer: CanvasLayer) -> void:
 	var goal_row := HBoxContainer.new()
 	goal_row.add_theme_constant_override("separation", 12)
 	_pause_goal.add_child(goal_row)
-	goal_row.add_child(MenuIcon.new("objetivo", MenuKit.ICON_COLORS.objetivo, 34))
+	_pause_goal_icon = MenuIcon.new("objetivo", MenuKit.ICON_COLORS.objetivo, 40)
+	goal_row.add_child(_pause_goal_icon)
 	pause_objective = Label.new()
 	pause_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	pause_objective.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1581,6 +1602,7 @@ func show_message(text: String, color := Color.WHITE, seconds := 1.2) -> void:
 
 
 func _process(_delta: float) -> void:
+	_regenerar(_delta)
 	if is_instance_valid(player) and crosshair:
 		crosshair.reload_progress = player.reload_progress()
 		crosshair.scoped = player.is_zoomed()
@@ -1619,7 +1641,42 @@ func _process(_delta: float) -> void:
 		var target := story.objective_target
 		var shop_target := story.shop_target()
 		objective_marker.update_marker(view_cam, target if show_target else Vector3.INF, player.global_position)
+		_som_de_chegada(target if show_target else Vector3.INF)
 		shop_marker.update_marker(view_cam, shop_target if show_target else Vector3.INF, player.global_position)
+
+
+## A figura do objetivo vai na seta e na pausa (item 4 da lista de melhorias, 2026-11-10).
+func _mostrar_figura_do_objetivo() -> void:
+	var icone: String = story.objective_icon
+	objective_marker.icone = icone
+	if _pause_goal_icon:
+		_pause_goal_icon.kind = icone if icone != "" else "objetivo"
+		_pause_goal_icon.color = MenuKit.ICON_COLORS.get(_pause_goal_icon.kind, MenuKit.ICON_COLORS.objetivo)
+		_pause_goal_icon.queue_redraw()
+
+
+## Chegou perto do objetivo (onde a seta some): um "plim" e um brilho, uma vez por lugar.
+func _som_de_chegada(target: Vector3) -> void:
+	if target == Vector3.INF or player.global_position.distance_to(target) > ObjectiveMarker.NEAR:
+		return
+	if _chegou_em != Vector3.INF and _chegou_em.distance_to(target) < 1.0:
+		return
+	_chegou_em = target
+	Sfx.play(self, "estrelinha", -2.0, 0.0)
+	Fx.confetti(self, player.global_position + Vector3.UP * 2.2, 14, 2.5)
+
+
+## Modo Fácil (Ajustes): fora de luta, os corações voltam sozinhos, um a cada REGEN_FACIL segundos.
+func _regenerar(delta: float) -> void:
+	if not Ajustes.facil or story == null or not is_instance_valid(player) or player.dizzy or menu_state != "" \
+			or player.hearts >= player.max_hearts or in_combat():
+		_regen = 0.0
+		return
+	_regen += delta
+	if _regen >= REGEN_FACIL:
+		_regen = 0.0
+		if player.heal(1):
+			Sfx.play(self, "coracao", -6.0, 0.0)
 
 
 ## Olhando pelo binóculo do farol.
@@ -5272,6 +5329,140 @@ func _run_lighthouse_test() -> void:
 	all_ok = _check("com a câmera invertida, o analógico para cima olha para baixo", subiu > 0.05 and invertido < -0.05,
 			"(%.2f e %.2f)" % [subiu, invertido]) and all_ok
 	print("FAROL OK" if all_ok else "FAROL COM FALHAS")
+	get_tree().quit()
+
+
+## Modo Fácil (item 3 da lista de melhorias, 2026-11-10), na ilha: esqueletos novos mais lentos e com mais tempo no
+## "!" (o tipo de sempre não muda), guardião com um quarto a menos de vida, mais tempo piscando depois de um golpe e
+## corações que voltam sozinhos fora de luta (no normal, não). Uso: godot --headless --path . -- --facil
+func _run_easy_test() -> void:
+	var all_ok := true
+	story.fast = true
+	Ajustes.padrao()
+	await _wait(0.5)
+	var longe := player.global_position + Vector3(40, 0, 40)
+	var normal := spawn_wave_enemy("Skeleton_Minion", longe)
+	var de_sempre: Dictionary = normal.config.duplicate()
+	Ajustes.facil = true
+	var lento := spawn_wave_enemy("Skeleton_Minion", longe + Vector3(3, 0, 0))
+	all_ok = _check("no fácil, o esqueleto anda mais devagar, demora mais no ! e espera mais entre golpes",
+			is_equal_approx(lento.config.speed, de_sempre.speed * 0.8) and lento.config.windup > de_sempre.windup * 1.3
+			and lento.config.cooldown > de_sempre.cooldown * 1.25 and is_equal_approx(SkeletonEnemy.TYPES.Skeleton_Minion.speed, de_sempre.speed),
+			"(%.2f -> %.2f m/s)" % [de_sempre.speed, lento.config.speed]) and all_ok
+	normal.queue_free()
+	lento.queue_free()
+	var oeste: Defense = story.defenses.oeste
+	Ajustes.facil = false
+	var forte: Boss = oeste.guardian_script.new()
+	forte.arena_center = longe
+	add_boss(forte, longe)
+	Ajustes.facil = true
+	var fraco: Boss = oeste.guardian_script.new()
+	fraco.arena_center = longe
+	add_boss(fraco, longe + Vector3(8, 0, 0))
+	await _wait(0.1)
+	all_ok = _check("no fácil, o guardião tem um quarto a menos de vida", is_equal_approx(fraco.max_health, forte.max_health * 0.75)
+			and is_equal_approx(fraco.health, fraco.max_health), "(%.0f -> %.0f)" % [forte.max_health, fraco.max_health]) and all_ok
+	forte.queue_free()
+	fraco.queue_free()
+	await _wait(0.5)
+	player._invulnerable = 0.0
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0))
+	all_ok = _check("no fácil, fica mais tempo piscando depois do golpe", player._invulnerable > player.invulnerable_time * 1.5,
+			"(%.2f s)" % player._invulnerable) and all_ok
+	await _wait(2.5)
+	player.hearts = 2
+	player.health_changed.emit(player.hearts, player.max_hearts)
+	await _wait(REGEN_FACIL + 0.6)
+	all_ok = _check("no fácil, fora de luta, um coração volta sozinho", player.hearts == 3, "(%d)" % player.hearts) and all_ok
+	Ajustes.facil = false
+	player.hearts = 2
+	await _wait(REGEN_FACIL + 0.6)
+	all_ok = _check("no normal, os corações não voltam sozinhos", player.hearts == 2, "(%d)" % player.hearts) and all_ok
+	Ajustes.padrao()
+	print("FACIL OK" if all_ok else "FACIL COM FALHAS")
+	get_tree().quit()
+
+
+## Objetivo com figura (item 4 da lista de melhorias): cada etapa e cada luta tem a sua figura na seta e na pausa, a
+## figura aparece com a seta longe e some com ela, e chegar perto toca o "plim" uma vez por lugar.
+## Uso: godot --headless --path . -- --objetivo
+func _run_objective_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	var figura_ok := func(nome: String) -> bool:
+		return story.objective_icon == nome and objective_marker.icone == nome and _pause_goal_icon.kind == nome
+	all_ok = _check("antes do prólogo, a figura é o esqueleto na seta e na pausa", figura_ok.call("esqueleto"),
+			"(%s / %s / %s)" % [story.objective_icon, objective_marker.icone, _pause_goal_icon.kind]) and all_ok
+	var praia: Vector3 = story.defenses.praca.center
+	await _stand(_ground_point(praia + Vector3(30, 0, -25)))
+	await _wait(0.2)
+	all_ok = _check("longe, a figura aparece em cima da seta", objective_marker.visible and objective_marker._figura.visible) and all_ok
+	Sfx.played.clear()
+	await _stand(_ground_point(praia))
+	await _wait(0.4)
+	all_ok = _check("perto, a seta e a figura somem e toca o plim", not objective_marker.visible
+			and Sfx.played.count("estrelinha") == 1, "(%d plins)" % Sfx.played.count("estrelinha")) and all_ok
+	await _stand(_ground_point(praia + Vector3(30, 0, -25)))
+	await _stand(_ground_point(praia))
+	await _wait(0.4)
+	all_ok = _check("voltando ao mesmo lugar, não repete o plim", Sfx.played.count("estrelinha") == 1) and all_ok
+	for etapa in [["cidade", "lanterna"], ["cemiterio", "cemiterio"], ["festa", "festa"]]:
+		story.stage = etapa[0]
+		await _wait(0.1)
+		all_ok = _check("etapa %s: figura %s" % etapa, figura_ok.call(etapa[1]), "(%s)" % story.objective_icon) and all_ok
+	story.stage = "cidade"
+	await _wait(0.1)
+	await _stand(_ground_point(story.objective_target))
+	await _wait(0.4)
+	all_ok = _check("lugar novo, plim novo", Sfx.played.count("estrelinha") == 2, "(%d plins)" % Sfx.played.count("estrelinha")) and all_ok
+	story.stage = "mata"
+	await _wait(0.1)
+	all_ok = _check("na mata, do lado de cá do rio, a figura é a ponte", story.south_of_river(player.global_position)
+			and figura_ok.call("ponte"), "(%s)" % story.objective_icon) and all_ok
+	await _stand(_ground_point(story.defenses.clareira.center + Vector3(0, 0, 14)))
+	await _wait(0.1)
+	all_ok = _check("do outro lado do rio, volta a lanterna", not story.south_of_river(player.global_position)
+			and figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
+	var oeste: Defense = story.defenses.oeste
+	var antes: Defense.State = oeste.state
+	oeste.state = Defense.State.ONDA
+	story._refresh_objective()
+	all_ok = _check("na luta da Lanterna Oeste, a figura é o Ossão", figura_ok.call("ossao"), "(%s)" % story.objective_icon) and all_ok
+	oeste.state = antes
+	story._spawn_reward("coracao", player.global_position + Vector3(4, 0, 0))
+	story._refresh_objective()
+	all_ok = _check("com recompensa no chão, a figura é o presente", figura_ok.call("presente"), "(%s)" % story.objective_icon) and all_ok
+	for r in story.rewards.duplicate():
+		r.queue_free()
+	await _wait(0.2)
+	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
+	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do objetivo com figura (objetivo_1 a objetivo_3): a seta com o esqueleto da praia, a seta com a lanterna
+## da cidade e a pausa com a figura ao lado do texto. Uso: godot --path . -- --objetivo-captura
+func _run_objective_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	var fotos := [["antes", Vector3(28, 0, -30), "objetivo_1_praia.png"], ["cidade", Vector3(-26, 0, 30), "objetivo_2_lanterna.png"]]
+	for f in fotos:
+		story.stage = f[0]
+		story._refresh_objective()
+		var alvo: Vector3 = story.objective_target
+		await _stand(_ground_point(alvo + f[1]))
+		var olhar := alvo - player.global_position
+		player.set_yaw(atan2(-olhar.x, -olhar.z))
+		await _wait(1.0)
+		await _shot(f[2])
+	open_menu("pausa")
+	await _wait(0.6)
+	await _shot("objetivo_3_pausa.png")
 	get_tree().quit()
 
 

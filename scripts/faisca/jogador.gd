@@ -606,11 +606,16 @@ func cair() -> void:
 	_caiu()
 
 
-## Caiu nas nuvens: volta no último posto e perde um coração (se for o último, o curto é lá).
+## Caiu nas nuvens: volta no último posto e perde um coração (se for o último, o curto é lá). No Modo Fácil (Ajustes),
+## só volta, sem perder coração.
 func _caiu() -> void:
 	voltar_ao_inicio()
 	robo.expressao("surpreso", 1.0)
-	_perder_coracao()
+	if Ajustes.facil:
+		Sfx.play(self, "faisca_dor")
+		_invencivel = TEMPO_INVENCIVEL
+	else:
+		_perder_coracao()
 
 
 ## Sem corações: faisquinhas, fumacinha e volta no posto com os 3 corações.

@@ -1331,7 +1331,8 @@ func take_damage(amount: int, from: Vector3, source := "") -> void:
 		return
 	hearts = maxi(hearts - amount, 0)
 	last_hit_by = source
-	_invulnerable = invulnerable_time
+	# Modo Fácil (Ajustes): mais tempo piscando depois do golpe.
+	_invulnerable = invulnerable_time * (1.6 if Ajustes.facil else 1.0)
 	if parked and is_instance_valid(stand_in):
 		stand_in.call("levar_golpe_na_ilha", from, invulnerable_time)
 	elif not in_vehicle:
@@ -1407,7 +1408,7 @@ func _look_with_stick(delta: float) -> void:
 	if target != Vector3.INF:
 		factor *= 0.5
 		var d := target - camera.global_position
-		var strength := aim_assist_snap if _snap_time > 0.0 else aim_assist_pull
+		var strength := (aim_assist_snap if _snap_time > 0.0 else aim_assist_pull) * (1.4 if Ajustes.facil else 1.0)
 		var t := 1.0 - exp(-strength * delta)
 		_yaw = lerp_angle(_yaw, atan2(-d.x, -d.z), t)
 		_pitch = lerpf(_pitch, atan2(d.y, Vector2(d.x, d.z).length()), t)
@@ -1422,7 +1423,7 @@ func _aim_assist_target() -> Vector3:
 	var cam_pos := camera.global_position
 	var cam_fwd := -camera.global_basis.z
 	var best := Vector3.INF
-	var best_angle := deg_to_rad(aim_assist_angle_deg)
+	var best_angle := deg_to_rad(aim_assist_angle_deg * (1.6 if Ajustes.facil else 1.0))
 	for node in get_tree().get_nodes_in_group(Hurtbox.AIM_GROUP):
 		var hb := node as Hurtbox
 		if hb == null or not hb.is_active():

@@ -26,6 +26,9 @@ var _zzz: Node3D
 
 func _ready() -> void:
 	volta = false
+	# Modo Fácil (Ajustes): anda mais devagar.
+	if Ajustes.facil:
+		velocidade *= 0.8
 	super()
 	if dormindo:
 		_corpo.rotation.x = 0.25

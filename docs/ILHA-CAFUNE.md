@@ -668,8 +668,8 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 |---|---|---|---|
 | 1 | **Ajustes:** volume da música e dos efeitos, rapidez da câmera, câmera invertida e vibração, no menu principal e nas pausas | P | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
 | 2 | **Farol com uso:** mirante com binóculo, no lugar da porta trancada | P/M | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
-| 3 | **Modo Fácil:** mais corações, esqueletos mais lentos, mira mais ajudada | P/M | |
-| 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | |
+| 3 | **Modo Fácil:** mais corações, esqueletos mais lentos, mira mais ajudada | P/M | feito em 2026-11-10 (ver "Modo Fácil") |
+| 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | feito em 2026-11-10 (ver "Objetivo com figura") |
 | 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | |
 | 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | |
 | 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | |
@@ -685,10 +685,41 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
 
+### Objetivo com figura (item 4 da lista, feito em 2026-11-10)
+
+Para quem ainda não lê saber para onde a seta leva.
+
+- **A figura:** cada objetivo tem um desenho no estilo dos ícones dos menus (`MenuIcon`, cores em `MenuKit.ICON_COLORS`). Fica na `Story`, em `objective_icon`, escolhido junto com o texto em `_refresh_objective`:
+  - **cada luta tem o seu guardião** (`OBJECTIVE_ICONS`): esqueleto na praia, Ossão na Lanterna Oeste, Mira-Torta na Leste, torre na Clareira, Minionzão nos Ventos, planta no desafio da vila e Mestre Ossinho no cemitério;
+  - **cada etapa tem o seu lugar:** esqueleto antes e no prólogo, lanterna na cidade e na mata, ponte enquanto falta atravessar o rio, cemitério na subida do Morro, festa no final e na Festa sem fim;
+  - **presente** quando há recompensa no chão.
+- **Onde aparece:**
+  - em cima do losango roxo da seta (`ObjectiveMarker.icone`, 44 px); colada na borda de cima da tela, a figura vai para o lado;
+  - na pausa, ao lado do texto do objetivo (no lugar do alvo fixo de antes);
+  - a seta da entrega de balão (moeda) segue sem figura.
+- **Chegada:** quando o jogador chega a 8 m do objetivo (onde a seta some), toca a "estrelinha" e solta um confete em cima da cabeça. É uma vez por lugar: andar para longe e voltar ao mesmo ponto não repete. Com menu aberto ou desfecho em cena não toca.
+- **Testes:**
+  - `-- --objetivo` confere 13 pontos: a figura de cada etapa, da luta do Ossão e do presente, na seta e na pausa, a ponte e a lanterna dos dois lados do rio, a figura com a seta longe, e o "plim" uma vez por lugar;
+  - `-- --objetivo-captura` (com janela) tira três fotos: `objetivo_1_praia`, `objetivo_2_lanterna` e `objetivo_3_pausa`.
+
+### Modo Fácil (item 3 da lista, feito em 2026-11-10)
+
+Depois de salvar a maquete da 3-3, o usuário pediu "vamos trabalhar nas melhorias e novidades que sugeriu antes", e a lista seguiu na ordem sugerida.
+
+- **Onde:** a última linha dos Ajustes, "Modo fácil", com o coração verde de "mais" (`MenuIcon` "facil"). Vale para os dois jogos, fica em `user://ajustes.json` (`Ajustes.facil`) e pode ser ligado e desligado a qualquer hora.
+- **Na ilha:**
+  - **corações que voltam:** fora de luta (sem onda, Festa sem fim, guardião nem esqueleto acordado perto), um coração volta a cada 6 s (`REGEN_FACIL`, no `main.gd`), com um som baixinho;
+  - **mais tempo piscando** depois de um golpe: 1,6 vez (1,92 s em vez de 1,2);
+  - **esqueletos mais calmos:** os que nascem com o modo ligado andam a 80%, ficam 35% mais tempo no "!" antes de bater e esperam 30% mais entre um golpe e outro (cada esqueleto copia a tabela do tipo e mexe na cópia);
+  - **guardiões com um quarto a menos de vida** (o Ossão vai de 56 para 42);
+  - **mira mais ajudada no controle:** o auxílio pega de mais longe do centro (1,6 vez o ângulo) e puxa 40% mais forte.
+- **No Faísca:** cair no vazio só leva de volta ao posto, sem perder coração, e as Bolotas andam a 80%.
+- **Testes:** `-- --facil` confere 5 pontos na ilha (esqueleto, guardião, tempo piscando, coração que volta e que não volta no normal); o `--faisca-jogo` confere a queda sem perder coração.
+
 ### Ajustes e o farol mirante (itens 1 e 2 da lista, escolhidos pelo usuário em 2026-11-10)
 
 **Ajustes** (`scripts/ajustes.gd`, `scripts/painel_ajustes.gd`):
-- **O que dá para mudar:** música e efeitos (de 0, mudo, a 10, o volume de sempre), rapidez da câmera (de 1 a 9; 5 é a de sempre, e cada passo multiplica por uns 19%, de 0,5 a 2 vezes), câmera invertida (para cima e para baixo) e vibração.
+- **O que dá para mudar:** música e efeitos (de 0, mudo, a 10, o volume de sempre), rapidez da câmera (de 1 a 9; 5 é a de sempre, e cada passo multiplica por uns 19%, de 0,5 a 2 vezes), câmera invertida (para cima e para baixo), vibração e, desde o item 3, o Modo Fácil.
 - **Onde:** botão "Ajustes" no menu principal (ao lado do Sair), na pausa da ilha (depois de Comandos) e na pausa do Faísca (depois de Sair da fase). É o mesmo painel nos três: uma linha por ajuste com o ícone colorido (engrenagem, nota, alto-falante, olho, setas e controle tremendo, desenhados no `MenuIcon`), barras grossas que o direcional para os lados muda, chaves de Sim e Não, e o Voltar. B ou Esc também voltam, para onde estava, com o botão dos Ajustes marcado.
 - **Vale na hora:** a música abaixa enquanto se mexe, os efeitos tocam um som de amostra e a vibração treme um pouquinho ao ligar.
 - **Valem para os dois jogos:** ficam em `user://ajustes.json`, fora da campanha e do save do Faísca, e são lidos uma vez por partida (`Ajustes.carregar`). Fechar o painel grava.
@@ -743,7 +774,7 @@ O pedido: "vamos reviver o projeto, ficou estranho termos o jogo de tiro contra 
   - a campanha não guarda mais a chave "parte2".
 - **Testes:**
   - `-- --menu-principal` confere 14 pontos (os cartões, o direcional, cada cartão levando à cena certa, o progresso com saves de teste e, desde os Ajustes, o painel deles); `-- --menu-principal-captura` tira `m_ilha` e `m_faisca` em `tools/capturas/menu/`;
-  - `-- --faisca-jogo` confere 24 pontos (a migração, a abertura, o hub sem saída, a escada andando, a pausa no farol e na fase, as estrelinhas, a Estrela Grande, o save e a 1-2 abrindo com 30); `-- --faisca-jogo-captura` tira `j01` a `j05` em `tools/capturas/faisca/jogo/`;
+  - `-- --faisca-jogo` confere 25 pontos (a migração, a abertura, o hub sem saída, a escada andando, a pausa no farol e na fase, as estrelinhas, a Estrela Grande, o save e a 1-2 abrindo com 30); `-- --faisca-jogo-captura` tira `j01` a `j05` em `tools/capturas/faisca/jogo/`;
   - o `--parte2` e o `--faisca-ilha` (e as fotos deles) saíram com o que testavam; a parte do farol e das fases foi para o `--faisca-jogo`.
 
 **Aprovada pelo usuário em 2026-10-28; a primeira rodada foi feita no mesmo dia, no branch `parte-2-faisca`** (ver "Primeira rodada" abaixo). A Parte 2 vem do projeto Faísca (`Projects/others/faisca`). É um jogo de plataforma 3D no estilo do Astro Bot, feito para o filho do usuário, que já tem o robozinho, uma base de fases reaproveitável e a fase 1-1 jogável. O usuário decidiu juntar o Faísca à Ilha. Decisões dele:
