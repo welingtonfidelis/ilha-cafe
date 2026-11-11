@@ -678,12 +678,42 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | feito em 2026-11-10 (ver "Copa de Kart") |
 | 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | feito em 2026-11-10 (ver "Roupinhas"): 10 chapéus e 5 pinturas |
 | 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | feito em 2026-11-10 (ver "Festa de fim de ano") |
-| 13 | **Vozes** gravadas para os momentos principais | M | |
-| 14 | **Pressão nos gatilhos do DualSense** quando ele estiver conectado (pedido do usuário em 2026-11-10): gatilho duro no Pé-de-Moleque, tremidinho na rajada, estalo na escopeta | M | |
+| 13 | **Vozes** gravadas para os momentos principais | M | feito em 2026-11-10 (ver "Vozes"): 22 falas com a voz do Mac, para trocar por gravações |
+| 14 | **Pressão nos gatilhos do DualSense** quando ele estiver conectado (pedido do usuário em 2026-11-10): gatilho duro no Pé-de-Moleque, tremidinho na rajada, estalo na escopeta | M | feito em 2026-11-10 (ver "Gatilhos do DualSense"); falta conferir no PC com o controle |
 
-**Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
+**Sobre o item 14 (feito; ver "Gatilhos do DualSense"):** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Gatilhos do DualSense (item 14 da lista, feito em 2026-11-10)
+
+`scripts/dualsense.gd`, um nó do main (só na ilha; o Faísca ainda não usa).
+
+- **Como funciona:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. O jogo escreve o relatório de saída direto no controle, pelo `/dev/hidrawN` do Linux:
+  - procura nos `hidraw0` a `hidraw31` o `HID_ID` da Sony (054C) com o DualSense (0CE6) ou o DualSense Edge (0DF2), por USB (0003) ou Bluetooth (0005);
+  - abre para escrever (as regras da Steam no Bazzite já deixam);
+  - sem o controle, em outro sistema ou sem permissão, não faz nada e procura de novo a cada 5 s.
+- **Os bytes** são os da página de teste do usuário (`Projects/others/teste-dualsense`, conferidos com o SDL e o fork do KytyPS5):
+  - o bloco comum de 47 bytes, só com as bandeiras dos dois gatilhos (0x04 e 0x08), para não mexer nos motores, que continuam com a Godot;
+  - o R2 no byte 10 e o L2 no 21, 11 bytes cada;
+  - no USB, o relatório 0x02 (48 bytes com o id); no Bluetooth, o 0x31 (78 bytes, com o cabeçalho 0x02 do SDL e o CRC32 de [0xA2, 0x31] e dos 73 primeiros bytes no fim). O CRC foi conferido com o zlib do Python.
+- **No jogo** (manda só quando muda):
+  - **R2:** estalinho na pistola (arma 0x25, zonas 4 e 6, força 4); tremidinho na metralhadora (vibração 0x26 a partir da zona 3, amplitude 6, 14 Hz), que só treme apertando; estalo forte na escopeta (arma, zonas 3 e 6, força 8); gatilho duro no rifle, onde fica o Pé-de-Moleque (resistência 0x21 a partir da zona 2, força 7);
+  - **L2:** resistência leve para mirar;
+  - **no kart:** o R2 acelera macio e o L2 freia duro;
+  - **tudo solto:** com menu aberto, tonto, pescando, no celular, jogando no teclado ou com a vibração desligada nos Ajustes; ao sair do jogo, solta os dois.
+- **Falta:** conferir no PC com o DualSense de verdade. Dá para ver se ele achou o controle pelo nó `DualSense` (`caminho`, `enviados`).
+- **Testes:** `-- --dualsense` confere 8 pontos: o CRC32; os efeitos; o relatório USB; o relatório Bluetooth; o `HID_ID`; sem o controle; o que cada blaster faz; menu e vibração desligada.
+
+### Vozes (item 13 da lista, feito em 2026-11-10)
+
+`scripts/vozes.gd` toca uma fala curta nos momentos principais; os arquivos ficam em `assets/audio/vozes/<id>.wav`.
+
+- **As 22 falas:** o prólogo começando, a lanterna apagada, cada guardião aparecendo (Ossão, Mira-Torta, Torre, Minionzão, Guerreiro Planta, Mestre), "Conseguimos!", o convite, a festa, fisgar e peixe novo, "Lá vou eu!" e "Achei você!" no esconde-esconde, o esqueleto dourado, a figurinha nova, o bilhete, campeão da copa, três estrelas, o presente de fim de ano e ficar tonto.
+- **De onde vêm:** por enquanto, da voz brasileira do Mac (Luciana), por `bash tools/gerar_vozes.sh` (com `say` e `afconvert`, mono, 22 kHz). São provisórias: cada arquivo pode ser trocado por uma gravação de verdade com o mesmo nome (a voz da família, por exemplo), e a lista dos textos está no próprio script.
+- **Como toca:** uma fala por vez (a nova corta a anterior), no canal dos efeitos, um pouco mais alta. A mesma fala colada na anterior não repete.
+- **Ajustes:** a linha nova "Vozes" (Sim/Não), com o ícone do balão de fala, guardada em `user://ajustes.json`.
+- **Testes:** `-- --vozes` confere 6 pontos: os arquivos; o prólogo; o bilhete; tonto; desligada; a linha dos Ajustes.
 
 ### Festa de fim de ano (item 12 da lista, feito em 2026-11-10)
 

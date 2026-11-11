@@ -137,6 +137,7 @@ func start_cutscene(mestre: BossMestre) -> void:
 	var to := m + front * 1.2 + Vector3.UP * 0.9
 	gift.global_position = from
 	Fx.popup_text(game, stand + Vector3.UP * 2.4, "Toma! É o convite da festa!", Color("#ffd23f"))
+	Vozes.falar(game, "convite")
 	Sfx.play(game, "ui_ok", 0.0, 0.0)
 	var arc := func(t: float) -> void:
 		gift.global_position = from.lerp(to, t) + Vector3.UP * sin(PI * t) * 1.6
@@ -186,6 +187,7 @@ func start_cutscene(mestre: BossMestre) -> void:
 	game.set_hud_visible(true)
 	player.input_enabled = true
 	game.banner("A Festa do Cafuné!", "Os esqueletos chegaram de balão. Aproveite a festa e, quando quiser, fique no círculo dourado na frente do palco!", Color("#ffd23f"), 4.0)
+	Vozes.falar(game, "festa")
 
 
 ## Esqueletos saem do chão comemorando, no lado oposto ao da câmera: também foram convidados.

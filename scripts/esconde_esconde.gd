@@ -208,6 +208,7 @@ func _contando() -> void:
 		var tw := fade.create_tween()
 		tw.tween_property(fade, "modulate:a", 0.0, 0.4)
 		game.banner("Esconde-esconde!", "Ache os %d amigos escondidos %s. Escute o sininho!" % [QUANTOS, area.nome], Color("#ffd23f"), 4.0)
+		Vozes.falar(game, "la_vou_eu")
 
 
 ## Some com os escondidos que sobraram (rodada largada ou pós-jogo desligado).
@@ -290,6 +291,7 @@ func _achou(h: Townsperson) -> void:
 	(h.visual.get_child(0) as Node3D).rotation.y = 0.0
 	h.visual.rotation.y = atan2(olhar.x, olhar.z)
 	h.celebrate(2.2, "Achou!")
+	Vozes.falar(game, "achei")
 	Sfx.play(game, "estrelinha", -2.0, 0.0)
 	story.add_coins(MOEDAS_ACHOU, h.global_position + Vector3.UP * 2.8)
 	_icones[achados - 1].modulate = Color.WHITE

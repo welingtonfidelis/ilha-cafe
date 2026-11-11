@@ -27,6 +27,7 @@ const ICON_COLORS := {
 	"camera": Color("#2fb5d6"),
 	"inverter": Color("#8a5cd6"),
 	"vibracao": Color("#d65b5b"),
+	"voz": Color("#3fbf9f"),
 	"binoculo": Color("#3d8fe0"),
 	"facil": Color("#3fbf63"),
 	"esconde": Color("#ff9f43"),

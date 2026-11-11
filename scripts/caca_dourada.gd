@@ -80,6 +80,7 @@ func _criar(pos: Vector3) -> void:
 	_vida = 0.0
 	_sino = 0.0
 	game.banner("Um esqueleto dourado!", "Pegue ele antes que fuja: ele solta um monte de moedas!", Color("#ffd23f"), 3.5)
+	Vozes.falar(game, "dourado")
 	Sfx.play(game, "sino", 0.0, 0.0)
 
 

@@ -178,6 +178,7 @@ func start() -> void:
 	_set_fast()
 	defenses.praca.activate()
 	game.banner("Véspera da Festa do Cafuné", "Os esqueletos estão chegando pela praia! Vá até o cais e defenda a festa.")
+	Vozes.falar(game, "prologo")
 	_refresh_objective()
 	save()
 
@@ -206,12 +207,14 @@ func _on_defense_won(d: Defense) -> void:
 		get_tree().create_timer(1.6 if not fast else 0.1, false).timeout.connect(func() -> void: take_photo(PHOTO_CAPTIONS[d.id]))
 	if d.id == "vila":
 		_celebrate(d)
+		Vozes.falar(game, "conseguimos")
 		_spawn_reward(spec.recompensa, d.center + Vector3(0, 0, 3.0))
 		game.banner("Desafio vencido!", "O Guerreiro Planta reconheceu você como amigo da mata.", Color("#c9f7a0"))
 		_refresh_objective()
 		save()
 		return
 	_celebrate(d)
+	Vozes.falar(game, "lanterna" if spec.lanterna != "" else "conseguimos")
 	game.activate_checkpoint(spec.bandeira)
 	if spec.lanterna != "":
 		_set_lantern_look(spec.lanterna, false, true)
@@ -625,6 +628,7 @@ func marcar_derrota(tipo: String) -> void:
 	derrotados[tipo] = int(derrotados.get(tipo, 0)) + 1
 	if primeira and Album.TURMA.any(func(t: Dictionary) -> bool: return t.id == tipo):
 		game.show_message("Figurinha nova no álbum!", Color("#ffd23f"), 1.6)
+		Vozes.falar(game, "figurinha")
 
 
 ## Achou um bilhete pela ilha: vai para o álbum, dá moedas e salva.

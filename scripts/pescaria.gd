@@ -356,6 +356,7 @@ func _fisgou() -> void:
 	fase = Fase.PUXANDO
 	_tempo = 0.0
 	forca = 0.2
+	Vozes.falar(game, "fisgou")
 	Sfx.play_at(game, "splash", _alvo, -2.0)
 	Fx.bubble_pop(game, _alvo)
 	_vibrar(0.5, 0.5, 0.2)
@@ -418,6 +419,7 @@ func _pegou() -> void:
 		game.story.add_coins(moedas, _no_ar() + Vector3.UP * 0.8)
 	if novo:
 		Fx.confetti(game, _no_ar(), 30, 3.0)
+		Vozes.falar(game, "peixe_novo")
 	_mostrar_cartao(peixe_id, novo, moedas)
 	_atualizar_placar()
 	if aquario:

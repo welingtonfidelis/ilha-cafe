@@ -24,6 +24,8 @@ static var camera := CAMERA_PADRAO
 static var inverter := false
 static var vibracao := true
 static var facil := false
+## Falas dos momentos principais (item 13 da lista de melhorias, Vozes).
+static var vozes := true
 static var _carregado := false
 
 
@@ -43,6 +45,7 @@ static func carregar(testando: bool) -> void:
 			inverter = bool(dados.get("inverter", false))
 			vibracao = bool(dados.get("vibracao", true))
 			facil = bool(dados.get("facil", false))
+			vozes = bool(dados.get("vozes", true))
 	Sfx.aplicar_volumes()
 
 
@@ -52,7 +55,7 @@ static func salvar() -> void:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify({"musica": musica, "efeitos": efeitos, "camera": camera, "inverter": inverter,
-			"vibracao": vibracao, "facil": facil}, "\t"))
+			"vibracao": vibracao, "facil": facil, "vozes": vozes}, "\t"))
 
 
 ## Volta tudo para o de sempre (os testes usam).
@@ -63,6 +66,7 @@ static func padrao() -> void:
 	inverter = false
 	vibracao = true
 	facil = false
+	vozes = true
 	Sfx.aplicar_volumes()
 
 

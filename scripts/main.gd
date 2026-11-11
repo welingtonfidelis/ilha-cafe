@@ -150,6 +150,8 @@ var copa: CopaKart
 var roupas_panel: PainelRoupas
 ## Festa de fim de ano em dezembro (item 12 da lista de melhorias). Nula na arena.
 var fim_de_ano: FestaFimDeAno
+## Gatilhos adaptáveis do DualSense pelo hidraw do Linux (item 14 da lista de melhorias).
+var dualsense: DualSense
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -412,6 +414,10 @@ func _ready() -> void:
 	for pos in world.crates:
 		_spawn_crate(pos, CRATE_RESPAWN)
 	_build_ui()
+	dualsense = DualSense.new()
+	dualsense.name = "DualSense"
+	dualsense.game = self
+	add_child(dualsense)
 	if not arena:
 		story = Story.new()
 		story.name = "Historia"
@@ -689,6 +695,12 @@ func _ready() -> void:
 	elif "--natal" in args:
 		select_panel.hide()
 		_run_holiday_test()
+	elif "--vozes" in args:
+		select_panel.hide()
+		_run_voices_test()
+	elif "--dualsense" in args:
+		select_panel.hide()
+		_run_dualsense_test()
 	elif "--natal-captura" in args:
 		select_panel.hide()
 		_run_holiday_capture()
@@ -1492,6 +1504,7 @@ func _on_weapon_locked(id: String) -> void:
 
 func show_guardian(b: Boss) -> void:
 	boss_bar.track(b)
+	Vozes.falar(self, String(b.get_script().resource_path).get_file().get_basename().trim_prefix("boss_"))
 	banner(b.display_name, b.subtitle, Color("#ff9d7a"), 2.2)
 
 
@@ -1731,6 +1744,7 @@ func _on_player_damaged() -> void:
 ## Tonto: deita com estrelinhas, a tela escurece e o aventureiro volta na última bandeira.
 func _on_player_dizzy() -> void:
 	dizzy_label.visible = true
+	Vozes.falar(self, "tonto")
 	await _wait(2.4)
 	var tw := fade.create_tween()
 	tw.tween_property(fade, "modulate:a", 1.0, 0.4)
@@ -2668,6 +2682,10 @@ func _run_island_test() -> void:
 
 	# Vielas da cidade (pedido do usuário em 2026-10-29): de uma rua à outra pelo meio do quarteirão, passando pelo
 	# jardinzinho, com a câmera sempre fora dos prédios.
+	# O esqueleto que dorme em (30, 110) acordava e, conforme o tipo sorteado, travava a viela: sai antes.
+	for e in enemies.duplicate():
+		if is_instance_valid(e) and Vector2(e.global_position.x - 43.5, e.global_position.z - 130.0).length() < 40.0:
+			e.queue_free()
 	await _stand(Vector3(43.5, 0, 111))
 	var alvo := Vector3(43.5, 0, 152)
 	var camera_fora := true
@@ -5670,6 +5688,104 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Vozes (item 13 da lista de melhorias): os arquivos das falas existem; o prólogo, ficar tonto e o bilhete falam; com
+## as vozes desligadas nos Ajustes, não fala; a linha "Vozes" do painel mexe na chave. Uso: godot --headless --path . -- --vozes
+func _run_voices_test() -> void:
+	var all_ok := true
+	story.fast = true
+	Sfx.logging = true
+	await _wait(0.5)
+	var ids := ["prologo", "lanterna", "ossao", "mira_torta", "torre", "minionzao", "planta", "mestre", "conseguimos", "convite", "festa",
+		"fisgou", "peixe_novo", "la_vou_eu", "achei", "dourado", "figurinha", "bilhete", "campeao", "tres_estrelas", "fim_de_ano", "tonto"]
+	var faltam := ids.filter(func(id: String) -> bool: return not ResourceLoader.exists(Vozes.DIR % id))
+	all_ok = _check("as 22 falas existem", faltam.is_empty(), str(faltam)) and all_ok
+	Sfx.played.clear()
+	story.start()
+	await _wait(0.2)
+	all_ok = _check("o prólogo começa falando", "voz:prologo" in Sfx.played and Vozes._ultima == "prologo") and all_ok
+	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
+	await _stand(bilhetes_nos[0].global_position + Vector3.UP * 0.3)
+	await _wait(0.4)
+	all_ok = _check("pegar um bilhete fala", "voz:bilhete" in Sfx.played) and all_ok
+	bilhete_cartao.hide()
+	player.god_mode = false
+	player._invulnerable = 0.0
+	player.hearts = 1
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0))
+	await _wait(0.3)
+	all_ok = _check("ficar tonto fala", "voz:tonto" in Sfx.played) and all_ok
+	player.god_mode = true
+	await _wait(3.5)
+	Ajustes.vozes = false
+	Vozes._ultima = ""
+	Vozes.falar(self, "festa")
+	all_ok = _check("com as vozes desligadas, não fala", Vozes._ultima == "") and all_ok
+	open_menu("pausa")
+	await _wait(0.2)
+	open_menu("ajustes")
+	await _wait(0.2)
+	(ajustes_panel.controles.vozes as CheckButton).button_pressed = true
+	all_ok = _check("a linha \"Vozes\" dos Ajustes liga as falas", Ajustes.vozes) and all_ok
+	close_menus()
+	Ajustes.padrao()
+	print("VOZES OK" if all_ok else "VOZES COM FALHAS")
+	get_tree().quit()
+
+
+## DualSense (item 14 da lista de melhorias): o CRC32 do zlib; os relatórios USB e Bluetooth com os efeitos no lugar
+## certo; os efeitos com os bytes da página de teste; o HID_ID do uevent; o que cada gatilho faz no jogo; sem o
+## controle (no Mac), não quebra nada. Uso: godot --headless --path . -- --dualsense
+func _run_dualsense_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	all_ok = _check("CRC32 do zlib (\"123456789\" dá CBF43926) e continua de onde parou", DualSense.crc32("123456789".to_ascii_buffer()) == 0xCBF43926
+			and DualSense.crc32("6789".to_ascii_buffer(), DualSense.crc32("12345".to_ascii_buffer())) == 0xCBF43926) and all_ok
+	var arma := DualSense.efeito_arma(4, 6, 4)
+	var duro := DualSense.efeito_resistencia(2, 7)
+	var treme := DualSense.efeito_vibracao(3, 6, 14)
+	all_ok = _check("os efeitos com os bytes da página de teste", arma.slice(0, 4) == PackedByteArray([0x25, 0x50, 0x00, 0x03])
+			and duro[0] == 0x21 and duro[1] == 0xFC and duro[2] == 0x03 and treme[0] == 0x26 and treme[9] == 14
+			and DualSense.efeito_solto()[0] == 0x05 and DualSense.efeito_vibracao(3, 6, 0)[0] == 0x05) and all_ok
+	var comum := DualSense.bloco_comum(arma, duro)
+	var usb := DualSense.relatorio(comum, false)
+	var bt := DualSense.relatorio(comum, true)
+	var crc := DualSense.crc32(bt.slice(1, 74), DualSense.crc32(PackedByteArray([0xA2, 0x31])))
+	var crc_no_fim := bt[74] | (bt[75] << 8) | (bt[76] << 16) | (bt[77] << 24)
+	all_ok = _check("relatório USB: 0x02, 48 bytes, gatilhos ligados, R2 no 11 e L2 no 22", usb.size() == 48 and usb[0] == 0x02
+			and usb[1] == 0x0C and usb.slice(11, 22) == arma and usb.slice(22, 33) == duro) and all_ok
+	all_ok = _check("relatório Bluetooth: 0x31, 78 bytes, cabeçalho 0x02 e o CRC32 certo no fim", bt.size() == 78 and bt[0] == 0x31
+			and bt[1] == 0x02 and bt[2] == 0x0C and bt.slice(12, 23) == arma and crc_no_fim == crc) and all_ok
+	all_ok = _check("o HID_ID do uevent: DualSense por Bluetooth, Edge por USB e outro controle não",
+			DualSense.ler_uevent("DRIVER=playstation\nHID_ID=0005:0000054C:00000CE6\nHID_NAME=DualSense") == {"bluetooth": true}
+			and DualSense.ler_uevent("HID_ID=0003:0000054C:00000DF2") == {"bluetooth": false}
+			and DualSense.ler_uevent("HID_ID=0003:0000045E:00000B12").is_empty()) and all_ok
+	var ds := dualsense
+	all_ok = _check("sem o controle (neste computador), não acha nada e não quebra", ds.caminho == "" and ds.enviados == 0) and all_ok
+	player.using_gamepad = true
+	player.weapon_index = 0
+	var r := ds.escolher()
+	var pistola: PackedByteArray = r[0]
+	player.weapon_index = 1
+	var rajada: PackedByteArray = ds.escolher()[0]
+	player.weapon_index = 2
+	var escopeta: PackedByteArray = ds.escolher()[0]
+	player.weapon_index = 0
+	all_ok = _check("no jogo: estalinho na pistola, tremidinho na rajada, estalo forte na escopeta e o L2 leve", pistola[0] == 0x25
+			and rajada[0] == 0x26 and escopeta[0] == 0x25 and escopeta[3] == 7 and (r[1] as PackedByteArray)[0] == 0x21) and all_ok
+	open_menu("pausa")
+	var no_menu: Array = ds.escolher()
+	close_menus()
+	Ajustes.vibracao = false
+	var sem_vibracao: Array = ds.escolher()
+	Ajustes.padrao()
+	all_ok = _check("com menu aberto ou a vibração desligada, os gatilhos ficam soltos", (no_menu[0] as PackedByteArray)[0] == 0x05
+			and (sem_vibracao[1] as PackedByteArray)[0] == 0x05) and all_ok
+	print("DUALSENSE OK" if all_ok else "DUALSENSE COM FALHAS")
 	get_tree().quit()
 
 

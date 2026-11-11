@@ -17,6 +17,7 @@ const LINHAS := [
 	["inverter", "Câmera invertida", "inverter"],
 	["vibracao", "Vibração", "vibracao"],
 	["facil", "Modo fácil", "facil"],
+	["vozes", "Vozes", "voz"],
 ]
 
 ## O controle de cada linha pela chave (HSlider ou CheckButton); os testes mexem por aqui.
@@ -155,6 +156,7 @@ func _ler() -> void:
 	(controles.inverter as CheckButton).button_pressed = Ajustes.inverter
 	(controles.vibracao as CheckButton).button_pressed = Ajustes.vibracao
 	(controles.facil as CheckButton).button_pressed = Ajustes.facil
+	(controles.vozes as CheckButton).button_pressed = Ajustes.vozes
 	_lendo = false
 	for chave in controles:
 		_mostrar(chave)
@@ -176,6 +178,8 @@ func _mudou(valor: float, chave: String) -> void:
 			Ajustes.vibracao = valor > 0.5
 		"facil":
 			Ajustes.facil = valor > 0.5
+		"vozes":
+			Ajustes.vozes = valor > 0.5
 	_mostrar(chave)
 	if _lendo:
 		return

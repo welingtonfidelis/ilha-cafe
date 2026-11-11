@@ -304,6 +304,7 @@ func _cena_do_podio(ordem: Array) -> void:
 	tw.tween_property(fade, "modulate:a", 0.0, 0.5)
 	var palavras := {1: "Campeão da Copa de Kart!", 2: "2º lugar na Copa de Kart!", 3: "3º lugar na Copa de Kart!"}
 	game.banner(palavras[lugar_final], "Pontos: %s. +%d moedas" % [placar(), MOEDAS[lugar_final - 1]], CORES[lugar_final], CENA - 1.0)
+	Vozes.falar(game, "campeao" if lugar_final == 1 else "conseguimos")
 	Sfx.play(game, "estrelinha", 0.0, 0.0)
 	for k in 4:
 		Fx.confetti(game, topo1 + Vector3(randf_range(-2, 2), 0.5, randf_range(-2, 2)), 40, 4.0)

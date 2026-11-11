@@ -316,6 +316,7 @@ func _venceu() -> void:
 	var palavras := ["", "1 estrela", "2 estrelas", "3 estrelas!"]
 	game.banner("Revanche vencida!", "%s em %s" % [palavras[n], relogio(tempo)], CORES[n], 4.0)
 	_mostrar_estrelas(n)
+	Vozes.falar(game, "tres_estrelas" if n == 3 else "conseguimos")
 	_limpar(4.5)
 	atualizar_trofeus()
 	story.save()

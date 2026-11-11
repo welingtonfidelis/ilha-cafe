@@ -110,6 +110,12 @@ func _draw() -> void:
 			draw_colored_polygon(_pts(c, k, [Vector2(-10, -4), Vector2(-4.5, -11), Vector2(1, -4)]), w)
 			draw_line(c + Vector2(4.5, -9) * k, c + Vector2(4.5, 5) * k, w, 3.0 * k, true)
 			draw_colored_polygon(_pts(c, k, [Vector2(-1, 4), Vector2(4.5, 11), Vector2(10, 4)]), w)
+		"voz":
+			# Balão de fala com três risquinhos.
+			draw_circle(c + Vector2(0, -1.5) * k, 10.0 * k, w)
+			draw_colored_polygon(_pts(c, k, [Vector2(-6, 5), Vector2(-9, 11), Vector2(-1, 7)]), w)
+			for i in 3:
+				draw_line(c + Vector2(-5, -5 + i * 3.5) * k, c + Vector2(5 - (2 if i == 2 else 0), -5 + i * 3.5) * k, color, 1.8 * k, true)
 		"vibracao":
 			draw_circle(c + Vector2(-4.5, 1.5) * k, 4.5 * k, w)
 			draw_circle(c + Vector2(4.5, 1.5) * k, 4.5 * k, w)

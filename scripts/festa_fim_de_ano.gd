@@ -208,6 +208,7 @@ func abrir() -> void:
 	Sfx.play(game, "estrelinha", 0.0, 0.0)
 	story.add_coins(n, em + Vector3.UP * 1.2)
 	game.banner("Feliz fim de ano!", "O presente do dia tinha %d moedas. Amanhã tem outro!" % n, Color("#ff9d9d"), 3.4)
+	Vozes.falar(game, "fim_de_ano")
 	atualizar_presente()
 	story.save()
 

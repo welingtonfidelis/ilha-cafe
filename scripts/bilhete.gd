@@ -112,6 +112,7 @@ func pegar() -> void:
 	Sfx.play(game, "estrelinha", -2.0, 0.0)
 	Fx.confetti(game, global_position + Vector3.UP * 1.4, 24, 3.0)
 	game.story.pegar_bilhete(id, global_position + Vector3.UP * 2.2)
+	Vozes.falar(game, "bilhete")
 	game.bilhete_cartao.mostrar(id)
 
 
