@@ -16,7 +16,7 @@ var _tempo := 0.0
 static func ponto_de(no: Node3D) -> Vector3:
 	if no is Sino:
 		return (no as Sino).ponto()
-	return no.global_position + Vector3.UP * 0.8
+	return no.global_position + Vector3.UP * float(no.get_meta("altura_do_meio", 0.8))
 
 
 func _ready() -> void:
@@ -50,8 +50,8 @@ func _physics_process(delta: float) -> void:
 func _acertar() -> void:
 	if alvo is Sino:
 		(alvo as Sino).tocar()
-	elif alvo is Alvo:
-		(alvo as Alvo).receber_golpe(1, global_position - vel.normalized(), 5.0, "arremesso")
+	elif alvo is Alvo or (is_instance_valid(alvo) and alvo.has_method("receber_golpe")):
+		alvo.receber_golpe(1, global_position - vel.normalized(), 5.0, "arremesso")
 	_desfazer()
 
 

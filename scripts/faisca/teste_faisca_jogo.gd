@@ -62,8 +62,9 @@ func rodar() -> void:
 			and terreo[2].tipo == "chefe" and not terreo[2].aberta and int(terreo[2].pede_grandes) == 2
 			and not portas.any(func(d: Dictionary) -> bool: return d.tipo == "saida")) and ok
 	var de_cima := portas.filter(func(d: Dictionary) -> bool: return int(d.andar) > 0)
-	ok = _conferir("nos andares de cima: 7 portas trancadas (com a do Chef Bolotão) e a da nave no topo, pedindo as 8 Estrelas Grandes",
-			de_cima.size() == 8 and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-2" and int(d.pede_grandes) == 5)
+	ok = _conferir("nos andares de cima: as portas trancadas (com as do Chef Bolotão e do Pinguinzão) e a da nave no topo, pedindo as 8 Estrelas Grandes",
+			de_cima.size() == 9 and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-2" and int(d.pede_grandes) == 5)
+			and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-3" and int(d.pede_grandes) == 7)
 			and de_cima.all(func(d: Dictionary) -> bool: return not d.aberta) and int(hub.portas_nos["nave"].dados.pede_grandes) == 8) and ok
 	var da_escada: Area3D = hub.estrelas[0]
 	await _faisca_em(da_escada.global_position - Vector3(0, 1.0, 0))
@@ -428,6 +429,18 @@ func _chefe() -> bool:
 			and j.faixa_titulo_texto() == "Chef Bolotão!") and ok
 	j.sair_da_fase()
 	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
+	# O do andar 3: com 7 Estrelas Grandes, a porta do Pinguinzão abre no 3º andar.
+	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2"]
+	await _refazer_hub()
+	var porta3: Node3D = j.hub.portas_nos["chefe-3"]
+	ok = _conferir("com 7 Estrelas Grandes, a porta do Pinguinzão do Gelo abre no 3º andar", porta3.dados.aberta and int(porta3.dados.andar) == 2) and ok
+	j.entrar_fase("chefe-3")
+	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy() and j.nivel is Chefe3 and (j.nivel as Chefe3).chefe.fase == 1, 10.0)
+	ok = _conferir("a porta leva ao Pico do Pinguinzão, com a Luva de Neve e os corações dele no HUD", j.nivel is Chefe3
+			and j.hud.chefe_restam() == 3 and f.luva_de_neve) and ok
+	j.sair_da_fase()
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
+	ok = _conferir("saindo da luta, o poder fica lá dentro", not f.luva_de_neve and not f.martelinho) and ok
 	f._invencivel = 0.0
 	j.chefes.clear()
 	j.grandes = antes

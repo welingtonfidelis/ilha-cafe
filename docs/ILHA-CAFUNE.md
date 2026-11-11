@@ -2264,7 +2264,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
 | 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
 | 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
-| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | o do andar 1 e o Chef Bolotão (andar 2) feitos em 2026-11-11; falta o do andar 3 |
+| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | os três feitos em 2026-11-11: o Bolotão Fofão (andar 1), o Chef Bolotão (andar 2) e o Pinguinzão do Gelo (andar 3) |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
@@ -2514,6 +2514,46 @@ Pedido do usuário: "Seguir para o chefe 2". Mesmo molde do Bolotão Fofão (tr�
   - o baú.
 - `--faisca-jogo`: a porta do Chef abrindo com 5 Estrelas Grandes, levando à cozinha, com os corações dele.
 - Fotos: `--faisca-chefe-2-captura`. Para jogar direto: `--faisca-jogar-chefe-2`. O revisor de física confere a arena.
+
+### Chefe do andar 3: o Pinguinzão do Gelo (item 5 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "vamos acabar as melhorias do projeto faisca, depois de mergear na main, vamos testar o Kenney Particle Pack". Mesmo molde dos outros dois chefes, com o que o Faísca aprendeu no mundo 3 (Frio e Vento). A 3-3, que traria a Pipa, ainda não existe; a luta usa a Luva de Neve (3-1), o Martelinho de Apito (3-2) e o gelo.
+
+**A porta e a arena.**
+- **A porta:** no 3º andar do farol, a noroeste (315°). Pede 7 Estrelas Grandes, todas as que já existem.
+- **O Pico do Pinguinzão** (`scripts/faisca/fases/chefe_3.gd`): um platô redondo de neve (16 m), acima das nuvens, com a parede invisível na beira, pinheiros enfeitados do pacote de neve e uma roda de 12 estrelinhas.
+
+**O Pinguinzão** (`scripts/faisca/chefe_pinguim.gd`): o pinguim das Bolotas em 2,8x, com cachecol vermelho e coroa de cristais de gelo.
+1. **O pilar de gelo:**
+   - lá em cima do pilar do meio (6 m), ele joga bolas de neve grandes onde o Faísca está, com um alvo azul no chão antes;
+   - o Faísca ganha a Luva de Neve (o Vovô mostra);
+   - tocados os 3 sinos das colunas de gelo da beira, o pilar desmancha e ele cai tonto;
+   - se o tonto passa sem os socos, o pilar e os sinos voltam.
+2. **A casca de gelo:**
+   - ele se fecha numa casca e solta ondas geladas pelo chão (pular por cima);
+   - a luva vira o Martelinho;
+   - afundados os 4 pinos em volta, a casca quebra e ele fica tonto.
+3. **As barrigadas:**
+   - o chão congela (escorrega, como o gelo da 3-1) e a luva volta;
+   - ele desliza de barriga, batendo na beira e voltando para o lado do Faísca;
+   - três bolas da luva nele (2 no Modo Fácil) e ele tropeça e fica tonto.
+
+**A vitória:** como a dos outros. O chão degela, saem 40 moedas e o baú dourado cai do céu. O troféu é o pinguim dourado ao lado da porta, e a constelação do floco de neve acende no teto.
+
+**Dois consertos que a luta pediu.**
+- A mira da luva passou a mirar em qualquer alvo com a meta `alvo_da_luva` (não só nas Bolotas), e o raio que confere se há parede no caminho agora ignora o próprio alvo.
+- O pinguim ignora a própria casca: sem isso, o corpo dele era empurrado para fora dela e atravessava o chão. Ele tem também uma rede de segurança: abaixo do platô, volta para o meio.
+
+**Testes:**
+- `--faisca-chefe-3`, com a luva jogada de verdade nos sinos e nele deslizando:
+  - a bola grande acertando quem está no alvo;
+  - o pilar desmanchando;
+  - a casca e os pinos, com a troca para o martelinho;
+  - a onda gelada;
+  - o chão de gelo;
+  - os tropeços e o baú.
+- `--faisca-jogo`: a porta do Pinguinzão abrindo com 7 Estrelas Grandes, a luva na luta e o poder ficando lá dentro ao sair.
+- Fotos: `--faisca-chefe-3-captura`. Para jogar direto: `--faisca-jogar-chefe-3`. O revisor de física confere a arena.
 
 ### Em aberto
 

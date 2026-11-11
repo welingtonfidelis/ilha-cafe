@@ -44,6 +44,8 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/chefe_1.gd", "imagem": "res://assets/faisca/portas/chefe_1.jpg"},
 	{"id": "chefe-2", "nome": "Chef Bolotão", "tipo": "chefe", "pede": 0, "pede_grandes": 5, "andar": 1, "lado": 315,
 		"cena": "res://scripts/faisca/fases/chefe_2.gd", "imagem": "res://assets/faisca/portas/chefe_2.jpg"},
+	{"id": "chefe-3", "nome": "Pinguinzão do Gelo", "tipo": "chefe", "pede": 0, "pede_grandes": 7, "andar": 2, "lado": 315,
+		"cena": "res://scripts/faisca/fases/chefe_3.gd", "imagem": "res://assets/faisca/portas/chefe_3.jpg"},
 	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270, "cena": "", "imagem": ""},
 ]
 ## As estrelinhas da escada do farol também contam.

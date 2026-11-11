@@ -1283,14 +1283,20 @@ func jogar_bola_de_neve() -> Node3D:
 	var melhor: Node3D = null
 	var menor := ALCANCE_LUVA
 	var candidatos: Array = get_tree().get_nodes_in_group(Sino.GRUPO).filter(func(s: Sino) -> bool: return not s.tocado)
-	candidatos.append_array(get_tree().get_nodes_in_group(Alvo.GRUPO).filter(func(a: Node) -> bool: return a is Bolota and not a.derrotado))
+	# As Bolotas e o que pedir (o Pinguinzão do Gelo, com a meta "alvo_da_luva").
+	candidatos.append_array(get_tree().get_nodes_in_group(Alvo.GRUPO).filter(func(a: Node) -> bool:
+		return (a is Bolota or a.has_meta("alvo_da_luva")) and not a.derrotado))
 	for c: Node3D in candidatos:
 		var ponto: Vector3 = BolaDaLuva.ponto_de(c)
 		var d := ponto - mao
 		var plano := Vector3(d.x, 0, d.z)
 		if d.length() > menor or (plano.length() > 0.5 and _frente().angle_to(plano.normalized()) > ANGULO_LUVA):
 			continue
-		var batida := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(mao, ponto, 1, [get_rid()]))
+		# Sem contar o próprio alvo (o Pinguinzão é sólido, e o raio parava no corpo dele).
+		var fora := [get_rid()]
+		if c is CollisionObject3D:
+			fora.append((c as CollisionObject3D).get_rid())
+		var batida := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(mao, ponto, 1, fora))
 		if not batida.is_empty() and (batida.position as Vector3).distance_to(ponto) > 1.5:
 			continue
 		menor = d.length()

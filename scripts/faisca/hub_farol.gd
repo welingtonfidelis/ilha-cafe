@@ -53,7 +53,7 @@ const TREM_VELOCIDADE := 0.25
 const PLACAS := {"elevador": [118.0, 7.6, 0], "trem": [180.0, 5.6, 0], "farolete": [55.0, 9.6, 3]}
 const PEDE := {"elevador": 10, "trem": 20, "farolete": 30}
 ## O modelo do troféu de cada chefe.
-const MODELOS_DOS_CHEFES := {"chefe-1": ChefeBolotao.MODELO, "chefe-2": ChefeChef.MODELO}
+const MODELOS_DOS_CHEFES := {"chefe-1": ChefeBolotao.MODELO, "chefe-2": ChefeChef.MODELO, "chefe-3": ChefePinguim.MODELO}
 ## Os móveis dos brindes no térreo (graus, raio).
 const MAQUINA := [225.0, 9.4]
 const ESTANTE := [325.0, 11.25]
@@ -76,6 +76,8 @@ const CONSTELACOES := {
 	"chefe-1": [Vector2(340, 25), Vector2(345, 38), Vector2(352, 30), Vector2(0, 40), Vector2(8, 30), Vector2(15, 38), Vector2(20, 25)],
 	# O chapéu de cozinheiro do Chef, no lado leste, embaixo.
 	"chefe-2": [Vector2(100, 18), Vector2(98, 28), Vector2(106, 34), Vector2(114, 30), Vector2(122, 34), Vector2(130, 28), Vector2(128, 18)],
+	# O floco de neve do Pinguinzão, no lado sudoeste, embaixo.
+	"chefe-3": [Vector2(215, 14), Vector2(222, 22), Vector2(230, 14), Vector2(222, 6), Vector2(215, 14), Vector2(230, 14)],
 }
 
 ## Uma por porta: {id, nome, tipo ("ceu", "chao", "nave" ou "saida"), andar (0 é o térreo), lado (graus),
