@@ -29,6 +29,7 @@ const TURMA := [
 	{"id": "Conde", "nome": "Conde", "texto": "Some e aparece de surpresa. Prometeu nunca mais assustar ninguém."},
 	{"id": "Grandalhao", "nome": "Grandalhão", "texto": "Tem um escudo na frente e outro na cabeça. Mire nas costas!"},
 	{"id": "GolemDeGelo", "nome": "Golem de Gelo", "texto": "Feito de gelo do Pico Gelado. Gosta de sorvete, claro."},
+	{"id": "Dourado", "nome": "Esqueleto Dourado", "texto": "Raro! Aparece de vez em quando, foge correndo e solta um monte de moedas."},
 ]
 ## Os bilhetes pela ilha: onde ficam (perto daqui, onde tiver chão livre), quem escreveu, o texto e a figura.
 const BILHETES := [

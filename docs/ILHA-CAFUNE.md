@@ -673,7 +673,7 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | feito em 2026-11-10 (ver "Pescaria no cais"); o aquário ficou na praia, ao lado da entrada do cais |
 | 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | feito em 2026-11-10 (ver "Esconde-esconde dos esqueletos amigos") |
 | 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | feito em 2026-11-10 (ver "Álbum de figurinhas e bilhetes") |
-| 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | |
+| 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | feito em 2026-11-10 (ver "Esqueleto dourado") |
 | 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | |
 | 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | |
 | 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | |
@@ -685,19 +685,41 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
 
+### Esqueleto dourado (item 8 da lista, feito em 2026-11-10)
+
+`scripts/caca_dourada.gd` (quem faz ele aparecer) e o tipo "Dourado" do `SkeletonEnemy` (o jeito de fugir).
+
+- **Quando aparece:**
+  - depois do prólogo, andando pela ilha;
+  - nunca com luta por perto, menu aberto, dirigindo, pescando, no celular, no binóculo, no esconde-esconde ou durante o desfecho;
+  - o primeiro vem em 90 s desse tempo livre, e os outros a cada 2,5 a 4 min.
+- **Como aparece:** sai do chão a uns 20 a 30 m, na frente da câmera, num chão livre (fora d'água e de dentro das coisas). A faixa diz "Um esqueleto dourado! Pegue ele antes que fuja: ele solta um monte de moedas!", e a seta de moeda "Dourado · N m" aponta para ele (a mesma da entrega da lojinha, com o rótulo novo `ObjectiveMarker.rotulo`). Toca um sininho a cada 1,1 s.
+- **O jeito dele:**
+  - o Ossinho todo dourado e brilhante, com uma luzinha; não ataca, tem 8 de vida e corre a 5 m/s (4 no Modo Fácil), menos que o aventureiro correndo (6);
+  - a cada 5,5 s de corrida, cansa: para 1,3 s olhando para trás ("ufa!"), a chance de chegar perto;
+  - longe (mais de 24 m) só anda devagar, esperando;
+  - perto da costa puxa para o meio da ilha (a ilha é uma elipse de uns 380 x 490 m);
+  - preso numa parede, desvia de lado por 1 s.
+  - Leva tiro, pirulitão e granada como os outros esqueletos.
+- **Pegou:** vai de balão, soltando 25 moedas e confete dourado, com a faixa "Pegou o esqueleto dourado!", e entra na figurinha "Esqueleto Dourado" da turma no álbum.
+- **Fugiu:** em 50 s sem pegar (70 s no Modo Fácil), afunda de volta no chão: "O esqueleto dourado fugiu! Ele volta outra hora."
+- **Testes:**
+  - `-- --dourado` confere 9 pontos: não aparecer antes do prólogo nem pescando; aparecer longe e no chão para todos os lados; dourado e com a seta; fugir; cansar; pegar (moedas e figurinha); fugir no tempo;
+  - `-- --dourado-captura` (com janela) tira duas fotos: `dourado_1_aparece` e `dourado_2_foge`.
+
 ### Álbum de figurinhas e bilhetes (item 7 da lista, feito em 2026-11-10)
 
 Pedido do usuário depois do esconde-esconde: "commita e segue, vou testar quando terminarmos tudo".
 
 - **Onde abre:** na pausa da ilha, o botão "Álbum" fica embaixo do cartão de quem joga. De qualquer botão da pausa, o direcional para a esquerda chega nele.
-- **Páginas:** 47 figurinhas no total, cada aba com a conta:
+- **Páginas:** 48 figurinhas no total, cada aba com a conta:
   - **Guardiões (6):** Ossão, Mira-Torta, Torre de Ossinhos, Minionzão, Guerreiro Planta e Mestre Ossinho. Cada um entra quando a região dele fica vencida.
-  - **Turma (10):** Ossinho, Guerreiro, Arqueiro, Mago, Pistoleiro, Golem de Ossos, Lobinho, Conde, Grandalhão e Golem de Gelo. Cada tipo entra no primeiro que for derrotado (`Story.derrotados`, contado no `_on_enemy_defeated`), com o aviso "Figurinha nova no álbum!".
+  - **Turma (11):** Ossinho, Guerreiro, Arqueiro, Mago, Pistoleiro, Golem de Ossos, Lobinho, Conde, Grandalhão, Golem de Gelo e, desde o item 8, o Esqueleto Dourado. Cada tipo entra no primeiro que for derrotado (`Story.derrotados`, contado no `_on_enemy_defeated`), com o aviso "Figurinha nova no álbum!".
   - **Esconde-esconde (6):** as figurinhas do item 6, com moldura dourada.
   - **Peixes (17):** os da pescaria, com quantas vezes foi pescado e a raridade.
   - **Bilhetes (8):** cada bilhete achado; marcado, mostra o texto inteiro.
 - **A tela** (`scripts/painel_album.gd`):
-  - no alto, o título e "N de 47", e as abas com ícone;
+  - no alto, o título e "N de 48", e as abas com ícone;
   - no meio, as figurinhas: a achada colorida, com o nome; a que falta, só a sombra com "?";
   - embaixo, o nome e o texto da figurinha marcada ("???" na que falta);
   - o direcional anda pelas figurinhas; para cima chega nas abas, e marcar uma aba já troca a página. B volta para a pausa.
@@ -712,7 +734,7 @@ Pedido do usuário depois do esconde-esconde: "commita e segue, vou testar quand
   - os textos são dos amigos: o Minionzão com medo da ponte, o Lobinho e os cavalos, o vovô e o farol, a Torre olhando a festa, o Guerreiro Planta e as plantinhas, a Mira-Torta e o vento, o Conde e o freio do kart, o Mestre fingindo que não tem festa.
 - **Campanha:** as chaves "derrotados" e "bilhetes" do salvamento. Numa campanha de antes do álbum, os tipos das ondas das regiões já vencidas contam como derrotados, e os bilhetes salvos somem do chão.
 - **Testes:**
-  - `-- --album` confere 12 pontos: as imagens; o álbum com 47 e vazio; os 8 bilhetes no chão; o Álbum na pausa pelo direcional; A abre, B volta; derrotar, vencer, pescar e esconder contando; pegar um bilhete; o texto do bilhete e o "???"; salvar; carregar com os tipos das regiões vencidas;
+  - `-- --album` confere 12 pontos: as imagens; o álbum com 48 e vazio; os 8 bilhetes no chão; o Álbum na pausa pelo direcional; A abre, B volta; derrotar, vencer, pescar e esconder contando; pegar um bilhete; o texto do bilhete e o "???"; salvar; carregar com os tipos das regiões vencidas;
   - `-- --album-captura` (com janela) tira cinco fotos: `album_1_bilhete` até `album_5_peixes`.
 
 ### Esconde-esconde dos esqueletos amigos (item 6 da lista, feito em 2026-11-10)

@@ -12,6 +12,8 @@ const NEAR := 8.0
 
 ## Seta da entrega de balão da lojinha do celular: moeda dourada com "Entrega" no lugar do losango roxo.
 var coin := false
+## O nome ao lado da distância, na seta de moeda ("Entrega" da lojinha; "Dourado" para o esqueleto dourado).
+var rotulo := "Entrega"
 ## Figura do objetivo (vazio: só o losango).
 var icone := "":
 	set(valor):
@@ -79,7 +81,7 @@ func _draw() -> void:
 		draw_circle(_pos, s, Color("#ffd23f"))
 		draw_arc(_pos, s, 0.0, TAU, 32, Color.WHITE, 3.0, true)
 		draw_arc(_pos, s * 0.55, 0.0, TAU, 24, Color("#c98a10"), 2.5, true)
-		var label := "Entrega · %d m" % _meters
+		var label := "%s · %d m" % [rotulo, _meters]
 		var lw := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 		var lp := _pos + Vector2(-lw / 2.0, s + 22)
 		draw_string_outline(_font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color(0, 0, 0, 0.75))

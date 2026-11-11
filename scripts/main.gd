@@ -138,6 +138,9 @@ var album_panel: PainelAlbum
 var bilhete_cartao: Bilhete.Cartao
 var bilhetes_nos: Array[Bilhete] = []
 var _pause_album: Button
+## Esqueleto dourado (item 8 da lista de melhorias): quem faz ele aparecer e a seta de moeda "Dourado".
+var caca: CacaDourada
+var dourado_marker: ObjectiveMarker
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -450,6 +453,11 @@ func _ready() -> void:
 		esconde.game = self
 		esconde.story = story
 		add_child(esconde)
+		caca = CacaDourada.new()
+		caca.name = "CacaDourada"
+		caca.game = self
+		caca.story = story
+		add_child(caca)
 		for spec: Dictionary in Album.BILHETES:
 			var b := Bilhete.new()
 			b.name = "Bilhete_" + String(spec.id)
@@ -628,6 +636,12 @@ func _ready() -> void:
 	elif "--album" in args:
 		select_panel.hide()
 		_run_album_test()
+	elif "--dourado" in args:
+		select_panel.hide()
+		_run_golden_test()
+	elif "--dourado-captura" in args:
+		select_panel.hide()
+		_run_golden_capture()
 	elif "--album-captura" in args:
 		select_panel.hide()
 		_run_album_capture()
@@ -991,7 +1005,7 @@ func exit_vehicle(at: Vector3) -> void:
 
 ## Esconde a mira, os corações, os blasters e a seta do objetivo (cena final e créditos).
 func set_hud_visible(on: bool) -> void:
-	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, shop_marker, wave_label]:
+	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, shop_marker, dourado_marker, wave_label]:
 		(node as CanvasItem).visible = on
 	coins_bar.visible = on and story != null and story.coins_ever
 
@@ -1196,6 +1210,10 @@ func _build_ui() -> void:
 	shop_marker = ObjectiveMarker.new()
 	shop_marker.coin = true
 	layer.add_child(shop_marker)
+	dourado_marker = ObjectiveMarker.new()
+	dourado_marker.coin = true
+	dourado_marker.rotulo = "Dourado"
+	layer.add_child(dourado_marker)
 	shop_marker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	coins_bar = CoinsBar.new()
 	layer.add_child(coins_bar)
@@ -1740,6 +1758,7 @@ func _process(_delta: float) -> void:
 		objective_marker.update_marker(view_cam, target if show_target else Vector3.INF, player.global_position)
 		_som_de_chegada(target if show_target else Vector3.INF)
 		shop_marker.update_marker(view_cam, shop_target if show_target else Vector3.INF, player.global_position)
+		dourado_marker.update_marker(view_cam, caca.alvo() if show_target and caca else Vector3.INF, player.global_position)
 
 
 ## A figura do objetivo vai na seta e na pausa (item 4 da lista de melhorias, 2026-11-10).
@@ -5555,6 +5574,95 @@ func _run_objective_test() -> void:
 	get_tree().quit()
 
 
+## Esqueleto dourado (item 8 da lista de melhorias): não aparece antes do fim do prólogo nem pescando; sai do chão na
+## frente, num chão livre, com a faixa e a seta "Dourado"; foge do aventureiro e cansa de vez em quando; derrotado dá
+## 25 moedas e a figurinha; sem pegar, afunda e some. Uso: godot --headless --path . -- --dourado
+func _run_golden_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	all_ok = _check("antes do prólogo acabar, não aparece", not caca.pode_aparecer()) and all_ok
+	story.stage = "cidade"
+	await _stand(_ground_point(Vector3(0, 0, 170)))
+	await _wait(0.2)
+	player.pescando = true
+	var pescando := caca.pode_aparecer()
+	player.pescando = false
+	all_ok = _check("depois do prólogo pode aparecer, mas pescando não", caca.pode_aparecer() and not pescando) and all_ok
+	var lugares_ok := true
+	for k in 5:
+		player.set_yaw(k * TAU / 5.0)
+		await _wait(0.1)
+		if not caca.aparecer():
+			continue
+		var d: SkeletonEnemy = caca.dourado
+		lugares_ok = lugares_ok and d.global_position.y >= -0.05 and d.global_position.distance_to(player.global_position) > 15.0
+		d.queue_free()
+		caca.dourado = null
+		await _wait(0.1)
+	all_ok = _check("aparece longe e no chão, para qualquer lado que olhe", lugares_ok) and all_ok
+	player.set_yaw(0.0)
+	await _wait(0.2)
+	all_ok = _check("aparece na frente", caca.aparecer()) and all_ok
+	var e: SkeletonEnemy = caca.dourado
+	await _wait_until(func() -> bool: return e.state == SkeletonEnemy.State.PERSEGUINDO, 4.0)
+	await _wait(0.2)
+	all_ok = _check("é dourado, com a seta \"Dourado\"", e.config.get("dourado", false) and dourado_marker.visible
+			and dourado_marker.rotulo == "Dourado" and "dourado" in banner_title.text.to_lower(), "(%s)" % banner_title.text) and all_ok
+	var perto := e.global_position + (player.global_position - e.global_position).normalized() * 5.0
+	await _stand(Vector3(perto.x, e.global_position.y + 0.3, perto.z))
+	var antes := Vector2(e.global_position.x - player.global_position.x, e.global_position.z - player.global_position.z).length()
+	e._correndo = 0.0
+	await _wait(2.4)
+	var depois := Vector2(e.global_position.x - player.global_position.x, e.global_position.z - player.global_position.z).length()
+	all_ok = _check("foge do aventureiro", depois > antes + 4.0, "(%.1f -> %.1f m)" % [antes, depois]) and all_ok
+	perto = e.global_position + (player.global_position - e.global_position).normalized() * 6.0
+	await _stand(Vector3(perto.x, e.global_position.y + 0.3, perto.z))
+	e._correndo = 5.2
+	await _wait_until(func() -> bool: return e._cansado > 0.0, 3.0)
+	all_ok = _check("perto, depois de correr um tempo, cansa e para um pouquinho", e._cansado > 0.0) and all_ok
+	var moedas := story.coins
+	e._apply_damage(20.0, e.global_position + Vector3.UP, false)
+	await _wait(0.3)
+	all_ok = _check("pego: 25 moedas, a figurinha da turma e some a seta", story.coins == moedas + CacaDourada.MOEDAS
+			and story.derrotados.has("Dourado") and caca.dourado == null and caca.pegos == 1) and all_ok
+	await _wait(0.4)
+	caca.aparecer()
+	var outro: SkeletonEnemy = caca.dourado
+	caca._vida = CacaDourada.FUGA + 1.0
+	await _wait(0.3)
+	all_ok = _check("sem pegar a tempo, afunda e volta outra hora", caca.dourado == null and outro.state == SkeletonEnemy.State.AFUNDANDO
+			and caca._espera >= CacaDourada.ENTRE.x) and all_ok
+	print("DOURADO OK" if all_ok else "DOURADO COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do esqueleto dourado (dourado_1 e dourado_2): saindo do chão com a faixa e correndo, com a seta.
+## Uso: godot --path . -- --dourado-captura
+func _run_golden_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	story.stage = "cidade"
+	await _stand(_ground_point(Vector3(30, 0, 60)))
+	player.set_yaw(PI * 0.75)
+	await _wait(0.4)
+	caca.aparecer()
+	await _wait(1.2)
+	await _shot("dourado_1_aparece.png")
+	var e: SkeletonEnemy = caca.dourado
+	await _wait_until(func() -> bool: return e.state == SkeletonEnemy.State.PERSEGUINDO, 4.0)
+	var perto := e.global_position + (player.global_position - e.global_position).normalized() * 6.0
+	await _stand(Vector3(perto.x, e.global_position.y + 0.3, perto.z))
+	var olhar := e.global_position - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(0.9)
+	await _shot("dourado_2_foge.png")
+	get_tree().quit()
+
+
 ## Álbum de figurinhas e bilhetes pela ilha (item 7 da lista de melhorias): as figurinhas geradas; a pausa com o botão
 ## do Álbum; o álbum vazio no começo; esqueleto derrotado, guardião vencido, peixe e esconde-esconde aparecendo; os oito
 ## bilhetes no chão, pegar um (cartão, moedas, álbum); salvar e carregar (com os tipos das regiões já vencidas).
@@ -5576,7 +5684,7 @@ func _run_album_test() -> void:
 			faltam.append(p.id)
 	all_ok = _check("as figurinhas dos guardiões, da turma e dos peixes existem", faltam.is_empty(), str(faltam)) and all_ok
 	var total := Album.contagem(self)
-	all_ok = _check("o álbum tem 47 figurinhas e começa vazio", total == Vector2i(0, 47), str(total)) and all_ok
+	all_ok = _check("o álbum tem 48 figurinhas e começa vazio", total == Vector2i(0, 48), str(total)) and all_ok
 	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
 	var no_chao := bilhetes_nos.filter(func(b: Bilhete) -> bool: return b.global_position.y > -0.3 and b.visible)
 	all_ok = _check("os oito bilhetes estão no chão, à vista", bilhetes_nos.size() == 8 and no_chao.size() == 8) and all_ok
@@ -5587,7 +5695,7 @@ func _run_album_test() -> void:
 	await _joy_button(JOY_BUTTON_A)
 	await _wait(0.2)
 	all_ok = _check("A abre o álbum na página dos guardiões, com tudo apagado", menu_state == "album" and album_panel.visible
-			and album_panel.pagina == "guardioes" and album_panel.cartas.size() == 6 and "0 de 47" in album_panel.titulo_conta.text) and all_ok
+			and album_panel.pagina == "guardioes" and album_panel.cartas.size() == 6 and "0 de 48" in album_panel.titulo_conta.text) and all_ok
 	await _joy_button(JOY_BUTTON_B)
 	await _wait(0.2)
 	all_ok = _check("B volta para a pausa com o Álbum marcado", menu_state == "pausa" and get_viewport().gui_get_focus_owner() == _pause_album) and all_ok
@@ -5600,7 +5708,7 @@ func _run_album_test() -> void:
 	pescaria.carregar({"Koi": 1})
 	esconde.figurinhas.append("Lobinho")
 	all_ok = _check("derrotar, vencer, pescar e achar no esconde-esconde contam no álbum", story.derrotados.has("Skeleton_Rogue")
-			and Album.contagem(self) == Vector2i(4, 47), str(Album.contagem(self))) and all_ok
+			and Album.contagem(self) == Vector2i(4, 48), str(Album.contagem(self))) and all_ok
 	var b: Bilhete = bilhetes_nos[1]
 	var moedas := story.coins
 	await _stand(b.global_position + Vector3.UP * 0.3)
@@ -5615,7 +5723,7 @@ func _run_album_test() -> void:
 	await _joy_button(JOY_BUTTON_DPAD_DOWN)
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
 	all_ok = _check("no álbum, o segundo bilhete mostra o texto inteiro e o primeiro ainda falta", album_panel.pagina == "bilhetes"
-			and "cavalos" in album_panel.descricao_texto.text and "5 de 47" in album_panel.titulo_conta.text, "(%s)" % album_panel.descricao_texto.text) and all_ok
+			and "cavalos" in album_panel.descricao_texto.text and "5 de 48" in album_panel.titulo_conta.text, "(%s)" % album_panel.descricao_texto.text) and all_ok
 	await _joy_button(JOY_BUTTON_DPAD_LEFT)
 	all_ok = _check("a figurinha que falta mostra só \"???\"", album_panel.descricao_nome.text == "???") and all_ok
 	close_menus()
