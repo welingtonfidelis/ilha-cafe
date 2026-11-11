@@ -2273,10 +2273,10 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: o da 1-1 (a Bolota gigante na Ponte Fofa) feito |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
-| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | |
+| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 1-1 já está mais longa |
 | 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
 
 **Ordem sugerida:**
@@ -2747,6 +2747,56 @@ Ideia do usuário: "colocar texturas no solo ao invés do chao cru, tanto pro fa
   - o que se mexe ou tem regra própria (plataforma que anda, pizza que gira, nuvem que some, caixa que quebra), porque o desenho é preso no mundo e escorregaria por cima.
 
 **Fotos de antes e depois:** `godot --path . --resolution 1280x720 -s res://tools/foto_chao.gd [-- ilha 1-1 ...]`, em `tools/capturas/chao/`. O `--faisca-mundo` confere que cada fase tem chão com textura e que nada do que se mexe ganhou.
+
+### Momentos especiais e fases mais longas (itens 9 e 12 da lista, desde 2026-11-11)
+
+Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começar"):
+- fase por fase, um momento especial em cada uma;
+- na 1-1, na 1-2 e na 2-1, o momento vira o quinto playground (o trecho novo que deixa a fase mais longa), e cada saída passa a pedir uma tarefa;
+- a revisão da 2-1 entra junto com ela;
+- depois, a 3-3 (a maquete espera aprovação) e a nave final com o Rei Bolotão (proposta antes de construir).
+
+| Fase | Momento especial |
+|---|---|
+| 1-1 | a Bolota gigante rolando na Ponte Fofa (feito) |
+| 1-2 | a fuga no carrinho de mina, com o túnel desmoronando |
+| 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas |
+| 2-2 | a chuva de confeitos gigantes, que viram degraus |
+| 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho |
+| 3-1 | a avalanche na Encosta das Avalanches |
+| 3-2 | a linha de montagem dispara |
+| 3-3 | o vendaval (quando for construída) |
+
+**1-1 Pulinhos nas Nuvens (feito em 2026-11-11):**
+- **A Ponte Fofa, o playground 4 novo** (no lugar da plataforma que ia do Jardim até a torre; a Subida virou o 5):
+  - do arco do Jardim, um pátio largo com posto;
+  - dele sai a estrada de nuvem: três trechos de 6 m de largura, com muretas azuis só do lado de lá (do lado da câmera elas tapavam o Faísca) e vãos de 2 a 2,5 m;
+  - no fim, o pátio da curva, de onde um caminho leva ao começo da subida.
+- **A Bolota gigante** (`scripts/faisca/bolota_gigante.gd`, `Fase.corrida_da_bolota`):
+  - passando pelo gatilho do primeiro trecho, ela cai do céu atrás do Faísca e rola pelo meio da estrada, a 5 m/s (ele corre a 6,5);
+  - a bola gira inteira, com listras lilases, e a cara (olhos, sobrancelhas, sorrisão e antena) fica sempre para a frente;
+  - o controle treme mais quanto mais perto ela está, e ela tem o som `rolar` (`python3 tools/gerar_sons.py momentos`);
+  - se alcançar, o Faísca fica achatadinho e volta ao pátio do começo, sem perder coração, e ela cai de novo quando ele passar pelo gatilho;
+  - no pátio da curva ela segue reto, cai nas nuvens, e aparecem 8 estrelinhas de prêmio (já contadas no total) e 10 moedas.
+- **A câmera de lado** (o começo do item 8: `ZonaDeCamera`, `Fase.zona_de_camera` e `Jogador.camera_guiada`):
+  - na estrada, a câmera vai devagar para o lado oeste, olhando para leste, e o Faísca corre da esquerda para a direita da tela;
+  - o analógico direito e o mouse não giram;
+  - saindo da estrada, a câmera volta a ser solta.
+- **As saídas com tarefa:**
+  - a cancela vermelha da ponte de esteiras (`Fase.cancela_da_alavanca`) só abre com o soco na alavanca lá no alto do morrinho, que pede os degraus pulando, com a dica da alavanca;
+  - o canhão das Argolas fica com rolha (`Canhao.travar`), com uma luzinha na base para cada argola; com as quatro acesas, a rolha salta. O Vovô tem uma dica nova, "argolas": a argola e as quatro luzinhas.
+  - o portão das flores do Jardim já era uma tarefa.
+- **As contas:**
+  - 102 estrelinhas soltas e 141 com as das Bolotas (eram 82 e 118);
+  - 13 Bolotas (uma acordada a mais no playground 1);
+  - 4 postos (o novo fica no começo da Ponte Fofa);
+  - 2 plataformas que se mexem.
+- **Testes:** o `--faisca-fase` confere:
+  - as contas novas e os cinco playgrounds;
+  - a cancela segurando o caminho até o soco na alavanca;
+  - o canhão com rolha até as quatro argolas;
+  - na Ponte Fofa: a Bolota caindo atrás com a câmera de lado; parado, ela alcança e ele volta sem perder coração; fora da estrada, a câmera solta; e uma corrida de verdade, com o analógico para a direita da tela e os três pulos, em que ela não alcança, cai e o prêmio aparece.
+- **Fotos:** `--faisca-fase-captura` ganhou a cancela, a alavanca, o canhão com rolha, a Ponte Fofa de cima e a corrida de lado.
 
 ### Em aberto
 

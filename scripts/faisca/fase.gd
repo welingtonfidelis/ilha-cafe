@@ -98,6 +98,10 @@ var botoes: Array[Botao] = []
 var ponte_botoes: Array[StaticBody3D] = []
 var nuvens_que_somem: Array[NuvemQueSome] = []
 var canhoes: Array[Canhao] = []
+## As saídas com tarefa (item 12), a Bolota gigante (item 9) e as zonas de câmera guiada.
+var cancelas: Array[StaticBody3D] = []
+var bolotas_gigantes: Array[BolotaGigante] = []
+var zonas_de_camera: Array[ZonaDeCamera] = []
 ## E as da 1-2: carrinho de mina, alavancas com as grades delas, cristais que pulam e a Bolotona.
 var carrinhos: Array[CarrinhoDeMina] = []
 var alavancas: Array[Alavanca] = []
@@ -816,7 +820,12 @@ func premio_das_argolas(posicoes: Array) -> void:
 
 
 func _argola_acesa(_a: Argola) -> void:
-	if not argolas.all(func(x: Argola) -> bool: return x.esta_acesa):
+	# Os canhões trancados pelas argolas (a saída das Ilhas das Argolas, na 1-1) acendem uma luzinha por argola.
+	var acesas := argolas.filter(func(x: Argola) -> bool: return x.esta_acesa).size()
+	for c in canhoes:
+		if c.travado:
+			c.acender_luzes(acesas)
+	if acesas < argolas.size():
 		return
 	for i in premio_argolas.size():
 		var e := premio_argolas[i]
@@ -832,6 +841,104 @@ func _argola_acesa(_a: Argola) -> void:
 	if not premio_argolas.is_empty():
 		Fx.confetti(self, premio_argolas[0].position + Vector3.UP, 60, 5.0)
 	Sfx.play(self, "bandeira", 0.0, 0.0)
+
+
+## A cor de cada argola (para as luzinhas do canhão trancado).
+static func cor_da_argola(cor: String) -> Color:
+	return {"red": Color("ff4d4d"), "yellow": Color("ffd23f"), "blue": Color("3fa7ff"), "green": Color("4cd964")}.get(cor, Color.WHITE)
+
+
+## Cancela (o item 12 da lista do Faísca: cada saída só abre com uma tarefa): a barreira vermelha em pé, `largura` m,
+## que segura o caminho até `abrir_cancela`. Não entra nos `portoes` (esses abrem com as flores).
+func cancela(pos: Vector3, giro := 0.0, largura := 4.0) -> StaticBody3D:
+	var corpo := StaticBody3D.new()
+	corpo.position = pos
+	corpo.rotation.y = giro
+	var modelo: Node3D = _cena(PLATAFORMA + "barrier_4x1x2_red.gltf").instantiate()
+	modelo.scale = Vector3(largura / 4.0, 2, 1)
+	corpo.add_child(modelo)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(largura, 4, 1)
+	cs.shape = caixa
+	cs.position.y = 2.0
+	corpo.add_child(cs)
+	add_child(corpo)
+	cancelas.append(corpo)
+	return corpo
+
+
+## A cancela desce para dentro do chão e some (como o portão das flores).
+func abrir_cancela(c: Node3D) -> void:
+	if portao_aberto(c):
+		return
+	c.set_meta("aberto", true)
+	var tw := c.create_tween()
+	tw.tween_property(c, "position:y", c.position.y + 0.3, 0.2)
+	tw.tween_property(c, "position:y", c.position.y - 4.3, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): c.process_mode = Node.PROCESS_MODE_DISABLED; c.hide())
+	Sfx.play_at(self, "remontar", c.global_position + Vector3.UP * 2.0, -3.0)
+
+
+## Cancela que abre com o soco numa alavanca em `alavanca_em`.
+func cancela_da_alavanca(pos: Vector3, giro: float, alavanca_em: Vector3, largura := 4.0) -> StaticBody3D:
+	var c := cancela(pos, giro, largura)
+	var a := Alavanca.new()
+	a.cor = "yellow"
+	a.position = alavanca_em
+	add_child(a)
+	a.puxada.connect(func(_a: Alavanca) -> void: abrir_cancela(c))
+	alavancas.append(a)
+	return c
+
+
+## A corrida da Bolota gigante (o momento especial da 1-1, item 9): ela cai atrás do Faísca quando ele passa pelo
+## gatilho e rola pelo `caminho` (o chão do meio dela) até cair depois da beira; alcançando, ele volta ao `retorno`.
+## Vencida, aparecem as estrelinhas do `premio` (já contadas no total da fase) e saem moedas.
+func corrida_da_bolota(caminho: Array, gatilho: Vector3, tamanho_gatilho: Vector3, retorno: Vector3, premio: Array) -> BolotaGigante:
+	var b := BolotaGigante.new()
+	b.caminho = PackedVector3Array(caminho)
+	b.gatilho_centro = gatilho
+	b.gatilho_tamanho = tamanho_gatilho
+	b.retorno = retorno
+	add_child(b)
+	bolotas_gigantes.append(b)
+	var estrelas_do_premio: Array[Area3D] = []
+	for p: Vector3 in premio:
+		var e := estrelinha(p)
+		e.visible = false
+		e.monitoring = false
+		estrelas_do_premio.append(e)
+	b.vencida.connect(func() -> void:
+		for i in estrelas_do_premio.size():
+			var e := estrelas_do_premio[i]
+			var alvo := e.position
+			e.position = alvo + Vector3.UP * 4.0
+			e.scale = Vector3.ONE * 0.01
+			e.show()
+			var tw := e.create_tween()
+			tw.tween_interval(0.6 + 0.08 * i)
+			tw.tween_property(e, "position", alvo, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(e, "scale", Vector3.ONE, 0.4)
+			tw.tween_callback(func() -> void: e.monitoring = true)
+		if not premio.is_empty():
+			Fx.confetti(self, premio[0] + Vector3.UP, 60, 5.0)
+			soltar_moedas(premio[0] + Vector3.UP * 0.5, 10, 2.4)
+		Sfx.play(self, "bandeira", 0.0, 0.0))
+	return b
+
+
+## Zona de câmera guiada (o começo do item 8): dentro dela, a câmera fica no ângulo dado.
+func zona_de_camera(centro: Vector3, tamanho: Vector3, yaw: float, pitch: float, distancia: float) -> ZonaDeCamera:
+	var z := ZonaDeCamera.new()
+	z.position = to_local(centro)
+	z.tamanho = tamanho
+	z.yaw = yaw
+	z.pitch = pitch
+	z.distancia = distancia
+	add_child(z)
+	zonas_de_camera.append(z)
+	return z
 
 
 ## Botão colorido no chão. Com todos os botões apertados, a ponte dos botões sobe.

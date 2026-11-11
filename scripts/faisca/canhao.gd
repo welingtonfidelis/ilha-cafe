@@ -17,6 +17,13 @@ var cor := "blue"
 var modelo := ""
 var escala_modelo := 1.2
 var voando := false
+## Trancado (a 1-1, item 12: a saída das Ilhas das Argolas só abre passando pelas quatro argolas): uma rolha no cano e
+## uma luzinha por argola na base, que acende com cada uma; com todas, a rolha salta e o canhão fica pronto.
+var travado := false
+var luzes_acesas := 0
+var _rolha: Node3D
+var _luzes: Array[MeshInstance3D] = []
+var _area: Area3D
 var _modelo: Node3D
 var _jogador: Jogador
 var _de := Vector3.ZERO
@@ -51,9 +58,79 @@ func _ready() -> void:
 	forma.position.y = 1.5
 	area.add_child(forma)
 	add_child(area)
+	_area = area
 	area.body_entered.connect(func(corpo_que_entrou: Node3D) -> void:
-		if corpo_que_entrou is Jogador and not voando and _espera <= 0.0 and corpo_que_entrou.controle_ligado:
+		if corpo_que_entrou is Jogador and not voando and not travado and _espera <= 0.0 and corpo_que_entrou.controle_ligado:
 			entrar(corpo_que_entrou))
+
+
+## Tranca o canhão com uma rolha e `n` luzinhas apagadas, nas `cores` das argolas.
+func travar(cores: Array) -> void:
+	travado = true
+	# Enfeite: a rolha não segura nada (quem pisa no canhão entra pela área dele).
+	_rolha = Fase.so_enfeite(Node3D.new())
+	add_child(_rolha)
+	_rolha.position = BOCA + Vector3(0, 0.1, -0.1)
+	_rolha.rotation.x = 0.75
+	var rolha := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = 0.62
+	cil.bottom_radius = 0.52
+	cil.height = 0.7
+	rolha.mesh = cil
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("c8904a")
+	m.roughness = 0.9
+	rolha.material_override = m
+	_rolha.add_child(rolha)
+	for i in cores.size():
+		var luz := MeshInstance3D.new()
+		var bola := SphereMesh.new()
+		bola.radius = 0.18
+		bola.height = 0.36
+		luz.mesh = bola
+		var ml := StandardMaterial3D.new()
+		ml.albedo_color = Color("4a4658")
+		ml.emission = Fase.cor_da_argola(String(cores[i]))
+		luz.material_override = ml
+		var a := PI + (i - (cores.size() - 1) * 0.5) * 0.45
+		luz.position = Vector3(sin(a) * 1.35, 0.75, cos(a) * 1.35)
+		add_child(luz)
+		_luzes.append(luz)
+
+
+## Acende as primeiras `n` luzinhas; com todas, destrava.
+func acender_luzes(n: int) -> void:
+	if not travado:
+		return
+	for i in _luzes.size():
+		var ml := _luzes[i].material_override as StandardMaterial3D
+		var acesa := i < n
+		if acesa and not ml.emission_enabled:
+			ml.albedo_color = ml.emission
+			ml.emission_enabled = true
+			ml.emission_energy_multiplier = 2.0
+			Sfx.play_at(get_parent(), "estrelinha", _luzes[i].global_position, -6.0, 0.0)
+	luzes_acesas = n
+	if n >= _luzes.size():
+		destravar()
+
+
+## A rolha salta com confete e o canhão fica pronto (quem já está em cima entra).
+func destravar() -> void:
+	if not travado:
+		return
+	travado = false
+	if _rolha:
+		var r := _rolha
+		var tw := r.create_tween()
+		tw.tween_property(r, "position", r.position + Vector3(0, 6, 3), 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(r, "rotation:x", r.rotation.x + TAU * 2.0, 0.6)
+		tw.tween_property(r, "scale", Vector3.ONE * 0.01, 0.25)
+		tw.tween_callback(r.queue_free)
+		_rolha = null
+	Fx.confetti(get_parent(), to_global(BOCA), 40, 6.0)
+	Sfx.play_at(get_parent(), "estouro", to_global(BOCA), 0.0, 0.0)
 
 
 ## O Faísca entra: some dentro do cano, o canhão se prepara e dispara.
@@ -89,6 +166,12 @@ func _disparar() -> void:
 
 func _physics_process(delta: float) -> void:
 	_espera -= delta
+	# Destravou com o Faísca já em cima: ele entra.
+	if not voando and not travado and _espera <= 0.0 and _area:
+		for corpo in _area.get_overlapping_bodies():
+			if corpo is Jogador and (corpo as Jogador).controle_ligado:
+				entrar(corpo)
+				break
 	if not voando or not is_instance_valid(_jogador):
 		return
 	# Com o Faísca no canhão, o processo de física dele fica desligado: o canhão leva a câmera junto (dentro do cano

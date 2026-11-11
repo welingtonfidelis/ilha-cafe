@@ -202,7 +202,7 @@ func mostrar_faisquinhas(achados: int, total: int) -> void:
 		_luzes[i].queue_redraw()
 
 
-## Balão do Vovô Farol: "pulo_alto", "flutuar", "laser", "tocha" ou "golpe".
+## Balão do Vovô Farol: "pulo_alto", "flutuar", "laser", "tocha", "golpe", "argolas"...
 func mostrar_dica(qual: String) -> void:
 	dica_atual = qual
 	_desenho_dica.qual = qual
@@ -539,6 +539,17 @@ class DesenhoDica extends Control:
 					for i in 3:
 						var a := -PI * 0.15 - i * PI * 0.35
 						draw_line(f + Vector2(0, 34) + Vector2(cos(a), sin(a)) * 30, f + Vector2(0, 34) + Vector2(cos(a), sin(a)) * 42, Color("ffd23f"), 3.0)
+			"argolas":
+				# Voa pela argola e uma das quatro luzinhas do canhão acende (item 12: a rolha só sai com as quatro).
+				var t := fmod(tempo, 2.4) / 2.4
+				var cores_das := [Color("ff4d4d"), Color("ffd23f"), Color("3fa7ff"), Color("4cd964")]
+				draw_arc(f + Vector2(0, 6), 26, 0, TAU, 32, Color("ff8c42"), 7.0, true)
+				_faisca(f + Vector2(-60 + t * 120, 0))
+				var acesas := int(t * 4.0) + 1
+				for i in 4:
+					var c := f + Vector2(-36 + i * 24, 54)
+					draw_circle(c, 9, cores_das[i] if i < acesas else Color("4a4658"))
+					draw_arc(c, 9, 0, TAU, 16, Color("2b2140"), 2.5, true)
 			"alavanca":
 				# Soca a alavanca: o cabo vira e a grade sobe.
 				var bate := fmod(tempo * 1.2, 1.0) < 0.3

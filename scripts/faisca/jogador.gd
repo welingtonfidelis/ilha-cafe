@@ -185,6 +185,9 @@ var _na_danca := false
 var tremidinhas := 0
 ## Quantas tremidas de passo cada chão deu e quantas festas no controle (os testes olham).
 var tremidas_por_chao := {}
+## Câmera guiada (o começo do item 8 da lista do Faísca, 2026-11-11): numa ZonaDeCamera, a câmera vai devagar para um
+## ângulo fixo ({"yaw", "pitch", "distancia"}) e o analógico direito (e o mouse) não gira; vazio = a câmera solta.
+var camera_guiada: Dictionary = {}
 ## A poça em que ele está pisando (item 6): os passos espirram em vez de levantar poeira, e o chão do controle é "agua".
 var na_poca: Poca
 var festas := {}
@@ -395,7 +398,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event.is_action_pressed("recomecar") and controle_ligado and pode_recomecar:
 		voltar_ao_inicio()
-	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and controle_ligado:
+	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and controle_ligado and camera_guiada.is_empty():
 		var sens := sensibilidade_mouse * Ajustes.rapidez_camera()
 		yaw -= event.relative.x * sens
 		pitch = clampf(pitch - event.relative.y * sens * Ajustes.sinal_vertical(), PITCH_MIN, PITCH_MAX)
@@ -403,6 +406,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	_olhar_com_analogico(delta)
+	_guiar_camera(delta)
 	camera_pivo.rotation.y = yaw
 	camera_inclina.rotation.x = pitch
 
@@ -618,10 +622,22 @@ func _quina_amiga() -> void:
 	velocity.y = maxf(velocity.y, 0.0)
 
 
+## A câmera guiada: o ângulo e a distância vão devagar até os da zona; fora dela, a distância volta à de sempre.
+func _guiar_camera(delta: float) -> void:
+	var k := 1.0 - exp(-3.0 * delta)
+	if camera_guiada.is_empty():
+		braco_camera.spring_length = lerpf(braco_camera.spring_length, DISTANCIA_CAMERA, k)
+		return
+	yaw = lerp_angle(yaw, float(camera_guiada.yaw), k)
+	pitch = lerpf(pitch, float(camera_guiada.pitch), k)
+	braco_camera.spring_length = lerpf(braco_camera.spring_length, float(camera_guiada.get("distancia", DISTANCIA_CAMERA)), k)
+
+
 ## Para quem carrega o Faísca com o processo de física dele desligado (o canhão, que leva ele pelo ar): a câmera
 ## continua indo atrás. Sem isso ela ficava parada no canhão enquanto ele voava (relato do usuário em 2026-11-11), já
 ## que a câmera é solta e só segue o Faísca dentro do `_physics_process` dele.
 func acompanhar_camera(delta: float) -> void:
+	_guiar_camera(delta)
 	camera_pivo.rotation.y = yaw
 	camera_inclina.rotation.x = pitch
 	_seguir_camera(delta, Vector2.ZERO)
@@ -652,7 +668,7 @@ func _seguir_camera(delta: float, entrada: Vector2) -> void:
 	# câmera há um tempo, correndo quase para a frente.
 	var olhando := controle_ligado and Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo").length() > 0.15
 	_sem_olhar = 0.0 if olhando else _sem_olhar + delta
-	if forcar_direcao == Vector2.ZERO and controle_ligado and _sem_olhar > CAMERA_VOLTA_ESPERA and vel_h.length() > 3.0 \
+	if forcar_direcao == Vector2.ZERO and controle_ligado and camera_guiada.is_empty() and _sem_olhar > CAMERA_VOLTA_ESPERA and vel_h.length() > 3.0 \
 			and entrada.y < -0.6 and absf(entrada.x) < 0.5:
 		var atras := atan2(-vel_h.x, -vel_h.z)
 		yaw = lerp_angle(yaw, atras, 1.0 - exp(-CAMERA_VOLTA * delta))
@@ -1834,7 +1850,7 @@ func _tremer(fraco: float, forte: float, duracao: float) -> void:
 
 
 func _olhar_com_analogico(delta: float) -> void:
-	if not controle_ligado:
+	if not controle_ligado or not camera_guiada.is_empty():
 		return
 	var olhar := Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo")
 	olhar *= olhar.length()

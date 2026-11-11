@@ -7,12 +7,17 @@ extends Fase
 ##   1 Ilha dos Pulinhos (y 0, ao sul): degraus, pulo alto e esteiras, com chão embaixo de tudo
 ##   viagem: ponte de esteiras
 ##   2 Ilhas das Argolas (y 1 a 5, a oeste): flutuar sobre vãos, argolas, duas rotas; V1 numa beirada embaixo (P1)
-##   viagem: canhão
+##   viagem: canhão (com rolha até as quatro argolas acenderem)
 ##   3 Jardim das Flores (y 8, ao norte): flores que o laser acende abrem o portão da saída; botões levantam a
 ##     ponte do bolso alto com o V2; coração extra (P2)
-##   viagem: plataforma que vai e volta (atalho)
-##   4 Subida das Nuvens (y 8 a 19, em volta da torre): nuvens que somem e plataformas que se mexem; V3 no
+##   4 Ponte Fofa (y 8, a leste): o momento especial (item 9, 2026-11-11): a Bolota gigante cai atrás do Faísca e
+##     desce rolando; com a câmera de lado, ele corre pelos trechos de nuvem pulando os vãos até a curva, que ela não
+##     faz: cai nas nuvens e o prêmio aparece. Alcançando, ele volta ao começo, sem perder coração
+##   5 Subida das Nuvens (y 8 a 19, em volta da torre): nuvens que somem e plataformas que se mexem; V3 no
 ##     segredo da face norte da torre (P3)
+## Mais longa desde 2026-11-11 (item 12, "as crianças estão zerando muito rápido"): o quinto playground (a Ponte Fofa,
+## no lugar da plataforma que ia do Jardim até a torre), e as saídas com tarefa: a cancela da ponte de esteiras abre
+## com a alavanca no alto do morrinho, e o canhão das Argolas fica com rolha até as quatro argolas acenderem.
 ##   Arena no topo da torre (y 22): três Bolotas e o baú, com a coluna de luz que se vê de toda a fase
 
 const TORRE := Vector3(0, 0, -96)
@@ -28,7 +33,7 @@ func _montar() -> void:
 	_ponte_de_esteiras()
 	_ilhas_das_argolas()
 	_jardim_das_flores()
-	_viagem_ate_a_torre()
+	_ponte_fofa()
 	_subida_das_nuvens()
 	_arena()
 
@@ -52,13 +57,15 @@ func _ilha_dos_pulinhos() -> void:
 	trilha_creme([Vector3(0, 0, -1), Vector3(1, 0, -8), Vector3(-2, 0, -14), Vector3(-6, 0, -19), Vector3(-9, 0, -24), Vector3(-17, 0, -24)])
 	trilha(Vector3(0.5, 0.9, -5), Vector3(-1.5, 0.9, -12), 4)
 	bolota(Vector3(5, 0, -5), true)
+	bolota(Vector3(-9, 0, -5))
 
-	# Degraus até o morrinho (bolso em cima).
+	# Degraus até o morrinho: lá em cima, a alavanca que abre a cancela da ponte de esteiras (a tarefa da saída).
 	morro("4x4x2", Vector3(8, 1.2, -9))
 	morro("4x4x4", Vector3(10.5, 2.4, -12.5))
 	morro("4x4x4", Vector3(13, 3.6, -16))
-	roda(Vector3(13, 4.6, -16), 1.2, 5)
+	roda(Vector3(13, 4.6, -16), 1.4, 5)
 	estrelinha(Vector3(8, 2.2, -9))
+	estrelinha(Vector3(10.5, 3.4, -12.5))
 
 	# Beirada que pede o pulo alto.
 	morro("8x8x4", Vector3(-3, 1.5, -16))
@@ -70,6 +77,8 @@ func _ilha_dos_pulinhos() -> void:
 	esteira(Vector3(-11, 1.0, -26.6), PI / 2.0, 2.5, "red")
 	trilha(Vector3(-8, 2.1, -26.6), Vector3(-14, 2.1, -26.6), 3)
 	arco_de_saida(Vector3(-16.5, 0, -24), PI / 2.0, "yellow")
+	cancela_da_alavanca(Vector3(-17.6, 0, -24), PI / 2.0, Vector3(13, 3.6, -16), 6.0)
+	ponto_de_dica(Vector3(-13, 0.5, -24), 3.0, "alavanca")
 	for p in [Vector3(-5, 0, -21), Vector3(-6.5, 0, -27.5)]:
 		peca("signage_arrow_stand_yellow", p, PI)
 
@@ -155,6 +164,9 @@ func _ilhas_das_argolas() -> void:
 	morro("8x8x4", Vector3(-48, 5, -76))
 	arco_de_saida(Vector3(-48, 5, -77.5), 0.0, "red")
 	var c := canhao(Vector3(-48, 5, -79.5), Vector3(-10, 8.2, -137))
+	# A tarefa da saída: o canhão fica com rolha até as quatro argolas acenderem (uma luzinha para cada).
+	c.travar(cores)
+	ponto_de_dica(Vector3(-48, 5.5, -74), 3.0, "argolas")
 	var de := c.to_global(Canhao.BOCA)
 	for t in [0.25, 0.45, 0.65, 0.85]:
 		estrelinha(Canhao.ponto_do_voo(de, c.destino, t) + Vector3.UP * 1.0)
@@ -217,10 +229,44 @@ func _jardim_das_flores() -> void:
 	arvore(2, 1, Vector3(-16, 8, -163), 1.0)
 
 
-## Viagem 3: plataforma que vai e volta do arco do Jardim até o começo da subida (é também o atalho de volta).
-func _viagem_ate_a_torre() -> void:
-	movel("6x6x1", "blue", Vector3(24, 8, -150), Vector3(-8, 0, 40), 14.0)
-	trilha(Vector3(23, 9.2, -142), Vector3(18, 9.2, -118), 4)
+## Playground 4 · Ponte Fofa (o momento especial, item 9): do arco do Jardim, um pátio largo com posto; dele sai a
+## estrada de nuvem (três trechos de 6 m de largura, com muretas azuis do lado de lá, e vãos de 2 a 2,5 m) até o pátio da
+## curva. Passando pelo gatilho do primeiro trecho, a Bolota gigante cai atrás do Faísca e rola pelo meio da estrada; a
+## câmera fica de lado (ele corre da esquerda para a direita da tela). No pátio da curva, o caminho vira para a torre
+## e ela segue reto, cai nas nuvens e as estrelinhas do prêmio aparecem, com moedas. Um caminho leva até a subida.
+func _ponte_fofa() -> void:
+	var x := 32.0
+	playground("4 · Ponte Fofa", Vector3(x - 4.0, 8, -125), 24.0, Vector3(24, 8, -150))
+	chao_largo("12x12x2", Vector3(27.5, 8, -150), Vector2(1.6, 1.0))
+	posto(Vector3(24, 8, -147))
+	trilha(Vector3(21, 9.1, -150), Vector3(28, 9.1, -146), 3)
+	# Os três trechos de nuvem, com os vãos entre eles.
+	var trechos := [[-139.0, 10.0], [-126.5, 10.0], [-114.0, 10.0]]
+	for t in trechos:
+		var meio: float = t[0]
+		chao_largo("12x12x2", Vector3(x, 8, meio), Vector2(0.5, float(t[1]) / 12.0))
+		# Muretas só do lado de lá (leste): do lado da câmera elas tapavam o Faísca.
+		for dz in [-2.5, 2.5]:
+			peca("barrier_4x1x2_blue", Vector3(x + 3.2, 8.0, meio + dz), PI / 2.0)
+		trilha(Vector3(x, 9.2, meio - 3.5), Vector3(x, 9.2, meio + 3.5), 3)
+	# Estrelinhas em arco por cima dos vãos (pulando, ele pega).
+	for z in [-132.75, -120.25, -108.0]:
+		estrelinha(Vector3(x, 10.6, z))
+	# O pátio da curva: a estrada vira para a torre (oeste); a Bolota segue reto e cai depois da beira.
+	chao_largo("12x12x2", Vector3(29, 8, -101), Vector2(1.0, 1.0))
+	chao_largo("12x12x2", Vector3(18.5, 8, -104), Vector2(0.75, 0.5))
+	trilha_creme([Vector3(27, 8, -104), Vector3(21, 8, -104), Vector3(15, 8, -104)])
+	peca("signage_arrow_stand_yellow", Vector3(26.5, 8, -98), PI / 2.0)
+	var premio := []
+	for i in 8:
+		var a := TAU * i / 8.0
+		premio.append(Vector3(25.5 + cos(a) * 2.2, 9.2, -101 + sin(a) * 2.2))
+	corrida_da_bolota([Vector3(x, 8, -153), Vector3(x, 8, -92)], Vector3(x, 9.5, -142), Vector3(8, 4, 2),
+			Vector3(24, 8.1, -149), premio)
+	# A câmera de lado na estrada (do oeste, olhando para leste): o Faísca corre da esquerda para a direita.
+	zona_de_camera(Vector3(x, 12, -121), Vector3(14, 12, 50), -PI / 2.0, -0.34, 14.0)
+	arvore(5, 6, Vector3(21, 8, -155), 1.0)
+	arvore(1, 7, Vector3(34, 8, -96), 1.0)
 
 
 ## Playground 4 · Subida das Nuvens (reviravolta): começa numa plataforma ao lado da torre e sobe em espiral em volta
@@ -229,7 +275,7 @@ func _viagem_ate_a_torre() -> void:
 ## brilho e uma trilha de estrelinhas descendo mostram onde fica; uma mola forte leva de volta.
 func _subida_das_nuvens() -> void:
 	var t := TORRE
-	playground("4 · Subida das Nuvens", t + Vector3(0, 14, 0), 16.0, t + Vector3(10.5, 8, -7.5))
+	playground("5 · Subida das Nuvens", t + Vector3(0, 14, 0), 16.0, t + Vector3(10.5, 8, -7.5))
 	plataforma("6x6x1", "green", t + Vector3(11, 8, -9))
 	posto(t + Vector3(11, 8, -9))
 	var nuvens := [Vector3(12.9, 9, -1.8), Vector3(12.4, 10, 4.0), Vector3(9.2, 11, 9.2), Vector3(4.0, 12, 12.4), Vector3(-2.0, 13, 12.8)]

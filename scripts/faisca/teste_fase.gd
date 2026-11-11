@@ -24,25 +24,27 @@ func rodar() -> void:
 	var ok := true
 	await m._esperar(0.3)
 	var total := n.total_estrelas()
-	ok = m._conferir("de 75 a 100 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 75 and n.estrelas.size() <= 100,
-			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
-	ok = m._conferir("3 postos, 6 Faisquinhas, 3 flores e 1 portão", n.postos.size() == 3 and n.faisquinhas.size() == 6 and n.flores.size() == 3 and n.portoes.size() == 1) and ok
-	ok = m._conferir("12 Bolotas e o baú", n.alvos.size() == 12 and n.bau != null, "(%d Bolotas)" % n.alvos.size()) and ok
-	ok = m._conferir("peças: 5 esteiras, 4 argolas, 3 botões, 5 nuvens que somem, o canhão e 3 plataformas que se mexem", n.esteiras.size() == 5
-			and n.argolas.size() == 4 and n.botoes.size() == 3 and n.ponte_botoes.size() == 3 and n.nuvens_que_somem.size() == 5
-			and n.canhoes.size() == 1 and n.moveis.size() == 3) and ok
+	# Mais longa desde 2026-11-11 (item 12): de 110 a 150 estrelinhas no total, como as fases novas.
+	ok = m._conferir("de 95 a 125 estrelinhas soltas, e de 130 a 150 com as das Bolotas", n.estrelas.size() >= 95 and n.estrelas.size() <= 125
+			and total >= 130 and total <= 150, "(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
+	ok = m._conferir("4 postos, 6 Faisquinhas, 3 flores e 1 portão", n.postos.size() == 4 and n.faisquinhas.size() == 6 and n.flores.size() == 3 and n.portoes.size() == 1) and ok
+	ok = m._conferir("13 Bolotas e o baú", n.alvos.size() == 13 and n.bau != null, "(%d Bolotas)" % n.alvos.size()) and ok
+	ok = m._conferir("peças: 5 esteiras, 4 argolas, 3 botões, 5 nuvens que somem, o canhão, 2 plataformas que se mexem, a cancela, a Bolota gigante e a câmera de lado",
+			n.esteiras.size() == 5 and n.argolas.size() == 4 and n.botoes.size() == 3 and n.ponte_botoes.size() == 3
+			and n.nuvens_que_somem.size() == 5 and n.canhoes.size() == 1 and n.moveis.size() == 2 and n.cancelas.size() == 1
+			and n.bolotas_gigantes.size() == 1 and n.zonas_de_camera.size() == 1) and ok
 
-	# O padrão de playgrounds (2026-10-29): quatro playgrounds em volta da Torre de Nuvens, arcos de saída, o brilho
-	# do baú à vista de todos e um vaga-lume no bolso de cada um dos três últimos.
+	# O padrão de playgrounds (2026-10-29): cinco playgrounds (a Ponte Fofa desde 2026-11-11) em volta da Torre de
+	# Nuvens, arcos de saída, o brilho do baú à vista de todos e um vaga-lume no bolso do 2, do 3 e do 5.
 	await m.get_tree().physics_frame
 	var espaco := j.get_world_3d().direct_space_state
-	ok = m._conferir("4 playgrounds e 3 arcos de saída", n.playgrounds.size() == 4 and n.saidas.size() == 3) and ok
+	ok = m._conferir("5 playgrounds e 3 arcos de saída", n.playgrounds.size() == 5 and n.saidas.size() == 3) and ok
 	var cegos := n.playgrounds.filter(func(p: Dictionary) -> bool:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú no alto da torre", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
 	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
-	ok = m._conferir("um vaga-lume no bolso de cada playground: o 2, o 3 e o 4", donos == [1, 2, 3], "(%s)" % str(donos)) and ok
+	ok = m._conferir("um vaga-lume no bolso do playground 2, do 3 e do 5", donos == [1, 2, 4], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no alto do marco: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 21.0
 			and n.bau.global_position.distance_to(Vector3(0, 22, -97.5)) < 1.0) and ok
 
@@ -178,6 +180,7 @@ func rodar() -> void:
 			"(robô %.2f m, plataforma %.2f m)" % [andou.length(), mexeu.length()]) and ok
 
 	ok = await _pecas() and ok
+	ok = await _ponte_fofa() and ok
 
 	# Subida: da última plataforma, a mola e o voo levam até a arena.
 	for b in n.alvos.slice(7):
@@ -253,6 +256,37 @@ func _pecas() -> bool:
 	await m._esperar(2.2)
 	ok = m._conferir("e o deixa no chão do playground, sem travar na ponta", j.global_position.x < e0.global_position.x - Esteira.COMPRIMENTO * 0.5
 			and j.is_on_floor(), "(x %.1f)" % j.global_position.x) and ok
+	# A saída do playground 1 (item 12): a cancela segura a ponte de esteiras até o soco na alavanca do morrinho.
+	var cancela := n.cancelas[0]
+	j.teleportar(Vector3(-15.8, 0.1, -24))
+	j.yaw = 0.0
+	await m._esperar(0.3)
+	j.forcar_direcao = Vector2(-1, 0)
+	await m._esperar(1.2)
+	j.forcar_direcao = Vector2.ZERO
+	var parou := j.global_position.x
+	var barrado := parou > -17.0 and not n.portao_aberto(cancela)
+	var alavanca: Alavanca = n.alavancas[0]
+	j.teleportar(alavanca.global_position + Vector3(0, 0.1, 1.4))
+	j.visual.rotation.y = PI
+	await m._esperar(0.3)
+	await m._toque(JOY_BUTTON_X)
+	await m._esperar(1.6)
+	ok = m._conferir("a cancela da ponte de esteiras segura o caminho até o soco na alavanca do morrinho", barrado
+			and alavanca.puxada_ja and n.portao_aberto(cancela), "(parou em x %.1f)" % parou) and ok
+	j.teleportar(Vector3(-15.8, 0.1, -24))
+	j.yaw = 0.0
+	await m._esperar(0.3)
+	j.forcar_direcao = Vector2(-1, 0)
+	await m._esperar(1.2)
+	j.forcar_direcao = Vector2.ZERO
+	ok = m._conferir("aberta, dá para passar para a ponte", j.global_position.x < -17.8, "(x %.1f)" % j.global_position.x) and ok
+	# O canhão das Argolas começa com rolha: subir nele não dispara.
+	var c := n.canhoes[0]
+	j.teleportar(c.global_position + Vector3(0, 0.8, 0.6))
+	await m._esperar(0.6)
+	ok = m._conferir("o canhão das Argolas começa com rolha: subir nele não dispara", c.travado and not c.voando and c.luzes_acesas < 4,
+			"(%d luzes)" % c.luzes_acesas) and ok
 	# Viagem 1: a ponte de esteiras leva até as Ilhas das Argolas.
 	j.teleportar(Vector3(-20, 1.2, -24))
 	await m._esperar(9.0)
@@ -264,6 +298,7 @@ func _pecas() -> bool:
 		await m.get_tree().physics_frame
 		await m.get_tree().physics_frame
 	ok = m._conferir("passar por dentro das argolas acende cada uma", n.argolas.all(func(a: Argola) -> bool: return a.esta_acesa)) and ok
+	ok = m._conferir("com as quatro, as luzinhas do canhão acendem e a rolha salta", not c.travado and c.luzes_acesas == 4) and ok
 	j.teleportar(Vector3(-58, 3.6, -61))
 	await m._esperar(1.5)
 	ok = m._conferir("com as quatro acesas, as 8 estrelinhas do prêmio aparecem", n.premio_argolas.size() == 8
@@ -292,7 +327,6 @@ func _pecas() -> bool:
 	j.vida = Jogador.VIDA_MAX
 	# Viagem 2: o canhão lança até o Jardim das Flores, pegando as estrelinhas do voo.
 	await m._esperar(1.0)
-	var c := n.canhoes[0]
 	var pegas := n.pegas
 	j.teleportar(c.global_position + Vector3(0, 0.8, 0.6))
 	await m._esperar(0.3)
@@ -310,6 +344,76 @@ func _pecas() -> bool:
 	ok = m._conferir("a câmera voa junto com o Faísca e chega com ele", cam_no_meio > 8.0 and cam_no_fim < 3.0,
 			"(andou %.1f m no meio do voo, a %.1f m dele no pouso)" % [cam_no_meio, cam_no_fim]) and ok
 	return ok
+
+
+## A Ponte Fofa (item 9, o momento especial): a Bolota gigante cai atrás quando o Faísca passa pelo gatilho, com a
+## câmera de lado; parado, ela alcança e ele volta ao começo do trecho sem perder coração; correndo de verdade (o
+## analógico para a direita da tela, pulando os três vãos) e virando no pátio da curva, ela não alcança, cai nas nuvens
+## e o prêmio aparece.
+func _ponte_fofa() -> bool:
+	var ok := true
+	var b := n.bolotas_gigantes[0]
+	j.vida = Jogador.VIDA_MAX
+	j._invencivel = 0.0
+	# Parado no primeiro trecho.
+	j.teleportar(Vector3(32, 8.1, -142))
+	await m._esperar(0.4)
+	var rolou := b.estado == "rolando"
+	await m._esperar(1.2)
+	var de_lado := not j.camera_guiada.is_empty() and absf(angle_difference(j.yaw, -PI / 2.0)) < 0.3
+	await _ate(func() -> bool: return b.vezes_que_pegou >= 1, 8.0)
+	await m._esperar(1.0)
+	ok = m._conferir("na Ponte Fofa, a Bolota gigante cai atrás do Faísca e a câmera fica de lado", rolou and de_lado,
+			"(%s, yaw %.2f)" % [b.estado, j.yaw]) and ok
+	ok = m._conferir("parado, ela alcança: ele volta ao começo do trecho sem perder coração", b.vezes_que_pegou == 1
+			and j.global_position.distance_to(b.retorno) < 1.5 and j.vida == Jogador.VIDA_MAX and j.controle_ligado,
+			"(%d vezes, %.1f m do retorno, vida %d)" % [b.vezes_que_pegou, j.global_position.distance_to(b.retorno), j.vida]) and ok
+	await _ate(func() -> bool: return b.estado == "esperando", 3.0)
+	ok = m._conferir("fora da estrada, a câmera volta a ser solta", j.camera_guiada.is_empty()) and ok
+	# Correndo de verdade: para a direita da tela (para o sul), pulando os vãos, e virando no pátio da curva.
+	var pegas := n.pegas
+	j.teleportar(Vector3(32, 8.1, -146))
+	j.yaw = -PI / 2.0
+	await m._esperar(0.3)
+	j.forcar_direcao = Vector2(1, 0)
+	var pulos := 0
+	for i in int(16.0 * Engine.physics_ticks_per_second):
+		await m.get_tree().physics_frame
+		var z := j.global_position.z
+		for beira in [-134.0, -121.5, -109.0]:
+			if j.is_on_floor() and z > beira - 1.4 and z < beira - 0.4 and not j.forcar_pulo:
+				j.forcar_pulo = true
+				pulos += 1
+				get_tree_timer(0.3).timeout.connect(func() -> void: j.forcar_pulo = false)
+		if z > -104.0:
+			j.forcar_direcao = Vector2(0, 1)
+		if j.global_position.x < 27.0:
+			break
+	j.forcar_direcao = Vector2.ZERO
+	j.forcar_pulo = false
+	await _ate(func() -> bool: return b.estado == "vencida", 8.0)
+	await m._esperar(2.0)
+	var premio := n.estrelas.filter(func(e: Area3D) -> bool: return e.global_position.distance_to(Vector3(25.5, 9.2, -101)) < 2.6)
+	ok = m._conferir("correndo e virando na curva, ela não alcança, cai nas nuvens e o prêmio aparece", b.estado == "vencida"
+			and b.vezes_que_pegou == 1 and premio.size() == 8 and premio.all(func(e: Area3D) -> bool: return e.visible and e.monitoring),
+			"(%s, %d vezes, %d pulos, em %s, %d do prêmio, %d pegas no caminho)" % [b.estado, b.vezes_que_pegou, pulos,
+			j.global_position.snapped(Vector3.ONE * 0.1), premio.size(), n.pegas - pegas]) and ok
+	return ok
+
+
+func get_tree_timer(s: float) -> SceneTreeTimer:
+	return m.get_tree().create_timer(s)
+
+
+## Espera até `cond` ficar verdadeira (no máximo `s` segundos).
+func _ate(cond: Callable, s: float) -> bool:
+	var t := 0.0
+	while t < s:
+		if cond.call():
+			return true
+		await m.get_tree().physics_frame
+		t += m.get_physics_process_delta_time()
+	return cond.call()
 
 
 ## Corre para a frente a partir de `de` e pula quando passa de `beira_z`, segurando A até
@@ -366,6 +470,19 @@ func capturar() -> void:
 	await m._esperar(2.0)
 	await _foto_em(Vector3(5, 8.1, -150), 1.4, -0.25, "fase/04c_portao_aberto")
 	await _foto_em(Vector3(-1, 8.1, -164), 0.0, -0.3, "fase/04d_ponte_dos_botoes")
+	# A saída do playground 1 (a cancela e a alavanca no morrinho) e o canhão com rolha (2026-11-11).
+	await _foto_em(Vector3(-8, 0.1, -20), -1.3, -0.25, "fase/07_cancela_da_ponte")
+	await _foto_em(Vector3(13, 3.7, -12.5), 0.0, -0.35, "fase/07b_alavanca_no_morrinho")
+	await _foto_de_cima(Vector3(-40, 11, -86), Vector3(-48, 7, -79.5), "fase/07c_canhao_com_rolha")
+	# A Ponte Fofa: de cima, e a corrida com a câmera de lado e a Bolota gigante rolando atrás.
+	await _foto_de_cima(Vector3(70, 45, -110), Vector3(28, 8, -122), "fase/08_ponte_fofa")
+	j.teleportar(Vector3(32, 8.1, -142))
+	await m._esperar(1.6)
+	j.teleportar(Vector3(32, 8.1, -131))
+	await m._esperar(1.0)
+	await m._foto("fase/08b_corrida_de_lado")
+	await m._esperar(1.6)
+	await m._foto("fase/08c_ela_chegando")
 	await _foto_de_cima(Vector3(40, 40, -60), Vector3(0, 14, -96), "fase/05_subida_das_nuvens")
 	await _foto_em(Vector3(11, 8.1, -103), -0.4, -0.25, "fase/05b_comeco_da_subida")
 	await _foto_em(Vector3(-11, 19.1, -104), 1.2, -0.3, "fase/05c_ultima_plataforma")

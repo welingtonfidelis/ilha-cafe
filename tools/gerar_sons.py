@@ -707,6 +707,18 @@ class Faixa:
         save(f"musica/{nome}.wav", normalize(lowpass(self.out, 10000), pico) if self.repete else fade_edges(normalize(self.out, pico), 30))
 
 
+def make_momentos():
+    """Sons dos momentos especiais das fases (item 9 da lista do Faísca, 2026-11-11). O "rolar" é o ronco da Bolota
+    gigante descendo a Ponte Fofa: um rumor grave que repete sem emenda (o tamanho fecha os ciclos), com uns
+    "tum" de quique."""
+    random.seed(90)
+    dur = 1.0
+    ronco = sweep_lowpass(noise(dur), 180, 260)
+    ronco = am(ronco, 6, 0.35)
+    tum = [(envelope(osc(70, 50, 0.18, "sine"), 0.002, 0.07), t, 0.5) for t in (0.0, 0.5)]
+    sfx_loop("rolar", mix(dur, (ronco, 0, 1.0), *tum), -4)
+
+
 def make_musica_faisca():
     """Os temas do Faísca (item 7 da lista do Faísca, 2026-11-11): um por mundo, o do farol e o dos chefes, e as duas
     vinhetas (o Faisquinha resgatado e a Estrela Grande)."""
@@ -815,6 +827,6 @@ if __name__ == "__main__":
     # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
     grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
               "faisquinhas": make_faisquinhas, "brindes": make_brindes, "mundo": make_mundo,
-              "musica_faisca": make_musica_faisca}
+              "musica_faisca": make_musica_faisca, "momentos": make_momentos}
     for nome in (sys.argv[1:] or list(grupos)):
         grupos[nome]()

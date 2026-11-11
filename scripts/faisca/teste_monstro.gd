@@ -9,7 +9,10 @@ extends RefCounted
 
 const ANIMACOES := ["Bite_Front", "Bite_InPlace", "Dance", "Death", "HitRecieve", "Idle", "Jump", "No", "Walk", "Yes"]
 ## Os tipos da 1-1, na ordem das Bolotas da fase.
-const TIPOS_1_1 := ["alien", "alien", "cogumelo", "pinguim", "alien", "abelha", "abelha", "cogumelo", "pinguim", "alien", "pinguim", "cogumelo"]
+## Desde 2026-11-11 (a 1-1 mais longa), com a Bolota acordada a mais no playground 1 (a segunda da lista).
+const TIPOS_1_1 := ["alien", "alien", "alien", "cogumelo", "pinguim", "alien", "abelha", "abelha", "cogumelo", "pinguim", "alien", "pinguim", "cogumelo"]
+## A primeira abelha (no Jardim das Flores).
+const ABELHA := 6
 ## Chão livre no playground 1 (entre o morro da beirada e os degraus), para soltar os monstros do teste, e onde o
 ## Faísca espera longe deles.
 const LIVRE := Vector3(5, 0, -21)
@@ -31,7 +34,7 @@ func rodar() -> void:
 	var ok := true
 	await m._esperar(0.4)
 	var tipos := n.alvos.map(func(a: Alvo) -> String: return (a as BolotaMonstro).tipo if a is BolotaMonstro else "?")
-	ok = m._conferir("as 12 Bolotas da 1-1 são monstros: Alien, Cogumelo, Pinguim e duas Abelhas", tipos == TIPOS_1_1, "(%s)" % str(tipos)) and ok
+	ok = m._conferir("as 13 Bolotas da 1-1 são monstros: Alien, Cogumelo, Pinguim e duas Abelhas", tipos == TIPOS_1_1, "(%s)" % str(tipos)) and ok
 	var b := n.alvos[0] as BolotaMonstro
 	var faltando := ANIMACOES.filter(func(a: String) -> bool: return not b.anim.has_animation(a))
 	ok = m._conferir("o Alien veio com as 10 animações", faltando.is_empty(), "(faltam %s)" % str(faltando)) and ok
@@ -176,7 +179,7 @@ func _investida() -> bool:
 ## Abelha (no jardim): voa alto, longe do soco; perto do Faísca dá um rasante; acertada no rasante, cai tonta no chão.
 func _voa() -> bool:
 	var ok := true
-	var a := n.alvos[5] as BolotaMonstro
+	var a := n.alvos[ABELHA] as BolotaMonstro
 	var casa: Vector3 = a.get("_origem")
 	ok = m._conferir("abelha: voa alto, uns 2,3 m acima da casa", absf(a.global_position.y - (casa.y + BolotaMonstro.ALTURA_VOO)) < 0.4,
 			"(%.1f m acima)" % (a.global_position.y - casa.y)) and ok
@@ -272,7 +275,7 @@ func capturar() -> void:
 	Bolotona.guardar(p)
 
 	# Abelha: o rasante no jardim.
-	var a := n.alvos[5] as BolotaMonstro
+	var a := n.alvos[ABELHA] as BolotaMonstro
 	var casa: Vector3 = a.get("_origem")
 	# De longe (fora do rasante), ela segue o Faísca lá no alto.
 	j.teleportar(casa + Vector3(4.5, 0.1, 1.0))
