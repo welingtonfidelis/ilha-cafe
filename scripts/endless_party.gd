@@ -123,7 +123,9 @@ func _physics_process(delta: float) -> void:
 	_timer -= delta
 	match state:
 		State.PARADA:
-			_hold = _hold + delta if flat < START_RADIUS and not player.dizzy and not player.parked else 0.0
+			# Durante a revanche dos guardiões (no mesmo gramado), a Festa sem fim não começa.
+			var revanche_rodando: bool = game.get("revanche") != null and game.revanche.rodando()
+			_hold = _hold + delta if flat < START_RADIUS and not player.dizzy and not player.parked and not revanche_rodando else 0.0
 			if _hold >= START_HOLD:
 				_hold = 0.0
 				_begin()

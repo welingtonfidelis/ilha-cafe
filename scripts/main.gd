@@ -141,6 +141,9 @@ var _pause_album: Button
 ## Esqueleto dourado (item 8 da lista de melhorias): quem faz ele aparecer e a seta de moeda "Dourado".
 var caca: CacaDourada
 var dourado_marker: ObjectiveMarker
+## Revanche dos guardiões no cemitério, no pós-jogo (item 9 da lista de melhorias), e o painel da escolha.
+var revanche: Revanche
+var revanche_panel: Revanche.Painel
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -458,6 +461,21 @@ func _ready() -> void:
 		caca.game = self
 		caca.story = story
 		add_child(caca)
+		revanche = Revanche.new()
+		revanche.name = "Revanche"
+		revanche.game = self
+		revanche.story = story
+		add_child(revanche)
+		revanche_panel = Revanche.Painel.new()
+		ui_layer.add_child(revanche_panel)
+		revanche_panel.montar(ui_layer, revanche)
+		revanche_panel.hide()
+		revanche_panel.fechou.connect(func() -> void:
+			if menu_state == "revanche":
+				close_menus())
+		revanche_panel.escolheu.connect(func(id: String) -> void:
+			close_menus()
+			revanche.comecar(id))
 		for spec: Dictionary in Album.BILHETES:
 			var b := Bilhete.new()
 			b.name = "Bilhete_" + String(spec.id)
@@ -639,6 +657,12 @@ func _ready() -> void:
 	elif "--dourado" in args:
 		select_panel.hide()
 		_run_golden_test()
+	elif "--revanche" in args:
+		select_panel.hide()
+		_run_rematch_test()
+	elif "--revanche-captura" in args:
+		select_panel.hide()
+		_run_rematch_capture()
 	elif "--dourado-captura" in args:
 		select_panel.hide()
 		_run_golden_capture()
@@ -765,6 +789,8 @@ func _menu_input(event: InputEvent) -> void:
 			ajustes_panel.fechar()
 		"album":
 			album_panel.fechar()
+		"revanche":
+			revanche_panel.fechar()
 		"confirmar":
 			open_menu(_confirm_return)
 		"loja":
@@ -802,6 +828,8 @@ func open_menu(state: String) -> void:
 	controls_panel.visible = state == "comandos"
 	ajustes_panel.visible = state == "ajustes"
 	album_panel.visible = state == "album"
+	if revanche_panel:
+		revanche_panel.visible = state == "revanche"
 	menu_dim.visible = true
 	crosshair.hide()
 	# Com o jogo pausado o _process não roda: o aviso de baixo some aqui.
@@ -840,6 +868,8 @@ func open_menu(state: String) -> void:
 			ajustes_panel.abrir()
 		"album":
 			album_panel.abrir()
+		"revanche":
+			revanche_panel.abrir()
 
 
 func close_menus() -> void:
@@ -853,6 +883,8 @@ func close_menus() -> void:
 	controls_panel.hide()
 	ajustes_panel.hide()
 	album_panel.hide()
+	if revanche_panel:
+		revanche_panel.hide()
 	menu_dim.hide()
 	crosshair.visible = not player.parked and not _parado_no_lugar()
 	get_tree().paused = false
@@ -908,6 +940,8 @@ func in_combat() -> bool:
 		if d and d.state != Defense.State.INTERVALO:
 			return true
 	if is_instance_valid(party_mode) and party_mode.running():
+		return true
+	if revanche and revanche.rodando():
 		return true
 	var awake := [SkeletonEnemy.State.PERSEGUINDO, SkeletonEnemy.State.ESPERANDO, SkeletonEnemy.State.PREPARANDO,
 			SkeletonEnemy.State.ATACANDO, SkeletonEnemy.State.ATINGIDO]
@@ -1728,6 +1762,8 @@ func _process(_delta: float) -> void:
 			hud = d.hud_text()
 		elif is_instance_valid(party_mode) and party_mode.running():
 			hud = party_mode.hud_text()
+		elif revanche and revanche.rodando():
+			hud = revanche.hud_text()
 		elif kart_race and kart_race.driving():
 			hud = kart_race.hud_text()
 		wave_label.text = hud
@@ -1741,6 +1777,8 @@ func _process(_delta: float) -> void:
 			hint = pescaria.dica(button)
 		elif menu_state == "" and esconde and esconde.dica(button) != "":
 			hint = esconde.dica(button)
+		elif menu_state == "" and revanche and revanche.dica(button) != "":
+			hint = revanche.dica(button)
 		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
@@ -5574,6 +5612,119 @@ func _run_objective_test() -> void:
 	get_tree().quit()
 
 
+## Revanche dos guardiões (item 9 da lista de melhorias): só no pós-jogo; o quadro com os seis e o círculo no cemitério;
+## B abre a escolha; o guardião de verdade sobe, com o relógio e sem a Festa sem fim começar; vencer rápido dá 3
+## estrelas, moedas e o troféu de ouro; ficar tonto encerra sem estrela; o Mestre sai depois de sentar; as estrelas
+## pelo tempo; salvar e carregar; os seis no ouro dão o troféu grandão. Uso: godot --headless --path . -- --revanche
+func _run_rematch_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	all_ok = _check("antes do fim não tem revanche", get_node_or_null("Revanche/QuadroDaRevanche") == null and not revanche.pode_comecar()) and all_ok
+	_skip_to_post_game()
+	await _wait(0.5)
+	var quadro := get_node_or_null("Revanche/QuadroDaRevanche") as Node3D
+	all_ok = _check("no pós-jogo, o quadro da revanche fica no cemitério, sem troféu ainda", quadro != null
+			and quadro.global_position.distance_to(story.defenses.cemiterio.center) < 14.0
+			and revanche._trofeus.values().all(func(t: Node3D) -> bool: return not t.visible)) and all_ok
+	await _stand(revanche.ponto_do_circulo())
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso chama para a revanche", "revanche" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B abre a escolha com os seis guardiões", menu_state == "revanche" and revanche_panel.visible
+			and revanche_panel.cartoes.size() == 6 and get_viewport().gui_get_focus_owner() == revanche_panel.cartoes.oeste.botao) and all_ok
+	await _joy_button(JOY_BUTTON_A)
+	await _wait(0.5)
+	var g: Boss = revanche.guardiao
+	all_ok = _check("A escolhe o Ossão: ele sobe no gramado, com o relógio no alto", menu_state == "" and revanche.rodando()
+			and g is BossOssao and "Revanche: Ossão" in wave_label.text and in_combat() and story.objective_icon == "ossao",
+			"(%s)" % wave_label.text) and all_ok
+	await _stand(story.defenses.cemiterio.center)
+	await _wait(1.6)
+	all_ok = _check("no meio do gramado, a Festa sem fim não começa durante a revanche",
+			party_mode.state == EndlessParty.State.PARADA) and all_ok
+	await _stand(story.defenses.cemiterio.center + Vector3(0, 0, 9))
+	await _wait_until(func() -> bool: return g.phase == Boss.Phase.LUTANDO, 8.0)
+	var moedas := story.coins
+	await _derrubar(g)
+	await _wait(0.4)
+	all_ok = _check("vencer rápido dá 3 estrelas, 40 moedas, o troféu de ouro e as estrelas na tela", not revanche.rodando()
+			and revanche.ultima.get("estrelas", 0) == 3 and revanche.melhores.oeste.estrelas == 3 and story.coins == moedas + 40
+			and revanche._trofeus.oeste.visible and revanche.estrelas_hud.visible, "(%s, %d moedas)" % [revanche.ultima, story.coins - moedas]) and all_ok
+	all_ok = _check("as estrelas pelo tempo", Revanche.estrelas_para("oeste", 40.0) == 3 and Revanche.estrelas_para("oeste", 60.0) == 2
+			and Revanche.estrelas_para("oeste", 90.0) == 1) and all_ok
+	await _wait(3.0)
+	revanche.comecar("leste")
+	await _wait(0.5)
+	var mira: Boss = revanche.guardiao
+	player.god_mode = false
+	player._invulnerable = 0.0
+	player.hearts = 1
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0))
+	await _wait(0.5)
+	all_ok = _check("tonto na revanche: encerra sem estrela e o guardião sai", not revanche.rodando() and revanche.ultima.get("estrelas", -1) == 0
+			and not is_instance_valid(mira) and not revanche.melhores.has("leste")) and all_ok
+	player.god_mode = true
+	await _wait(4.0)
+	revanche.comecar("cemiterio")
+	var mestre: Boss = revanche.guardiao
+	await _wait_until(func() -> bool: return mestre.phase == Boss.Phase.LUTANDO, 8.0)
+	await _derrubar(mestre)
+	await _wait(5.5)
+	all_ok = _check("o Mestre senta e depois sai do gramado", not revanche.rodando() and not is_instance_valid(mestre)
+			and revanche.melhores.has("cemiterio")) and all_ok
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda a melhor de cada um", foto.get("revanche", {}).get("oeste", {}).get("estrelas", 0) == 3) and all_ok
+	var todos := {}
+	for id in Revanche.ORDEM:
+		todos[id] = {"estrelas": 3, "tempo": 30.0}
+	todos["fantasma"] = {"estrelas": 3}
+	revanche.carregar(todos)
+	all_ok = _check("os seis no ouro dão o troféu grandão (e o que não é guardião fica de fora)", revanche._trofeu_grande.visible
+			and revanche.melhores.size() == 6) and all_ok
+	print("REVANCHE OK" if all_ok else "REVANCHE COM FALHAS")
+	get_tree().quit()
+
+
+## Derruba um guardião nos testes: golpe forte por cima da cabeça (passa do escudo) em cada parte, e explosão.
+func _derrubar(b: Boss) -> void:
+	for k in 12:
+		if not is_instance_valid(b) or b.phase != Boss.Phase.LUTANDO:
+			return
+		var hb: Hurtbox = b.hurtboxes[k % b.hurtboxes.size()]
+		b.take_hit(999.0, b.global_position + Vector3.UP * 4.0, hb)
+		b.take_explosion(999.0, b.global_position)
+		await get_tree().physics_frame
+
+
+## Fotos da revanche (revanche_1 a revanche_3): o quadro com os troféus, a escolha e a luta com o relógio.
+## Uso: godot --path . -- --revanche-captura
+func _run_rematch_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(1.0)
+	player.using_gamepad = true
+	revanche.carregar({"oeste": {"estrelas": 3, "tempo": 38.0}, "leste": {"estrelas": 2, "tempo": 61.0}, "clareira": {"estrelas": 1, "tempo": 120.0}})
+	var c := revanche.ponto_do_circulo()
+	await _stand(c + Vector3(1.5, 0.3, 3.0))
+	var olhar := revanche._quadro.global_position + Vector3.UP * 2.0 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.2)
+	await _shot("revanche_1_quadro.png")
+	open_menu("revanche")
+	await _wait(0.6)
+	await _shot("revanche_2_escolha.png")
+	close_menus()
+	revanche.comecar("ventos")
+	await _wait(4.0)
+	await _shot("revanche_3_luta.png")
+	get_tree().quit()
+
+
 ## Esqueleto dourado (item 8 da lista de melhorias): não aparece antes do fim do prólogo nem pescando; sai do chão na
 ## frente, num chão livre, com a faixa e a seta "Dourado"; foge do aventureiro e cansa de vez em quando; derrotado dá
 ## 25 moedas e a figurinha; sem pegar, afunda e some. Uso: godot --headless --path . -- --dourado
@@ -5825,7 +5976,8 @@ func _run_hide_test() -> void:
 			and story.objective_target == Vector3.INF, "(%s)" % story.objective_text) and all_ok
 	var alvo: Townsperson = esconde.escondidos[0]
 	var olhar: Vector3 = alvo.get_meta("olhar")
-	await _stand(_ground_point(Vector3(0, 0, 175)))
+	# Longe de todos (o sítio fica a mais de 100 m da cidade): frio de verdade.
+	await _stand(_ground_point(Vector3(-120, 0, -6)))
 	await _wait(0.3)
 	var frio := esconde.calor()
 	await _stand(alvo.global_position - olhar * 7.0 + Vector3.UP * 0.2)

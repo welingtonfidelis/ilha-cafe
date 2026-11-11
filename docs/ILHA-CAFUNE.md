@@ -674,7 +674,7 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | feito em 2026-11-10 (ver "Esconde-esconde dos esqueletos amigos") |
 | 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | feito em 2026-11-10 (ver "Álbum de figurinhas e bilhetes") |
 | 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | feito em 2026-11-10 (ver "Esqueleto dourado") |
-| 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | |
+| 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | feito em 2026-11-10 (ver "Revanche dos guardiões") |
 | 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | |
 | 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | |
 | 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | |
@@ -684,6 +684,31 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 **Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Revanche dos guardiões (item 9 da lista, feito em 2026-11-10)
+
+`scripts/revanche.gd`, só no pós-jogo.
+
+- **Onde:** no gramado do cemitério do Morro, ao lado da Festa sem fim, perto da cripta. Um quadro de madeira "REVANCHE" mostra os seis guardiões (as figurinhas do álbum). Em cima de cada um fica o troféu da melhor revanche: bronze com 1 estrela, prata com 2 e ouro com 3. Na frente do quadro, um círculo cor de salmão.
+- **Escolher:** no círculo, B abre a escolha (`Revanche.Painel`): os seis em cartões grandes, cada um com a figurinha, o nome, as três estrelas da melhor e o melhor tempo. A escolhe e B volta.
+- **A luta:**
+  - o aventureiro vai para a beira do gramado, e o guardião de verdade sobe no meio: a mesma classe da história, com a barra de vida, os esqueletos que ele chama e a vida menor do Modo Fácil;
+  - no alto, "Revanche: Ossão · 0:42";
+  - o objetivo da pausa mostra a figura do guardião;
+  - conta como luta: sem celular e sem coração voltando no Modo Fácil;
+  - a Festa sem fim não começa enquanto isso.
+- **Estrelas pelo tempo:** 3 até o tempo do guardião, 2 até 1,6 vez esse tempo, 1 depois. Os tempos de 3 estrelas são 45 s para o Ossão e a Mira-Torta, 55 s para a Torre, 60 s para o Minionzão e o Guerreiro Planta, e 90 s para o Mestre. Ainda falta ajustar jogando.
+- **Vencer:**
+  - as estrelas aparecem grandes no meio da tela, uma a uma, com a faixa "Revanche vencida! 3 estrelas! em 0:38";
+  - dá 10 moedas mais 10 por estrela;
+  - o troféu do quadro muda se for a melhor;
+  - o guardião vai embora de balão, e o Mestre senta e sai uns segundos depois.
+- **Perder:** ficar tonto encerra com "Quase! Tenta de novo." O guardião e os esqueletos que ele chamou somem, e o aventureiro volta na bandeira como sempre.
+- **Troféu grandão:** com os seis no ouro, aparece uma taça grande em cima do quadro.
+- **Campanha:** a chave "revanche" guarda a melhor de cada um (estrelas e tempo).
+- **Testes:**
+  - `-- --revanche` confere 12 pontos: sem revanche antes do fim; o quadro sem troféu; o aviso; a escolha; o Ossão com o relógio; a Festa sem fim parada; 3 estrelas com moedas, troféu e estrelas na tela; as estrelas pelo tempo; tonto encerra; o Mestre sai; salvar; o troféu grandão;
+  - `-- --revanche-captura` (com janela) tira três fotos: `revanche_1_quadro`, `revanche_2_escolha` e `revanche_3_luta`.
 
 ### Esqueleto dourado (item 8 da lista, feito em 2026-11-10)
 

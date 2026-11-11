@@ -555,6 +555,9 @@ func _refresh_objective() -> void:
 				if is_instance_valid(game.party_mode) and game.party_mode.running():
 					text = game.party_mode.objective_text()
 					icon = "esqueleto"
+				elif game.revanche and game.revanche.rodando():
+					text = "Revanche: vença o guardião %s" % Album.GUARDIOES[game.revanche.regiao].nome
+					icon = OBJECTIVE_ICONS.get(game.revanche.regiao, "esqueleto")
 				elif game.esconde and game.esconde.rodando():
 					text = game.esconde.texto_objetivo()
 					icon = "esconde"
@@ -593,6 +596,7 @@ func snapshot() -> Dictionary:
 		"peixes": game.pescaria.pegos.duplicate() if game.pescaria else {},
 		"esconde": game.esconde.dados_salvos() if game.esconde else {},
 		"derrotados": derrotados.duplicate(),
+		"revanche": game.revanche.dados_salvos() if game.revanche else {},
 		"bilhetes": bilhetes.duplicate(),
 	}
 
@@ -840,6 +844,8 @@ func restore(data: Dictionary) -> void:
 		game.pescaria.carregar(data.get("peixes", {}))
 	if game.esconde:
 		game.esconde.carregar(data.get("esconde", {}))
+	if game.revanche:
+		game.revanche.carregar(data.get("revanche", {}))
 	derrotados.clear()
 	var salvos: Dictionary = data.get("derrotados", {})
 	for tipo in salvos:
