@@ -37,6 +37,8 @@ const SEA_LEVEL := -0.6
 
 var arena := false
 var island: Node3D
+## A vegetação abundante da ilha (grama, trevos, florzinhas e samambaias em 3D), pedido de 2026-11-11.
+var vegetacao: VegetacaoIlha
 ## História na ilha (prólogo, lanternas, ondas); fica nula na arena dos testes.
 var story: Story
 var boss_bar: BossBar
@@ -348,6 +350,14 @@ func _ready() -> void:
 	add_child(player)
 	player.global_position = world.start
 	player.set_yaw(world.start_yaw)
+	if not arena:
+		# A vegetação abundante (grama, trevos, florzinhas e samambaias em 3D), em volta da câmera.
+		vegetacao = VegetacaoIlha.new()
+		vegetacao.name = "Vegetacao"
+		vegetacao.terreno = island.get_node("Terreno")
+		vegetacao.jogador = player
+		add_child(vegetacao)
+		vegetacao.call_deferred("montar_tudo_agora")
 	player.hit_confirmed.connect(_on_hit_confirmed)
 	player.input_device_changed.connect(_on_input_device_changed)
 	player.health_changed.connect(func(h: int, m: int) -> void: hearts_bar.set_hearts(h, m))
@@ -654,6 +664,9 @@ func _ready() -> void:
 	elif "--brinquedos-captura" in args:
 		select_panel.hide()
 		_run_toys_capture()
+	elif "--vegetacao-captura" in args:
+		select_panel.hide()
+		_run_vegetation_capture()
 	elif "--menus-captura" in args:
 		_run_menus_capture()
 	elif "--farol" in args:
@@ -760,6 +773,8 @@ func _build_arena() -> Dictionary:
 func _load_island() -> Dictionary:
 	island = load(ISLAND_SCENE).instantiate()
 	add_child(island)
+	# A textura no chão (item 13 da lista do Faísca): grama, areia, pedra, trilha e calçada com desenho.
+	TexturaDoChao.na_ilha(island)
 	var start: Marker3D = island.get_node("Marcadores/Inicio")
 	var spawns := []
 	var minions := 0
@@ -2009,6 +2024,25 @@ func _shot(file_name: String) -> void:
 		FileAccess.open(dir + ".gdignore", FileAccess.WRITE).store_string("")
 	get_viewport().get_texture().get_image().save_png(dir + file_name)
 	print("captura: ", file_name)
+
+
+## Fotos da vegetação no jogo de verdade (pedido do usuário em 2026-11-11: "algo mais abundante de vegetação"): o
+## personagem posto no campo, no morro e na mata, visto pela câmera do jogo, com a grama abrindo em volta dele.
+## Saída: tools/capturas/veg_*.png (precisa de janela).
+func _run_vegetation_capture() -> void:
+	player.god_mode = true
+	var espaco := get_world_3d().direct_space_state
+	for spec in [["veg_campo", Vector2(-60, 20), 0.0], ["veg_morro", Vector2(30, 50), -PI / 2.0],
+			["veg_campo_oeste", Vector2(-100, -40), -PI / 2.0], ["veg_mata", Vector2(-20, -150), 0.0]]:
+		var xz: Vector2 = spec[1]
+		var r := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(xz.x, 200, xz.y), Vector3(xz.x, -50, xz.y), 1))
+		player.global_position = (r.position if not r.is_empty() else Vector3(xz.x, 5, xz.y)) + Vector3.UP * 0.3
+		player.set_yaw(float(spec[2]))
+		await _wait(1.0)
+		await _wait_until(func() -> bool: return vegetacao == null or vegetacao.pronta(), 5.0)
+		await _wait(0.3)
+		await _shot(spec[0] + ".png")
+	get_tree().quit()
 
 
 func _run_capture() -> void:

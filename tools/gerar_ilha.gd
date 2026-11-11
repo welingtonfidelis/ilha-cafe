@@ -108,6 +108,8 @@ const ROAD_XS := [-60, -20, 20, 60]
 const ROAD_ZS := [110, 150, 190]
 const PLAZA := Rect2(-20, 150, 40, 40)  # quarteirão da praça (x, z, largura, profundidade)
 
+## Cuidado: o desenho do chão (scripts/chao/terreno_da_ilha.gdshader, item 13 da lista do Faísca) reconhece cada
+## pedaço de chão por estas cores; mudou uma aqui, mude lá também.
 const C_SEABED := Color("#d9c48c")
 const C_SAND := Color("#ecd9a2")
 const C_GRASS := Color("#8cc96b")

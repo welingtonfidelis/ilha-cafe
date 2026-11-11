@@ -2272,7 +2272,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | |
-| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | |
+| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito em 2026-11-11, antes do item 7 (pedido do usuário: "vamos ver sobre a textura antes"), esperando a aprovação das fotos |
 
 **Ordem sugerida:**
 - primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
@@ -2613,6 +2613,67 @@ O sorteio é sempre o mesmo para a mesma fase. Uma fase pode desligar (`mundo_qu
   - a poça espirra no pulo e nos passos, e muda o chão do controle;
   - a Bolota olha a dança, aplaude, volta a seguir e, colada nele dançando, não machuca.
 - Fotos de cada mundo: `--faisca-mundo-captura`.
+
+### Textura no chão (item 13 da lista, feito em 2026-11-11)
+
+Ideia do usuário: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha". Feito antes do item 7, a pedido dele ("vamos ver sobre a textura antes").
+
+**Como é feito.** Os desenhos são feitos por conta no shader, sem imagem baixada (`scripts/chao/padroes_do_chao.gdshaderinc`):
+- cada um escurece e clareia a cor que o chão já tem, sem trocar o tom (a grama continua do verde dela);
+- ficam nas coordenadas do mundo, então não esticam nos morros esticados e não emendam entre peças;
+- o detalhe fino some com a distância (na fase, de 14 a 55 m; na ilha, de 30 a 110 m), para não piscar de longe.
+
+| Desenho | Como é | Onde |
+|---|---|---|
+| grama | manchas de sol e sombra, tufinhos em "V" e folhinhas curtas | 1-1 e topo dos morros |
+| campo da ilha | manchas de sol amareladas e de grama funda azulada, tufinhos virados para todo lado com a pontinha clara, folhinhas e canteirinhos de florzinhas brancas, amarelas e cor-de-rosa | a grama da ilha |
+| mata da ilha | verde mais fechado com manchas de musgo, folhas secas em montinhos (laranja, amarelas, marrons e vermelhas, com a nervura) e gravetinhos | o chão da mata, ao norte do rio |
+| terra | pedrinhas de tons diferentes | trilhas da ilha |
+| areia | ondinhas do vento e o granulado | praia e fundo do mar da ilha |
+| pedra | lajes irregulares com rachaduras | encostas da ilha e dos morros, túneis (1-2) |
+| calçada e praça | ladrilhos quadrados; tijolinhos desencontrados | cidade da ilha |
+| madeira | tábuas de 1 m com emendas e veios | cozinha (2-1) e mesa do Chef Bolotão |
+| tapete | trama de fios em xadrez | quarto (2-3) |
+| neve | branca, com sombra azulada nos montinhos e marcas do vento | pico (3-1) e arena do Pinguinzão |
+| gelo | rachaduras finas e claras | o lago congelado (o que tem a meta "gelo") |
+| metal | chapas de 2 m com emendas e rebites | fábrica (3-2) |
+| algodão | bolinhas fofas | nuvens de algodão-doce (2-2) |
+
+**Na ilha:** o terreno gerado (`Terreno/Malha`) troca de material para o `terreno_da_ilha.gdshader`. O shader descobre o que é cada pedaço de chão pela cor que o `tools/gerar_ilha.gd` pinta, então a paleta dos dois precisa ser a mesma (há um aviso no gerador).
+- O campo e a mata ganharam desenho com cor própria (pedido do usuário em 2026-11-11: "é possível melhorar a textura da parte de grama e mata?"). Os outros chões só clareiam e escurecem.
+- As florzinhas somem antes do resto com a distância: de longe viravam chuvisco.
+- As fotos de antes e depois usam a mesma luz da ilha no jogo, de dia.
+
+**A vegetação da ilha em 3D** (pedido do usuário em 2026-11-11, com uma imagem de referência de campo cheio de grama alta, trevos, florzinhas e samambaias: "não precisa ser nesse tom realista, mas eu tinha imaginado algo mais abundante de vegetação"):
+- **As plantas** (`scripts/vegetacao/plantas_3d.gd`), cada uma com poucos triângulos, desenhadas aos milhares de uma vez (MultiMesh):
+  - o tufo de grama: doze folhas compridas e finas, curvadas para fora;
+  - os trevos: cinco trevos de três folhas redondas, rentes ao chão;
+  - a florzinha: caule de até uns 60 cm, mais alto que a grama, e a flor de cinco pétalas em cinco cores (branca, amarela, rosa, azul-clara e laranja);
+  - a samambaia: sete folhas em arco com o contorno recortado.
+- **Onde nascem** (`scripts/vegetacao/vegetacao_ilha.gd`): só no campo e na mata, pela cor de cada triângulo do terreno.
+  - Campo: tufos por todo lado, mais altos e mais cheios em manchas, trevos e florzinhas nos prados.
+  - Mata: grama mais rala (aparecem as folhas secas do chão), samambaias e trevos.
+  - Nada nasce embaixo do que está em cima do chão (casa, cerca, pedra, pista, deque): um raio de cima confere cada planta.
+  - Em volta dos lugares das caixas de munição, que ficam no chão, só trevos. Os corações, os prêmios e os bilhetes flutuam acima da grama.
+- **Em pedaços de 16 m** criados em volta da câmera (até 40 m) e apagados quando ela se afasta (60 m), montados aos poucos (até 6 ms por quadro). Os pedaços em volta do começo saem já montados.
+- **O desenho** (`scripts/vegetacao/vegetacao.gdshader`):
+  - a cor de cada planta é a do chão onde ela nasceu, com as mesmas manchas de sol e de musgo do desenho do chão; o pé é mais escuro e a ponta mais clara;
+  - a ponta balança com o vento e abre para longe do jogador quando ele passa;
+  - de longe (entre 26 e 38 m da câmera), as plantas encolhem até sumir, e ali o desenho do chão assume.
+- **O custo:** no Mac (M4, 1280x720), um campo cheio tem uns 20 a 28 mil tufos na tela e custou por volta de 1 a 1,5 ms por quadro. Ainda não foi medido no PC.
+- Sem tela (os testes), a vegetação não é montada.
+- **Fotos:** `godot --path . --resolution 1280x720 -s res://tools/foto_vegetacao.gd` (com e sem as plantas, com a contagem e o tempo de cada quadro) e, no jogo de verdade, `-- --vegetacao-captura` (o personagem no campo, no morro e na mata, em `tools/capturas/veg_*.png`).
+
+**No Faísca:** cada fase, ao terminar de montar, põe o `detalhe_do_chao.gdshader` por cima (`material_overlay`) das peças de chão, com o desenho da `superficie` dela (`TexturaDoChao.na_fase`).
+- Contam como chão: as peças sólidas, de pelo menos 3 x 3 m, com material comum.
+- Os morros do Forest Nature levam grama em cima e pedra nas encostas.
+- Ficam lisos:
+  - as plataformas de plástico do Platformer (são brinquedo);
+  - a água e o que tem shader próprio;
+  - os enfeites;
+  - o que se mexe ou tem regra própria (plataforma que anda, pizza que gira, nuvem que some, caixa que quebra), porque o desenho é preso no mundo e escorregaria por cima.
+
+**Fotos de antes e depois:** `godot --path . --resolution 1280x720 -s res://tools/foto_chao.gd [-- ilha 1-1 ...]`, em `tools/capturas/chao/`. O `--faisca-mundo` confere que cada fase tem chão com textura e que nada do que se mexe ganhou.
 
 ### Em aberto
 

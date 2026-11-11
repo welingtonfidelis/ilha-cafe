@@ -153,6 +153,8 @@ var mundo_que_reage := true
 var estilo := ""
 ## Os caminhos creme ([pontos, largura]), que nada do mundo que reage pode tapar.
 var trilhas: Array = []
+## Quantas peças de chão ganharam o desenho da textura (item 13, para os testes).
+var pecas_com_textura := 0
 
 
 func _ready() -> void:
@@ -166,6 +168,8 @@ func _ready() -> void:
 	# Na ordem dos nomes: os três de antes ("0" a "2") e depois os novos, criados em qualquer ponto do caminho.
 	faisquinhas.sort_custom(func(a: Faisquinha, b: Faisquinha) -> bool: return int(a.id) < int(b.id))
 	_mundo_que_reage()
+	# A textura no chão (item 13): o desenho da superfície da fase por cima das peças de chão.
+	pecas_com_textura = TexturaDoChao.na_fase(self, superficie)
 
 
 ## Cada fase monta o caminho aqui.

@@ -2,7 +2,8 @@ class_name TesteMundo
 extends RefCounted
 ## Confere o mundo que reage (item 6 da lista do Faísca, 2026-11-11):
 ## - em cada uma das 7 fases, os playgrounds ganham plantas do mundo dela, coisas que quebram e poças, tudo em chão
-##   firme: nenhuma caixa encostada em outra coisa sólida, nenhuma poça torta;
+##   firme: nenhuma caixa encostada em outra coisa sólida, nenhuma poça torta; e o chão ganha a textura (item 13),
+##   menos o que se mexe;
 ## - na 1-1: a planta dobra para longe do Faísca e volta balançando quando ele sai, e o giro empurra de mais longe;
 ## - o soco quebra a caixa (some a colisão, voam os cacos e saem 3 moedas) e o pisão em cima quebra e faz quicar;
 ## - pisar na poça muda o chão do controle para "agua", cair de um pulo nela espirra alto e correr espirra a cada passo;
@@ -93,6 +94,18 @@ func _conferir_fase(id: String) -> void:
 				return true
 		return false)
 	_conferir("%s: as poças estão em chão reto" % id, poca_torta.is_empty(), "(%d tortas)" % poca_torta.size())
+	# A textura no chão (item 13): as peças de chão ganham o desenho, e nada do que se mexe ganha.
+	var mexendo := n.find_children("*", "MeshInstance3D", true, false).filter(func(mi: Node) -> bool:
+		if (mi as MeshInstance3D).material_overlay == null:
+			return false
+		var a: Node = mi.get_parent()
+		while a and a != n:
+			if a is AnimatableBody3D or a.get_script() != null:
+				return true
+			a = a.get_parent()
+		return false)
+	_conferir("%s: o chão tem textura, e só o que fica parado" % id, n.pecas_com_textura >= 10 and mexendo.is_empty(),
+			"(%d peças, %d que se mexem)" % [n.pecas_com_textura, mexendo.size()])
 	n.queue_free()
 	await _esperar(0.1)
 
