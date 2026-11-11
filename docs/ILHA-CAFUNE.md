@@ -2264,7 +2264,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
 | 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
 | 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
-| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | o do andar 1 feito em 2026-11-11; faltam o Chef Bolotão (andar 2) e o do andar 3 |
+| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | o do andar 1 e o Chef Bolotão (andar 2) feitos em 2026-11-11; falta o do andar 3 |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
@@ -2483,6 +2483,37 @@ Pedido do usuário: "pode enviar e seguir pra proxima". Como os chefes do Astro 
   - as flores, as moedas e o baú.
 - `--faisca-jogo`: a porta, os corações no HUD, a vitória contando como chefe, o troféu, a constelação e o save.
 - Fotos: `--faisca-chefe-1-captura`. Para jogar direto: `--faisca-jogar-chefe-1`. O revisor de física também confere a arena.
+
+### Chefe do andar 2: o Chef Bolotão (item 5 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "Seguir para o chefe 2". Mesmo molde do Bolotão Fofão (três fases, tonto, 3 socos, os corações roxos no HUD), agora com o que o Faísca aprendeu no mundo 2 (Doces e Brinquedos).
+
+**A porta e a arena.**
+- **A porta:** no 2º andar do farol, a noroeste (315°). Pede 5 Estrelas Grandes, as dos mundos 1 e 2.
+- **A Cozinha do Chef** (`scripts/faisca/fases/chefe_2.gd`): uma travessa redonda gigante, branca com a borda azul e 16 m de raio, em cima da mesa de uma cozinha de gigantes, com a parede invisível na beira. Em volta:
+  - os móveis do Restaurant Bits bem grandes ao longe (a geladeira, o fogão, o pote e a casquinha);
+  - o bolo listrado de 7 m no meio, com cobertura e velinhas;
+  - a torre de 10 panquecas com calda e manteiga (10 m) na beira norte;
+  - as 3 panelas com tampa em volta do bolo, com força 23;
+  - uma roda de 12 estrelinhas.
+
+**O Chef Bolotão** (`scripts/faisca/chefe_chef.gd`): o porquinho das Bolotas (Pig) em 2,6x, com o chapéu de cozinheiro.
+1. **Bolinhos:** em cima do bolo, ele joga bolinhos (massa rosa, cobertura e cereja) onde o Faísca está, com um alvo rosa no chão antes; quem está no alvo quando o bolinho cai perde um coração. As tampas das panelas jogam o Faísca lá em cima, e chegando no alto do bolo o Chef se assusta e fica tonto.
+2. **Investidas:** ele pula para o chão e corre reto até o Faísca, como os porquinhos. Batendo na beira, no bolo ou na torre (o Faísca sai da frente), fica tonto.
+3. **Torre de panquecas:** ele pula para o alto da torre e volta a jogar bolinhos. A bola de chiclete aparece na frente da torre e dá o Balão de Chiclete (o Vovô mostra). Subindo com o balão até ele, o Chef fica tonto.
+
+**A vitória:** como a do Bolotão Fofão. Saem 40 moedas e o baú dourado cai do céu. O troféu é o porquinho dourado ao lado da porta, e a constelação do chapéu de cozinheiro acende no teto.
+
+**Testes:**
+- `--faisca-chefe-2`:
+  - a arena;
+  - o bolinho acertando quem está no alvo;
+  - a tampa jogando acima do bolo e o susto no alto dele;
+  - a investida batendo na beira;
+  - a torre, o chiclete dando o balão e o balão subindo acima da torre;
+  - o baú.
+- `--faisca-jogo`: a porta do Chef abrindo com 5 Estrelas Grandes, levando à cozinha, com os corações dele.
+- Fotos: `--faisca-chefe-2-captura`. Para jogar direto: `--faisca-jogar-chefe-2`. O revisor de física confere a arena.
 
 ### Em aberto
 

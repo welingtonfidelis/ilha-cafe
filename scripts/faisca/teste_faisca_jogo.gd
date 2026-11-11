@@ -62,7 +62,8 @@ func rodar() -> void:
 			and terreo[2].tipo == "chefe" and not terreo[2].aberta and int(terreo[2].pede_grandes) == 2
 			and not portas.any(func(d: Dictionary) -> bool: return d.tipo == "saida")) and ok
 	var de_cima := portas.filter(func(d: Dictionary) -> bool: return int(d.andar) > 0)
-	ok = _conferir("nos andares de cima: 7 portas trancadas e a da nave no topo, pedindo as 8 Estrelas Grandes", de_cima.size() == 7
+	ok = _conferir("nos andares de cima: 7 portas trancadas (com a do Chef Bolotão) e a da nave no topo, pedindo as 8 Estrelas Grandes",
+			de_cima.size() == 8 and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-2" and int(d.pede_grandes) == 5)
 			and de_cima.all(func(d: Dictionary) -> bool: return not d.aberta) and int(hub.portas_nos["nave"].dados.pede_grandes) == 8) and ok
 	var da_escada: Area3D = hub.estrelas[0]
 	await _faisca_em(da_escada.global_position - Vector3(0, 1.0, 0))
@@ -416,6 +417,17 @@ func _chefe() -> bool:
 				j.hub.get_node_or_null("Trofeu_chefe-1") != null and j.hub.portas_nos["chefe-1"].dados.grande
 				and int(j.hub.portas_nos["nave"].dados.falta) == 6 and "chefe-1" in j.hub.grandes
 				and "chefe-1" in FaiscaSave.ler().get("chefes", [])) and ok
+	# O do andar 2: com as 5 Estrelas Grandes dos mundos 1 e 2, a porta do Chef abre e leva à Cozinha do Chef.
+	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3"]
+	await _refazer_hub()
+	var porta2: Node3D = j.hub.portas_nos["chefe-2"]
+	ok = _conferir("com 5 Estrelas Grandes, a porta do Chef Bolotão abre no 2º andar", porta2.dados.aberta and int(porta2.dados.andar) == 1) and ok
+	j.entrar_fase("chefe-2")
+	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy() and j.nivel is Chefe2 and (j.nivel as Chefe2).chefe.fase == 1, 10.0)
+	ok = _conferir("a porta leva à Cozinha do Chef, com os corações dele no HUD", j.nivel is Chefe2 and j.hud.chefe_restam() == 3
+			and j.faixa_titulo_texto() == "Chef Bolotão!") and ok
+	j.sair_da_fase()
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
 	f._invencivel = 0.0
 	j.chefes.clear()
 	j.grandes = antes

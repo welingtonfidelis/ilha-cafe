@@ -42,6 +42,8 @@ const FASES := [
 	# conta em `chefes`, não nas Estrelas Grandes (a nave continua pedindo 8).
 	{"id": "chefe-1", "nome": "Bolotão Fofão", "tipo": "chefe", "pede": 0, "pede_grandes": 2, "andar": 0, "lado": 30,
 		"cena": "res://scripts/faisca/fases/chefe_1.gd", "imagem": "res://assets/faisca/portas/chefe_1.jpg"},
+	{"id": "chefe-2", "nome": "Chef Bolotão", "tipo": "chefe", "pede": 0, "pede_grandes": 5, "andar": 1, "lado": 315,
+		"cena": "res://scripts/faisca/fases/chefe_2.gd", "imagem": "res://assets/faisca/portas/chefe_2.jpg"},
 	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270, "cena": "", "imagem": ""},
 ]
 ## As estrelinhas da escada do farol também contam.
@@ -520,8 +522,9 @@ func entrar_fase(id: String) -> void:
 	if nivel.has_signal("faixa_pedida"):
 		nivel.faixa_pedida.connect(func(titulo: String, sub: String) -> void: faixa(titulo, sub, Color("#ffd23f"), 3.0))
 	hud.esconder_chefe()
-	if nivel is Chefe1:
-		var chefe: ChefeBolotao = (nivel as Chefe1).chefe
+	# Os chefes (Chefe1, Chefe2...): os corações deles no alto da tela, um por fase.
+	var chefe: Node = nivel.get("chefe")
+	if chefe and chefe.has_signal("fase_mudou"):
 		chefe.fase_mudou.connect(func(f: int) -> void: hud.mostrar_chefe(dados.nome, 4 - f))
 	faisca.limite_queda = nivel.limite_queda
 	faisca.pode_recomecar = true
