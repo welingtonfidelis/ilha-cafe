@@ -600,6 +600,7 @@ func snapshot() -> Dictionary:
 		"derrotados": derrotados.duplicate(),
 		"revanche": game.revanche.dados_salvos() if game.revanche else {},
 		"copa": game.copa.dados_salvos() if game.copa else {},
+		"fim_de_ano": game.fim_de_ano.dados_salvos() if game.fim_de_ano else {},
 		"roupas": {"tem": roupas.duplicate(), "chapeu": player.chapeu, "pintura": player.pintura},
 		"bilhetes": bilhetes.duplicate(),
 	}
@@ -852,6 +853,8 @@ func restore(data: Dictionary) -> void:
 		game.revanche.carregar(data.get("revanche", {}))
 	if game.copa:
 		game.copa.carregar(data.get("copa", {}))
+	if game.fim_de_ano:
+		game.fim_de_ano.carregar(data.get("fim_de_ano", {}))
 	var guardadas: Dictionary = data.get("roupas", {})
 	roupas.clear()
 	for id in guardadas.get("tem", []):

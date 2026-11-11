@@ -677,13 +677,32 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | feito em 2026-11-10 (ver "Revanche dos guardiões") |
 | 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | feito em 2026-11-10 (ver "Copa de Kart") |
 | 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | feito em 2026-11-10 (ver "Roupinhas"): 10 chapéus e 5 pinturas |
-| 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | |
+| 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | feito em 2026-11-10 (ver "Festa de fim de ano") |
 | 13 | **Vozes** gravadas para os momentos principais | M | |
 | 14 | **Pressão nos gatilhos do DualSense** quando ele estiver conectado (pedido do usuário em 2026-11-10): gatilho duro no Pé-de-Moleque, tremidinho na rajada, estalo na escopeta | M | |
 
 **Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Festa de fim de ano (item 12 da lista, feito em 2026-11-10)
+
+`scripts/festa_fim_de_ano.gd`.
+
+- **Quando:** em dezembro e no dia 1º de janeiro, pela data do computador. Nos testes, a data não vale: só liga com `-- --natal`.
+- **Na praia, ao lado do aquário** (22, 203), com o Holiday Bits do KayKit, copiado para `assets/props/festa/doces/`:
+  - a árvore de Natal enfeitada, 3,4 vezes maior, com uma luz quente e o tronco que segura quem esbarra;
+  - oito presentes em volta da árvore;
+  - dois bonecos de neve;
+  - a casinha de biscoito com três bonequinhos de gengibre.
+- **Neve:** flocos fininhos caindo numa caixa de 50 m que acompanha o aventureiro.
+- **Gorros:** os moradores e os esqueletos amigos que não têm chapéu ganham o gorro de duende das roupinhas. No teste foram 15.
+- **Presente do dia:** o presente dourado grandão na frente da árvore, brilhando e girando. B abre: confete, 10 moedas (25 nos dias 24, 25 e 31) e "Feliz fim de ano! Amanhã tem outro!". Depois fica baixinho e sem brilho até o dia seguinte.
+- **Fogos:** nos dias 31 de dezembro e 1º de janeiro, à noite, sobem fogos da praia a cada 2,5 a 5 s.
+- **Campanha:** a chave "fim_de_ano" guarda o dia do último presente aberto.
+- **Testes:**
+  - `-- --natal` confere 8 pontos: a época; a árvore e o resto no chão (um tronco escalado junto com a árvore chegou a erguer os presentes a 20 m, e o teste pega isso); os gorros; o aviso; abrir; o dia especial; os fogos do dia 31; salvar;
+  - `-- --natal-captura` (com janela) tira duas fotos: `natal_1_arvore` e `natal_2_presente`.
 
 ### Roupinhas (item 11 da lista, feito em 2026-11-10)
 

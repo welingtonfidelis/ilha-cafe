@@ -148,6 +148,8 @@ var revanche_panel: Revanche.Painel
 var copa: CopaKart
 ## Guarda-roupa das roupinhas, aberto pelo celular (item 11 da lista de melhorias).
 var roupas_panel: PainelRoupas
+## Festa de fim de ano em dezembro (item 12 da lista de melhorias). Nula na arena.
+var fim_de_ano: FestaFimDeAno
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -471,6 +473,14 @@ func _ready() -> void:
 		caca.game = self
 		caca.story = story
 		add_child(caca)
+		FestaFimDeAno.testando = Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
+		if Array(args).any(func(a: String) -> bool: return a.begins_with("--natal")):
+			FestaFimDeAno.forcar = true
+		fim_de_ano = FestaFimDeAno.new()
+		fim_de_ano.name = "FestaFimDeAno"
+		fim_de_ano.game = self
+		fim_de_ano.story = story
+		add_child(fim_de_ano)
 		revanche = Revanche.new()
 		revanche.name = "Revanche"
 		revanche.game = self
@@ -676,6 +686,12 @@ func _ready() -> void:
 	elif "--roupas" in args:
 		select_panel.hide()
 		_run_outfits_test()
+	elif "--natal" in args:
+		select_panel.hide()
+		_run_holiday_test()
+	elif "--natal-captura" in args:
+		select_panel.hide()
+		_run_holiday_capture()
 	elif "--roupas-captura" in args:
 		select_panel.hide()
 		_run_outfits_capture()
@@ -1819,6 +1835,8 @@ func _process(_delta: float) -> void:
 			hint = revanche.dica(button)
 		elif menu_state == "" and copa and copa.dica(button) != "":
 			hint = copa.dica(button)
+		elif menu_state == "" and fim_de_ano and fim_de_ano.dica(button) != "":
+			hint = fim_de_ano.dica(button)
 		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
@@ -5652,6 +5670,70 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Festa de fim de ano (item 12 da lista de melhorias): só em dezembro (e 1º de janeiro); a árvore com os presentes,
+## os bonecos de neve e a neve caindo; os moradores sem chapéu de gorro; o presente do dia abre uma vez por dia e dá
+## mais nos dias especiais; fogos à noite no dia 31; salvar. Uso: godot --headless --path . -- --natal
+func _run_holiday_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	all_ok = _check("a época: dezembro e 1º de janeiro sim, novembro e 2 de janeiro não", FestaFimDeAno.esta_na_epoca("2026-12-03")
+			and FestaFimDeAno.esta_na_epoca("2027-01-01") and not FestaFimDeAno.esta_na_epoca("2026-11-10")
+			and not FestaFimDeAno.esta_na_epoca("2027-01-02")) and all_ok
+	FestaFimDeAno.hoje_teste = "2026-12-05"
+	fim_de_ano.atualizar_presente()
+	var arvore: Node3D = fim_de_ano._arvore
+	all_ok = _check("na praia, a árvore com presentes, os bonecos de neve e a neve caindo, tudo no chão", is_instance_valid(arvore)
+			and absf(arvore.global_position.y) < 1.0 and absf(fim_de_ano.presente_do_dia.global_position.y) < 1.0
+			and fim_de_ano.get_child_count() > 12 and fim_de_ano.neve.emitting, "(presente em y %.1f)" % fim_de_ano.presente_do_dia.global_position.y) and all_ok
+	all_ok = _check("moradores sem chapéu ganham o gorro de duende", fim_de_ano.gorros() >= 6, "(%d gorros)" % fim_de_ano.gorros()) and all_ok
+	await _stand(fim_de_ano.presente_do_dia.global_position + Vector3(0, 0.3, -2.0))
+	await _wait(0.3)
+	all_ok = _check("perto do presente do dia, o aviso ensina a abrir", "presente do dia" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	var moedas := story.coins
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B abre: 10 moedas e o presente fica aberto até amanhã", story.coins == moedas + FestaFimDeAno.MOEDAS
+			and fim_de_ano.aberto_em == "2026-12-05" and not fim_de_ano.pode_abrir() and not fim_de_ano._luz_presente.visible) and all_ok
+	FestaFimDeAno.hoje_teste = "2026-12-24"
+	fim_de_ano.atualizar_presente()
+	await _wait(0.2)
+	moedas = story.coins
+	fim_de_ano.abrir()
+	all_ok = _check("no outro dia abre de novo, e na véspera de Natal dá 25", story.coins == moedas + FestaFimDeAno.MOEDAS_ESPECIAL) and all_ok
+	FestaFimDeAno.hoje_teste = "2026-12-31"
+	await _wait(7.0)
+	all_ok = _check("no dia 31, de noite, sobem fogos da praia", fim_de_ano.fogos >= 1, "(%d fogos)" % fim_de_ano.fogos) and all_ok
+	all_ok = _check("a campanha guarda o dia do último presente", story.snapshot().get("fim_de_ano", {}).get("presente", "") == "2026-12-24") and all_ok
+	print("NATAL OK" if all_ok else "NATAL COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da festa de fim de ano (natal_1 e natal_2): a árvore na praia com a neve e o presente do dia aberto.
+## Uso: godot --path . -- --natal-captura
+func _run_holiday_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	player.using_gamepad = true
+	FestaFimDeAno.hoje_teste = "2026-12-24"
+	fim_de_ano.atualizar_presente()
+	var c: Vector3 = fim_de_ano._arvore.global_position
+	await _stand(_ground_point(c + Vector3(-5.0, 0, -13.0)))
+	var olhar := c + Vector3.UP * 3.5 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.5)
+	await _shot("natal_1_arvore.png")
+	await _stand(fim_de_ano.presente_do_dia.global_position + Vector3(0, 0.3, -2.2))
+	player.set_yaw(PI)
+	await _wait(0.3)
+	fim_de_ano.abrir()
+	await _wait(0.5)
+	await _shot("natal_2_presente.png")
 	get_tree().quit()
 
 
