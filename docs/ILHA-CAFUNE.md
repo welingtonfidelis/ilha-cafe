@@ -691,8 +691,10 @@ Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
 
 - **Como funciona:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. O jogo escreve o relatório de saída direto no controle, pelo `/dev/hidrawN` do Linux:
   - procura nos `hidraw0` a `hidraw31` o `HID_ID` da Sony (054C) com o DualSense (0CE6) ou o DualSense Edge (0DF2), por USB (0003) ou Bluetooth (0005);
-  - abre para escrever (as regras da Steam no Bazzite já deixam);
-  - sem o controle, em outro sistema ou sem permissão, não faz nada e procura de novo a cada 5 s.
+  - confere se pode escrever (`test -w`; as regras da Steam no Bazzite já deixam) e abre um `dd` ao lado (`OS.execute_with_pipe`, com o bloco do tamanho do relatório e `iflag=fullblock`), que recebe os relatórios pelo cano e escreve cada um inteiro no controle;
+  - **por que o `dd`:** a `FileAccess` da Godot só abre arquivo comum (até o `/dev/null` dá erro 12). A primeira versão abria o hidraw com ela, nunca escrevia nada, e o usuário não sentiu diferença no PC (2026-11-11);
+  - sem o controle, em outro sistema ou sem permissão, não faz nada e procura de novo a cada 5 s; se o `dd` sai (controle desligado), procura de novo;
+  - **o log que crescia:** o Linux diz que os arquivos do `/sys` têm 4096 bytes (o `uevent` do DualSense tem 184). O `get_file_as_string` da Godot lia os 4096, e o resto, lixo da memória, virava centenas de "Unicode parsing error" no log a cada procura (1 MB em 7 minutos no PC, com a primeira versão, que nunca achava o controle e procurava sem parar). Agora `DualSense.ler_texto` lê só os bytes de verdade (`get_buffer`). Prova no PC: `--dualsense-uevent` lê cada `uevent` 200 vezes dos dois jeitos e conta as leituras com lixo.
 - **Os bytes** são os da página de teste do usuário (`Projects/others/teste-dualsense`, conferidos com o SDL e o fork do KytyPS5):
   - o bloco comum de 47 bytes, só com as bandeiras dos dois gatilhos (0x04 e 0x08), para não mexer nos motores, que continuam com a Godot;
   - o R2 no byte 10 e o L2 no 21, 11 bytes cada;
@@ -702,7 +704,7 @@ Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
   - **L2:** resistência leve para mirar;
   - **no kart:** o R2 acelera macio e o L2 freia duro;
   - **tudo solto:** com menu aberto, tonto, pescando, no celular, jogando no teclado ou com a vibração desligada nos Ajustes; ao sair do jogo, solta os dois.
-- **Falta:** conferir no PC com o DualSense de verdade. Dá para ver se ele achou o controle pelo nó `DualSense` (`caminho`, `enviados`).
+- **No PC (2026-11-11):** o DualSense por Bluetooth aparece como `/dev/hidraw4`. `./IlhaCafune.x86_64 --headless -- --dualsense-pc` acha o controle, deixa o R2 duro e o L2 tremendo por 8 s e solta (respondeu `caminho '/dev/hidraw4' bluetooth true`). Falta o usuário confirmar que sente os efeitos no jogo.
 - **Testes:** `-- --dualsense` confere 8 pontos: o CRC32; os efeitos; o relatório USB; o relatório Bluetooth; o `HID_ID`; sem o controle; o que cada blaster faz; menu e vibração desligada.
 
 ### Vozes (item 13 da lista, feito em 2026-11-10)
@@ -1559,6 +1561,43 @@ O usuário mandou a tabela de movimentos do Astro Bot e pediu os três que mais 
   - O `--faisca-controle` confere os socos alternados e os movimentos novos. São a carga, o giro, o acerto em volta e o tontinho; não agarrar sem tontura e ficar tonta com o golpe; agarrar, girar, arremessar e acertar; a dancinha e parar andando.
   - O `--faisca-fase` confere que a Bolota tonta não vem atrás do Faísca.
   - O `--faisca-captura` tira de `10_carregando` a `17_dica_giro_forte` (com `12a_bolota_tonta`), e o `tools/foto_faisca.gd` tira o soco esquerdo e dois momentos da dança.
+
+### Movimento fluido no jeito do Astro (pedido do usuário em 2026-11-10)
+
+Pedido: "antes de irmos pra novas fases, queria melhorar a jogabilidade dele: movimentos mais fluidos e ágeis estilo o Astro Bot". O usuário escolheu os três pacotes (controle, câmera, corpo e efeitos). Tudo em `scripts/faisca/jogador.gd`.
+
+- **Controle:**
+  - **corrida em linha reta:** parado, arranca a 52 m/s²; correndo, a direção gira para o analógico a 16 rad/s sem perder o embalo, e a rapidez sobe ou desce em linha reta; soltar freia a 60 m/s² (`_acelerar`). Antes era uma aproximação suave que escorregava no fim. O gelo continua com o jeito antigo, que escorrega de propósito;
+  - **derrapada:** virar para trás correndo (mais de 110°) freia a 80 m/s² com poeira nos dois pés, o corpo para trás e um "chhh" baixinho, e já arranca para o outro lado;
+  - **o corpo vira na hora** (22 por segundo; era 12);
+  - **no ar**, vale 80% do controle (era 55%). Sem analógico, o embalo some devagar (`FREADA_NO_AR`), para o empurrão de um golpe continuar levando uns 0,9 m como antes;
+  - **topo do pulo:** segurando o pulo, nos últimos 2,2 m/s da subida a gravidade fica 25% mais leve, a pausinha do Astro. Só na subida: na descida, segurando, quem segura é o laser. A primeira versão valia também na descida e esticou o pulo longo de 11,9 para 12,7 m, perto demais dos vãos de 13 e 14 m;
+  - **quina amiga:** no ar, batendo de frente numa beirada até 30 cm acima dos pés, ele sobe nela (`_quina_amiga`).
+- **Câmera:**
+  - o pivô ficou solto do corpo e segue com um atrasinho no plano, olhando um pouco à frente da corrida;
+  - **segura a altura no pulo:** só acompanha quando ele pousa, cai abaixo de onde estava ou sobe mais de 3 m;
+  - correndo para a frente sem mexer na câmera por 1 s, ela volta devagar para trás dele. Isso só vale com o controle de verdade: os testes guiam pelo `forcar_direcao`, e lá não vale;
+  - correndo, o campo de visão abre de 60° para 66°.
+- **Corpo e efeitos** (só no `Robo`, dentro do `Visual`):
+  - inclina para dentro das curvas e um pouco para a frente correndo;
+  - achata e estica com uma mola: agacha e estica no pulo, que sai na hora porque é só desenho, e achata no pouso conforme a queda;
+  - **poeira** (`_poeira`, nuvenzinha que sobe e encolhe): nos passos correndo, um a cada 1,15 m alternando os pés, com um tique baixinho de robô; na derrapada; na saída do pulo; e no pouso (maior quanto mais alto).
+- **As medidas** (`-- --faisca-movimento`, numa pista lisa de 150 m montada só para o teste, com alvos que não deixam o pulo crescer):
+
+| medida | antes | agora |
+|---|---|---|
+| chegar a 90% da velocidade | 0,167 s | 0,117 s |
+| parar | 0,233 s em 0,40 m | 0,117 s em 0,30 m |
+| inverter a corrida | 0,100 s | 0,167 s (com a derrapada) |
+| o corpo virar para trás | 0,150 s | 0,083 s |
+| pulo curto / alto | 0,70 m / 2,21 m | 0,70 m / 2,23 m |
+| pulo mais longo, flutuando | 11,9 m | 12,1 m |
+
+- **Conserto que saiu junto:** o `Fx.dust` e o `Fx.bubble_pop` começavam soltando partículas assim que entravam na árvore, ainda na origem, antes de ir para o lugar certo. A poeira dos escudos e as bolhas dos peixes e da boia da pescaria nasciam no lugar errado. Agora começam desligados, como o confete.
+- **Testes:**
+  - todas as fases passam;
+  - a 1-2 mudou uma conferência: com a arrancada mais rápida, a corridinha antes do pulo do caixote da alavanca amarela às vezes pousa em cima da alavanca, que fica no próprio caixote, e as duas valem;
+  - `-- --faisca-movimento-captura` (com janela) tira quatro fotos em `tools/capturas/faisca/movimento/`: a curva, a derrapada, o pulo e o pouso.
 
 ### Sons do Faísca (pedido do usuário em 2026-10-29: "faltam sons novos pro faisca lutando, voando, etc")
 

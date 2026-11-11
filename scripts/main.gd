@@ -701,6 +701,12 @@ func _ready() -> void:
 	elif "--dualsense" in args:
 		select_panel.hide()
 		_run_dualsense_test()
+	elif "--dualsense-pc" in args:
+		select_panel.hide()
+		_run_dualsense_pc()
+	elif "--dualsense-uevent" in args:
+		select_panel.hide()
+		_run_dualsense_uevent()
 	elif "--natal-captura" in args:
 		select_panel.hide()
 		_run_holiday_capture()
@@ -5764,6 +5770,14 @@ func _run_dualsense_test() -> void:
 			DualSense.ler_uevent("DRIVER=playstation\nHID_ID=0005:0000054C:00000CE6\nHID_NAME=DualSense") == {"bluetooth": true}
 			and DualSense.ler_uevent("HID_ID=0003:0000054C:00000DF2") == {"bluetooth": false}
 			and DualSense.ler_uevent("HID_ID=0003:0000045E:00000B12").is_empty()) and all_ok
+	# Arquivo que diz ter mais bytes do que tem: lê só o que existe (o lixo depois virava avisos no log do PC).
+	var curto := "user://teste_uevent.txt"
+	var f := FileAccess.open(curto, FileAccess.WRITE)
+	f.store_string("HID_ID=0005:0000054C:00000CE6\n")
+	f.close()
+	all_ok = _check("lê o uevent só com os bytes de verdade", DualSense.ler_texto(curto) == "HID_ID=0005:0000054C:00000CE6\n"
+			and DualSense.ler_texto("user://nao_existe.txt") == "") and all_ok
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(curto))
 	var ds := dualsense
 	all_ok = _check("sem o controle (neste computador), não acha nada e não quebra", ds.caminho == "" and ds.enviados == 0) and all_ok
 	player.using_gamepad = true
@@ -5786,6 +5800,48 @@ func _run_dualsense_test() -> void:
 	all_ok = _check("com menu aberto ou a vibração desligada, os gatilhos ficam soltos", (no_menu[0] as PackedByteArray)[0] == 0x05
 			and (sem_vibracao[1] as PackedByteArray)[0] == 0x05) and all_ok
 	print("DUALSENSE OK" if all_ok else "DUALSENSE COM FALHAS")
+	get_tree().quit()
+
+
+## Prova do log que crescia (no PC): lê o uevent de cada hidraw 200 vezes do jeito antigo (`get_file_as_string`,
+## que lê os 4096 bytes que o Linux diz ter) e do novo (`DualSense.ler_texto`, só os bytes de verdade), e conta quantas
+## leituras vieram com lixo (caractere fora do texto). Não abre o controle. Uso: ./IlhaCafune.x86_64 --headless
+## --log-file /tmp/uevent.log -- --dualsense-uevent
+func _run_dualsense_uevent() -> void:
+	dualsense.set_physics_process(false)
+	for n in 8:
+		var arq := "/sys/class/hidraw/hidraw%d/device/uevent" % n
+		if not FileAccess.file_exists(arq):
+			continue
+		var antigo := 0
+		var novo := 0
+		for k in 200:
+			var t := FileAccess.get_file_as_string(arq)
+			if t.length() > 400 or t.contains("\ufffd"):
+				antigo += 1
+			var u := DualSense.ler_texto(arq)
+			if u.length() > 400 or u.contains("\ufffd"):
+				novo += 1
+		print("UEVENT hidraw%d: jeito antigo com lixo %d de 200, tamanho %d; novo com lixo %d de 200, tamanho %d" % [n, antigo,
+				FileAccess.get_file_as_string(arq).length(), novo, DualSense.ler_texto(arq).length()])
+	get_tree().quit()
+
+
+## DualSense de verdade (no PC, com o controle ligado): acha o controle, deixa o R2 duro e o L2 tremendo por
+## `segundos` (padrão 8), solta e conta o que fez. Uso: ./IlhaCafune.x86_64 --headless -- --dualsense-pc
+func _run_dualsense_pc() -> void:
+	await _wait(0.5)
+	var ds := dualsense
+	if ds.caminho == "":
+		ds.procurar()
+	print("DUALSENSE caminho '%s' bluetooth %s processo %d" % [ds.caminho, ds.bluetooth, ds._pid])
+	if ds.caminho != "":
+		ds.set_physics_process(false)
+		ds.mandar(DualSense.efeito_resistencia(1, 8), DualSense.efeito_vibracao(2, 8, 30))
+		print("DUALSENSE mandou o R2 duro e o L2 tremendo; aperte os gatilhos")
+		await _wait(8.0)
+		ds.soltar()
+		print("DUALSENSE soltou (enviados %d)" % ds.enviados)
 	get_tree().quit()
 
 

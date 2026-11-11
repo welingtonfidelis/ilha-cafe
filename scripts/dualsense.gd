@@ -4,6 +4,10 @@ extends Node
 ## de pressão pra controle dual sense se conectado"). A Godot 4.7 não tem nada para os gatilhos: aqui o jogo escreve o
 ## relatório de saída direto no controle, pelo /dev/hidrawN do Linux (o PC Bazzite; as regras da Steam já deixam o
 ## usuário escrever no DualSense). Em outro sistema, ou sem o controle, ou sem permissão, não faz nada.
+## A FileAccess da Godot não abre arquivo de dispositivo (só arquivo comum: até o /dev/null dá erro), e a primeira
+## versão nunca escrevia nada no PC (o usuário não sentiu diferença em 2026-11-11). Agora quem escreve é um `dd`
+## aberto ao lado (`OS.execute_with_pipe`), com o bloco do tamanho do relatório e `iflag=fullblock`: cada relatório
+## que o jogo põe no cano vira uma escrita inteira no controle. Testado no PC com o controle por Bluetooth.
 ## Os bytes são os mesmos da página de teste do usuário (Projects/others/teste-dualsense, conferidos com o SDL e o
 ## fork do KytyPS5): o bloco comum de 47 bytes, com os efeitos do R2 no byte 10 e do L2 no 21 (11 bytes cada); no
 ## USB vai no relatório 0x02 (48 bytes com o id) e no Bluetooth no 0x31 (78 bytes, com o CRC32 no fim). Só as
@@ -23,7 +27,9 @@ var atual := []
 ## Quantos relatórios foram mandados (os testes olham).
 var enviados := 0
 var game: Node
-var _arquivo: FileAccess
+## O `dd` que escreve no controle: o cano de entrada dele e o número do processo.
+var _cano: FileAccess
+var _pid := -1
 var _procurar := 0.0
 
 
@@ -51,18 +57,36 @@ func procurar() -> bool:
 		var arquivo_uevent := "/sys/class/hidraw/%s/device/uevent" % nome
 		if not FileAccess.file_exists(arquivo_uevent):
 			continue
-		var uevent := FileAccess.get_file_as_string(arquivo_uevent)
+		var uevent := ler_texto(arquivo_uevent)
 		var info := ler_uevent(uevent)
 		if info.is_empty():
 			continue
-		caminho = "/dev/" + nome
-		bluetooth = info.bluetooth
-		_arquivo = FileAccess.open(caminho, FileAccess.WRITE)
-		if _arquivo == null:
-			caminho = ""
+		var dev := "/dev/" + nome
+		# Só com permissão de escrever (o `test -w` responde pelo usuário do jogo).
+		if OS.execute("test", ["-w", dev]) != 0:
 			continue
+		var tamanho := 78 if info.bluetooth else 48
+		var dd := OS.execute_with_pipe("dd", ["of=" + dev, "bs=%d" % tamanho, "iflag=fullblock", "status=none"], false)
+		if dd.is_empty() or dd.get("stdio") == null:
+			continue
+		caminho = dev
+		bluetooth = info.bluetooth
+		_cano = dd.stdio
+		_pid = int(dd.pid)
+		atual = []
 		return true
 	return false
+
+
+## Lê um arquivo do /sys só com os bytes de verdade. O Linux diz que esses arquivos têm 4096 bytes (o uevent do
+## DualSense tem 184): o `get_file_as_string` da Godot lia os 4096 e o resto, lixo da memória, virava centenas de
+## "Unicode parsing error" no log a cada procura (no PC, 1 MB em 7 minutos, em 2026-11-11). O `get_buffer` devolve
+## só o que leu.
+static func ler_texto(caminho_arquivo: String) -> String:
+	var f := FileAccess.open(caminho_arquivo, FileAccess.READ)
+	if f == null:
+		return ""
+	return f.get_buffer(65536).get_string_from_ascii()
 
 
 ## Da linha HID_ID do uevent ("HID_ID=0005:0000054C:00000CE6"): é DualSense? por Bluetooth?
@@ -121,20 +145,34 @@ func escolher() -> Array:
 func soltar() -> void:
 	if caminho != "" and atual != [efeito_solto(), efeito_solto()]:
 		mandar(efeito_solto(), efeito_solto())
+	if _cano:
+		# Um instante para o dd escrever o último antes de fechar.
+		OS.delay_msec(30)
+		_fechar()
 
 
 func mandar(r2: PackedByteArray, l2: PackedByteArray) -> void:
 	atual = [r2, l2]
-	if _arquivo == null:
+	if _cano == null:
 		return
-	_arquivo.store_buffer(relatorio(bloco_comum(r2, l2), bluetooth))
-	_arquivo.flush()
-	if _arquivo.get_error() != OK:
-		# Desligou ou caiu: procura de novo depois.
-		_arquivo = null
-		caminho = ""
+	if _pid > 0 and not OS.is_process_running(_pid):
+		# O controle desligou (o dd sai quando a escrita falha): procura de novo depois.
+		_fechar()
 		return
+	_cano.store_buffer(relatorio(bloco_comum(r2, l2), bluetooth))
+	_cano.flush()
 	enviados += 1
+
+
+func _fechar() -> void:
+	if _cano:
+		_cano.close()
+	_cano = null
+	if _pid > 0 and OS.is_process_running(_pid):
+		OS.kill(_pid)
+	_pid = -1
+	caminho = ""
+	atual = []
 
 
 # --- os bytes ------------------------------------------------------------------------

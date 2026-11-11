@@ -15,8 +15,16 @@ extends CharacterBody3D
 signal vida_mudou(vida: int)
 
 @export var velocidade := 6.5
+## No gelo continua o jeito antigo (aproximação suave, que escorrega).
 @export var aceleracao := 14.0
-@export var controle_no_ar := 0.55
+## Movimento no jeito do Astro (pedido do usuário em 2026-11-10: "movimentos mais fluidos e ágeis"): arranca e
+## freia em linha reta (m/s²), a direção da corrida acompanha o analógico sem perder o embalo (rad/s), e virar
+## para trás correndo dá uma derrapadinha. No ar vale a fração `controle_no_ar` de tudo isso.
+@export var arranque := 52.0
+@export var freada := 60.0
+@export var freada_virada := 80.0
+@export var giro_corrida := 16.0
+@export var controle_no_ar := 0.8
 @export var forca_pulo := 10.5
 @export var gravidade := 26.0
 ## Multiplica a gravidade na descida, para o pulo não parecer de balão.
@@ -34,6 +42,25 @@ signal vida_mudou(vida: int)
 @export var velocidade_analogico := Vector2(3.0, 2.0)
 @export var vibracao := true
 
+## No ar, sem analógico, freia esta fração da freada do chão (o empurrão de um golpe leva uns 0,9 m, como antes).
+const FREADA_NO_AR := 0.45
+## Topo do pulo: segurando o pulo, perto do alto a gravidade fica mais leve (a pausinha do Astro).
+const TOPO_VELOCIDADE := 2.2
+const TOPO_GRAVIDADE := 0.75
+## Quina amiga: no ar, batendo de frente numa beirada até esta altura acima dos pés, sobe nela.
+const ALTURA_QUINA := 0.3
+## Câmera: o quanto ela demora para alcançar no plano e na altura, quanto olha à frente da corrida, quanto
+## o pulo pode subir antes de ela acompanhar, e quando ela volta sozinha para trás do Faísca.
+const CAMERA_SEGUE := 12.0
+const CAMERA_SEGUE_ALTURA := 6.0
+const CAMERA_ADIANTE := 0.08
+const CAMERA_PULO := 3.0
+const CAMERA_VOLTA_ESPERA := 1.0
+const CAMERA_VOLTA := 1.6
+const FOV := 60.0
+const FOV_CORRENDO := 66.0
+## Poeira dos passos: um a cada tanto de chão andado correndo.
+const PASSO := 1.15
 const PITCH_MIN := -1.1
 const PITCH_MAX := 0.3
 const DISTANCIA_CAMERA := 7.5
@@ -197,6 +224,17 @@ var _som_laser: AudioStreamPlayer
 var _som_carga: AudioStreamPlayer
 var _som_danca: AudioStreamPlayer
 var _tempo_no_ar := 0.0
+## Movimento novo: derrapando, a altura de referência da câmera, o tempo sem mexer na câmera, o molejo do corpo
+## (achatar e esticar), a inclinação e o chão andado desde o último passo.
+var derrapando := 0.0
+var _cam_ref_y := 0.0
+var _cam_pronta := false
+var _sem_olhar := 0.0
+var _mola := 0.0
+var _mola_vel := 0.0
+var _giro_antes := 0.0
+var _passo := 0.0
+var _passo_lado := 1.0
 ## Sombra redonda de pouso, sempre no chão embaixo dele (padrão de level design de 2026-10-29: "nada ambíguo"
 ## no pulo; a criança vê onde vai cair).
 var _sombra: MeshInstance3D
@@ -249,6 +287,8 @@ func _montar_camera() -> void:
 	camera_pivo = Node3D.new()
 	camera_pivo.name = "CameraPivo"
 	camera_pivo.position.y = 1.6
+	# Solto do corpo: segue com um atrasinho e segura a altura no pulo (_seguir_camera).
+	camera_pivo.top_level = true
 	add_child(camera_pivo)
 	camera_inclina = Node3D.new()
 	camera_pivo.add_child(camera_inclina)
@@ -258,7 +298,7 @@ func _montar_camera() -> void:
 	braco_camera.margin = 0.3
 	camera_inclina.add_child(braco_camera)
 	camera = Camera3D.new()
-	camera.fov = 60.0
+	camera.fov = FOV
 	camera.current = true
 	braco_camera.add_child(camera)
 
@@ -381,8 +421,11 @@ func _physics_process(delta: float) -> void:
 	elif giro_forte > 0.0:
 		andar = dir * 0.55
 
-	var acel := (ACELERACAO_GELO if no_gelo else aceleracao) if no_chao else aceleracao * controle_no_ar
-	var horizontal := Vector3(velocity.x, 0.0, velocity.z).lerp(andar * velocidade, 1.0 - exp(-acel * delta))
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	if no_gelo and no_chao:
+		horizontal = horizontal.lerp(andar * velocidade, 1.0 - exp(-ACELERACAO_GELO * delta))
+	else:
+		horizontal = _acelerar(horizontal, andar * velocidade, no_chao, delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 
@@ -422,6 +465,11 @@ func _physics_process(delta: float) -> void:
 	elif _memoria_pulo > 0.0 and _coiote > 0.0:
 		velocity.y = forca_pulo
 		Sfx.play(self, "faisca_pulo", 0.0, 0.08)
+		# Agacha um instante e estica subindo (só o desenho: o pulo sai na hora).
+		_mola = 0.16
+		_mola_vel = -7.0
+		if no_chao:
+			_poeira(global_position, 0.8)
 		_memoria_pulo = 0.0
 		_coiote = 0.0
 		_pulou = true
@@ -442,6 +490,9 @@ func _physics_process(delta: float) -> void:
 			velocity.y = lerpf(velocity.y, 0.4, 1.0 - exp(-12.0 * delta))
 		else:
 			var g := gravidade * (gravidade_queda if velocity.y < 0.0 else 1.0)
+			# Só na subida: na descida, segurando, quem segura o Faísca é o laser (e o pulo longo não pode crescer).
+			if _pulou and segurando and velocity.y > 0.0 and velocity.y < TOPO_VELOCIDADE:
+				g *= TOPO_GRAVIDADE
 			velocity.y = maxf(velocity.y - g * delta, -30.0)
 	if pouso_suave:
 		flutuando = true
@@ -452,6 +503,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO if _pancada_espera > 0.0 else Vector3(0, -VELOCIDADE_PANCADA, 0)
 		_pancada_espera -= delta
 	move_and_slide()
+	_quina_amiga()
 	no_gelo = _pisando_no_gelo()
 	# O chão de depois do movimento: logo depois de teleportar, o de antes ainda é o velho.
 	if pouso_suave and is_on_floor():
@@ -468,10 +520,11 @@ func _physics_process(delta: float) -> void:
 		# Só nos pousos de verdade (descer um degrau ou uma rampa não faz "toc").
 		if _tempo_no_ar > 0.35:
 			Sfx.play(self, "faisca_pouso", 0.0, 0.1)
+			_pousou(_tempo_no_ar)
 	_tempo_no_ar = _tempo_no_ar + delta if no_ar else 0.0
 	_estava_no_ar = no_ar
 	if dir.length() > 0.1 and golpe_atual < 0 and girando <= 0.0 and giro_forte <= 0.0 and agarrada == null and _carga <= 0.0:
-		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-(4.0 if no_gelo else 12.0) * delta))
+		visual.rotation.y = lerp_angle(visual.rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-(4.0 if no_gelo else 22.0) * delta))
 	if global_position.y < limite_queda and not _no_curto:
 		_caiu()
 	if _invencivel > 0.0:
@@ -480,9 +533,186 @@ func _physics_process(delta: float) -> void:
 
 	_decolando -= delta
 	_pousando -= delta
+	derrapando -= delta
+	_seguir_camera(delta, entrada)
+	_corpo_vivo(delta)
+	_passos(delta)
 	_atualizar_lasers()
 	_atualizar_sombra()
 	_atualizar_animacao()
+
+
+## A corrida no jeito do Astro: parado, arranca em linha reta; correndo, a direção gira para o analógico sem perder
+## o embalo e a rapidez sobe ou desce em linha reta; virar para trás correndo derrapa (freia forte e já arranca para
+## o outro lado). Soltar o analógico freia. No ar, tudo vale `controle_no_ar` e virar para trás só freia e volta.
+func _acelerar(h: Vector3, alvo: Vector3, no_chao: bool, delta: float) -> Vector3:
+	var k := 1.0 if no_chao else controle_no_ar
+	var vel := h.length()
+	var quer := alvo.length()
+	if quer < 0.05:
+		# No ar, sem analógico, o embalo vai sumindo devagar (o empurrão de um golpe continua empurrando).
+		return h.move_toward(Vector3.ZERO, freada * (1.0 if no_chao else FREADA_NO_AR) * delta)
+	if vel < 0.3:
+		return h.move_toward(alvo, arranque * k * delta)
+	var dir := h / vel
+	var dir_alvo := alvo / quer
+	var angulo := dir.signed_angle_to(dir_alvo, Vector3.UP)
+	if absf(angulo) > deg_to_rad(110.0):
+		if no_chao and vel > velocidade * 0.5:
+			if derrapando <= 0.0:
+				_derrapou()
+			derrapando = 0.12
+			return h.move_toward(Vector3.ZERO, freada_virada * delta)
+		return h.move_toward(alvo, arranque * k * delta)
+	var giro := clampf(angulo, -giro_corrida * k * delta, giro_corrida * k * delta)
+	var nova := move_toward(vel, quer, (arranque if quer > vel else freada) * k * delta)
+	return dir.rotated(Vector3.UP, giro) * nova
+
+
+## Derrapada: poeira dos dois pés e um "chhh" baixinho.
+func _derrapou() -> void:
+	var lado := visual.global_basis.x * 0.25
+	_poeira(global_position + lado, 1.0)
+	_poeira(global_position - lado, 1.0)
+	Sfx.play(self, "faisca_pouso", -10.0, 0.2)
+
+
+## Quina amiga: no ar, batendo de frente numa beirada que fica até ALTURA_QUINA acima dos pés (o pulo que quase
+## chegou), sobe nela em vez de escorregar parede abaixo.
+func _quina_amiga() -> void:
+	if is_on_floor() or not is_on_wall() or velocity.y > 3.0 or martelando or no_ioio:
+		return
+	var frente := Vector3(velocity.x, 0.0, velocity.z)
+	if frente.length() < 0.5:
+		frente = -get_wall_normal()
+		frente.y = 0.0
+	if frente.length() < 0.1 or frente.normalized().dot(-get_wall_normal()) < 0.5:
+		return
+	frente = frente.normalized()
+	if test_move(global_transform, Vector3.UP * ALTURA_QUINA):
+		return
+	var em_cima := global_transform.translated(Vector3.UP * ALTURA_QUINA)
+	if test_move(em_cima, frente * 0.4):
+		return
+	global_position += Vector3.UP * ALTURA_QUINA + frente * 0.15
+	velocity.y = maxf(velocity.y, 0.0)
+
+
+## A câmera segue o Faísca com um atrasinho no plano (e olhando um pouco à frente da corrida). Na altura, segura
+## no pulo: só acompanha quando ele pousa, cai abaixo de onde estava ou sobe mais de CAMERA_PULO. Mexer na câmera
+## deixa ela onde a criança pôs; correndo para a frente um tempo sem mexer, ela volta devagar para trás dele.
+## Correndo, o campo de visão abre um pouquinho.
+func _seguir_camera(delta: float, entrada: Vector2) -> void:
+	var p := global_position
+	if not _cam_pronta:
+		_cam_pronta = true
+		_cam_ref_y = p.y
+		camera_pivo.global_position = p + Vector3.UP * 1.6
+	if is_on_floor() or p.y < _cam_ref_y or flutuando and p.y < _cam_ref_y + 0.5:
+		_cam_ref_y = p.y
+	elif p.y > _cam_ref_y + CAMERA_PULO:
+		_cam_ref_y = p.y - CAMERA_PULO
+	var vel_h := Vector3(velocity.x, 0.0, velocity.z)
+	var adiante := vel_h * CAMERA_ADIANTE
+	var atual := camera_pivo.global_position
+	var alvo := Vector3(p.x, _cam_ref_y + 1.6, p.z) + adiante
+	var k := 1.0 - exp(-CAMERA_SEGUE * delta)
+	var ky := 1.0 - exp(-CAMERA_SEGUE_ALTURA * delta)
+	camera_pivo.global_position = Vector3(lerpf(atual.x, alvo.x, k), lerpf(atual.y, alvo.y, ky), lerpf(atual.z, alvo.z, k))
+	# Volta para trás dele: só com o controle de verdade (os testes guiam pelo forcar_direcao), sem mexer na
+	# câmera há um tempo, correndo quase para a frente.
+	var olhando := controle_ligado and Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo").length() > 0.15
+	_sem_olhar = 0.0 if olhando else _sem_olhar + delta
+	if forcar_direcao == Vector2.ZERO and controle_ligado and _sem_olhar > CAMERA_VOLTA_ESPERA and vel_h.length() > 3.0 \
+			and entrada.y < -0.6 and absf(entrada.x) < 0.5:
+		var atras := atan2(-vel_h.x, -vel_h.z)
+		yaw = lerp_angle(yaw, atras, 1.0 - exp(-CAMERA_VOLTA * delta))
+	var correndo := clampf((vel_h.length() - 4.0) / 2.5, 0.0, 1.0)
+	camera.fov = lerpf(camera.fov, lerpf(FOV, FOV_CORRENDO, correndo), 1.0 - exp(-4.0 * delta))
+
+
+## O corpo vivo: inclina para dentro da curva e para a frente arrancando (para trás derrapando), e o molejo de
+## achatar e esticar (no pulo e no pouso) volta como uma mola. Mexe só no Robo, dentro do Visual.
+func _corpo_vivo(delta: float) -> void:
+	var giro := angle_difference(_giro_antes, visual.rotation.y) / maxf(delta, 0.001)
+	_giro_antes = visual.rotation.y
+	var vel_h := Vector2(velocity.x, velocity.z).length()
+	var curva := clampf(-giro * 0.04 * clampf(vel_h / velocidade, 0.0, 1.0), -0.28, 0.28) if is_on_floor() else 0.0
+	var frente := 0.12 * clampf(vel_h / velocidade, 0.0, 1.0) if is_on_floor() else 0.0
+	if derrapando > 0.0:
+		frente = -0.3
+	robo.rotation.z = lerpf(robo.rotation.z, curva, 1.0 - exp(-10.0 * delta))
+	robo.rotation.x = lerpf(robo.rotation.x, frente, 1.0 - exp(-10.0 * delta))
+	_mola_vel += (-220.0 * _mola - 14.0 * _mola_vel) * delta
+	_mola += _mola_vel * delta
+	_mola = clampf(_mola, -0.25, 0.35)
+	robo.scale = Vector3(1.0 + _mola * 0.6, 1.0 - _mola, 1.0 + _mola * 0.6)
+
+
+## Pouso de verdade: achata conforme a queda e solta um anelzinho de poeira.
+func _pousou(tempo_no_ar: float) -> void:
+	_mola = clampf(0.08 + tempo_no_ar * 0.12, 0.08, 0.3)
+	_mola_vel = 0.0
+	_poeira(global_position, clampf(0.7 + tempo_no_ar * 0.5, 0.7, 1.5), 14)
+
+
+## Nuvenzinha de poeira no chão: bolinhas claras que se espalham para os lados, sobem um pouco e somem
+## encolhendo. `forca` aumenta o tamanho e o espalhado.
+var _poeira_malha: SphereMesh
+
+
+func _poeira(pos: Vector3, forca: float, quantas := 8) -> void:
+	if _poeira_malha == null:
+		_poeira_malha = SphereMesh.new()
+		_poeira_malha.radius = 0.11
+		_poeira_malha.height = 0.2
+		_poeira_malha.radial_segments = 8
+		_poeira_malha.rings = 4
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.97, 0.95, 0.9, 0.85)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_poeira_malha.material = mat
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.emitting = false
+	p.amount = quantas
+	p.lifetime = 0.55
+	p.explosiveness = 1.0
+	p.direction = Vector3.UP
+	p.spread = 80.0
+	p.flatness = 0.6
+	p.initial_velocity_min = 1.0 * forca
+	p.initial_velocity_max = 2.2 * forca
+	p.damping_min = 4.0
+	p.damping_max = 6.0
+	p.gravity = Vector3(0, 0.8, 0)
+	p.scale_amount_min = 0.7 * forca
+	p.scale_amount_max = 1.2 * forca
+	var curva := Curve.new()
+	curva.add_point(Vector2(0, 1))
+	curva.add_point(Vector2(1, 0))
+	p.scale_amount_curve = curva
+	p.mesh = _poeira_malha
+	get_parent().add_child(p)
+	p.global_position = pos + Vector3.UP * 0.08
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+
+
+## Passinhos correndo: poeirinha alternando os pés e um tique baixinho de robô.
+func _passos(delta: float) -> void:
+	var vel_h := Vector2(velocity.x, velocity.z).length()
+	if not is_on_floor() or vel_h < 3.0 or no_gelo:
+		_passo = 0.0
+		return
+	_passo += vel_h * delta
+	if _passo < PASSO:
+		return
+	_passo = 0.0
+	_passo_lado = -_passo_lado
+	_poeira(global_position + visual.global_basis.x * 0.2 * _passo_lado, 0.45, 4)
+	Sfx.play(self, "tique", -18.0, 0.15)
 
 
 ## Põe o Faísca parado em `pos` (testes e capturas). No quadro seguinte o is_on_floor ainda
@@ -498,6 +728,7 @@ func teleportar(pos: Vector3) -> void:
 	_memoria_pulo = 0.0
 	golpe_atual = -1
 	girando = 0.0
+	_cam_pronta = false
 
 
 ## Encostou numa Bolota (ou outra coisa que machuca) vinda de `de`: tira um coração, empurra

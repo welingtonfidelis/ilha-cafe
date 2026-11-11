@@ -62,6 +62,8 @@ static func confetti(parent: Node, pos: Vector3, amount: int = 24, strength: flo
 static func dust(parent: Node, pos: Vector3) -> void:
 	var p := CPUParticles3D.new()
 	p.one_shot = true
+	# Sem isto, a partícula começa a soltar já ao entrar na árvore, ainda na origem (antes de ir para `pos`).
+	p.emitting = false
 	p.amount = 8
 	p.lifetime = 0.4
 	p.explosiveness = 1.0
@@ -386,6 +388,7 @@ static func shockwave(parent: Node, pos: Vector3, radius: float) -> void:
 static func bubble_pop(parent: Node, pos: Vector3) -> void:
 	var p := CPUParticles3D.new()
 	p.one_shot = true
+	p.emitting = false
 	p.amount = 14
 	p.lifetime = 0.45
 	p.explosiveness = 1.0

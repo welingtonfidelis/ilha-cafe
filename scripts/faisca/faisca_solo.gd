@@ -38,7 +38,8 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-fase-1-2", "--faisca-fase-1-2-captura", "--faisca-jogar-1-2", "--faisca-fase-2-1", "--faisca-fase-2-1-captura",
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
-		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-monstro", "--faisca-monstro-captura"]
+		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-monstro", "--faisca-monstro-captura",
+		"--faisca-movimento", "--faisca-movimento-captura"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -57,11 +58,13 @@ var _teste23: TesteFase23
 var _teste31: TesteFase31
 var _teste32: TesteFase32
 var _teste_monstro: TesteMonstro
+var _teste_movimento: TesteMovimento
 
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
-	var cena_de_teste := "--faisca-teste" in args or "--faisca-smoke" in args or "--faisca-controle" in args or "--faisca-captura" in args
+	var cena_de_teste := "--faisca-teste" in args or "--faisca-smoke" in args or "--faisca-controle" in args or "--faisca-captura" in args \
+			or "--faisca-movimento" in args or "--faisca-movimento-captura" in args
 	jogador = Jogador.new()
 	hud = Hud.new()
 	if cena_de_teste:
@@ -110,7 +113,13 @@ func _ready() -> void:
 	jogador.vida_mudou.connect(hud.mostrar_vida)
 	hud.mostrar_vida(jogador.vida)
 
-	if "--faisca-smoke" in args:
+	if "--faisca-movimento" in args:
+		_teste_movimento = TesteMovimento.new(self)
+		_teste_movimento.rodar()
+	elif "--faisca-movimento-captura" in args:
+		_teste_movimento = TesteMovimento.new(self)
+		_teste_movimento.capturar()
+	elif "--faisca-smoke" in args:
 		_rodar_smoke()
 	elif "--faisca-controle" in args:
 		_rodar_teste_controle()

@@ -226,7 +226,9 @@ func _elevador_e_alavancas() -> bool:
 	await _andar(Vector3(1, 0, 0), 1.0)
 	ok = m._conferir("com a grade amarela fechada não se sai da sala", j.global_position.x < 24.2, "(x %.1f)" % j.global_position.x) and ok
 	var onde := await _pular(Vector3(20.0, 16.1, -96.0), Vector3(0, 0, -1), 1.6, false)
-	ok = m._conferir("pula no caixote da alavanca amarela", absf(onde.y - 17.6) < 0.4, "(altura %.1f)" % onde.y) and ok
+	# Com a arrancada mais rápida (2026-11-10), a mesma corridinha às vezes pousa em cima da alavanca, que fica no
+	# caixote: vale o caixote ou ela.
+	ok = m._conferir("pula no caixote da alavanca amarela", onde.y > 17.2 and onde.y < 18.5, "(altura %.1f)" % onde.y) and ok
 	for i in n.alavancas.size():
 		var a := n.alavancas[i]
 		j.teleportar(a.global_position + Vector3(0, 0.1, 1.4))
