@@ -125,6 +125,27 @@ func _draw() -> void:
 			draw_rect(Rect2(c + Vector2(-4.5, -2.8) * k, Vector2(9, 2.6) * k), color)
 		"esqueleto":
 			_cranio(c + Vector2(0, -1) * k, 9.0 * k, w)
+		"peixe":
+			var corpo := PackedVector2Array()
+			for i in 20:
+				var a := TAU * i / 20.0
+				corpo.append(c + Vector2(2.0 + cos(a) * 9.0, sin(a) * 6.0) * k)
+			draw_colored_polygon(corpo, w)
+			draw_colored_polygon(_pts(c, k, [Vector2(-6, 0), Vector2(-12, -6), Vector2(-12, 6)]), w)
+			draw_circle(c + Vector2(6.5, -1.5) * k, 1.8 * k, color)
+		"bilhete":
+			draw_rect(Rect2(c + Vector2(-11, -7.5) * k, Vector2(22, 15) * k), w)
+			draw_polyline(_pts(c, k, [Vector2(-11, -7.5), Vector2(0, 1.5), Vector2(11, -7.5)]), color, 1.8 * k, true)
+			draw_circle(c + Vector2(0, 1.5) * k, 3.2 * k, Color("#ff5d7a"))
+		"album":
+			draw_rect(Rect2(c + Vector2(-9, -11) * k, Vector2(18, 22) * k), w)
+			draw_rect(Rect2(c + Vector2(-9, -11) * k, Vector2(3.5, 22) * k), color.darkened(0.25))
+			_star(c + Vector2(1.8, -1) * k, 6.0 * k, 2.6 * k, Color("#ffd23f"))
+		"kart":
+			draw_rect(Rect2(c + Vector2(-11, -3) * k, Vector2(22, 7) * k), w)
+			draw_colored_polygon(_pts(c, k, [Vector2(-5, -3), Vector2(-2, -9), Vector2(5, -9), Vector2(7, -3)]), w)
+			draw_circle(c + Vector2(-6.5, 5) * k, 4.0 * k, Color("#2b2b40"))
+			draw_circle(c + Vector2(6.5, 5) * k, 4.0 * k, Color("#2b2b40"))
 		"esconde":
 			# Esconde-esconde: a caveirinha tapando os olhos com as mãos.
 			_cranio(c + Vector2(0, -1) * k, 9.0 * k, w)

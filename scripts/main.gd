@@ -133,6 +133,11 @@ var pescaria: Pescaria
 var aquario: Aquario
 ## Esconde-esconde dos esqueletos amigos, no pós-jogo (item 6 da lista de melhorias). Nulo na arena.
 var esconde: EscondeEsconde
+## Álbum de figurinhas e os bilhetes pela ilha (item 7 da lista de melhorias). O botão e o painel ficam nulos na arena.
+var album_panel: PainelAlbum
+var bilhete_cartao: Bilhete.Cartao
+var bilhetes_nos: Array[Bilhete] = []
+var _pause_album: Button
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -445,6 +450,17 @@ func _ready() -> void:
 		esconde.game = self
 		esconde.story = story
 		add_child(esconde)
+		for spec: Dictionary in Album.BILHETES:
+			var b := Bilhete.new()
+			b.name = "Bilhete_" + String(spec.id)
+			b.id = spec.id
+			b.game = self
+			b.position = spec.onde
+			add_child(b)
+			bilhetes_nos.append(b)
+		bilhete_cartao = Bilhete.Cartao.new()
+		ui_layer.add_child(bilhete_cartao)
+		ui_layer.move_child(bilhete_cartao, fade.get_index())
 		var pescador := get_node_or_null("Pescador") as Townsperson
 		if pescador and not PESCADOR_FALA in pescador.lines:
 			pescador.lines.append(PESCADOR_FALA)
@@ -609,6 +625,12 @@ func _ready() -> void:
 	elif "--esconde" in args:
 		select_panel.hide()
 		_run_hide_test()
+	elif "--album" in args:
+		select_panel.hide()
+		_run_album_test()
+	elif "--album-captura" in args:
+		select_panel.hide()
+		_run_album_capture()
 	elif "--esconde-captura" in args:
 		select_panel.hide()
 		_run_hide_capture()
@@ -727,6 +749,8 @@ func _menu_input(event: InputEvent) -> void:
 			open_menu("pausa")
 		"ajustes":
 			ajustes_panel.fechar()
+		"album":
+			album_panel.fechar()
 		"confirmar":
 			open_menu(_confirm_return)
 		"loja":
@@ -763,6 +787,7 @@ func open_menu(state: String) -> void:
 	pause_panel.visible = state == "pausa"
 	controls_panel.visible = state == "comandos"
 	ajustes_panel.visible = state == "ajustes"
+	album_panel.visible = state == "album"
 	menu_dim.visible = true
 	crosshair.hide()
 	# Com o jogo pausado o _process não roda: o aviso de baixo some aqui.
@@ -799,6 +824,8 @@ func open_menu(state: String) -> void:
 			_controls_back.grab_focus.call_deferred()
 		"ajustes":
 			ajustes_panel.abrir()
+		"album":
+			album_panel.abrir()
 
 
 func close_menus() -> void:
@@ -811,6 +838,7 @@ func close_menus() -> void:
 	pause_panel.hide()
 	controls_panel.hide()
 	ajustes_panel.hide()
+	album_panel.hide()
 	menu_dim.hide()
 	crosshair.visible = not player.parked and not _parado_no_lugar()
 	get_tree().paused = false
@@ -1278,6 +1306,14 @@ func _build_ui() -> void:
 		if menu_state == "ajustes":
 			open_menu("pausa")
 			_pause_ajustes.grab_focus.call_deferred())
+	album_panel = PainelAlbum.new()
+	layer.add_child(album_panel)
+	album_panel.montar(layer, self)
+	album_panel.hide()
+	album_panel.fechou.connect(func() -> void:
+		if menu_state == "album":
+			open_menu("pausa")
+			_pause_album.grab_focus.call_deferred())
 
 	# Comandos: a lista do aparelho em uso (teclado e mouse ou controle).
 	var cbox := _menu_box(layer, "Comandos")
@@ -1448,6 +1484,18 @@ func _build_pause_menu(layer: CanvasLayer) -> void:
 	_pause_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pause_name.add_theme_font_size_override("font_size", 26)
 	who.add_child(_pause_name)
+	# Álbum de figurinhas (item 7 da lista de melhorias): embaixo do cartão de quem joga; o direcional para a esquerda
+	# chega nele de qualquer botão da pausa.
+	if not arena:
+		var vao := Control.new()
+		vao.custom_minimum_size = Vector2(0, 8)
+		who.add_child(vao)
+		_pause_album = _menu_button("Álbum", "album")
+		_pause_album.custom_minimum_size = Vector2(196, 56)
+		_pause_album.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			open_menu("album"))
+		who.add_child(_pause_album)
 	var buttons := VBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	row.add_child(buttons)
@@ -1467,6 +1515,13 @@ func _build_pause_menu(layer: CanvasLayer) -> void:
 		_pause_buttons.append(b)
 	_pause_switch = _pause_buttons[1]
 	_pause_ajustes = _pause_buttons[3]
+	if _pause_album:
+		for b in _pause_buttons:
+			b.focus_neighbor_left = b.get_path_to(_pause_album)
+		_pause_album.focus_neighbor_right = _pause_album.get_path_to(_pause_buttons[0])
+		_pause_album.focus_neighbor_left = _pause_album.get_path_to(_pause_album)
+		_pause_album.focus_neighbor_top = _pause_album.get_path_to(_pause_album)
+		_pause_album.focus_neighbor_bottom = _pause_album.get_path_to(_pause_album)
 	_pause_goal = PanelContainer.new()
 	var goal_style := MenuKit.box(Color("#2a2340"), 14)
 	goal_style.set_content_margin_all(10)
@@ -1597,6 +1652,8 @@ func _on_checkpoint_activated(cp: Checkpoint) -> void:
 
 
 func _on_enemy_defeated(e: SkeletonEnemy) -> void:
+	if story:
+		story.marcar_derrota(e.type_name)
 	var wave := e.has_meta("onda")
 	var heart_chance := 0.12 if wave else heart_drop_chance
 	var crate_chance := 0.15 if wave else AMMO_DROP_CHANCE
@@ -1722,6 +1779,15 @@ func _regenerar(delta: float) -> void:
 ## Olhando pelo binóculo do farol.
 func _no_mirante() -> bool:
 	return farol != null and farol.no_mirante
+
+
+## Esconde os bilhetes que a campanha já achou.
+func atualizar_bilhetes() -> void:
+	if story == null:
+		return
+	for b in bilhetes_nos:
+		if is_instance_valid(b):
+			b.visible = not b.id in story.bilhetes
 
 
 ## Parado num lugar, com outra câmera: no binóculo do farol ou pescando na ponta do cais.
@@ -5486,6 +5552,127 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Álbum de figurinhas e bilhetes pela ilha (item 7 da lista de melhorias): as figurinhas geradas; a pausa com o botão
+## do Álbum; o álbum vazio no começo; esqueleto derrotado, guardião vencido, peixe e esconde-esconde aparecendo; os oito
+## bilhetes no chão, pegar um (cartão, moedas, álbum); salvar e carregar (com os tipos das regiões já vencidas).
+## Uso: godot --headless --path . -- --album
+func _run_album_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	var faltam := []
+	for id in Album.GUARDIOES:
+		if not ResourceLoader.exists(Album.FIGURAS % ("guardiao_" + id)):
+			faltam.append(id)
+	for t: Dictionary in Album.TURMA:
+		if not ResourceLoader.exists(Album.FIGURAS % ("tipo_" + t.id)):
+			faltam.append(t.id)
+	for p: Dictionary in Pescaria.PEIXES:
+		if not ResourceLoader.exists(Album.FIGURAS % ("peixe_" + p.id)):
+			faltam.append(p.id)
+	all_ok = _check("as figurinhas dos guardiões, da turma e dos peixes existem", faltam.is_empty(), str(faltam)) and all_ok
+	var total := Album.contagem(self)
+	all_ok = _check("o álbum tem 47 figurinhas e começa vazio", total == Vector2i(0, 47), str(total)) and all_ok
+	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
+	var no_chao := bilhetes_nos.filter(func(b: Bilhete) -> bool: return b.global_position.y > -0.3 and b.visible)
+	all_ok = _check("os oito bilhetes estão no chão, à vista", bilhetes_nos.size() == 8 and no_chao.size() == 8) and all_ok
+	open_menu("pausa")
+	await _wait(0.2)
+	await _joy_button(JOY_BUTTON_DPAD_LEFT)
+	all_ok = _check("na pausa, o direcional para a esquerda chega no Álbum", get_viewport().gui_get_focus_owner() == _pause_album) and all_ok
+	await _joy_button(JOY_BUTTON_A)
+	await _wait(0.2)
+	all_ok = _check("A abre o álbum na página dos guardiões, com tudo apagado", menu_state == "album" and album_panel.visible
+			and album_panel.pagina == "guardioes" and album_panel.cartas.size() == 6 and "0 de 47" in album_panel.titulo_conta.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.2)
+	all_ok = _check("B volta para a pausa com o Álbum marcado", menu_state == "pausa" and get_viewport().gui_get_focus_owner() == _pause_album) and all_ok
+	close_menus()
+	await _wait(0.3)
+	var e := spawn_wave_enemy("Skeleton_Rogue", player.global_position + Vector3(30, 0, 0))
+	await _wait(0.2)
+	e.defeated.emit(e)
+	story.defenses.oeste.state = Defense.State.VENCIDA
+	pescaria.carregar({"Koi": 1})
+	esconde.figurinhas.append("Lobinho")
+	all_ok = _check("derrotar, vencer, pescar e achar no esconde-esconde contam no álbum", story.derrotados.has("Skeleton_Rogue")
+			and Album.contagem(self) == Vector2i(4, 47), str(Album.contagem(self))) and all_ok
+	var b: Bilhete = bilhetes_nos[1]
+	var moedas := story.coins
+	await _stand(b.global_position + Vector3.UP * 0.3)
+	await _wait(0.4)
+	all_ok = _check("encostar no bilhete pega: cartão com o texto, moedas e o bilhete some", "sitio" in story.bilhetes and not b.visible
+			and bilhete_cartao.visible and "cavalos" in bilhete_cartao.texto() and story.coins == moedas + Album.MOEDAS_BILHETE) and all_ok
+	await _stand(player.global_position + Vector3(6, 0, 0))
+	open_menu("album")
+	await _wait(0.2)
+	(album_panel.abas.bilhetes as Button).grab_focus()
+	await _wait(0.2)
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
+	all_ok = _check("no álbum, o segundo bilhete mostra o texto inteiro e o primeiro ainda falta", album_panel.pagina == "bilhetes"
+			and "cavalos" in album_panel.descricao_texto.text and "5 de 47" in album_panel.titulo_conta.text, "(%s)" % album_panel.descricao_texto.text) and all_ok
+	await _joy_button(JOY_BUTTON_DPAD_LEFT)
+	all_ok = _check("a figurinha que falta mostra só \"???\"", album_panel.descricao_nome.text == "???") and all_ok
+	close_menus()
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda os derrotados e os bilhetes", foto.get("derrotados", {}).has("Skeleton_Rogue") and "sitio" in foto.get("bilhetes", [])) and all_ok
+	foto.derrotados = {}
+	foto.bilhetes = ["ponte", "nada"]
+	foto.vencidas = ["praca", "oeste"]
+	story.restore(foto)
+	await _wait(0.3)
+	all_ok = _check("carregando: os tipos das regiões vencidas contam e o bilhete salvo some do chão", story.derrotados.has("Skeleton_Pistoleiro")
+			and story.derrotados.has("Skeleton_Warrior") and story.bilhetes == ["ponte"] and not bilhetes_nos[0].visible and bilhetes_nos[1].visible) and all_ok
+	print("ALBUM OK" if all_ok else "ALBUM COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do álbum (album_1 a album_5): um bilhete no chão, o cartão do bilhete, a pausa com o Álbum e as páginas da
+## turma e dos peixes com algumas achadas. Uso: godot --path . -- --album-captura
+func _run_album_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	player.using_gamepad = true
+	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
+	var b: Bilhete = bilhetes_nos[1]
+	await _stand(_ground_point(b.global_position + Vector3(-4.5, 0, 3.5)))
+	var olhar := b.global_position + Vector3.UP * 1.0 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.0)
+	await _shot("album_1_bilhete.png")
+	await _stand(b.global_position + Vector3.UP * 0.3)
+	await _wait(0.6)
+	await _shot("album_2_cartao.png")
+	bilhete_cartao.hide()
+	for t in ["Skeleton_Minion", "Skeleton_Warrior", "Skeleton_Rogue", "Lobinho", "Skeleton_Mage"]:
+		story.derrotados[t] = 3
+	story.defenses.oeste.state = Defense.State.VENCIDA
+	story.defenses.leste.state = Defense.State.VENCIDA
+	pescaria.carregar({"Koi": 1, "Clownfish": 2, "Puffer": 1, "BlueTang": 1, "Goldfish": 1, "MandarinFish": 1})
+	esconde.figurinhas.append_array(["Skeleton_Minion", "Lobinho"])
+	open_menu("pausa")
+	await _wait(0.3)
+	_pause_album.grab_focus()
+	await _wait(0.4)
+	await _shot("album_3_pausa.png")
+	open_menu("album")
+	await _wait(0.3)
+	(album_panel.abas.turma as Button).grab_focus()
+	await _wait(0.3)
+	album_panel.cartas[2].grab_focus()
+	await _wait(0.4)
+	await _shot("album_4_turma.png")
+	(album_panel.abas.peixes as Button).grab_focus()
+	await _wait(0.3)
+	album_panel.cartas[14].grab_focus()
+	await _wait(0.4)
+	await _shot("album_5_peixes.png")
 	get_tree().quit()
 
 

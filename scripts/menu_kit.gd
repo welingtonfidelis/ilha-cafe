@@ -30,6 +30,10 @@ const ICON_COLORS := {
 	"binoculo": Color("#3d8fe0"),
 	"facil": Color("#3fbf63"),
 	"esconde": Color("#ff9f43"),
+	"peixe": Color("#1fa3c4"),
+	"bilhete": Color("#e8b04a"),
+	"album": Color("#d65b9b"),
+	"kart": Color("#e0523f"),
 	"quente": Color("#4aa8ff"),
 	# Figuras dos objetivos (item 4 da lista de melhorias): na seta do objetivo e na pausa.
 	"esqueleto": Color("#6a7390"),

@@ -672,7 +672,7 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | feito em 2026-11-10 (ver "Objetivo com figura") |
 | 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | feito em 2026-11-10 (ver "Pescaria no cais"); o aquário ficou na praia, ao lado da entrada do cais |
 | 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | feito em 2026-11-10 (ver "Esconde-esconde dos esqueletos amigos") |
-| 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | |
+| 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | feito em 2026-11-10 (ver "Álbum de figurinhas e bilhetes") |
 | 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | |
 | 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | |
 | 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | |
@@ -684,6 +684,36 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 **Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Álbum de figurinhas e bilhetes (item 7 da lista, feito em 2026-11-10)
+
+Pedido do usuário depois do esconde-esconde: "commita e segue, vou testar quando terminarmos tudo".
+
+- **Onde abre:** na pausa da ilha, o botão "Álbum" fica embaixo do cartão de quem joga. De qualquer botão da pausa, o direcional para a esquerda chega nele.
+- **Páginas:** 47 figurinhas no total, cada aba com a conta:
+  - **Guardiões (6):** Ossão, Mira-Torta, Torre de Ossinhos, Minionzão, Guerreiro Planta e Mestre Ossinho. Cada um entra quando a região dele fica vencida.
+  - **Turma (10):** Ossinho, Guerreiro, Arqueiro, Mago, Pistoleiro, Golem de Ossos, Lobinho, Conde, Grandalhão e Golem de Gelo. Cada tipo entra no primeiro que for derrotado (`Story.derrotados`, contado no `_on_enemy_defeated`), com o aviso "Figurinha nova no álbum!".
+  - **Esconde-esconde (6):** as figurinhas do item 6, com moldura dourada.
+  - **Peixes (17):** os da pescaria, com quantas vezes foi pescado e a raridade.
+  - **Bilhetes (8):** cada bilhete achado; marcado, mostra o texto inteiro.
+- **A tela** (`scripts/painel_album.gd`):
+  - no alto, o título e "N de 47", e as abas com ícone;
+  - no meio, as figurinhas: a achada colorida, com o nome; a que falta, só a sombra com "?";
+  - embaixo, o nome e o texto da figurinha marcada ("???" na que falta);
+  - o direcional anda pelas figurinhas; para cima chega nas abas, e marcar uma aba já troca a página. B volta para a pausa.
+- **As imagens** saem de `tools/gerar_figurinhas.gd` (com janela), em `assets/ui/figurinhas/`:
+  - os guardiões e a turma são montados pelas próprias classes do jogo (`Boss` e `SkeletonEnemy`), parados na pose de espera; o Pistoleiro aparece mirando, para o blaster de quindim aparecer;
+  - os peixes saem de perfil;
+  - o confete que os bonecos soltam ao nascer é tirado antes da foto.
+- **Bilhetes pela ilha** (`scripts/bilhete.gd`):
+  - são oito: na ponta norte da ponte, no sítio (perto do poço), na praia do farol, na Clareira, na entrada do Bosque das Copas, no Morro dos Ventos, na pista de kart e no pé do Morro;
+  - cada um é um envelope branco grande com selo de coração, flutuando e girando sobre um anel dourado com luz, e procura chão livre perto do ponto marcado;
+  - encostar pega: confete, 5 moedas e o cartão de papel com a figura do lugar, "Bilhete N de 8", o texto e quem escreveu (para um adulto ler junto). O cartão some com A ou em 10 s;
+  - os textos são dos amigos: o Minionzão com medo da ponte, o Lobinho e os cavalos, o vovô e o farol, a Torre olhando a festa, o Guerreiro Planta e as plantinhas, a Mira-Torta e o vento, o Conde e o freio do kart, o Mestre fingindo que não tem festa.
+- **Campanha:** as chaves "derrotados" e "bilhetes" do salvamento. Numa campanha de antes do álbum, os tipos das ondas das regiões já vencidas contam como derrotados, e os bilhetes salvos somem do chão.
+- **Testes:**
+  - `-- --album` confere 12 pontos: as imagens; o álbum com 47 e vazio; os 8 bilhetes no chão; o Álbum na pausa pelo direcional; A abre, B volta; derrotar, vencer, pescar e esconder contando; pegar um bilhete; o texto do bilhete e o "???"; salvar; carregar com os tipos das regiões vencidas;
+  - `-- --album-captura` (com janela) tira cinco fotos: `album_1_bilhete` até `album_5_peixes`.
 
 ### Esconde-esconde dos esqueletos amigos (item 6 da lista, feito em 2026-11-10)
 

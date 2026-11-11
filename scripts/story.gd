@@ -106,6 +106,10 @@ var deliveries: Array[Delivery] = []
 const GUARDIAN_COINS := {"oeste": 50, "leste": 50, "clareira": 50, "ventos": 50, "vila": 50, "cemiterio": 100}
 ## Recordes: ondas na "Festa sem fim" e acertos na barraca de tiro.
 var records := {"festa": 0, "tiro": 0}
+## Álbum de figurinhas (item 7 da lista de melhorias): quantos de cada tipo de esqueleto já foram derrotados e os
+## bilhetes achados pela ilha.
+var derrotados := {}
+var bilhetes: Array[String] = []
 ## Legenda da foto tirada quando cada região é vencida.
 const PHOTO_CAPTIONS := {
 	"praca": "A primeira defesa, na praia do cais",
@@ -588,6 +592,8 @@ func snapshot() -> Dictionary:
 		"hora": game.day_night.t if game.day_night else DayNight.MORNING,
 		"peixes": game.pescaria.pegos.duplicate() if game.pescaria else {},
 		"esconde": game.esconde.dados_salvos() if game.esconde else {},
+		"derrotados": derrotados.duplicate(),
+		"bilhetes": bilhetes.duplicate(),
 	}
 
 
@@ -604,6 +610,23 @@ func _deliveries_now() -> Array:
 
 
 ## Ganha moedas (guardião vencido, onda da Festa sem fim). A primeira vez avisa da lojinha.
+## Um esqueleto (de qualquer tipo) foi derrotado: conta para o álbum. A primeira vez de cada tipo avisa.
+func marcar_derrota(tipo: String) -> void:
+	var primeira := not derrotados.has(tipo)
+	derrotados[tipo] = int(derrotados.get(tipo, 0)) + 1
+	if primeira and Album.TURMA.any(func(t: Dictionary) -> bool: return t.id == tipo):
+		game.show_message("Figurinha nova no álbum!", Color("#ffd23f"), 1.6)
+
+
+## Achou um bilhete pela ilha: vai para o álbum, dá moedas e salva.
+func pegar_bilhete(id: String, at: Vector3) -> void:
+	if id in bilhetes:
+		return
+	bilhetes.append(id)
+	add_coins(Album.MOEDAS_BILHETE, at)
+	save()
+
+
 func add_coins(n: int, at: Vector3) -> void:
 	var first := not coins_ever
 	coins += n
@@ -817,6 +840,21 @@ func restore(data: Dictionary) -> void:
 		game.pescaria.carregar(data.get("peixes", {}))
 	if game.esconde:
 		game.esconde.carregar(data.get("esconde", {}))
+	derrotados.clear()
+	var salvos: Dictionary = data.get("derrotados", {})
+	for tipo in salvos:
+		derrotados[String(tipo)] = int(salvos[tipo])
+	# Campanha de antes do álbum: os tipos das ondas das regiões vencidas já contam como derrotados.
+	for id in data.get("vencidas", []):
+		for onda in REGIONS.get(id, {}).get("ondas", []):
+			for par in onda:
+				if not derrotados.has(par[0]):
+					derrotados[par[0]] = 1
+	bilhetes.clear()
+	for id in data.get("bilhetes", []):
+		if not Album.bilhete(String(id)).is_empty():
+			bilhetes.append(String(id))
+	game.atualizar_bilhetes()
 	game.activate_checkpoint(data.get("bandeira", "Praca"))
 	player.respawn(game.current_checkpoint.spawn_position())
 	_set_fast()
