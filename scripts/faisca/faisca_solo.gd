@@ -34,6 +34,9 @@ extends Node3D
 ##   --faisca-monstro-captura   fotos de cada tipo em ação em tools/capturas/faisca/monstro/ (precisa de janela)
 ##   --faisca-faisquinhas    as sete fases: os seis Faisquinhas de cada uma (ver scripts/faisca/teste_faisquinhas.gd)
 ##   --faisca-faisquinhas-captura  fotos do Faisquinha preso, na Bolota e solto (precisa de janela)
+##   --faisca-chefe-1        o chefe do andar 1, o Bolotão Fofão (ver scripts/faisca/teste_chefe_1.gd)
+##   --faisca-chefe-1-captura   fotos da luta em tools/capturas/faisca/chefe_1/ (precisa de janela)
+##   --faisca-jogar-chefe-1  a luta para jogar direto, sem o farol
 ##   --faisca-moedas         as moedas na 1-1: das Bolotas, dos Faisquinhas e do baú (ver scripts/faisca/teste_moedas.gd)
 ##   --faisca-dualsense      o DualSense no Faísca: bytes, gatilhos, luz, LEDs e a tremida de cada chão
 ##                           (ver scripts/faisca/teste_controle_faisca.gd)
@@ -45,7 +48,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-monstro", "--faisca-monstro-captura",
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
-		"--faisca-dualsense", "--faisca-moedas"]
+		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -68,6 +71,7 @@ var _teste_movimento: TesteMovimento
 var _teste_faisquinhas: TesteFaisquinhas
 var _teste_controle: TesteControleFaisca
 var _teste_moedas: TesteMoedas
+var _teste_chefe1: TesteChefe1
 
 
 func _ready() -> void:
@@ -120,6 +124,7 @@ func _ready() -> void:
 		var a_2_3 := "--faisca-fase-2-3" in args or "--faisca-fase-2-3-captura" in args or "--faisca-jogar-2-3" in args
 		var a_3_1 := "--faisca-fase-3-1" in args or "--faisca-fase-3-1-captura" in args or "--faisca-jogar-3-1" in args
 		var a_3_2 := "--faisca-fase-3-2" in args or "--faisca-fase-3-2-captura" in args or "--faisca-jogar-3-2" in args
+		var a_chefe_1 := "--faisca-chefe-1" in args or "--faisca-chefe-1-captura" in args or "--faisca-jogar-chefe-1" in args
 		if a_1_2:
 			nivel = Fase12.new()
 		elif a_2_1:
@@ -132,6 +137,8 @@ func _ready() -> void:
 			nivel = Fase31.new()
 		elif a_3_2:
 			nivel = Fase32.new()
+		elif a_chefe_1:
+			nivel = Chefe1.new()
 		else:
 			nivel = Fase11.new()
 		add_child(nivel)
@@ -205,6 +212,14 @@ func _ready() -> void:
 	elif "--faisca-fase-3-2-captura" in args:
 		_teste32 = TesteFase32.new(self)
 		_teste32.capturar()
+	elif "--faisca-chefe-1" in args:
+		testando = true
+		_teste_chefe1 = TesteChefe1.new(self)
+		_teste_chefe1.rodar()
+	elif "--faisca-chefe-1-captura" in args:
+		testando = true
+		_teste_chefe1 = TesteChefe1.new(self)
+		_teste_chefe1.capturar()
 	elif "--faisca-monstro" in args:
 		_teste_monstro = TesteMonstro.new(self)
 		_teste_monstro.rodar()

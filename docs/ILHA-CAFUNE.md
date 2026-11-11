@@ -2264,7 +2264,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
 | 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
 | 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
-| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | |
+| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | o do andar 1 feito em 2026-11-11; faltam o Chef Bolotão (andar 2) e o do andar 3 |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
@@ -2438,6 +2438,51 @@ Pedido do usuário: "Pode seguir pra proxima etapa", depois do DualSense. Como o
   - a figurinha na estante e a roupinha na cabeça;
   - o cabide trocando, o save e "já tem todos".
 - Fotos: `--faisca-brindes-captura`, com a máquina, a cápsula aberta, a estante com o cabide e o Faísca com cada chapéu.
+
+### Chefe do andar 1: o Bolotão Fofão (item 5 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "pode enviar e seguir pra proxima". Como os chefes do Astro Bot: grande, em três fases, cada uma com o que o Faísca aprendeu no mundo.
+
+**A porta e a arena.**
+- **A porta:** vermelha, com uma coroa em cima e a foto da arena, no térreo a 30°. Pede as 2 Estrelas Grandes do mundo 1 (`pede_grandes` 2).
+- **O Ninho das Nuvens** (`scripts/faisca/fases/chefe_1.gd`): uma ilha redonda de grama com 15 m de raio, no meio das nuvens. Uma parede invisível na beira não deixa cair. Tem árvores em volta e uma roda de 12 estrelinhas.
+
+**O Bolotão Fofão** (`scripts/faisca/chefe_bolotao.gd`): o Alien das Bolotas em 3x (uns 6 m), com a coroa dourada de capitão do Rei Bolotão. A luta começa quando o Faísca pisa na arena, com a faixa "Bolotão Fofão!", e os corações roxos dele aparecem no alto da tela, um por fase.
+1. **Pisões:**
+   - ele anda até o Faísca, agacha e pula onde ele está, e a sombra mostra onde vai cair;
+   - no pouso, uma onda amarela corre pelo chão: acerta quem está no chão e não acerta quem pula por cima;
+   - depois de 3 pisões ele cansa e fica tonto, com estrelinhas girando.
+2. **Bolotinhas:**
+   - no meio da arena, ele cospe Bolotinhas, no máximo 3;
+   - soco nele não adianta, e ele faz que não;
+   - um soco deixa a Bolotinha tonta; agarrada e arremessada nele, ele fica tonto;
+   - o Vovô mostra o agarrar.
+3. **Investidas:**
+   - ele agacha piscando vermelho e corre reto até a beira;
+   - aparecem 4 flores de luz, e acesas com o laser, a luz deixa ele tonto (se o tonto passa, as flores voltam apagadas);
+   - o Vovô mostra o laser.
+
+**Regras da luta.**
+- Tonto, cada fase acaba com 3 socos (2 no Modo Fácil, com o tonto 50% mais longo).
+- Encostar nele, fora do tonto, tira um coração; na investida, ele joga o Faísca mais longe.
+- Cada fase nova põe um coração no meio da arena.
+
+**A vitória.**
+- Ele vira uma bolotinha envergonhada, com confete.
+- Saem 40 moedas, e o baú dourado cai do céu com a estrela.
+- Vencido, ele conta em `chefes` (save), não nas Estrelas Grandes: a nave continua pedindo 8.
+- No farol: a coroa da porta acende, o troféu dourado dele aparece ao lado da porta e uma constelação de coroa acende no teto.
+
+**Testes:**
+- `--faisca-chefe-1`:
+  - a arena e a parede da beira;
+  - o começo da luta;
+  - a onda acertando no chão e não no ar;
+  - o tonto e os socos;
+  - as Bolotinhas, com o soco nele não adiantando;
+  - as flores, as moedas e o baú.
+- `--faisca-jogo`: a porta, os corações no HUD, a vitória contando como chefe, o troféu, a constelação e o save.
+- Fotos: `--faisca-chefe-1-captura`. Para jogar direto: `--faisca-jogar-chefe-1`. O revisor de física também confere a arena.
 
 ### Em aberto
 

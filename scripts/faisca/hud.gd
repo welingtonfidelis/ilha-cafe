@@ -13,6 +13,10 @@ var dica_atual := ""
 var _coracoes: Array[IconeCoracao] = []
 var _contador: Label
 var _moedas: Label
+## A vida do chefe (item 5): o nome e um coração roxo por fase que falta, no alto, no meio.
+var _chefe: Control
+var _chefe_nome: Label
+var _chefe_coracoes: Array[IconeCoracao] = []
 var _luzes: Array[IconeFaisquinha] = []
 var _balao: Control
 var _desenho_dica: DesenhoDica
@@ -85,6 +89,7 @@ func _ready() -> void:
 		_luzes.append(v)
 	_montar_balao()
 	_montar_fim()
+	_montar_chefe()
 	mostrar_estrelas(0)
 	mostrar_moedas(0)
 
@@ -134,6 +139,59 @@ func mostrar_moedas(n: int) -> void:
 
 func moedas_texto() -> String:
 	return _moedas.text
+
+
+func _montar_chefe() -> void:
+	_chefe = VBoxContainer.new()
+	_chefe.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_chefe.offset_top = 16
+	_chefe.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_chefe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_chefe)
+	_chefe_nome = _rotulo(28)
+	_chefe_nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_chefe.add_child(_chefe_nome)
+	var linha := HBoxContainer.new()
+	linha.alignment = BoxContainer.ALIGNMENT_CENTER
+	linha.add_theme_constant_override("separation", 10)
+	_chefe.add_child(linha)
+	for i in 3:
+		var c := IconeCoracao.new()
+		c.roxo = true
+		c.custom_minimum_size = Vector2(46, 46)
+		linha.add_child(c)
+		_chefe_coracoes.append(c)
+	_chefe.hide()
+
+
+## O chefe com `restam` fases (corações cheios) de `total`; com 0, some um instante depois.
+func mostrar_chefe(nome_do: String, restam: int, total := 3) -> void:
+	_chefe_nome.text = nome_do
+	_chefe.show()
+	for i in _chefe_coracoes.size():
+		_chefe_coracoes[i].visible = i < total
+		var cheio := i < restam
+		if _chefe_coracoes[i].cheio and not cheio:
+			var tw := create_tween()
+			_chefe_coracoes[i].pivot_offset = _chefe_coracoes[i].custom_minimum_size / 2.0
+			tw.tween_property(_chefe_coracoes[i], "scale", Vector2.ONE * 1.4, 0.1)
+			tw.tween_property(_chefe_coracoes[i], "scale", Vector2.ONE, 0.2)
+		_chefe_coracoes[i].cheio = cheio
+		_chefe_coracoes[i].queue_redraw()
+	if restam <= 0:
+		var tw := create_tween()
+		tw.tween_interval(2.0)
+		tw.tween_callback(_chefe.hide)
+
+
+func esconder_chefe() -> void:
+	_chefe.hide()
+
+
+func chefe_restam() -> int:
+	if not _chefe.visible:
+		return -1
+	return _chefe_coracoes.filter(func(c: IconeCoracao) -> bool: return c.cheio).size()
 
 
 ## Quantos Faisquinhas há na fase (os outros espaços somem) e quantos já foram salvos.
@@ -293,6 +351,8 @@ class IconeMoeda extends Control:
 ## Coração cheio (vermelho) ou vazio (só o contorno, clarinho).
 class IconeCoracao extends Control:
 	var cheio := true
+	## Roxo: os do chefe.
+	var roxo := false
 
 	func _draw() -> void:
 		var pts := PackedVector2Array()
@@ -302,7 +362,7 @@ class IconeCoracao extends Control:
 			var x := 16.0 * pow(sin(t), 3)
 			var y := 13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t)
 			pts.append(c + Vector2(x, -y) * size.x / 36.0)
-		draw_colored_polygon(pts, Color("ff4d6d") if cheio else Color(1, 1, 1, 0.35))
+		draw_colored_polygon(pts, (Color("b066ff") if roxo else Color("ff4d6d")) if cheio else Color(1, 1, 1, 0.35))
 		pts.append(pts[0])
 		draw_polyline(pts, Color("2b2140"), 4.0, true)
 		if cheio:

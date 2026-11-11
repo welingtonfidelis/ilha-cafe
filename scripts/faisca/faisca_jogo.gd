@@ -38,6 +38,10 @@ const FASES := [
 	{"id": "3-2", "nome": "Fábrica de Blocos", "tipo": "chao", "pede": 180, "andar": 2, "lado": 90,
 		"cena": "res://scripts/faisca/fases/fase_3_2.gd", "imagem": "res://assets/faisca/portas/fase_3_2.jpg"},
 	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180, "cena": "", "imagem": ""},
+	# Os chefes de cada andar (item 5 da lista do Faísca): a porta abre com as Estrelas Grandes do mundo; vencido, ele
+	# conta em `chefes`, não nas Estrelas Grandes (a nave continua pedindo 8).
+	{"id": "chefe-1", "nome": "Bolotão Fofão", "tipo": "chefe", "pede": 0, "pede_grandes": 2, "andar": 0, "lado": 30,
+		"cena": "res://scripts/faisca/fases/chefe_1.gd", "imagem": "res://assets/faisca/portas/chefe_1.jpg"},
 	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270, "cena": "", "imagem": ""},
 ]
 ## As estrelinhas da escada do farol também contam.
@@ -61,6 +65,8 @@ var grandes: Array = []
 var faisquinhas := {}
 ## Prêmios dos Faisquinhas que já tiveram a festa (para ela aparecer uma vez só).
 var premios_vistos: Array = []
+## Os chefes vencidos (ids das portas deles).
+var chefes: Array = []
 ## Faisquinhas salvos na última fase ("1-1:3"), que chegam caindo do alto quando o Faísca volta ao farol.
 var chegando: Array = []
 ## A carteira (item 4 da lista do Faísca), os brindes que já saíram da máquina e a roupinha que ele veste ("" nenhuma).
@@ -299,7 +305,8 @@ func _montar_contador() -> HBoxContainer:
 
 ## Na fase: o que tem nela (pegas/total); no farol: o jogo todo.
 func _atualizar_contador() -> void:
-	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "").size()
+	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "" and f.tipo in ["ceu", "chao"]).size()
+	var com_estrela := FASES.filter(func(f: Dictionary) -> bool: return f.tipo in ["ceu", "chao"]).size()
 	if lugar == "fase" and is_instance_valid(nivel):
 		contador_pausa.estrelas.text = "%d/%d" % [nivel.pegas, nivel.total_estrelas()]
 		contador_pausa.faisquinhas.text = "%d/%d" % [nivel.achados, nivel.faisquinhas.size()]
@@ -307,7 +314,7 @@ func _atualizar_contador() -> void:
 	else:
 		contador_pausa.estrelas.text = str(total_estrelas())
 		contador_pausa.faisquinhas.text = "%d/%d" % [total_faisquinhas(), feitas * FAISQUINHAS_POR_FASE]
-		contador_pausa.grandes.text = "%d/%d" % [grandes.size(), FASES.size() - 1]
+		contador_pausa.grandes.text = "%d/%d" % [grandes.size(), com_estrela]
 	(contador_pausa.grandes_icone as Control).custom_minimum_size = Vector2(46, 46)
 	contador_pausa.moedas.text = str(moedas)
 
@@ -432,7 +439,9 @@ func _montar_hub(volta_de: String) -> void:
 	hub = HubFarol.new()
 	hub.name = "DentroDoFarol"
 	hub.volta_de = volta_de
-	hub.grandes = grandes.duplicate()
+	# As constelações do teto: as das Estrelas Grandes e as dos chefes vencidos.
+	hub.grandes = grandes + chefes
+	hub.chefes = chefes.duplicate()
 	hub.ja_pegas = _como_dicionario(estrelas.get(ID_FAROL, []))
 	var total := total_estrelas()
 	for f in FASES:
@@ -440,7 +449,8 @@ func _montar_hub(volta_de: String) -> void:
 		var falta := maxi(pede_grandes - grandes.size(), 0) if pede_grandes > 0 else maxi(int(f.pede) - total, 0)
 		hub.portas.append({"id": f.id, "nome": f.nome, "tipo": f.tipo, "andar": f.andar, "lado": f.lado, "pede": f.pede,
 			"pede_grandes": pede_grandes, "falta": falta, "aberta": falta == 0, "feita": f.cena != "", "imagem": f.imagem,
-			"grande": f.id in grandes, "achados": (faisquinhas.get(f.id, []) as Array).size(), "total_faisquinhas": FAISQUINHAS_POR_FASE})
+			"grande": f.id in grandes or f.id in chefes, "achados": (faisquinhas.get(f.id, []) as Array).size(),
+			"total_faisquinhas": 0 if f.tipo in ["chefe", "nave"] else FAISQUINHAS_POR_FASE})
 		for n in faisquinhas.get(f.id, []):
 			hub.moradores_dados.append({"fase": f.id, "id": str(n), "andar": int(f.andar), "chegando": "%s:%s" % [f.id, n] in chegando})
 	chegando.clear()
@@ -507,6 +517,12 @@ func entrar_fase(id: String) -> void:
 	nivel.moeda_pega.connect(func(_pegas: int) -> void:
 		moedas += 1
 		hud.mostrar_moedas(moedas))
+	if nivel.has_signal("faixa_pedida"):
+		nivel.faixa_pedida.connect(func(titulo: String, sub: String) -> void: faixa(titulo, sub, Color("#ffd23f"), 3.0))
+	hud.esconder_chefe()
+	if nivel is Chefe1:
+		var chefe: ChefeBolotao = (nivel as Chefe1).chefe
+		chefe.fase_mudou.connect(func(f: int) -> void: hud.mostrar_chefe(dados.nome, 4 - f))
 	faisca.limite_queda = nivel.limite_queda
 	faisca.pode_recomecar = true
 	faisca.tirar_poderes()
@@ -546,7 +562,10 @@ func _terminar_fase() -> void:
 	faisca.visual.rotation.y = faisca.yaw
 	faisca.robo.animar("festa/Cheering", 0.2)
 	nivel.bau.estrela_sobe()
-	if not fase_atual in grandes:
+	if String(_fase(fase_atual).get("tipo", "")) == "chefe":
+		if not fase_atual in chefes:
+			chefes.append(fase_atual)
+	elif not fase_atual in grandes:
 		grandes.append(fase_atual)
 	_salvar()
 	await get_tree().create_timer(2.6).timeout
@@ -568,6 +587,7 @@ func sair_da_fase() -> void:
 	faisca.pouso_suave = false
 	await _escurecer(1.0, 0.35)
 	hud.esconder_fim()
+	hud.esconder_chefe()
 	nivel.queue_free()
 	nivel = null
 	_montar_hub(fase_atual)
@@ -838,6 +858,7 @@ func carregar(dados: Dictionary) -> void:
 	# Até 2026-11-11 a chave era "vaga_lumes" (os três de cada fase eram vaga-lumes).
 	faisquinhas = dados.get("faisquinhas", dados.get("vaga_lumes", {}))
 	premios_vistos = dados.get("premios", [])
+	chefes = dados.get("chefes", [])
 	moedas = int(dados.get("moedas", 0))
 	brindes = dados.get("brindes", [])
 	roupa = String(dados.get("roupa", ""))
@@ -847,7 +868,7 @@ func carregar(dados: Dictionary) -> void:
 
 
 func dados_salvos() -> Dictionary:
-	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "moedas": moedas,
+	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "chefes": chefes, "moedas": moedas,
 		"brindes": brindes, "roupa": roupa, "abertura": abertura_vista}
 
 

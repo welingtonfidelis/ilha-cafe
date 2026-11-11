@@ -70,6 +70,8 @@ const CONSTELACOES := {
 	"3-1": [Vector2(10, 70), Vector2(50, 78), Vector2(95, 72), Vector2(70, 65)],
 	"3-2": [Vector2(130, 70), Vector2(170, 78), Vector2(215, 72), Vector2(190, 65)],
 	"3-3": [Vector2(250, 70), Vector2(290, 78), Vector2(335, 72), Vector2(310, 65)],
+	# Os chefes: uma coroa de cinco pontas (a do andar 1 no lado norte do domo).
+	"chefe-1": [Vector2(340, 25), Vector2(345, 38), Vector2(352, 30), Vector2(0, 40), Vector2(8, 30), Vector2(15, 38), Vector2(20, 25)],
 }
 
 ## Uma por porta: {id, nome, tipo ("ceu", "chao", "nave" ou "saida"), andar (0 é o térreo), lado (graus),
@@ -83,6 +85,8 @@ var premios: Array = []
 var premios_novos: Array = []
 var total_faisquinhas := 0
 var elevador: ElevadorFarol
+## Os chefes vencidos (ids das portas): o troféu dourado aparece do lado da porta de cada um.
+var chefes: Array = []
 ## Os brindes que já saíram da máquina (ids de Brindes), e os três móveis deles.
 var brindes: Array = []
 var maquina: MaquinaDeBrindes
@@ -117,6 +121,7 @@ func _montar() -> void:
 		if not premio in premios:
 			_placa(premio)
 	_moveis_dos_brindes()
+	_trofeus()
 	for p in portas:
 		var porta := PortaFase.new()
 		porta.dados = p
@@ -608,6 +613,53 @@ func vagas_do_andar(andar: int) -> Array:
 	return vagas
 
 
+## O troféu de cada chefe vencido: ele mesmo em miniatura, dourado, num pedestal ao lado da porta dele.
+func _trofeus() -> void:
+	for p in portas:
+		if p.tipo != "chefe" or not p.id in chefes:
+			continue
+		var g := float(p.lado) + 14.0
+		var raiz := Node3D.new()
+		raiz.name = "Trofeu_" + String(p.id)
+		raiz.position = ponto(g, RAIO - 1.4, ANDARES[int(p.andar)])
+		raiz.rotation.y = atan2(-raiz.position.x, -raiz.position.z)
+		add_child(raiz)
+		var pedestal := MeshInstance3D.new()
+		var cil := CylinderMesh.new()
+		cil.top_radius = 0.6
+		cil.bottom_radius = 0.7
+		cil.height = 0.8
+		pedestal.mesh = cil
+		pedestal.material_override = _material(CREME)
+		pedestal.position.y = 0.4
+		raiz.add_child(pedestal)
+		var corpo := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		var forma := CylinderShape3D.new()
+		forma.radius = 0.7
+		forma.height = 2.2
+		cs.shape = forma
+		cs.position.y = 1.1
+		corpo.add_child(cs)
+		raiz.add_child(corpo)
+		var estatua: Node3D = load(ChefeBolotao.MODELO).instantiate()
+		estatua.scale = Vector3.ONE * 0.55
+		estatua.position.y = 0.8
+		var ouro := StandardMaterial3D.new()
+		ouro.albedo_color = Color("ffc93c")
+		ouro.metallic = 0.7
+		ouro.roughness = 0.25
+		for mi: MeshInstance3D in estatua.find_children("*", "MeshInstance3D", true, false):
+			mi.material_override = ouro
+		raiz.add_child(estatua)
+		var luz := OmniLight3D.new()
+		luz.light_color = Color("ffe9a8")
+		luz.light_energy = 1.2
+		luz.omni_range = 3.0
+		luz.position.y = 2.2
+		raiz.add_child(luz)
+
+
 ## A Máquina de Brindes, a estante e o cabide, no térreo, virados para o meio da torre.
 func _moveis_dos_brindes() -> void:
 	maquina = MaquinaDeBrindes.new()
@@ -908,7 +960,8 @@ class PortaFase:
 
 	signal tocada(dados: Dictionary)
 
-	const CORES := {"ceu": Color("4aa3ff"), "chao": Color("5cc06a"), "nave": Color("8a4fe0"), "saida": Color("ff7a22")}
+	const CORES := {"ceu": Color("4aa3ff"), "chao": Color("5cc06a"), "nave": Color("8a4fe0"), "saida": Color("ff7a22"),
+		"chefe": Color("e8424f")}
 
 	var dados := {}
 	var _cadeado: Node3D
@@ -1077,7 +1130,28 @@ class PortaFase:
 		var raiz := Node3D.new()
 		raiz.position = Vector3(1.25, 4.95, 0.3)
 		add_child(raiz)
-		if dados.tipo == "nave":
+		if dados.tipo == "chefe":
+			# A coroa do capitão.
+			var aro := MeshInstance3D.new()
+			var cil := CylinderMesh.new()
+			cil.top_radius = 0.3
+			cil.bottom_radius = 0.26
+			cil.height = 0.16
+			aro.mesh = cil
+			aro.material_override = _brilho(Color("ffc93c"))
+			raiz.add_child(aro)
+			for k in 5:
+				var a := TAU * k / 5.0
+				var ponta := MeshInstance3D.new()
+				var cone := CylinderMesh.new()
+				cone.top_radius = 0.0
+				cone.bottom_radius = 0.07
+				cone.height = 0.2
+				ponta.mesh = cone
+				ponta.material_override = _brilho(Color("ffc93c"))
+				ponta.position = Vector3(cos(a) * 0.27, 0.17, sin(a) * 0.27)
+				raiz.add_child(ponta)
+		elif dados.tipo == "nave":
 			var disco := MeshInstance3D.new()
 			var bola := SphereMesh.new()
 			bola.radius = 0.34

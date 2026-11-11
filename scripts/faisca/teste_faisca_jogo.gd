@@ -57,8 +57,9 @@ func rodar() -> void:
 	# As portas: no térreo a 1-1 aberta e os Túneis do Morro trancados; nos andares de cima, todas trancadas.
 	var portas := hub.portas
 	var terreo := portas.filter(func(d: Dictionary) -> bool: return int(d.andar) == 0)
-	ok = _conferir("no térreo: a 1-1 aberta e os Túneis do Morro trancados (pedem 30), sem a porta de volta para a ilha", terreo.size() == 2
-			and terreo[0].aberta and not terreo[1].aberta and int(terreo[1].pede) == 30
+	ok = _conferir("no térreo: a 1-1 aberta, os Túneis do Morro trancados (pedem 30) e a do chefe pedindo 2 Estrelas Grandes, sem a porta de volta para a ilha",
+			terreo.size() == 3 and terreo[0].aberta and not terreo[1].aberta and int(terreo[1].pede) == 30
+			and terreo[2].tipo == "chefe" and not terreo[2].aberta and int(terreo[2].pede_grandes) == 2
 			and not portas.any(func(d: Dictionary) -> bool: return d.tipo == "saida")) and ok
 	var de_cima := portas.filter(func(d: Dictionary) -> bool: return int(d.andar) > 0)
 	ok = _conferir("nos andares de cima: 7 portas trancadas e a da nave no topo, pedindo as 8 Estrelas Grandes", de_cima.size() == 7
@@ -204,6 +205,7 @@ func rodar() -> void:
 			and "1-1" in j.grandes and j.abertura_vista, "(%d de %d)" % [j.total_estrelas(), total]) and ok
 	ok = await _moradores_e_premios() and ok
 	ok = await _brindes() and ok
+	ok = await _chefe() and ok
 	FaiscaSave.apagar()
 	print("FAISCA-JOGO OK" if ok else "FAISCA-JOGO COM FALHAS")
 	j.get_tree().quit(0 if ok else 1)
@@ -370,6 +372,53 @@ func _brindes() -> bool:
 	j.brindes.clear()
 	j.moedas = 0
 	j.vestir("")
+	return ok
+
+
+## O chefe do andar 1 (item 5 da lista do Faísca, 2026-11-11): a porta abre com as 2 Estrelas Grandes do mundo 1, a
+## luta mostra os corações dele no HUD, e vencido ele conta em `chefes` (não nas Estrelas Grandes), com o troféu no
+## farol e a constelação dele.
+func _chefe() -> bool:
+	var ok := true
+	var antes := j.grandes.duplicate()
+	j.grandes = ["1-1", "1-2"]
+	await _refazer_hub()
+	var porta: Node3D = j.hub.portas_nos["chefe-1"]
+	ok = _conferir("com as 2 Estrelas Grandes do mundo 1, a porta do chefe abre", porta.dados.aberta and porta.dados.feita) and ok
+	await _faisca_em(porta.global_position + porta.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
+	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy(), 8.0)
+	var arena := j.nivel as Chefe1
+	await _ate(func() -> bool: return arena != null and arena.chefe.fase == 1, 6.0)
+	ok = _conferir("a porta leva ao Ninho das Nuvens, e a luta começa com os 3 corações dele no HUD", arena != null
+			and arena.chefe.fase == 1 and j.hud.chefe_restam() == 3 and j.faixa_titulo_texto() == "Bolotão Fofão!") and ok
+	if arena:
+		f._invencivel = 999.0
+		arena.chefe._proxima_fase()
+		var dois := j.hud.chefe_restam()
+		arena.chefe._proxima_fase()
+		arena.chefe._proxima_fase()
+		await _ate(func() -> bool: return arena.bau != null, 5.0)
+		await _esperar(1.3)
+		var bau := arena.bau
+		await _faisca_em(bau.global_position + bau.global_basis.z * 2.6, 0.3)
+		for k in 3:
+			bau.receber_golpe(1, f.global_position)
+			await _esperar(0.35)
+		await _ate(func() -> bool: return bau._estrela_pronta, 3.0)
+		await _faisca_em(bau.estrela.global_position - Vector3(0, 1.2, 0), 0.2)
+		await _ate(func() -> bool: return j.hud.fim_aberto, 6.0)
+		ok = _conferir("vencido: os corações dele somem um a um, e ele conta como chefe, não como Estrela Grande", dois == 2
+				and "chefe-1" in j.chefes and j.grandes.size() == 2 and not "chefe-1" in j.grandes) and ok
+		j.hud.jogar_de_novo.emit()
+		await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
+		await _esperar(0.2)
+		ok = _conferir("no farol: o troféu dourado do lado da porta, a coroa acesa na porta e a nave ainda pedindo 6",
+				j.hub.get_node_or_null("Trofeu_chefe-1") != null and j.hub.portas_nos["chefe-1"].dados.grande
+				and int(j.hub.portas_nos["nave"].dados.falta) == 6 and "chefe-1" in j.hub.grandes
+				and "chefe-1" in FaiscaSave.ler().get("chefes", [])) and ok
+	f._invencivel = 0.0
+	j.chefes.clear()
+	j.grandes = antes
 	return ok
 
 
