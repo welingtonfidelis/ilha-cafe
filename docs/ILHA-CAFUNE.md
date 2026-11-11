@@ -2266,13 +2266,13 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
 | 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | os três feitos em 2026-11-11: o Bolotão Fofão (andar 1), o Chef Bolotão (andar 2) e o Pinguinzão do Gelo (andar 3) |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
-| 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
+| 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
 | 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | |
-| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito em 2026-11-11, antes do item 7 (pedido do usuário: "vamos ver sobre a textura antes"), esperando a aprovação das fotos |
+| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha. **Falta:** levar para as fases do Faísca as texturas melhores da ilha (o campo com cor e florzinhas e o chão da mata), pedido do usuário em 2026-11-11: "vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca" |
 
 **Ordem sugerida:**
 - primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
@@ -2603,6 +2603,11 @@ O sorteio é sempre o mesmo para a mesma fase. Uma fase pode desligar (`mundo_qu
 
 **Sons novos** (`python3 tools/gerar_sons.py mundo`): `mato`, `caixa_quebra`, `pote_quebra`, `presente_abre` e `poca`.
 
+**Dois consertos depois** (relato do usuário em 2026-11-11: "quando o faisca inicia uma dança e o jogador espera a dança terminar, ele nao para de dançar e os inimigos proximos nao consegue atacar"):
+- Quando o tempo da dança acabava sozinho, o `_parar_danca` via o tempo já zerado, achava que não havia dança e não desligava o robô: ele dançava para sempre, até andando. Agora a dança guarda se está acontecendo (`_na_danca`).
+- A Bolota parada encostava no Faísca a 1,12 m (a esfera dela, 0,62 m, mais a cápsula dele, 0,5 m), e o toque só valia até 1,05 m: com ele parado, ela nunca machucava. Isso era mais antigo que a dança, e a dança só deixou à mostra. O toque agora vale até 1,25 m (na Bolotona, o encosto dela mais 0,13 m).
+- O `--faisca-mundo` confere os dois: o Faísca para de dançar sozinho, e a Bolota encosta e machuca quando ele está parado.
+
 **Conserto que o teste achou:** depois de uma dancinha inteira, o som dela se solta sozinho. A dancinha seguinte passava esse som já solto para `_parar_som`, que tinha tipo no argumento, e o erro cortava o começo da dança: o Faísca não dançava de novo. O argumento ficou sem tipo.
 
 **Testes:** `--faisca-mundo`.
@@ -2613,6 +2618,43 @@ O sorteio é sempre o mesmo para a mesma fase. Uma fase pode desligar (`mundo_qu
   - a poça espirra no pulo e nos passos, e muda o chão do controle;
   - a Bolota olha a dança, aplaude, volta a seguir e, colada nele dançando, não machuca.
 - Fotos de cada mundo: `--faisca-mundo-captura`.
+
+### Música por mundo (item 7 da lista, feito em 2026-11-11)
+
+Até aqui o Faísca tocava o tema da ilha em todo lugar. Agora cada lugar tem o seu, e as músicas são geradas como os sons, por síntese (`python3 tools/gerar_sons.py musica_faisca`, cerca de 10 s).
+
+**A bandinha.** O gerador ganhou instrumentos e bateria macia:
+- marimba, cavaquinho, caixinha de música, sininho, flauta, metais, uma "quadrada" de videogame, baixo, pizzicato e pad;
+- bumbo, caixa, palmas, chimbal, chocalho, guizos de trenó, bloquinho, tambor, tímpano, prato e um brilho.
+
+Também ganhou uma notação curta: a melodia é uma lista de `nota:tempos` (`"A4:.5"`; `"-:1"` é pausa) e os acordes, um nome por compasso. Cada faixa repete sem emenda: o que passa do fim volta para o começo.
+
+| Faixa | Onde toca | Como é |
+|---|---|---|
+| `farol` | dentro do farol e na abertura | dó maior, 88 bpm, de ninar: flauta, caixinha em arpejo e pad, sem bateria |
+| `mundo_1` | 1-1 e 1-2 (Ilhas Fofas) | fá maior, 124 bpm, saltitante: marimba, cavaquinho no contratempo, palmas e chocalho, com um sininho na segunda parte |
+| `mundo_2` | 2-1, 2-2 e 2-3 (Doces e Brinquedos) | sol maior, 132 bpm, de brinquedo de corda: caixinha picadinha, "oompa" no pizzicato, bloquinho |
+| `mundo_3` | 3-1 e 3-2 (Frio e Vento) | ré maior, 108 bpm, mais calmo: sininho, flauta no fundo e guizos de trenó |
+| `chefe` | as três lutas de chefe | lá menor, 144 bpm, agitado sem assustar: baixo em colcheias, a "quadrada", metais e tambores no fim |
+| `vinheta_faisquinha` | Faisquinha resgatado (3,2 s) | arpejo subindo no sininho e na marimba, o acorde e o brilho |
+| `vinheta_estrela` | Estrela Grande (6,4 s) | fanfarra dos metais com tímpano, o acorde grande, o prato e o brilho |
+
+**No jogo** (`FaiscaJogo`):
+- `tocar_musica` troca devagar: a de antes some em 0,8 s e a nova entra em 1,2 s.
+- `musica_da_fase` escolhe pelo andar da fase; as lutas usam o tema dos chefes.
+- A vinheta do Faisquinha entra 0,3 s depois do "ê!" dele, com a música abaixada em 16 dB, que volta no fim.
+- A fanfarra da Estrela Grande tira a música da fase, que só volta com a do farol.
+- As vinhetas tocam no canal da música (`Sfx.vinheta`), então seguem o volume dos Ajustes.
+- A ilha continua com o tema dela.
+
+**Testes:** o `--faisca-jogo` confere:
+- o tema do farol;
+- a troca para o do mundo 1, com o do farol indo embora;
+- a vinheta do resgate com a música abaixada;
+- a fanfarra com a música sumindo;
+- o tema dos chefes na luta.
+
+Ninguém ouviu as músicas ainda: as notas foram conferidas (cada melodia fecha certinho no número de tempos da faixa), mas o som em si espera os ouvidos do usuário.
 
 ### Textura no chão (item 13 da lista, feito em 2026-11-11)
 

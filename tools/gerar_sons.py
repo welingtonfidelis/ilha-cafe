@@ -530,10 +530,291 @@ def make_mundo():
     sfx("poca", mix(0.16, (ploc(500), 0, 0.8), (ploc(700), 0.06, 0.5), (envelope(highpass(noise(0.04), 2500), 0.001, 0.015), 0, 0.3)), -12)
 
 
+# --- música do Faísca por mundo (item 7 da lista do Faísca, 2026-11-11) ------------------
+#
+# Uma bandinha feita aqui (marimba, cavaquinho, caixinha de música, sininho, flauta, metais, quadrada, baixo, pizzicato,
+# pad e bateria macia com palmas, chocalho, guizos e bloquinho) e uma notação curta: a melodia é uma lista de
+# "nota:tempos" ("A4:.5", "-:1" é pausa) e os acordes, um nome por compasso ("F", "Dm", "F#m", "E"). Cada faixa repete
+# sem emenda (o que passa do fim volta para o começo). As vinhetas não repetem.
+
+_NOTAS = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+_cache_notas = {}
+
+
+def nota_midi(nome):
+    """'F#5' -> 78; 'Bb4' -> 70."""
+    base = _NOTAS[nome[0]]
+    resto = nome[1:]
+    while resto and resto[0] in "#b":
+        base += 1 if resto[0] == "#" else -1
+        resto = resto[1:]
+    return 12 * (int(resto) + 1) + base
+
+
+def acorde(nome, oitava=4):
+    """Tríade fechada em volta do dó central: 'Dm' -> [62, 65, 69] (com oitava 4)."""
+    menor = nome.endswith("m")
+    raiz = nome[:-1] if menor else nome
+    r = nota_midi(raiz + str(oitava))
+    if r > 12 * (oitava + 1) + 7:
+        r -= 12
+    return [r, r + (3 if menor else 4), r + 7]
+
+
+def instrumento(nome, m, dur):
+    """Uma nota do instrumento `nome` (midi `m`, `dur` segundos), guardada para reaproveitar."""
+    chave = (nome, m, round(dur, 3))
+    if chave in _cache_notas:
+        return _cache_notas[chave]
+    f = midi(m)
+    if nome == "marimba":
+        d = dur + 0.25
+        sig = mix(d, (envelope(osc(f, f, d, "sine"), 0.002, 0.22), 0, 0.85), (envelope(osc(f * 3.93, f * 3.93, 0.12, "sine"), 0.001, 0.025), 0, 0.3),
+                  (envelope(osc(f * 2, f * 2, d, "sine"), 0.002, 0.08), 0, 0.2))
+    elif nome == "cavaquinho":
+        d = dur + 0.15
+        sig = mix(d, (lowpass(envelope(osc(f, f, d, "tri"), 0.002, 0.16), 3500), 0, 0.8), (envelope(osc(f * 2, f * 2, d, "sine"), 0.001, 0.06), 0, 0.3))
+    elif nome == "caixinha":
+        d = dur + 0.6
+        sig = mix(d, (envelope(osc(f, f, d, "sine"), 0.001, 0.55), 0, 0.8), (envelope(osc(f * 3, f * 3, d, "sine"), 0.001, 0.14), 0, 0.3),
+                  (envelope(osc(f * 5.4, f * 5.4, 0.2, "sine"), 0.001, 0.04), 0, 0.15))
+    elif nome == "sino":
+        d = dur + 0.9
+        sig = mix(d, (envelope(osc(f, f, d, "sine"), 0.001, 0.7), 0, 0.8), (envelope(osc(f * 2.76, f * 2.76, d, "sine"), 0.001, 0.22), 0, 0.3),
+                  (envelope(osc(f * 5.4, f * 5.4, 0.3, "sine"), 0.001, 0.06), 0, 0.12))
+    elif nome == "flauta":
+        d = dur + 0.08
+        corpo = mix(d, (osc(f, f, d, "sine", vibrato=0.006, vib_rate=5.0), 0, 0.85), (osc(f, f, d, "tri"), 0, 0.12))
+        sopro = envelope(highpass(noise(0.08), 2500), 0.01, 0.04)
+        sig = mix(d, (envelope(corpo, 0.04, 0.4, 0.75, 0.08), 0, 1.0), (sopro, 0, 0.06))
+    elif nome == "metais":
+        d = dur + 0.1
+        corpo = lowpass(mix(d, (osc(f, f, d, "saw", vibrato=0.004, vib_rate=5.5), 0, 0.6), (osc(f, f, d, "sine"), 0, 0.5)), 2200)
+        sig = envelope(corpo, 0.03, 0.5, 0.8, 0.1)
+    elif nome == "quadrada":
+        d = dur + 0.05
+        sig = envelope(lowpass(osc(f, f, d, "square"), 2600), 0.004, 0.25, 0.5, 0.05)
+    elif nome == "baixo":
+        d = dur
+        sig = envelope(lowpass(osc(f, f, d, "tri"), 900), 0.005, 0.3, 0.45, 0.05)
+    elif nome == "pizz":
+        d = dur + 0.1
+        sig = envelope(lowpass(osc(f, f, d, "tri"), 1200), 0.002, 0.12)
+    elif nome == "pad":
+        d = dur + 0.3
+        sig = lowpass(mix(d, (osc(f, f, d, "tri"), 0, 0.4), (osc(f * 1.004, f * 1.004, d, "sine"), 0, 0.4)), 1600)
+        sig = envelope(sig, 0.3, 1.0, 0.85, 0.3)
+    else:
+        raise ValueError(nome)
+    _cache_notas[chave] = sig
+    return sig
+
+
+def bateria(nome):
+    """Uma batida da bateria macia."""
+    chave = ("bateria", nome)
+    if chave in _cache_notas:
+        return _cache_notas[chave]
+    if nome == "bumbo":
+        sig = envelope(osc(150, 45, 0.18, "sine"), 0.001, 0.07)
+    elif nome == "caixa":
+        sig = envelope(mix(0.16, (highpass(noise(0.16), 900), 0, 0.7), (osc(220, 180, 0.16), 0, 0.3)), 0.001, 0.05)
+    elif nome == "palma":
+        estalo = lambda: envelope(lowpass(highpass(noise(0.05), 1000), 3200), 0.001, 0.012)
+        sig = mix(0.12, (estalo(), 0, 0.6), (estalo(), 0.011, 0.6), (estalo(), 0.022, 0.9))
+    elif nome == "chimbal":
+        sig = envelope(highpass(noise(0.05), 6500), 0.001, 0.012)
+    elif nome == "chocalho":
+        sig = envelope(highpass(noise(0.07), 4500), 0.012, 0.025)
+    elif nome == "guizos":
+        tinidos = [(envelope(osc(fq, fq, 0.15, "sine"), 0.001, 0.05), random.uniform(0, 0.02), 0.2) for fq in (5200, 6100, 7300, 8200)]
+        sig = mix(0.16, (envelope(highpass(noise(0.1), 5000), 0.002, 0.03), 0, 0.5), *tinidos)
+    elif nome == "bloquinho":
+        sig = mix(0.06, (envelope(osc(900, 880, 0.06), 0.001, 0.015), 0, 0.7), (envelope(osc(1350, 1320, 0.06), 0.001, 0.01), 0, 0.4))
+    elif nome == "tambor":
+        sig = envelope(osc(210, 120, 0.28, "sine"), 0.002, 0.12)
+    elif nome == "timpano":
+        sig = envelope(mix(0.8, (osc(98, 92, 0.8, "sine"), 0, 0.9), (lowpass(noise(0.8), 300), 0, 0.3)), 0.004, 0.3)
+    elif nome == "prato":
+        sig = envelope(highpass(noise(1.6), 3500), 0.002, 0.6)
+    elif nome == "brilho":
+        sig = mix(0.9, *[(envelope(osc(midi(m), midi(m), 0.4, "sine"), 0.001, 0.15), k * 0.06, 0.4) for k, m in enumerate([96, 100, 103, 108])])
+    else:
+        raise ValueError(nome)
+    _cache_notas[chave] = sig
+    return sig
+
+
+class Faixa:
+    """Uma música: `compassos` de 4 tempos a `bpm`. Com `repete`, o que passa do fim volta para o começo."""
+
+    def __init__(self, bpm, compassos, repete=True, cauda=0.0):
+        self.tempo = 60.0 / bpm
+        self.beats = compassos * 4
+        self.repete = repete
+        self.n = n_samples(self.beats * self.tempo + (0.0 if repete else cauda))
+        self.out = [0.0] * self.n
+
+    def por(self, sig, beat, g):
+        s = n_samples(beat * self.tempo)
+        out = self.out
+        n = self.n
+        if self.repete:
+            for i, x in enumerate(sig):
+                out[(s + i) % n] += x * g
+        else:
+            for i, x in enumerate(sig[: max(n - s, 0)]):
+                out[s + i] += x * g
+
+    def melodia(self, instr, texto, g, comeco=0.0, oitava=0):
+        b = comeco
+        for parte in texto.split():
+            nome, tempos = parte.split(":")
+            t = float(tempos)
+            if nome != "-":
+                self.por(instrumento(instr, nota_midi(nome) + 12 * oitava, t * self.tempo), b, g)
+            b += t
+
+    def acordes(self, instr, nomes, ritmo, g, oitava=4):
+        """`ritmo`: lista de (tempo no compasso, duração em tempos, quais notas do acorde: 'todas', 0, 1, 2 ou 'oitava')."""
+        for c, nome in enumerate(nomes):
+            notas = acorde(nome, oitava)
+            for b, d, quais in ritmo:
+                if quais == "todas":
+                    escolhidas = notas
+                elif quais == "oitava":
+                    escolhidas = [notas[0] + 12]
+                else:
+                    escolhidas = [notas[quais]]
+                for m in escolhidas:
+                    self.por(instrumento(instr, m, d * self.tempo), c * 4 + b, g / (len(escolhidas) ** 0.5))
+
+    def baixo(self, instr, nomes, ritmo, g, oitava=3):
+        """`ritmo`: (tempo, duração, 'raiz' | 'quinta' | 'oitava'). Na oitava 3 a raiz fica entre sol#2 e sol3 (de 104 a
+        196 Hz): mais grave que isso some na caixinha de som da TV."""
+        for c, nome in enumerate(nomes):
+            r = acorde(nome, oitava)[0]
+            for b, d, qual in ritmo:
+                m = r + {"raiz": 0, "quinta": 7, "oitava": 12}[qual]
+                self.por(instrumento(instr, m, d * self.tempo), c * 4 + b, g)
+
+    def batida(self, nome, tempos_no_compasso, g, compassos=None):
+        for c in (compassos if compassos is not None else range(self.beats // 4)):
+            for b in tempos_no_compasso:
+                self.por(bateria(nome), c * 4 + b, g)
+
+    def salvar(self, nome, pico=-6.0):
+        save(f"musica/{nome}.wav", normalize(lowpass(self.out, 10000), pico) if self.repete else fade_edges(normalize(self.out, pico), 30))
+
+
+def make_musica_faisca():
+    """Os temas do Faísca (item 7 da lista do Faísca, 2026-11-11): um por mundo, o do farol e o dos chefes, e as duas
+    vinhetas (o Faisquinha resgatado e a Estrela Grande)."""
+    random.seed(70)
+    oito = [0, .5, 1, 1.5, 2, 2.5, 3, 3.5]
+
+    # Mundo 1, Ilhas Fofas (1-1 e 1-2): fá maior, saltitante, marimba na melodia, cavaquinho no contratempo, palmas.
+    f = Faixa(124, 16)
+    acordes = ["F", "C", "Dm", "Bb", "F", "C", "Bb", "C", "Dm", "Bb", "F", "C", "Dm", "Bb", "C", "C"]
+    f.melodia("marimba", "A4:.5 C5:.5 F5:1 E5:.5 D5:.5 C5:1  G4:.5 C5:.5 E5:1 D5:.5 C5:.5 G4:1  "
+              "A4:.5 D5:.5 F5:1 E5:.5 F5:.5 A5:1  G5:1.5 F5:.5 D5:2  "
+              "A4:.5 C5:.5 F5:1 G5:.5 A5:.5 F5:1  E5:.5 G5:.5 C6:1 Bb5:.5 G5:.5 E5:1  "
+              "D5:.5 F5:.5 Bb5:1 A5:.5 G5:.5 F5:1  E5:1 G5:1 C5:2  "
+              "D5:1 -:.5 F5:.5 A5:1 G5:1  F5:1 -:.5 D5:.5 F5:1 Bb4:1  C5:.5 D5:.5 F5:.5 A5:.5 C6:1 A5:1  G5:2 E5:1 C5:1  "
+              "D5:.5 E5:.5 F5:.5 A5:.5 D6:1 C6:1  Bb5:.5 A5:.5 G5:.5 F5:.5 D5:2  E5:.5 F5:.5 G5:.5 A5:.5 Bb5:1 G5:1  "
+              "C6:1 Bb5:.5 G5:.5 E5:1 C5:1", 0.34)
+    f.melodia("sino", "-:32 D6:4 D6:4 C6:4 C6:4 F6:4 D6:4 E6:4 C6:4", 0.1)
+    f.acordes("cavaquinho", acordes, [(.5, .4, "todas"), (1.5, .4, "todas"), (2.5, .4, "todas"), (3.5, .4, "todas")], 0.16)
+    f.baixo("baixo", acordes, [(0, 1.4, "raiz"), (1.5, .5, "raiz"), (2, 1.4, "quinta"), (3.5, .5, "oitava")], 0.3)
+    f.batida("bumbo", [0, 2], 0.42)
+    f.batida("palma", [1, 3], 0.2)
+    f.batida("chocalho", oito, 0.06)
+    f.salvar("mundo_1")
+
+    # Mundo 2, Doces e Brinquedos (2-1, 2-2 e 2-3): sol maior, de brinquedo de corda: caixinha de música picadinha,
+    # "oompa" no pizzicato, bloquinho no contratempo.
+    f = Faixa(132, 16)
+    acordes = ["G", "Em", "C", "D", "G", "Em", "C", "D", "C", "D", "Bm", "Em", "Am", "D", "G", "D"]
+    f.melodia("caixinha", "G5:.5 -:.5 B5:.5 -:.5 D6:.5 B5:.5 G5:1  E5:.5 -:.5 G5:.5 -:.5 B5:.5 G5:.5 E5:1  "
+              "C5:.5 E5:.5 G5:.5 C6:.5 B5:.5 A5:.5 G5:1  A5:.5 F#5:.5 D5:.5 F#5:.5 A5:2  "
+              "B5:.5 -:.5 D6:.5 -:.5 G6:.5 F#6:.5 E6:.5 D6:.5  E6:.5 D6:.5 B5:.5 G5:.5 E5:1 G5:1  "
+              "C6:.5 B5:.5 A5:.5 G5:.5 E5:.5 G5:.5 C6:1  D6:1 F#5:.5 A5:.5 D5:2  "
+              "E5:.5 G5:.5 C6:.5 G5:.5 E6:1 D6:1  F#5:.5 A5:.5 D6:.5 A5:.5 F#6:1 E6:1  D6:.5 B5:.5 F#5:.5 B5:.5 D6:1 B5:1  "
+              "G5:.5 B5:.5 E6:.5 B5:.5 G5:2  A5:.5 C6:.5 E6:.5 C6:.5 A5:1 C6:1  F#6:.5 E6:.5 D6:.5 C6:.5 A5:1 F#5:1  "
+              "G5:.5 B5:.5 D6:.5 G6:.5 -:1 D6:1  C6:.5 B5:.5 A5:.5 F#5:.5 D5:1 -:1", 0.36)
+    f.acordes("sino", acordes, [(1, .4, "todas"), (3, .4, "todas")], 0.12, oitava=5)
+    f.baixo("pizz", acordes, [(0, .5, "raiz"), (1, .5, "quinta"), (2, .5, "raiz"), (3, .5, "quinta")], 0.36)
+    f.batida("bumbo", [0, 2], 0.36)
+    f.batida("palma", [1, 3], 0.14)
+    f.batida("bloquinho", [.5, 1.5, 2.5, 3.5], 0.12)
+    f.salvar("mundo_2")
+
+    # Mundo 3, Frio e Vento (3-1 e 3-2): ré maior, mais calmo, sininho na melodia, flauta no fundo, guizos de trenó.
+    f = Faixa(108, 16)
+    acordes = ["D", "Bm", "G", "A", "D", "Bm", "G", "A", "G", "A", "F#m", "Bm", "G", "A", "D", "A"]
+    f.melodia("sino", "F#5:1 A5:1 D6:1.5 C#6:.5  B5:1 F#5:1 D5:2  G5:1 B5:1 D6:1 E6:1  C#6:1.5 B5:.5 A5:2  "
+              "F#5:.5 G5:.5 A5:1 D6:1 F#6:1  E6:1 D6:.5 C#6:.5 B5:2  B5:.5 C#6:.5 D6:1 G6:1 F#6:.5 E6:.5  E6:2 C#6:1 A5:1  "
+              "D6:1.5 B5:.5 G5:2  E6:1.5 C#6:.5 A5:2  F#6:1 E6:.5 C#6:.5 A5:1 C#6:1  D6:2 B5:2  "
+              "G5:.5 B5:.5 D6:.5 G6:.5 F#6:1 E6:1  E6:.5 F#6:.5 E6:.5 C#6:.5 A5:2  D6:1 F#6:1 A6:1 F#6:1  E6:2 C#6:1 A5:1", 0.3)
+    f.acordes("flauta", acordes, [(0, 3.9, "todas")], 0.09)
+    f.acordes("caixinha", acordes, [(0, 1, 0), (1, 1, 1), (2, 1, 2), (3, 1, "oitava")], 0.07, oitava=4)
+    f.baixo("baixo", acordes, [(0, 2, "raiz"), (2, 2, "quinta")], 0.28)
+    f.batida("bumbo", [0], 0.32)
+    f.batida("guizos", oito, 0.09)
+    f.batida("guizos", [0, 1, 2, 3], 0.08)
+    f.salvar("mundo_3")
+
+    # O farol (o hub): dó maior, devagar, de ninar: caixinha em arpejo, pad e flauta, sem bateria.
+    f = Faixa(88, 8)
+    acordes = ["C", "Am", "F", "G", "C", "Em", "F", "G"]
+    f.melodia("flauta", "E5:1.5 D5:.5 C5:1 G5:1  A5:1.5 G5:.5 E5:2  F5:1 A5:1 C6:1 A5:1  G5:3 -:1  "
+              "E5:1 G5:1 C6:1.5 B5:.5  B5:1.5 G5:.5 E5:2  A5:1 G5:1 F5:1 A5:1  G5:2 D5:1 B4:1", 0.3)
+    f.acordes("caixinha", acordes, [(0, .5, 0), (.5, .5, 1), (1, .5, 2), (1.5, .5, "oitava"), (2, .5, 2), (2.5, .5, 1), (3, .5, 0), (3.5, .5, 1)],
+              0.1, oitava=5)
+    f.acordes("pad", acordes, [(0, 4, "todas")], 0.1)
+    f.baixo("baixo", acordes, [(0, 3.8, "raiz")], 0.2)
+    f.salvar("farol")
+
+    # Os chefes: lá menor, agitado sem assustar: baixo em colcheias, a quadrada na melodia, tambores no fim.
+    f = Faixa(144, 8)
+    acordes = ["Am", "F", "C", "G", "Am", "F", "G", "E"]
+    f.melodia("quadrada", "A4:.5 C5:.5 E5:.5 A5:.5 G5:.5 E5:.5 C5:.5 E5:.5  F5:1 A5:.5 F5:.5 C6:1 A5:1  "
+              "G5:.5 E5:.5 C5:.5 E5:.5 G5:1 C6:1  B5:1 D6:.5 B5:.5 G5:2  "
+              "A5:.5 A5:.5 C6:.5 A5:.5 E6:1 D6:1  C6:.5 A5:.5 F5:.5 A5:.5 C6:1 F6:1  "
+              "E6:.5 D6:.5 B5:.5 G5:.5 D6:1 B5:1  G#5:1 B5:1 E6:1 G#5:1", 0.22)
+    f.acordes("metais", acordes, [(0, 1.5, "todas"), (2.5, 1, "todas")], 0.08)
+    f.baixo("baixo", acordes, [(b, .45, "raiz" if k % 2 == 0 else "oitava") for k, b in enumerate(oito)], 0.3)
+    f.batida("bumbo", [0, 1, 2, 3], 0.4)
+    f.batida("palma", [1, 3], 0.2)
+    f.batida("chimbal", oito, 0.08)
+    f.batida("tambor", [2, 2.5, 3, 3.5], 0.3, compassos=[7])
+    f.salvar("chefe")
+
+    # Vinheta do Faisquinha resgatado: arpejo subindo no sininho e na marimba, o acorde e o brilho.
+    f = Faixa(150, 1, repete=False, cauda=1.6)
+    f.melodia("sino", "G5:.25 C6:.25 E6:.25 G6:.25 E6:.5 G6:.5 C7:2", 0.4)
+    f.melodia("marimba", "G4:.25 C5:.25 E5:.25 G5:.25 E5:.5 G5:.5 C6:2", 0.3)
+    f.acordes("pad", ["C"], [(2, 2, "todas")], 0.2, oitava=4)
+    f.por(bateria("brilho"), 2.0, 0.5)
+    f.salvar("vinheta_faisquinha", -4.0)
+
+    # Vinheta da Estrela Grande: a fanfarra dos metais com o tímpano, o acorde grande, o prato e o brilho.
+    f = Faixa(120, 2, repete=False, cauda=2.4)
+    f.melodia("metais", "G4:.5 G4:.25 G4:.25 C5:1 E5:.5 E5:.25 E5:.25 G5:1 C6:3", 0.32)
+    f.melodia("sino", "-:4 C6:1 E6:1 G6:1 C7:1", 0.18)
+    f.acordes("metais", ["C"], [(4, 3, "todas")], 0.2, oitava=4)
+    for b in (0, 2, 4):
+        f.por(bateria("timpano"), b, 0.45)
+    f.por(bateria("prato"), 4, 0.3)
+    f.por(bateria("brilho"), 4.5, 0.4)
+    f.salvar("vinheta_estrela", -4.0)
+
+
 if __name__ == "__main__":
     import sys
     # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
     grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
-              "faisquinhas": make_faisquinhas, "brindes": make_brindes, "mundo": make_mundo}
+              "faisquinhas": make_faisquinhas, "brindes": make_brindes, "mundo": make_mundo,
+              "musica_faisca": make_musica_faisca}
     for nome in (sys.argv[1:] or list(grupos)):
         grupos[nome]()

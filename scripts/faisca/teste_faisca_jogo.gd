@@ -50,6 +50,7 @@ func rodar() -> void:
 			"(nave %s, farol %s, Faísca %s)" % [viu_nave, farol_aceso, viu_faisca]) and ok
 	await _esperar(0.3)
 	var hub := j.hub
+	ok = _conferir("no farol toca o tema do farol (item 7)", j.musica_nome == "farol" and is_instance_valid(j._musica) and j._musica.playing) and ok
 	ok = _conferir("a abertura termina no térreo do farol, com o controle, e o save guarda que ela passou", j.lugar == "hub" and is_instance_valid(hub)
 			and f.global_position.distance_to(hub.inicio) < 1.5 and f.controle_ligado and j.get_node_or_null("Abertura") == null
 			and FaiscaSave.ler().get("abertura", false)) and ok
@@ -111,6 +112,9 @@ func rodar() -> void:
 	var lvl := j.nivel
 	ok = _conferir("a porta da 1-1 leva à fase, e o Faísca desce do céu até o começo", lvl is Fase11 and f.is_on_floor()
 			and f.global_position.distance_to(lvl.inicio) < 1.5 and f.controle_ligado) and ok
+	var tocando := j.get_children().filter(func(c: Node) -> bool: return c is AudioStreamPlayer and c.name != "Vinheta")
+	ok = _conferir("na 1-1 toca o tema do mundo 1, e o do farol foi embora", j.musica_nome == "mundo_1" and j._musica.playing
+			and tocando.size() == 1, "(%s, %s)" % [j.musica_nome, tocando.map(func(c: Node) -> String: return "%s %s" % [c.name, (c as AudioStreamPlayer).stream.resource_path.get_file()])]) and ok
 	# Modo Fácil (Ajustes): cair não tira coração, só volta.
 	Ajustes.facil = true
 	var vida0 := f.vida
@@ -154,6 +158,10 @@ func rodar() -> void:
 	await _faisca_em(nova.global_position - Vector3(0, 1.0, 0), 0.2)
 	ok = _conferir("uma estrelinha nova conta", lvl.pegas > pegas and j.total_estrelas() == do_farol + lvl.pegas) and ok
 	await _faisca_em(lvl.faisquinhas[0].global_position - Vector3(0, 1.0, 0), 0.3)
+	await _ate(func() -> bool: return "vinheta_faisquinha" in j.vinhetas_tocadas, 1.5)
+	await _esperar(0.4)
+	ok = _conferir("o Faisquinha salvo toca o tema curto do resgate, com a música abaixada", "vinheta_faisquinha" in j.vinhetas_tocadas
+			and j._musica.volume_db < -10.0, "(%.1f dB)" % j._musica.volume_db) and ok
 	var bau := lvl.bau
 	await _faisca_em(bau.global_position + bau.global_basis.z * 2.6, 0.2)
 	for k in 3:
@@ -162,6 +170,8 @@ func rodar() -> void:
 	await _ate(func() -> bool: return bau._estrela_pronta, 3.0)
 	await _faisca_em(bau.estrela.global_position - Vector3(0, 1.2, 0), 0.2)
 	await _ate(func() -> bool: return j.hud.fim_aberto, 6.0)
+	ok = _conferir("a Estrela Grande toca a fanfarra, e a música da fase some", "vinheta_estrela" in j.vinhetas_tocadas
+			and j._musica.volume_db < -30.0) and ok
 	ok = _conferir("a Estrela Grande termina a fase, fica guardada e a pausa espera a tela de fim", "1-1" in j.grandes and j.hud.fim_aberto
 			and (j.faisquinhas.get("1-1", []) as Array).size() == 1 and not j.pode_pausar()) and ok
 	pegas = lvl.pegas
@@ -391,6 +401,7 @@ func _chefe() -> bool:
 	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy(), 8.0)
 	var arena := j.nivel as Chefe1
 	await _ate(func() -> bool: return arena != null and arena.chefe.fase == 1, 6.0)
+	ok = _conferir("na luta toca o tema dos chefes", j.musica_nome == "chefe") and ok
 	ok = _conferir("a porta leva ao Ninho das Nuvens, e a luta começa com os 3 corações dele no HUD", arena != null
 			and arena.chefe.fase == 1 and j.hud.chefe_restam() == 3 and j.faixa_titulo_texto() == "Bolotão Fofão!") and ok
 	if arena:

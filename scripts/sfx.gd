@@ -99,6 +99,21 @@ static func play_at(parent: Node, sfx_name: String, pos: Vector3, volume_db := 0
 	return p
 
 
+## Vinheta (o tema curto do Faisquinha resgatado e o da Estrela Grande, item 7 da lista do Faísca): toca uma vez no
+## canal "Musica", para seguir o volume da música dos Ajustes, e se solta no fim.
+static func vinheta(parent: Node, nome: String) -> AudioStreamPlayer:
+	var s: AudioStreamWAV = load(MUSIC_DIR % nome)
+	s.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	var p := AudioStreamPlayer.new()
+	p.name = "Vinheta"
+	p.stream = s
+	p.bus = BUS_MUSIC
+	parent.add_child(p)
+	p.play()
+	p.finished.connect(p.queue_free)
+	return p
+
+
 ## Música em loop no canal "Musica". O WAV gerado já emenda sem corte.
 static func music(parent: Node, music_name: String) -> AudioStreamPlayer:
 	var s: AudioStreamWAV = load(MUSIC_DIR % music_name)

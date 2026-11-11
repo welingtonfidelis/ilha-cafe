@@ -180,6 +180,8 @@ var agarrada: Alvo
 ## Tempo que falta do giro forte e da dancinha.
 var giro_forte := 0.0
 var dancando := 0.0
+## Dançando agora (o tempo zerado sozinho também precisa desligar a dança do robô; achado em 2026-11-11).
+var _na_danca := false
 var tremidinhas := 0
 ## Quantas tremidas de passo cada chão deu e quantas festas no controle (os testes olham).
 var tremidas_por_chao := {}
@@ -1666,6 +1668,7 @@ func _atualizar_danca(delta: float, entrada: Vector2) -> void:
 	if apertou_danca and is_on_floor() and agarrada == null \
 			and giro_forte <= 0.0 and _carga <= 0.0 and golpe_atual < 0:
 		dancando = TEMPO_DANCA
+		_na_danca = true
 		_nota = 0.0
 		_parar_som(_som_danca)
 		_som_danca = Sfx.play(self, "faisca_danca", -2.0, 0.0)
@@ -1684,9 +1687,12 @@ func _atualizar_danca(delta: float, entrada: Vector2) -> void:
 		_soltar_nota()
 
 
+## Para a dança (andou, golpeou, apanhou ou o tempo acabou). Antes conferia `dancando <= 0`, e quando o tempo acabava
+## sozinho o robô continuava dançando para sempre (relato do usuário em 2026-11-11).
 func _parar_danca() -> void:
-	if dancando <= 0.0:
+	if not _na_danca:
 		return
+	_na_danca = false
 	dancando = 0.0
 	robo.dancar(false)
 	robo.expressao("normal")

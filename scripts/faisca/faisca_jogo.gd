@@ -104,13 +104,19 @@ var _em_cena := false
 var _trocando := false
 var _controle_antes := true
 var _teste: TesteFaiscaJogo
+## A música do lugar (item 7 da lista do Faísca, 2026-11-11): o tema do farol, o do mundo de cada fase e o dos chefes,
+## trocando devagar; as vinhetas tocam por cima, com a música abaixada. Guardados para os testes.
+var musica_nome := ""
+var vinhetas_tocadas: Array[String] = []
+var _musica: AudioStreamPlayer
+var _vinheta: AudioStreamPlayer
+var _musica_tw: Tween
 
 
 func _ready() -> void:
 	Controles.configurar()
 	Sfx.setup_buses()
-	var musica := Sfx.music(self, "tema")
-	musica.process_mode = Node.PROCESS_MODE_ALWAYS
+	tocar_musica("farol")
 	var args := OS.get_cmdline_user_args()
 	var testando := Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
 	Ajustes.carregar(testando)
@@ -472,6 +478,7 @@ func _montar_hub(volta_de: String) -> void:
 		hud.mostrar_estrelas(total_estrelas())
 		hub.atualizar_portas(total_estrelas()))
 	hub.porta_escolhida.connect(entrar_fase)
+	tocar_musica("farol")
 	_mostrar_faisca()
 	faisca.teleportar(hub.inicio)
 	faisca.yaw = hub.yaw_inicial()
@@ -498,6 +505,7 @@ func entrar_fase(id: String) -> void:
 	hub = null
 	nivel = load(dados.cena).new()
 	nivel.name = "Fase"
+	tocar_musica(musica_da_fase(id))
 	nivel.ja_pegas = _como_dicionario(estrelas.get(id, []))
 	nivel.ja_achados = _como_dicionario(faisquinhas.get(id, []))
 	add_child(nivel)
@@ -514,6 +522,10 @@ func entrar_fase(id: String) -> void:
 				chegando.append("%s:%s" % [id, n])
 		faisca.festa_no_controle("faisquinha")
 		controle.piscar(Color8(198, 255, 74), 1.2)
+		# O tema curto do resgate entra logo depois do "ê!" do Faisquinha.
+		get_tree().create_timer(0.3).timeout.connect(func() -> void:
+			if lugar == "fase":
+				vinheta("vinheta_faisquinha"))
 		hud.mostrar_faisquinhas(achados, total))
 	nivel.posto_aceso.connect(func(p: Posto) -> void: faisca.ponto_retorno = p.ponto())
 	nivel.dica.connect(hud.mostrar_dica)
@@ -544,6 +556,65 @@ func entrar_fase(id: String) -> void:
 	_trocando = false
 
 
+# --- a música (item 7) ---------------------------------------------------------------------
+
+const VOLUME_MUSICA := 0.0
+const VOLUME_ABAIXADA := -16.0
+
+
+## O tema da fase: o dos chefes, ou o do mundo dela (o andar do farol: 1 Ilhas Fofas, 2 Doces e Brinquedos, 3 Frio e
+## Vento).
+func musica_da_fase(id: String) -> String:
+	var f := _fase(id)
+	if String(f.get("tipo", "")) == "chefe":
+		return "chefe"
+	return "mundo_%d" % clampi(int(f.get("andar", 0)) + 1, 1, 3)
+
+
+## Troca a música devagar: a de antes some em 0,8 s e a nova entra em 1,2 s. Pedindo a mesma que já toca, ela só volta
+## ao volume de sempre (depois da fanfarra, por exemplo).
+func tocar_musica(nome: String) -> void:
+	if nome == musica_nome and is_instance_valid(_musica):
+		_volume(VOLUME_MUSICA, 1.0)
+		return
+	musica_nome = nome
+	var velha := _musica
+	if is_instance_valid(velha):
+		var tw := velha.create_tween()
+		tw.tween_property(velha, "volume_db", -40.0, 0.8)
+		tw.tween_callback(velha.queue_free)
+	_musica = Sfx.music(self, nome)
+	_musica.process_mode = Node.PROCESS_MODE_ALWAYS
+	_musica.volume_db = -30.0
+	_volume(VOLUME_MUSICA, 1.2)
+
+
+func _volume(db: float, segundos: float) -> void:
+	if not is_instance_valid(_musica):
+		return
+	if _musica_tw and _musica_tw.is_valid():
+		_musica_tw.kill()
+	_musica_tw = _musica.create_tween()
+	_musica_tw.tween_property(_musica, "volume_db", db, segundos)
+
+
+## Uma vinheta por cima da música, que abaixa enquanto ela toca e volta depois. Com `segura`, a música some e só volta
+## quando trocar de lugar (a Estrela Grande, antes da tela de fim).
+func vinheta(nome: String, segura := false) -> void:
+	vinhetas_tocadas.append(nome)
+	if is_instance_valid(_vinheta):
+		_vinheta.stop()
+		_vinheta.queue_free()
+	_vinheta = Sfx.vinheta(self, nome)
+	_vinheta.process_mode = Node.PROCESS_MODE_ALWAYS
+	_volume(-40.0 if segura else VOLUME_ABAIXADA, 0.25)
+	if not segura:
+		var era := musica_nome
+		_vinheta.finished.connect(func() -> void:
+			if musica_nome == era:
+				_volume(VOLUME_MUSICA, 1.0))
+
+
 ## O Faísca desce do céu flutuando, com os jatos ligados, e o controle volta quando ele pisa.
 func _comecar_fase() -> void:
 	faisca.teleportar(nivel.inicio + Vector3(0, 7, 0))
@@ -560,6 +631,8 @@ func _comecar_fase() -> void:
 
 ## Pegou a Estrela Grande: o Faísca comemora, a estrela sobe e aparece a tela de fim.
 func _terminar_fase() -> void:
+	# A fanfarra da Estrela Grande: a música da fase some e só volta com a do farol.
+	vinheta("vinheta_estrela", true)
 	faisca.festa_no_controle("estrela_grande")
 	controle.piscar(Color8(255, 200, 40), 3.0)
 	faisca.controle_ligado = false

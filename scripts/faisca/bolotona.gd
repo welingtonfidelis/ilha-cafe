@@ -17,7 +17,7 @@ func _ready() -> void:
 	velocidade = 1.5
 	ve_de = 9.0
 	desiste_de = 14.0
-	alcance_toque = 1.05 * TAMANHO
+	alcance_toque = 0.62 * TAMANHO + 0.5 + 0.13
 	super()
 	altura_coracao = 1.7 * TAMANHO
 	raio_golpe = 0.6 * TAMANHO

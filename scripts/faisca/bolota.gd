@@ -14,7 +14,9 @@ extends Alvo
 @export var desiste_de := 11.0
 
 const ACORDA_DE := 3.2
-const ALCANCE_TOQUE := 1.05
+## Os corpos se encostam a 1,12 m (a esfera da Bolota, 0,62 m, mais a cápsula do Faísca, 0,5 m): o toque vale um pouco
+## além disso. Era 1,05 m, e com o Faísca parado ela encostava e nunca machucava (relato do usuário em 2026-11-11).
+const ALCANCE_TOQUE := 1.25
 ## Até onde ela vê o Faísca dançando.
 const ASSISTE_DE := 10.0
 

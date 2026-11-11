@@ -212,17 +212,28 @@ func _na_1_1() -> void:
 	var aplaudiu: bool = not b is BolotaMonstro or (b as BolotaMonstro).anim.current_animation == "Yes"
 	_conferir("a dança acaba: ela aplaude", not b.assistindo and aplaudiu and b.vezes_que_assistiu == 1,
 			"(%s, %d vezes)" % [(b as BolotaMonstro).anim.current_animation if b is BolotaMonstro else "-", b.vezes_que_assistiu])
+	_conferir("o tempo da dança acaba e o Faísca para de dançar sozinho", not j.robo._dancando and j.dancando <= 0.0)
 	await _esperar(1.0)
 	_conferir("e volta a seguir o Faísca", Vector2(b.velocity.x, b.velocity.z).length() > 0.3,
 			"(%.2f)" % Vector2(b.velocity.x, b.velocity.z).length())
+	# Com o Faísca parado, ela encosta e machuca (antes parava encostada, a 1,12 m, e nunca alcançava).
+	j._invencivel = 0.0
+	await _ate(func() -> bool: return j.vida < Jogador.VIDA_MAX, 4.0)
+	_conferir("com o Faísca parado, a Bolota encosta e machuca", j.vida < Jogador.VIDA_MAX)
+	j.vida = Jogador.VIDA_MAX
+	j._invencivel = 999.0
+	# O empurrão da batida joga o Faísca longe: de volta ao lado dela.
+	await _esperar(0.6)
+	j.teleportar(b.global_position + lado + Vector3.UP * 0.1)
+	await _esperar(0.8)
 	# Ela chega colada nele, que dança bem nessa hora: olhando, não machuca.
-	await _ate(func() -> bool: return Vector2(b.global_position.x - j.global_position.x, b.global_position.z - j.global_position.z).length() < 1.25, 4.0)
+	await _ate(func() -> bool: return Vector2(b.global_position.x - j.global_position.x, b.global_position.z - j.global_position.z).length() < 1.18, 5.0)
 	j._invencivel = 0.15
 	j.forcar_danca = true
 	await _esperar(1.0)
 	var longe := Vector2(b.global_position.x - j.global_position.x, b.global_position.z - j.global_position.z).length()
 	_conferir("colada nele, olhando a dança, ela não machuca", j.vida == Jogador.VIDA_MAX and b.assistindo and j.dancando > 0.0
-			and longe < Bolota.ALCANCE_TOQUE + 0.2, "(vida %d, olhando %s, dança %.1f, a %.2f m)" % [j.vida, b.assistindo, j.dancando, longe])
+			and longe < Bolota.ALCANCE_TOQUE, "(vida %d, olhando %s, dança %.1f, a %.2f m)" % [j.vida, b.assistindo, j.dancando, longe])
 
 
 ## Um passo de `longe` metros de `centro` para um lado que tenha chão na mesma altura (para pôr o Faísca ali).
