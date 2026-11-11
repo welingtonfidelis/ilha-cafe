@@ -505,10 +505,35 @@ def make_brindes():
     sfx("maquina", mix(1.05, *clics, (motor, 0.0, 0.35), (tum, 0.85, 0.9)), -6)
 
 
+def make_mundo():
+    """Sons do mundo que reage (2026-11-11, item 6 da lista do Faísca): o farfalhar do mato (chiado filtrado que
+    sobe e desce, com estalinhos de folha), a caixa de madeira quebrando (o "créc" surdo e as tábuas batendo), o pote
+    de barro quebrando (o "plec" seco e os caquinhos tilintando), o presente abrindo (papel rasgando e um brilho de
+    sininho subindo) e o passinho na poça (dois "ploc" de gota)."""
+    random.seed(61)
+    chiado = am(sweep_lowpass(envelope(highpass(noise(0.32), 700), 0.03, 0.2, 0.25, 0.08), 1800, 4200), 22, 0.4)
+    folhas = [(envelope(highpass(noise(0.012), 3000), 0.0005, 0.005), random.uniform(0.02, 0.24), 0.3) for _ in range(5)]
+    sfx("mato", mix(0.34, (chiado, 0, 0.8), *folhas), -10)
+    crec = envelope(lowpass(noise(0.16), 1400), 0.001, 0.06)
+    tum = envelope(osc(140, 70, 0.18, "sine"), 0.001, 0.07)
+    tabuas = [(envelope(lowpass(osc(f, f * 0.8, 0.09, "tri"), 1600), 0.001, 0.04), t, 0.5)
+              for f, t in [(420, 0.07), (330, 0.13), (510, 0.19), (380, 0.26)]]
+    sfx("caixa_quebra", mix(0.42, (crec, 0, 0.9), (tum, 0, 0.8), *tabuas), -4)
+    plec = envelope(highpass(noise(0.05), 1200), 0.0005, 0.02)
+    caquinhos = [(envelope(osc(f, f, 0.12, "sine"), 0.001, 0.05), t, 0.35)
+                 for f, t in [(2300, 0.05), (3100, 0.09), (2700, 0.14), (3600, 0.2), (2500, 0.26)]]
+    sfx("pote_quebra", mix(0.4, (plec, 0, 1.0), (envelope(osc(260, 180, 0.08, "sine"), 0.001, 0.03), 0, 0.6), *caquinhos), -5)
+    rasgo = am(envelope(highpass(noise(0.22), 1500), 0.005, 0.15, 0.3, 0.05), 45, 0.6)
+    brilho = [(envelope(osc(midi(m), midi(m), 0.3, "sine"), 0.002, 0.15), 0.12 + i * 0.05, 0.4) for i, m in enumerate([84, 88, 91, 96])]
+    sfx("presente_abre", mix(0.55, (rasgo, 0, 0.7), *brilho), -6)
+    ploc = lambda f: envelope(osc(f, f * 2.2, 0.06, "sine"), 0.001, 0.03)
+    sfx("poca", mix(0.16, (ploc(500), 0, 0.8), (ploc(700), 0.06, 0.5), (envelope(highpass(noise(0.04), 2500), 0.001, 0.015), 0, 0.3)), -12)
+
+
 if __name__ == "__main__":
     import sys
     # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
     grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
-              "faisquinhas": make_faisquinhas, "brindes": make_brindes}
+              "faisquinhas": make_faisquinhas, "brindes": make_brindes, "mundo": make_mundo}
     for nome in (sys.argv[1:] or list(grupos)):
         grupos[nome]()

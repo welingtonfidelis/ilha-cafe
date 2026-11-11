@@ -41,6 +41,20 @@ const ESTRELAS_POR_BOLOTA := 3
 const MOEDAS_POR_BOLOTA := 3
 const MOEDAS_POR_FAISQUINHA := 5
 const MOEDAS_DO_BAU := 20
+## O mundo que reage (item 6 da lista): o que cada mundo espalha sozinho nos playgrounds, pela `superficie` (ou pelo
+## `estilo`): [plantas do Mato, coisas que quebram (Quebravel), cores de poça (Poca)].
+const ESTILOS := {
+	"grama": [["grama", "grama", "flor", "flor", "flor"], ["caixa", "vaso"], ["agua"]],
+	"pedra": [["cogumelo"], ["barril", "caixa", "vaso"], ["agua"]],
+	"madeira": [[], ["pote", "pote_azul"], ["leite", "suco"]],
+	"algodao": [["pirulito", "flor_rosa", "flor_rosa"], ["presente", "presente_alto"], ["calda"]],
+	"tapete": [["catavento"], ["presente", "presente_alto", "presente_grande"], ["tinta"]],
+	"neve": [["gelo", "gelo", "flor_de_gelo"], ["presente_verde", "presente_grande"], ["agua"]],
+	"metal": [["antena"], ["caixote"], ["agua"]],
+}
+const CANTEIROS_POR_PLAYGROUND := 3
+const QUEBRAVEIS_POR_PLAYGROUND := 3
+const POCAS_POR_PLAYGROUND := 2
 
 ## Onde o Faísca começa.
 var inicio := Vector3.ZERO
@@ -130,6 +144,15 @@ var _proxima_estrela := 0
 var _cenas := {}
 var _dicas_dadas := {}
 var _faisquinhas_sem_nome := 0
+## O mundo que reage: as plantinhas (um Mato só), o que quebra e as poças. A fase pode desligar o espalhar sozinho
+## (`mundo_que_reage`) e pôr à mão, ou trocar o `estilo` (vazio = o da `superficie`).
+var mato: Mato
+var quebraveis: Array[Quebravel] = []
+var pocas: Array[Poca] = []
+var mundo_que_reage := true
+var estilo := ""
+## Os caminhos creme ([pontos, largura]), que nada do mundo que reage pode tapar.
+var trilhas: Array = []
 
 
 func _ready() -> void:
@@ -142,6 +165,7 @@ func _ready() -> void:
 	achados = ja_achados.size()
 	# Na ordem dos nomes: os três de antes ("0" a "2") e depois os novos, criados em qualquer ponto do caminho.
 	faisquinhas.sort_custom(func(a: Faisquinha, b: Faisquinha) -> bool: return int(a.id) < int(b.id))
+	_mundo_que_reage()
 
 
 ## Cada fase monta o caminho aqui.
@@ -361,6 +385,210 @@ func moeda(pos: Vector3) -> Moeda:
 	return m
 
 
+# --- o mundo que reage (item 6 da lista, 2026-11-11) ------------------------------------
+
+## Uma plantinha que balança quando o Faísca passa (o `tipo` é um dos do Mato), com o pé em `pe`.
+func planta(tipo: String, pe: Vector3) -> Node3D:
+	if mato == null:
+		mato = Mato.new()
+		mato.name = "Mato"
+		add_child(mato)
+	return mato.plantar(tipo, pe, hash(Vector3i(roundi(pe.x * 10.0), roundi(pe.y * 10.0), roundi(pe.z * 10.0))))
+
+
+## Um tufo de `n` plantas (sorteadas de `tipos`) em volta de `centro`, cada uma no chão firme que tiver embaixo.
+## Devolve quantas couberam.
+func canteiro(centro: Vector3, raio: float, n: int, tipos: Array, gerador: RandomNumberGenerator = null) -> int:
+	var g := gerador
+	if g == null:
+		g = RandomNumberGenerator.new()
+		g.seed = hash(centro)
+	var espaco := get_world_3d().direct_space_state
+	var feitas: Array[Vector3] = []
+	for k in n * 3:
+		if feitas.size() >= n:
+			break
+		var a := g.randf() * TAU
+		var r := raio * sqrt(g.randf())
+		var q := centro + Vector3(cos(a) * r, 0, sin(a) * r)
+		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(q + Vector3.UP * 2.0, q + Vector3.DOWN * 2.5, 1))
+		if chao.is_empty() or chao.normal.y < 0.75 or not _chao_firme(chao.collider):
+			continue
+		var pe: Vector3 = chao.position
+		if feitas.any(func(o: Vector3) -> bool: return o.distance_to(pe) < 0.55):
+			continue
+		feitas.append(pe)
+		planta(tipos[g.randi() % tipos.size()], pe)
+	return feitas.size()
+
+
+## Caixa, pote ou presente que quebra no golpe e solta moedas (os tipos estão na Quebravel), em pé em `pos`.
+func quebravel(pos: Vector3, tipo := "caixa", giro := 0.0) -> Quebravel:
+	var q := Quebravel.new(tipo)
+	q.position = to_local(pos)
+	q.rotation.y = giro
+	add_child(q)
+	quebraveis.append(q)
+	return q
+
+
+## Poça que espirra quando o Faísca pisa (água, leite, suco, calda ou tinta), no chão em `centro`.
+func poca(centro: Vector3, raio := 1.6, tipo := "agua") -> Poca:
+	var p := Poca.new(tipo, raio)
+	p.position = to_local(centro)
+	add_child(p)
+	pocas.append(p)
+	return p
+
+
+## Depois do primeiro quadro de física (o chão já responde aos raios), espalha em cada playground o que o mundo da
+## fase tem (`ESTILOS`): tufos de plantas, coisas que quebram e uma poça. Só em chão firme (nem o que se mexe, nem o
+## que some), plano, com espaço em volta e longe do que a fase já pôs (estrelinhas, postos, Bolotas, molas, o caminho
+## creme, as entradas e o que anda de um lado para o outro). O sorteio é sempre o mesmo para a mesma fase.
+func _mundo_que_reage() -> void:
+	await get_tree().physics_frame
+	if not is_inside_tree() or not mundo_que_reage or playgrounds.is_empty():
+		return
+	var e: Array = ESTILOS.get(estilo if estilo != "" else superficie, [])
+	if e.is_empty():
+		return
+	# Um sorteio para cada coisa (mexer nas poças ou nas plantas não muda o lugar das caixas, que os testes das fases
+	# percorrem) e uma passada por coisa: primeiro o que pede chão mais exigente (as caixas, depois as poças) e por
+	# último as plantas, que cabem em quase todo canto e ficam longe das duas (nada de flor dentro da poça).
+	var raiz := String(get_script().resource_path) + nome
+	var ocupados := _pontos_ocupados()
+	var g := _sorteio(raiz + "/caixas")
+	for pg in playgrounds:
+		for k in QUEBRAVEIS_POR_PLAYGROUND:
+			var p := _lugar_livre(g, pg.centro, pg.raio, ocupados, 3.0, 1.5, 1.3)
+			if p == Vector3.INF:
+				continue
+			quebravel(p, e[1][g.randi() % (e[1] as Array).size()], g.randf() * TAU)
+			ocupados.append([p, 2.4])
+	g = _sorteio(raiz + "/pocas")
+	for pg in playgrounds:
+		for k in POCAS_POR_PLAYGROUND:
+			var tam := g.randf_range(1.3, 1.9)
+			var p := _lugar_livre(g, pg.centro, pg.raio, ocupados, 1.5 + tam, 0.0, tam * 1.1, 0.08)
+			if p == Vector3.INF:
+				continue
+			poca(p, tam, e[2][g.randi() % (e[2] as Array).size()])
+			ocupados.append([p, tam + 1.0])
+	if (e[0] as Array).is_empty():
+		return
+	g = _sorteio(raiz + "/plantas")
+	for pg in playgrounds:
+		for k in CANTEIROS_POR_PLAYGROUND:
+			var p := _lugar_livre(g, pg.centro, pg.raio, ocupados, 2.0, 0.0, 0.0)
+			if p != Vector3.INF:
+				canteiro(p, 2.2, g.randi_range(6, 9), e[0], g)
+				ocupados.append([p, 2.4])
+
+
+func _sorteio(semente: String) -> RandomNumberGenerator:
+	var g := RandomNumberGenerator.new()
+	g.seed = hash(semente)
+	return g
+
+
+## Um ponto de chão dentro do playground (`centro`, `raio`) que sirva: chão firme quase reto; nenhum `ocupados`
+## ([ponto, raio]) mais perto que `longe`; sem nada sólido num cilindro de `livre` em volta (até 2 m de altura); e o
+## chão na mesma altura (até `degrau`) a `plano` metros para os quatro lados (nem beirada, nem rampa). Depois de 24
+## tentativas, desiste (Vector3.INF).
+func _lugar_livre(g: RandomNumberGenerator, centro: Vector3, raio: float, ocupados: Array, longe: float, livre: float,
+		plano: float, degrau := 0.25) -> Vector3:
+	var espaco := get_world_3d().direct_space_state
+	for tentativa in 24:
+		var a := g.randf() * TAU
+		var r := raio * 0.85 * sqrt(g.randf())
+		var q := centro + Vector3(cos(a) * r, 0, sin(a) * r)
+		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(q + Vector3.UP * 4.0, q + Vector3.DOWN * 4.0, 1))
+		if chao.is_empty() or chao.normal.y < 0.92 or absf(chao.position.y - centro.y) > 3.0 or not _chao_firme(chao.collider):
+			continue
+		var p: Vector3 = chao.position
+		if ocupados.any(func(o: Array) -> bool: return _perto_de(p, o, longe)):
+			continue
+		if plano > 0.0:
+			var reto := true
+			for k in 8:
+				var b := TAU * k / 8.0
+				var s := p + Vector3(cos(b) * plano, 0, sin(b) * plano)
+				var r2 := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(s + Vector3.UP * 1.0, s + Vector3.DOWN * 1.5, 1))
+				if r2.is_empty() or absf(r2.position.y - p.y) > degrau or not _chao_firme(r2.collider):
+					reto = false
+					break
+			if not reto:
+				continue
+		if livre > 0.0:
+			var cil := CylinderShape3D.new()
+			cil.radius = livre
+			cil.height = 1.8
+			var consulta := PhysicsShapeQueryParameters3D.new()
+			consulta.shape = cil
+			consulta.transform = Transform3D(Basis.IDENTITY, p + Vector3.UP * 1.25)
+			consulta.collision_mask = 1
+			if not espaco.intersect_shape(consulta, 1).is_empty():
+				continue
+		return p
+	return Vector3.INF
+
+
+## Se `p` está a menos de `longe` (mais o raio dele) de um ocupado: um ponto [p, raio] ou um trecho [a, b, raio].
+func _perto_de(p: Vector3, o: Array, longe: float) -> bool:
+	if o.size() == 2:
+		var c: Vector3 = o[0]
+		return Vector2(p.x - c.x, p.z - c.z).length() < longe + float(o[1]) and absf(p.y - c.y) < 4.0
+	var a: Vector3 = o[0]
+	var b: Vector3 = o[1]
+	var perto := Geometry3D.get_closest_point_to_segment(p, a, b)
+	return Vector2(p.x - perto.x, p.z - perto.z).length() < longe + float(o[2]) and absf(p.y - perto.y) < 4.0
+
+
+## Tudo o que a fase já pôs e que não pode ficar embaixo de uma caixa: cada coisa com script ou que se mexe sozinha
+## (estrelinhas, postos, Bolotas, molas, botões...), os arcos de saída, o começo e as entradas, o caminho creme e o
+## caminho de quem anda de um lado para o outro (plataformas, bolas de neve, dados, carrinhos, caronas e rolos).
+func _pontos_ocupados() -> Array:
+	var o: Array = [[inicio, 3.0]]
+	for pg in playgrounds:
+		o.append([pg.entrada, 3.0])
+	for s in saidas:
+		o.append([s.global_position, 4.0])
+	for t in trilhas:
+		var pontos: Array = t[0]
+		for i in pontos.size() - 1:
+			o.append([pontos[i], pontos[i + 1], float(t[1]) * 0.5 + 0.6])
+	for m in _moveis:
+		var de: Vector3 = to_global(m[1])
+		o.append([de, de + global_basis * (m[2] as Vector3), 3.0])
+	for filho in get_children():
+		if not filho is Node3D or filho == mato:
+			continue
+		var no := filho as Node3D
+		var mexe := no is Area3D or no is AnimatableBody3D or no is RigidBody3D or no is CharacterBody3D
+		if no.get_script() == null and not mexe:
+			continue
+		o.append([no.global_position, 2.5])
+		if "de" in no and "ate" in no and no.get("de") is Vector3:
+			o.append([no.get("de"), no.get("ate"), 2.5])
+		if "caminho" in no and no.get("caminho") is Vector3:
+			o.append([no.global_position, no.global_position + (no.get("caminho") as Vector3), 2.5])
+		if "caminho" in no and no.get("caminho") is Array:
+			var c: Array = no.get("caminho")
+			for i in c.size() - 1:
+				o.append([c[i], c[i + 1], 2.5])
+	return o
+
+
+## Chão que não se mexe nem some: nem ele nem ninguém acima dele (até a fase) tem script ou é corpo que anda.
+func _chao_firme(quem: Object) -> bool:
+	var n := quem as Node
+	while n and n != self:
+		if n is AnimatableBody3D or n is RigidBody3D or n is CharacterBody3D or n is Area3D or n.get_script() != null:
+			return false
+		n = n.get_parent()
+	return n == self
+
+
 # --- coisas da fase ------------------------------------------------------------------
 
 func posto(pos: Vector3, giro := 0.0) -> Posto:
@@ -390,6 +618,7 @@ func chao_largo(tamanho: String, topo: Vector3, escala: Vector2, giro := 0.0) ->
 ## no chão; a faixa é montada depois do primeiro quadro de física, encostando cada ponta no chão de verdade.
 func trilha_creme(pontos: Array, largura := 2.4) -> void:
 	_trilhas_por_fazer.append([pontos, largura])
+	trilhas.append([pontos, largura])
 	if _trilhas_por_fazer.size() == 1:
 		_fazer_trilhas.call_deferred()
 

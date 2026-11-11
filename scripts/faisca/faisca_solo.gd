@@ -56,7 +56,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
 		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1",
 		"--faisca-chefe-2", "--faisca-chefe-2-captura", "--faisca-jogar-chefe-2",
-		"--faisca-chefe-3", "--faisca-chefe-3-captura", "--faisca-jogar-chefe-3"]
+		"--faisca-chefe-3", "--faisca-chefe-3-captura", "--faisca-jogar-chefe-3", "--faisca-mundo", "--faisca-mundo-captura"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -82,6 +82,7 @@ var _teste_moedas: TesteMoedas
 var _teste_chefe1: TesteChefe1
 var _teste_chefe2: TesteChefe2
 var _teste_chefe3: TesteChefe3
+var _teste_mundo: TesteMundo
 
 
 func _ready() -> void:
@@ -94,6 +95,17 @@ func _ready() -> void:
 		add_child(hud)
 		_teste_moedas = TesteMoedas.new(self)
 		_teste_moedas.rodar()
+		return
+	if "--faisca-mundo" in args or "--faisca-mundo-captura" in args:
+		jogador = Jogador.new()
+		add_child(jogador)
+		hud = Hud.new()
+		add_child(hud)
+		_teste_mundo = TesteMundo.new(self)
+		if "--faisca-mundo" in args:
+			_teste_mundo.rodar()
+		else:
+			_teste_mundo.capturar()
 		return
 	if "--faisca-dualsense" in args:
 		jogador = Jogador.new()

@@ -89,6 +89,7 @@ func _ready() -> void:
 		giro_olhar = 1.2
 	if regra == "voa":
 		velocidade = 2.4
+	altura_coracao = 1.95
 	super()
 
 
@@ -282,7 +283,7 @@ func _olhar_jogador() -> bool:
 
 ## Investida: perto do Faísca (nem colado, nem longe), pula no lugar e dispara para onde ele estava.
 func _investida(delta: float) -> void:
-	if derrotado or agarrada or voando or dormindo or tonta > 0.0:
+	if derrotado or agarrada or voando or dormindo or tonta > 0.0 or assistindo:
 		_carga = 0.0
 		_correndo = 0.0
 		return
@@ -302,7 +303,7 @@ func _investida(delta: float) -> void:
 			Sfx.play_at(get_parent(), "golpe_ar", global_position, -2.0, 0.1)
 		return
 	var jogador := get_tree().get_first_node_in_group("jogador") as Node3D
-	if jogador == null or not _seguindo or _pausa > 0.0 or not is_on_floor():
+	if jogador == null or not _seguindo or _pausa > 0.0 or _depois_da_danca > 0.0 or not is_on_floor():
 		return
 	var d := jogador.global_position - global_position
 	var longe := Vector2(d.x, d.z).length()
@@ -347,7 +348,7 @@ func _voar_no_alto(delta: float) -> void:
 			alto = jogador.global_position.y + 0.1
 		if _rasante <= 0.0:
 			_espera_rasante = randf_range(2.0, 3.2)
-	elif jogador and _seguindo and _espera_rasante <= 0.0 and _pausa <= 0.0:
+	elif jogador and _seguindo and _espera_rasante <= 0.0 and _pausa <= 0.0 and not assistindo:
 		var d := jogador.global_position - global_position
 		if Vector2(d.x, d.z).length() < 2.5:
 			_rasante = TEMPO_RASANTE
@@ -356,7 +357,7 @@ func _voar_no_alto(delta: float) -> void:
 
 
 func _andar_voando() -> Vector3:
-	if _pausa > 0.0:
+	if _pausa > 0.0 or assistindo or _depois_da_danca > 0.0:
 		return Vector3.ZERO
 	var alvo := _origem
 	var jogador := get_tree().get_first_node_in_group("jogador") as Node3D
@@ -384,6 +385,12 @@ func _escolher_animacao() -> void:
 		_animar("No", 0.7)
 	elif dormindo:
 		_animar("Idle", 0.35)
+	elif assistindo:
+		# Os que voam não têm a dança: batem as asas mais rápido.
+		if anim and anim.has_animation("Dance"):
+			_animar("Dance", 1.0)
+		else:
+			_animar("Flying", 1.6)
 	elif _correndo > 0.0:
 		_animar("Walk", 2.6)
 	elif _carga > 0.0:
@@ -427,3 +434,27 @@ func _mini() -> Node3D:
 	a.play(pulo)
 	a.speed_scale = 1.8
 	return mini
+
+
+# --- olhando a dança (item 6) -----------------------------------------------------------
+
+## No meio da corrida da investida ou de um rasante, não para.
+func _pode_assistir() -> bool:
+	return _correndo <= 0.0 and _rasante <= 0.0
+
+
+func _comecar_a_assistir() -> void:
+	_carga = 0.0
+	_corpo.rotation.z = 0.0
+	super()
+
+
+## O monstro dança com a animação dele (a escolha fica no `_escolher_animacao`).
+func _dancar_junto() -> void:
+	pass
+
+
+## No fim da dança, o "sim" com a cabeça (os que voam não têm: batem as asas).
+func _aplaudir() -> void:
+	super()
+	_animar("Yes", 1.2, true)

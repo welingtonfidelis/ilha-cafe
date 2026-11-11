@@ -2265,13 +2265,14 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
 | 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
 | 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | os três feitos em 2026-11-11: o Bolotão Fofão (andar 1), o Chef Bolotão (andar 2) e o Pinguinzão do Gelo (andar 3) |
-| 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
+| 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
 | 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | |
+| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | |
 
 **Ordem sugerida:**
 - primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
@@ -2554,6 +2555,64 @@ Pedido do usuário: "vamos acabar as melhorias do projeto faisca, depois de merg
   - os tropeços e o baú.
 - `--faisca-jogo`: a porta do Pinguinzão abrindo com 7 Estrelas Grandes, a luva na luta e o poder ficando lá dentro ao sair.
 - Fotos: `--faisca-chefe-3-captura`. Para jogar direto: `--faisca-jogar-chefe-3`. O revisor de física confere a arena.
+
+### Mundo que reage (item 6 da lista, feito em 2026-11-11)
+
+No Astro Bot quase tudo se mexe quando o robô encosta. No Faísca agora também. Nada disso é posto à mão em cada fase: depois do primeiro quadro de física, a fase espalha sozinha em cada playground o que o mundo dela tem (`Fase.ESTILOS`, pela `superficie`):
+
+| Mundo (superfície) | Plantas que balançam | O que quebra | Poça |
+|---|---|---|---|
+| Ilhas (grama, 1-1) | grama do Forest Nature e flores de seis pétalas | caixa do Dungeon Pack e vaso de barro feito por código | água |
+| Túneis (pedra, 1-2) | cogumelos coloridos com bolinhas, brilhando de leve | barril, caixa e vaso | água |
+| Cozinha (madeira, 2-1) | nenhuma | potes de tempero da cozinha | leite e suco |
+| Nuvens (algodão, 2-2) | pirulitos de espiral e flores cor-de-rosa | presentes | calda |
+| Quarto (tapete, 2-3) | cataventos, que giram quando ele passa | presentes | tinta |
+| Pico (neve, 3-1) | grama coberta de geada e flores de cristal | presentes do pacote de neve | água |
+| Fábrica (metal, 3-2) | antenas de mola com bolinha, que fazem "boing" | caixote | água |
+
+**Onde a fase põe.** Por playground: 3 coisas que quebram, até 2 poças e 3 tufos de 6 a 9 plantas (nessa ordem: as plantas cabem em quase todo canto e ficam longe das caixas e das poças). Fica só o que acha lugar. Cada ponto precisa ter:
+- chão firme: nem o que se mexe ou some (plataformas, nuvens que somem, blocos-pisca, esteiras), nem outra caixa;
+- chão quase reto e na mesma altura em volta (nem beirada, nem rampa);
+- espaço vazio em volta da caixa, para ela não fechar um corredor;
+- distância de tudo o que a fase já pôs: estrelinhas, postos, Bolotas, molas, botões, o começo, as entradas, os arcos de saída, o caminho creme e o caminho de quem anda de um lado para o outro (plataformas, bolas de neve, dados, carrinhos, caronas e rolos).
+
+O sorteio é sempre o mesmo para a mesma fase. Uma fase pode desligar (`mundo_que_reage = false`) e pôr à mão com `planta`, `canteiro`, `quebravel` e `poca`.
+
+**As plantas** (`scripts/faisca/mato.gd`, um Mato por fase): cada uma é uma mola.
+- O Faísca perto (1,3 m) empurra o topo para longe dele; ao sair, ela volta balançando até parar.
+- O giro empurra de 2,8 m, e o laser dos pés, voando por cima, abre o mato em roda.
+- Encostar faz um farfalhar baixinho (a antena faz o "boing" da mola).
+- Nenhuma tem colisão: são enfeite, e o revisor de física não cobra.
+
+**O que quebra** (`scripts/faisca/quebravel.gd`): quebra no primeiro golpe de qualquer tipo:
+- soco, giro, pisão em cima (o Faísca quica, como na Bolota), laser dos pés, pancada do Martelinho e Bolota arremessada;
+- dá um estalo e some numa chuva de cacos que quicam no chão, nas cores do próprio modelo (lidas da textura);
+- solta 3 moedas (o presente solta 4, com confete);
+- até quebrar é sólido, e dá para subir em cima.
+
+**As poças** (`scripts/faisca/poca.gd`): um contorno com ondinhas, brilhante, na cor do mundo.
+- Cada passo dentro dela solta respingos e uma rodinha na água, e os passos não levantam poeira.
+- Cair de um pulo nela (ou dar a pancada do Martelinho) espirra alto, com uma tremidinha no controle.
+- Enquanto ele está dentro, o chão do DualSense é "agua", com textura própria.
+
+**As Bolotas olham a dança:**
+- Com o Faísca dançando a até 10 m, a Bolota acordada para tudo, vira para ele e dança junto. Os monstros usam a animação "Dance" do pacote; os que voam batem as asas mais rápido.
+- Ela solta coraçõezinhos e não machuca, nem colada nele.
+- Quando a dança acaba, faz que "sim" com a cabeça (o aplauso), fica um instante parada e volta ao que fazia.
+- As que dormem continuam dormindo. Quem está no meio de uma investida ou de um rasante não para.
+
+**Sons novos** (`python3 tools/gerar_sons.py mundo`): `mato`, `caixa_quebra`, `pote_quebra`, `presente_abre` e `poca`.
+
+**Conserto que o teste achou:** depois de uma dancinha inteira, o som dela se solta sozinho. A dancinha seguinte passava esse som já solto para `_parar_som`, que tinha tipo no argumento, e o erro cortava o começo da dança: o Faísca não dançava de novo. O argumento ficou sem tipo.
+
+**Testes:** `--faisca-mundo`.
+- Nas 7 fases: as plantas, as coisas que quebram e as poças estão nos playgrounds; nenhuma caixa encostada em outra coisa sólida e nenhuma poça torta.
+- Na 1-1:
+  - a planta dobra para longe e volta balançando, e o giro empurra de mais longe;
+  - o soco quebra a caixa (cacos e moedas) e o pisão quebra e faz quicar;
+  - a poça espirra no pulo e nos passos, e muda o chão do controle;
+  - a Bolota olha a dança, aplaude, volta a seguir e, colada nele dançando, não machuca.
+- Fotos de cada mundo: `--faisca-mundo-captura`.
 
 ### Em aberto
 

@@ -19,6 +19,7 @@ func _ready() -> void:
 	desiste_de = 14.0
 	alcance_toque = 1.05 * TAMANHO
 	super()
+	altura_coracao = 1.7 * TAMANHO
 	raio_golpe = 0.6 * TAMANHO
 	visual.scale = Vector3.ONE * TAMANHO
 	for c in get_children():

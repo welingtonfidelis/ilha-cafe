@@ -4,6 +4,8 @@ extends Alvo
 ## chega perto, e encostar nele tira um coração. Pode começar dormindo (ronca bolhinhas e só
 ## acorda com o Faísca bem perto ou levando um golpe). Não sai da ilha dela: na beirada para.
 ## Derrotada, a fase solta 3 estrelinhas no lugar e ela sai quicando pequenininha.
+## Quando o Faísca dança perto (item 6 da lista do Faísca, 2026-11-11), ela para tudo para olhar: vira para ele,
+## dança junto, solta coraçõezinhos e não encosta nele; quando a dança acaba, aplaude e volta ao que fazia.
 
 @export var dormindo := false
 @export var velocidade := 2.2
@@ -13,6 +15,8 @@ extends Alvo
 
 const ACORDA_DE := 3.2
 const ALCANCE_TOQUE := 1.05
+## Até onde ela vê o Faísca dançando.
+const ASSISTE_DE := 10.0
 
 ## Distância em que encostar tira coração (a Bolotona, grande, tem mais).
 var alcance_toque := ALCANCE_TOQUE
@@ -22,6 +26,14 @@ var _seguindo := false
 var _pausa := 0.0
 var _bolhas := 0.0
 var _zzz: Node3D
+## Olhando a dança do Faísca agora, e quantas vezes olhou (para os testes).
+var assistindo := false
+var vezes_que_assistiu := 0
+## Altura dos coraçõezinhos (a Bolotona, grande, põe mais alto).
+var altura_coracao := 1.6
+var _coracao := 0.0
+## Depois de olhar a dança, um instante parada e sem encostar (aplaudindo).
+var _depois_da_danca := 0.0
 
 
 func _ready() -> void:
@@ -39,6 +51,7 @@ func _physics_process(delta: float) -> void:
 	if derrotado or agarrada or voando:
 		return
 	_pausa -= delta
+	_depois_da_danca -= delta
 	var jogador := get_tree().get_first_node_in_group("jogador") as Jogador
 	if jogador == null:
 		return
@@ -49,8 +62,17 @@ func _physics_process(delta: float) -> void:
 		if longe < ACORDA_DE and absf(d.y) < 2.0:
 			_acordar()
 		return
+	var ve_danca := jogador.dancando > 0.0 and tonta <= 0.0 and longe < ASSISTE_DE and absf(d.y) < 3.0 and _pode_assistir()
+	if ve_danca != assistindo:
+		if ve_danca:
+			_comecar_a_assistir()
+		else:
+			_parar_de_assistir()
+	if assistindo:
+		_assistir(delta)
+		return
 	# Encostou: tira um coração (tonta, não). Quem vem caindo por cima é pisão, não toque.
-	if _pausa <= 0.0 and tonta <= 0.0 and longe < alcance_toque and d.y > -0.6 and d.y < 1.0:
+	if _pausa <= 0.0 and _depois_da_danca <= 0.0 and tonta <= 0.0 and longe < alcance_toque and d.y > -0.6 and d.y < 1.0:
 		if jogador.receber_dano(global_position):
 			_pausa = 1.0
 			_amasso = 0.25
@@ -75,7 +97,7 @@ func ser_agarrada() -> void:
 
 
 func _andar(_delta: float) -> Vector3:
-	if dormindo or _pausa > 0.0 or not is_on_floor():
+	if dormindo or assistindo or _pausa > 0.0 or _depois_da_danca > 0.0 or not is_on_floor():
 		return Vector3.ZERO
 	var alvo := _origem
 	if _seguindo:
@@ -133,3 +155,64 @@ func _roncar(delta: float) -> void:
 	tw.tween_property(bolha, "position", Vector3(0.35, 2.0, 0.5), 1.4)
 	tw.tween_property(bolha, "scale", Vector3.ONE * 2.2, 1.4)
 	tw.chain().tween_callback(bolha.queue_free)
+
+
+# --- olhando a dança (item 6) -----------------------------------------------------------
+
+## Se agora dá para parar e olhar (o monstro no meio de uma corrida ou de um rasante, não).
+func _pode_assistir() -> bool:
+	return true
+
+
+func _comecar_a_assistir() -> void:
+	assistindo = true
+	vezes_que_assistiu += 1
+	_coracao = 0.3
+	_empurrao = Vector3.ZERO
+
+
+## A dança acabou (ou ele saiu de perto): aplaude com um pulinho e fica um instante parada antes de voltar.
+func _parar_de_assistir() -> void:
+	assistindo = false
+	_corpo.rotation.z = 0.0
+	_depois_da_danca = 0.8
+	if is_on_floor():
+		velocity.y = 3.0
+	_aplaudir()
+
+
+func _aplaudir() -> void:
+	_amasso = 0.25
+
+
+## Olhando: balança junto no ritmo e, de tempos em tempos, um coraçãozinho sobe da cabeça.
+func _assistir(delta: float) -> void:
+	_dancar_junto()
+	_coracao -= delta
+	if _coracao > 0.0:
+		return
+	_coracao = 0.9
+	var c := MeshInstance3D.new()
+	c.mesh = Fx.heart_mesh(0.22, 0.1)
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("ff5d8f")
+	m.emission_enabled = true
+	m.emission = Color("ff5d8f")
+	m.emission_energy_multiplier = 0.8
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	c.material_override = m
+	c.top_level = true
+	add_child(c)
+	c.global_position = global_position + Vector3(randf_range(-0.25, 0.25), altura_coracao, randf_range(-0.25, 0.25))
+	c.scale = Vector3.ONE * 0.3
+	var tw := c.create_tween().set_parallel()
+	tw.tween_property(c, "global_position:y", c.global_position.y + 1.1, 1.1).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(c, "scale", Vector3.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(c, "rotation:y", randf_range(-0.6, 0.6), 1.1)
+	tw.chain().tween_property(c, "scale", Vector3.ONE * 0.01, 0.2)
+	tw.chain().tween_callback(c.queue_free)
+
+
+## A Bolota roxa (sem animação) balança de um lado para o outro; o monstro troca isto pela animação de dança.
+func _dancar_junto() -> void:
+	_corpo.rotation.z = sin(_tempo * 7.0) * 0.18

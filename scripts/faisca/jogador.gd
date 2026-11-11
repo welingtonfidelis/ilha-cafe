@@ -68,7 +68,7 @@ const PASSO := 1.15
 const TEXTURAS := {
 	"grama": [0.10, 0.0, 0.045], "pedra": [0.0, 0.2, 0.05], "madeira": [0.14, 0.06, 0.04], "algodao": [0.06, 0.0, 0.09],
 	"nuvem": [0.07, 0.0, 0.1], "tapete": [0.05, 0.03, 0.06], "neve": [0.04, 0.1, 0.08], "gelo": [0.22, 0.0, 0.025],
-	"metal": [0.28, 0.05, 0.03], "esteira": [0.18, 0.0, 0.03],
+	"metal": [0.28, 0.05, 0.03], "esteira": [0.18, 0.0, 0.03], "agua": [0.12, 0.0, 0.07],
 }
 const PITCH_MIN := -1.1
 const PITCH_MAX := 0.3
@@ -173,6 +173,8 @@ var girando := 0.0
 var forcar_direcao := Vector2.ZERO
 var forcar_pulo := false
 var forcar_golpe := false
+## Para os testes: começa a dancinha no próximo quadro, como a seta para baixo.
+var forcar_danca := false
 ## Bolota na mão (Y), ou nula.
 var agarrada: Alvo
 ## Tempo que falta do giro forte e da dancinha.
@@ -181,6 +183,8 @@ var dancando := 0.0
 var tremidinhas := 0
 ## Quantas tremidas de passo cada chão deu e quantas festas no controle (os testes olham).
 var tremidas_por_chao := {}
+## A poça em que ele está pisando (item 6): os passos espirram em vez de levantar poeira, e o chão do controle é "agua".
+var na_poca: Poca
 var festas := {}
 var _deslize := 0.0
 ## Tem o Balão de Chiclete (a fase liga; o FaiscaJogo desliga ao entrar em outra) e está subindo nele agora.
@@ -733,7 +737,11 @@ func _passos(delta: float) -> void:
 		return
 	_passo = 0.0
 	_passo_lado = -_passo_lado
-	_poeira(global_position + visual.global_basis.x * 0.2 * _passo_lado, 0.45, 4)
+	var pe := global_position + visual.global_basis.x * 0.2 * _passo_lado
+	if na_poca and is_instance_valid(na_poca):
+		na_poca.espirrar(pe)
+	else:
+		_poeira(pe, 0.45, 4)
 	Sfx.play(self, "tique", -18.0, 0.15)
 	_tremer_passo()
 
@@ -743,6 +751,8 @@ func _passos(delta: float) -> void:
 func superficie_embaixo() -> String:
 	if not is_on_floor():
 		return ""
+	if na_poca and is_instance_valid(na_poca):
+		return "agua"
 	for k in get_slide_collision_count():
 		var col := get_slide_collision(k)
 		var quem := col.get_collider()
@@ -1135,7 +1145,10 @@ func _bater_pancada() -> void:
 		if absf(d.y) > 1.6 or Vector2(d.x, d.z).length() > RAIO_PANCADA + float(alvo.raio_golpe):
 			continue
 		alvo.receber_golpe(3, pe, 7.0, "pancada")
-	Fx.dust(get_parent(), pe)
+	if na_poca and is_instance_valid(na_poca):
+		na_poca.espirrar(pe, 2.2)
+	else:
+		Fx.dust(get_parent(), pe)
 	Sfx.play(self, "martelo", 0.0, 0.05)
 	_tremer(0.5, 0.8, 0.2)
 	velocity.y = 5.0
@@ -1393,10 +1406,10 @@ func _pisao() -> void:
 			return
 
 
-## Inimigo de verdade (laser e pisão): Bolota e, na ilha, esqueleto e guardião. O baú e a parede rachada só
-## abrem e quebram com os golpes.
+## Inimigo de verdade (laser e pisão): Bolota e, na ilha, esqueleto e guardião, mais as caixas e potes que quebram
+## (item 6: pisar em cima quebra). O baú e a parede rachada só abrem e quebram com os golpes.
 func _inimigo(quem: Object) -> bool:
-	return quem is Alvo or quem is SkeletonEnemy or quem is Boss
+	return quem is Alvo or quem is SkeletonEnemy or quem is Boss or quem is Quebravel
 
 
 func _frente() -> Vector3:
@@ -1648,7 +1661,9 @@ func _bolota_proxima() -> Alvo:
 ## Seta para baixo: dança parado (o Robo mexe os ossos por cima da animação de parado), com cara feliz e
 ## notinhas subindo. Andar, pular ou golpear para.
 func _atualizar_danca(delta: float, entrada: Vector2) -> void:
-	if controle_ligado and Input.is_action_just_pressed("dancar") and is_on_floor() and agarrada == null \
+	var apertou_danca := forcar_danca or (controle_ligado and Input.is_action_just_pressed("dancar"))
+	forcar_danca = false
+	if apertou_danca and is_on_floor() and agarrada == null \
 			and giro_forte <= 0.0 and _carga <= 0.0 and golpe_atual < 0:
 		dancando = TEMPO_DANCA
 		_nota = 0.0
@@ -1679,10 +1694,12 @@ func _parar_danca() -> void:
 
 
 ## Para um som que ainda está tocando (a carga largada no meio, a dancinha interrompida).
-func _parar_som(som: AudioStreamPlayer) -> void:
-	if som and is_instance_valid(som) and som.playing:
-		som.stop()
-		som.queue_free()
+## Sem tipo no argumento: o som que já acabou se solta sozinho, e passar um nó solto para um argumento com tipo dava
+## erro e cortava quem chamou (a segunda dancinha depois de uma inteira não começava; achado no item 6).
+func _parar_som(som: Variant) -> void:
+	if is_instance_valid(som) and (som as AudioStreamPlayer).playing:
+		(som as AudioStreamPlayer).stop()
+		(som as AudioStreamPlayer).queue_free()
 
 
 ## Notinha musical que sobe de um lado da cabeça e some (bolinha, haste e bandeirinha).
