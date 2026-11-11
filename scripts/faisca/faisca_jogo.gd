@@ -6,14 +6,16 @@ extends Node3D
 ## - a abertura, na primeira vez: a nave do Rei Bolotão suga as estrelas do céu, o farol acende e o Faísca sai
 ##   pulando. O farol fica numa ilhota no mar, à noite, sem a ilha em volta;
 ## - o hub (HubFarol), as portas e as fases, com a descida do céu e a tela de fim;
-## - as estrelinhas, as Estrelas Grandes e os vaga-lumes de cada fase, no save próprio (FaiscaSave);
+## - as estrelinhas, as Estrelas Grandes e os Faisquinhas salvos de cada fase, no save próprio (FaiscaSave);
+## - os Faisquinhas morando no farol e os prêmios que eles abrem (PREMIOS: o elevador, o trenzinho e o farolete);
 ## - a pausa (Start ou Esc): continuar, sair da fase, os Ajustes (PainelAjustes), voltar ao menu principal e sair do
 ##   jogo.
 ## As portas abrem com o total de estrelinhas (cada uma conta uma vez, para sempre).
-## Testes: --faisca-jogo (confere, ver teste_faisca_jogo.gd) e --faisca-jogo-captura (fotos, precisa de janela).
+## Testes: --faisca-jogo (confere, ver teste_faisca_jogo.gd), --faisca-jogo-captura e --faisca-farol-captura (fotos,
+## precisam de janela).
 
 const CENA := "res://scenes/faisca.tscn"
-const MODOS := ["--faisca-jogo", "--faisca-jogo-captura"]
+const MODOS := ["--faisca-jogo", "--faisca-jogo-captura", "--faisca-farol-captura"]
 ## As fases, na ordem das portas, com o andar do farol (0 é o térreo; cada andar é um mundo) e o lado da
 ## parede em graus. "cena" vazia é porta que abre mas ainda mostra "Em breve". Nomes e números das que
 ## faltam fazer vêm do mapa da seção 11 do doc e mudam quando cada uma for planejada. A nave, no topo,
@@ -38,14 +40,27 @@ const FASES := [
 ]
 ## As estrelinhas da escada do farol também contam.
 const ID_FAROL := "farol"
+## Faisquinhas em cada fase (os três de antes e os três de 2026-11-11).
+const FAISQUINHAS_POR_FASE := 6
+## O que os Faisquinhas salvos abrem no farol (item 1 da lista do Faísca): com 10, eles consertam o elevador; com 20,
+## o trenzinho de brinquedo passa a rodar no térreo; com 30, o farolete do topo acende e gira.
+const PREMIOS := [
+	{"id": "elevador", "pede": 10, "titulo": "O elevador voltou a funcionar!", "sub": "Os Faisquinhas consertaram o elevador do farol"},
+	{"id": "trem", "pede": 20, "titulo": "Piuí! Chegou o trenzinho!", "sub": "Os Faisquinhas montaram o trenzinho de brinquedo"},
+	{"id": "farolete", "pede": 30, "titulo": "O farolete acendeu!", "sub": "Com 30 Faisquinhas, a luz do farol gira de novo"},
+]
 
 ## Onde o Faísca está: "abertura", "hub" ou "fase".
 var lugar := ""
 var fase_atual := ""
-## Nomes das estrelinhas pegas por fase (e no farol), Estrelas Grandes devolvidas e vaga-lumes achados.
+## Nomes das estrelinhas pegas por fase (e no farol), Estrelas Grandes devolvidas e Faisquinhas salvos.
 var estrelas := {}
 var grandes: Array = []
-var vaga_lumes := {}
+var faisquinhas := {}
+## Prêmios dos Faisquinhas que já tiveram a festa (para ela aparecer uma vez só).
+var premios_vistos: Array = []
+## Faisquinhas salvos na última fase ("1-1:3"), que chegam caindo do alto quando o Faísca volta ao farol.
+var chegando: Array = []
 var abertura_vista := false
 var faisca: Jogador
 var hud: Hud
@@ -61,6 +76,8 @@ var fade: ColorRect
 
 var _camada: CanvasLayer
 var _pausa: Control
+## O contador da pausa (item 2 da lista do Faísca): estrelinhas, Faisquinhas e Estrelas Grandes, com figura.
+var contador_pausa := {}
 var _faixa_titulo: Label
 var _faixa_sub: Label
 var _faixa_tw: Tween
@@ -90,6 +107,9 @@ func _ready() -> void:
 	elif "--faisca-jogo-captura" in args:
 		_teste = TesteFaiscaJogo.new(self)
 		_teste.capturar()
+	elif "--faisca-farol-captura" in args:
+		_teste = TesteFaiscaJogo.new(self)
+		_teste.capturar_farol()
 	elif abertura_vista:
 		comecar_no_farol()
 	else:
@@ -99,6 +119,19 @@ func _ready() -> void:
 ## Cena ou troca de lugar em andamento (a pausa espera).
 func busy() -> bool:
 	return _em_cena or _trocando
+
+
+func total_faisquinhas() -> int:
+	var n := 0
+	for id in faisquinhas:
+		n += (faisquinhas[id] as Array).size()
+	return n
+
+
+## Os prêmios que o total de Faisquinhas já abriu (ids).
+func premios_abertos() -> Array:
+	var total := total_faisquinhas()
+	return PREMIOS.filter(func(p: Dictionary) -> bool: return total >= int(p.pede)).map(func(p: Dictionary) -> String: return p.id)
 
 
 func total_estrelas() -> int:
@@ -202,6 +235,7 @@ func _montar_pausa() -> Control:
 	titulo.add_theme_font_size_override("font_size", 34)
 	titulo.add_theme_color_override("font_color", MenuKit.GOLD)
 	caixa.add_child(titulo)
+	caixa.add_child(_montar_contador())
 	for spec in [["continuar", "Continuar", "continuar", _fechar_pausa], ["sair_fase", "Sair da fase", "casa", _sair_da_fase_pela_pausa],
 			["ajustes", "Ajustes", "ajustes", abrir_ajustes], ["menu", "Menu principal", "voltar", _ir_ao_menu],
 			["sair", "Sair do jogo", "sair", _sair_do_jogo]]:
@@ -210,6 +244,51 @@ func _montar_pausa() -> Control:
 		caixa.add_child(b)
 		botoes_pausa[spec[0]] = b
 	return tela
+
+
+## Uma linha com três figuras e o número do lado de cada uma: a estrelinha, o Faisquinha e a Estrela Grande.
+func _montar_contador() -> HBoxContainer:
+	var linha := HBoxContainer.new()
+	linha.alignment = BoxContainer.ALIGNMENT_CENTER
+	linha.add_theme_constant_override("separation", 10)
+	for qual in ["estrelas", "faisquinhas", "grandes"]:
+		var icone: Control
+		if qual == "faisquinhas":
+			var f := Hud.IconeFaisquinha.new()
+			f.aceso = true
+			icone = f
+		else:
+			icone = Hud.IconeEstrela.new()
+		icone.custom_minimum_size = Vector2(44, 46) if qual != "estrelas" else Vector2(36, 36)
+		icone.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		linha.add_child(icone)
+		var numero := Label.new()
+		numero.add_theme_font_size_override("font_size", 30)
+		numero.add_theme_color_override("font_color", Color.WHITE)
+		numero.add_theme_color_override("font_outline_color", Color("2b2140"))
+		numero.add_theme_constant_override("outline_size", 8)
+		linha.add_child(numero)
+		contador_pausa[qual] = numero
+		contador_pausa[qual + "_icone"] = icone
+		if qual != "grandes":
+			var vao := Control.new()
+			vao.custom_minimum_size = Vector2(18, 0)
+			linha.add_child(vao)
+	return linha
+
+
+## Na fase: o que tem nela (pegas/total); no farol: o jogo todo.
+func _atualizar_contador() -> void:
+	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "").size()
+	if lugar == "fase" and is_instance_valid(nivel):
+		contador_pausa.estrelas.text = "%d/%d" % [nivel.pegas, nivel.total_estrelas()]
+		contador_pausa.faisquinhas.text = "%d/%d" % [nivel.achados, nivel.faisquinhas.size()]
+		contador_pausa.grandes.text = "%d/1" % (1 if fase_atual in grandes else 0)
+	else:
+		contador_pausa.estrelas.text = str(total_estrelas())
+		contador_pausa.faisquinhas.text = "%d/%d" % [total_faisquinhas(), feitas * FAISQUINHAS_POR_FASE]
+		contador_pausa.grandes.text = "%d/%d" % [grandes.size(), FASES.size() - 1]
+	(contador_pausa.grandes_icone as Control).custom_minimum_size = Vector2(46, 46)
 
 
 func _entrada(event: InputEvent) -> void:
@@ -236,6 +315,7 @@ func pode_pausar() -> bool:
 func abrir_pausa() -> void:
 	menu_aberto = true
 	botoes_pausa.sair_fase.visible = lugar == "fase"
+	_atualizar_contador()
 	_pausa.show()
 	hud.visible = false
 	_controle_antes = faisca.controle_ligado
@@ -322,6 +402,7 @@ func comecar_no_farol() -> void:
 	await _escurecer(0.0, 0.6)
 	faisca.controle_ligado = true
 	_trocando = false
+	_festa_no_farol()
 
 
 func _montar_hub(volta_de: String) -> void:
@@ -336,7 +417,15 @@ func _montar_hub(volta_de: String) -> void:
 		var falta := maxi(pede_grandes - grandes.size(), 0) if pede_grandes > 0 else maxi(int(f.pede) - total, 0)
 		hub.portas.append({"id": f.id, "nome": f.nome, "tipo": f.tipo, "andar": f.andar, "lado": f.lado, "pede": f.pede,
 			"pede_grandes": pede_grandes, "falta": falta, "aberta": falta == 0, "feita": f.cena != "", "imagem": f.imagem,
-			"grande": f.id in grandes, "achados": (vaga_lumes.get(f.id, []) as Array).size(), "total_vaga_lumes": 3})
+			"grande": f.id in grandes, "achados": (faisquinhas.get(f.id, []) as Array).size(), "total_faisquinhas": FAISQUINHAS_POR_FASE})
+		for n in faisquinhas.get(f.id, []):
+			hub.moradores_dados.append({"fase": f.id, "id": str(n), "andar": int(f.andar), "chegando": "%s:%s" % [f.id, n] in chegando})
+	chegando.clear()
+	hub.premios = premios_abertos()
+	hub.premios_novos = hub.premios.filter(func(p: String) -> bool: return not p in premios_vistos)
+	for p in hub.premios_novos:
+		premios_vistos.append(p)
+	hub.total_faisquinhas = total_faisquinhas()
 	add_child(hub)
 	hub.estrela_pega.connect(func(_pegas: int, _total: int) -> void:
 		_juntar(ID_FAROL, hub.novas, estrelas)
@@ -353,7 +442,7 @@ func _montar_hub(volta_de: String) -> void:
 	faisca.pode_recomecar = false
 	hud.visible = true
 	hud.mostrar_estrelas(total_estrelas())
-	hud.mostrar_vaga_lumes(0, 0)
+	hud.mostrar_faisquinhas(0, 0)
 
 
 func entrar_fase(id: String) -> void:
@@ -369,16 +458,19 @@ func entrar_fase(id: String) -> void:
 	nivel = load(dados.cena).new()
 	nivel.name = "Fase"
 	nivel.ja_pegas = _como_dicionario(estrelas.get(id, []))
-	nivel.ja_achados = _como_dicionario(vaga_lumes.get(id, []))
+	nivel.ja_achados = _como_dicionario(faisquinhas.get(id, []))
 	add_child(nivel)
 	lugar = "fase"
 	fase_atual = id
 	nivel.estrela_pega.connect(func(pegas: int, _total: int) -> void:
 		_juntar(id, nivel.novas, estrelas)
 		hud.mostrar_estrelas(pegas))
-	nivel.vaga_lume_achado.connect(func(achados: int, total: int) -> void:
-		_juntar(id, nivel.novos_vaga_lumes, vaga_lumes)
-		hud.mostrar_vaga_lumes(achados, total))
+	nivel.faisquinha_salvo.connect(func(achados: int, total: int) -> void:
+		_juntar(id, nivel.novos_faisquinhas, faisquinhas)
+		for n in nivel.novos_faisquinhas:
+			if not "%s:%s" % [id, n] in chegando:
+				chegando.append("%s:%s" % [id, n])
+		hud.mostrar_faisquinhas(achados, total))
 	nivel.posto_aceso.connect(func(p: Posto) -> void: faisca.ponto_retorno = p.ponto())
 	nivel.dica.connect(hud.mostrar_dica)
 	nivel.estrela_grande_pega.connect(_terminar_fase)
@@ -388,7 +480,7 @@ func entrar_fase(id: String) -> void:
 	faisca.vida = Jogador.VIDA_MAX
 	hud.mostrar_vida(faisca.vida)
 	hud.mostrar_estrelas(nivel.pegas)
-	hud.mostrar_vaga_lumes(nivel.achados, nivel.vaga_lumes.size())
+	hud.mostrar_faisquinhas(nivel.achados, nivel.faisquinhas.size())
 	faisca.yaw = 0.0
 	faisca.pitch = -0.32
 	faisca.visual.rotation.y = PI
@@ -423,7 +515,7 @@ func _terminar_fase() -> void:
 	_salvar()
 	await get_tree().create_timer(2.6).timeout
 	if is_instance_valid(nivel):
-		hud.mostrar_fim(nivel.nome, nivel.pegas, nivel.total_estrelas(), nivel.achados, nivel.vaga_lumes.size())
+		hud.mostrar_fim(nivel.nome, nivel.pegas, nivel.total_estrelas(), nivel.achados, nivel.faisquinhas.size())
 
 
 ## A na tela de fim: volta para o farol, na frente da porta da fase.
@@ -453,6 +545,30 @@ func sair_da_fase() -> void:
 	await _escurecer(0.0, 0.45)
 	faisca.controle_ligado = true
 	_trocando = false
+	_festa_no_farol()
+
+
+## Chegando no farol: a faixa dos Faisquinhas que acabaram de chegar (eles caem do alto) e a festa de cada prêmio
+## novo, uma vez só (faixa, confete no prêmio e os Faisquinhas pulando).
+func _festa_no_farol() -> void:
+	var este := hub
+	if not is_instance_valid(este):
+		return
+	var chegaram := este.moradores.filter(func(f: Faisquinha) -> bool: return f.has_meta("chegando")).size()
+	await get_tree().create_timer(0.9).timeout
+	if chegaram > 0 and is_instance_valid(este) and hub == este:
+		faixa("Faisquinha%s no farol!" % ("s" if chegaram > 1 else ""),
+				"Agora são %d Faisquinhas morando aqui" % total_faisquinhas(), Color("#8ff3ff"), 2.6)
+		await get_tree().create_timer(3.2).timeout
+	for id in este.premios_novos if is_instance_valid(este) else []:
+		if not is_instance_valid(este) or hub != este:
+			return
+		var dados: Dictionary = PREMIOS.filter(func(p: Dictionary) -> bool: return p.id == id)[0]
+		faixa(dados.titulo, dados.sub, Color("#ffd23f"), 3.4)
+		Fx.confetti(este, este.lugar_do_premio(id), 50, 5.0)
+		Sfx.play(self, "faisquinha_salvo")
+		este.festa()
+		await get_tree().create_timer(4.2).timeout
 
 
 # --- abertura ----------------------------------------------------------------------------
@@ -622,12 +738,14 @@ func _sugar_estrelas(cena: Node3D, nave: Aspiratrao, cam: Camera3D, ceu: Procedu
 func carregar(dados: Dictionary) -> void:
 	estrelas = dados.get("estrelas", {})
 	grandes = dados.get("grandes", [])
-	vaga_lumes = dados.get("vaga_lumes", {})
+	# Até 2026-11-11 a chave era "vaga_lumes" (os três de cada fase eram vaga-lumes).
+	faisquinhas = dados.get("faisquinhas", dados.get("vaga_lumes", {}))
+	premios_vistos = dados.get("premios", [])
 	abertura_vista = dados.get("abertura", false)
 
 
 func dados_salvos() -> Dictionary:
-	return {"estrelas": estrelas, "grandes": grandes, "vaga_lumes": vaga_lumes, "abertura": abertura_vista}
+	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "abertura": abertura_vista}
 
 
 func _salvar() -> void:
@@ -641,7 +759,7 @@ func _fase(id: String) -> Dictionary:
 	return {}
 
 
-## Junta os nomes novos (sem repetir) na lista de `qual` (estrelas ou vaga-lumes) da fase `id`.
+## Junta os nomes novos (sem repetir) na lista de `qual` (estrelas ou Faisquinhas) da fase `id`.
 func _juntar(id: String, novos: Array, qual: Dictionary) -> void:
 	var lista: Array = qual.get(id, [])
 	for n in novos:

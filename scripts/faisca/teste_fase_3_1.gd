@@ -29,7 +29,7 @@ func rodar() -> void:
 	await m._esperar(0.3)
 	ok = m._conferir("de 110 a 160 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 110 and n.estrelas.size() <= 160,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), n.total_estrelas()]) and ok
-	ok = m._conferir("4 postos, 3 vaga-lumes, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.vaga_lumes.size() == 3
+	ok = m._conferir("4 postos, 6 Faisquinhas, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.faisquinhas.size() == 6
 			and n.alvos.size() == 15 and n.coracoes.size() == 4 and n.bau != null, "(%d postos, %d Bolotas, %d corações)" % [n.postos.size(), n.alvos.size(), n.coracoes.size()]) and ok
 	ok = m._conferir("peças: 3 botões, 3 pinguins presos, o canhão, 2 caronas, 8 sinos, 3 cachoeiras, 3 bolas de neve, 3 montes de neve fofa e 3 pingentes",
 			n.botoes.size() == 3 and n.cubos_de_gelo.size() == 3 and n.canhoes.size() == 1 and n.caronas.size() == 2 and n.sinos.size() == 8
@@ -45,7 +45,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú em cima do pico", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso do playground 2, do 3 e do 5", donos == [1, 2, 4], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no cume: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 45.5
 			and Vector2(n.bau.global_position.x, n.bau.global_position.z).length() < 4.0) and ok
@@ -186,9 +186,9 @@ func _ilhas() -> bool:
 	await m._esperar(1.2)
 	ok = m._conferir("com os três pinguins soltos, o monte de neve sai de cima do canhão", n.canhao_pronto()) and ok
 
-	j.teleportar(n.vaga_lumes[0].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[0].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("o V1 está na beirada embaixo da ilha do meio", n.achados == 1) and ok
+	ok = m._conferir("o V1 está na beirada embaixo da ilha do meio", n.faisquinhas[0].encontrado) and ok
 	var onde := await _quicar(n.nuvens_que_quicam[0], Vector3(-100.5, 10, 44))
 	ok = m._conferir("e a neve fofa da beirada devolve para a ilha do meio", absf(onde.y - 10.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
 	onde = await _pular_para(Vector3(-98, 10.1, 33), Vector3(-98, 11, 29))
@@ -274,11 +274,11 @@ func _vila() -> bool:
 		onde = await _pular_para(degraus[i].global_position + Vector3(0, 0.1, 0), degraus[i + 1].global_position)
 		subiu = subiu and absf(onde.y - degraus[i + 1].global_position.y) < 0.3
 	ok = m._conferir("os degraus de gelo sobem 1,6 m de cada vez", subiu, "(altura %.1f)" % onde.y) and ok
-	var v2 := n.vaga_lumes[1]
+	var v2 := n.faisquinhas[1]
 	onde = await _pular_para(degraus[-1].global_position + Vector3(0, 0.1, 0), v2.global_position - Vector3(0, 1.4, 0))
 	await _andar(v2.global_position - j.global_position, 0.3)
-	ok = m._conferir("e do último degrau se chega à pedra alta, onde está o V2", n.achados == 2 and absf(onde.y - 30.0) < 0.3,
-			"(altura %.1f, vaga-lumes %d)" % [onde.y, n.achados]) and ok
+	ok = m._conferir("e do último degrau se chega à pedra alta, onde está o V2", n.faisquinhas[1].encontrado and absf(onde.y - 30.0) < 0.3,
+			"(altura %.1f, Faisquinhas %d)" % [onde.y, n.achados]) and ok
 
 	var cad := n.cadeirinha
 	j.teleportar(cad.global_position + Vector3(0, 0.3, 0))
@@ -412,7 +412,7 @@ func _subida() -> bool:
 	await m._esperar(0.6)
 	ok = m._conferir("três golpes quebram a parede rachada da gruta", parede.derrotado, "(%d golpes)" % parede.golpes) and ok
 	await _andar(-frente, 1.2)
-	ok = m._conferir("e o V3 está lá dentro", n.achados == 3, "(vaga-lumes %d)" % n.achados) and ok
+	ok = m._conferir("e o V3 está lá dentro", n.faisquinhas[2].encontrado, "(Faisquinhas %d)" % n.achados) and ok
 	j.luva_de_neve = true
 
 	onde = await _quicar(n.nuvens_que_quicam[2], n.no_pico(-146, n.raio_do_pico(40.0) + 1.8, 40.0))

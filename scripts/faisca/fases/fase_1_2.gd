@@ -180,6 +180,7 @@ func _salao_das_tochas() -> void:
 	tablado(Vector3(13.0, 3.2, -21.5), Vector2(4, 4))
 	tablado(Vector3(8.0, 4.8, -21.5), Vector2(4, 4))
 	roda(Vector3(8.0, 5.8, -21.5), 1.2, 4)
+	faisquinha(Vector3(8.0, 6.4, -21.5), "3")
 	trilha(Vector3(2.0, 1.0, -17.5), Vector3(9.0, 1.0, -15.5), 3)
 	estrelinha(Vector3(13.0, 2.6, -16.5))
 	estrelinha(Vector3(13.0, 4.2, -21.5))
@@ -240,6 +241,8 @@ func _mina_de_ouro() -> void:
 	estrelinha(Vector3(-50.0, 9.1, -62.5))
 	rocha(-32.0, -26.0, -58.0, -62.0, 2.0, -2.0)
 	roda(Vector3(-30.0, 3.0, -60.0), 1.0, 3)
+	# O Faisquinha 4 no bolso embaixo do abismo.
+	faisquinha(Vector3(-30.0, 3.6, -60.0), "4")
 	mola(Vector3(-27.5, 2.0, -60.0), 19.0)
 
 	# O V1 atrás da parede rachada do oeste.
@@ -257,7 +260,7 @@ func _mina_de_ouro() -> void:
 	velas.omni_range = 5.0
 	velas.position = Vector3(-60.0, 10.5, -75.0)
 	add_child(velas)
-	vaga_lume(Vector3(-58.0, 9.2, -75.0))
+	faisquinha(Vector3(-58.0, 9.2, -75.0))
 	trilha(Vector3(-52.0, 9.0, -73.5), Vector3(-52.0, 9.0, -76.5), 2)
 
 	# Na mina: um ciclope (não dá para pisar no chifre) e um morcego.
@@ -343,7 +346,7 @@ func _sala_escura() -> void:
 		tocha(p)
 	trilha(Vector3(-12.0, 17.0, -125.5), Vector3(-12.0, 17.0, -128.5), 2)
 	trilha(Vector3(-10.5, 17.0, -131.0), Vector3(-7.5, 17.0, -131.0), 2)
-	vaga_lume(Vector3(-11.0, 17.2, -138.5))
+	faisquinha(Vector3(-11.0, 17.2, -138.5))
 	var area := Area3D.new()
 	area.collision_layer = 0
 	area.collision_mask = CAMADA_JOGADOR
@@ -416,7 +419,8 @@ func _poco_dos_cristais() -> void:
 	rocha(24.0, 24.8, -48.0, -56.5, 16.9, 16.0)
 	rocha(24.0, 24.8, -61.5, -78.0, 16.9, 16.0)
 	bolota(Vector3(34.0, 16.0, -56.0), false, "morcego")
-	bolota(Vector3(37.0, 16.0, -70.0))
+	# Esta leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(37.0, 16.0, -70.0)))
 	trilha_creme([Vector3(28, 16, -76), Vector3(30, 16, -68), Vector3(26.5, 16, -61)])
 	trilha(Vector3(29.5, 17.0, -71.0), Vector3(27.0, 17.0, -63.5), 3)
 
@@ -434,7 +438,7 @@ func _poco_dos_cristais() -> void:
 	velas.omni_range = 5.0
 	velas.position = Vector3(48.0, 18.5, -63.0)
 	add_child(velas)
-	vaga_lume(Vector3(46.0, 17.2, -63.0))
+	faisquinha(Vector3(46.0, 17.2, -63.0))
 	trilha(Vector3(35.0, 17.0, -63.0), Vector3(40.5, 17.0, -63.0), 3)
 
 	# Mini-marco: um ninho de cristais no canto.

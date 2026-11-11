@@ -26,7 +26,7 @@ func rodar() -> void:
 	var total := n.total_estrelas()
 	ok = m._conferir("de 75 a 100 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 75 and n.estrelas.size() <= 100,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
-	ok = m._conferir("3 postos, 3 vaga-lumes, 3 flores e 1 portão", n.postos.size() == 3 and n.vaga_lumes.size() == 3 and n.flores.size() == 3 and n.portoes.size() == 1) and ok
+	ok = m._conferir("3 postos, 6 Faisquinhas, 3 flores e 1 portão", n.postos.size() == 3 and n.faisquinhas.size() == 6 and n.flores.size() == 3 and n.portoes.size() == 1) and ok
 	ok = m._conferir("12 Bolotas e o baú", n.alvos.size() == 12 and n.bau != null, "(%d Bolotas)" % n.alvos.size()) and ok
 	ok = m._conferir("peças: 5 esteiras, 4 argolas, 3 botões, 5 nuvens que somem, o canhão e 3 plataformas que se mexem", n.esteiras.size() == 5
 			and n.argolas.size() == 4 and n.botoes.size() == 3 and n.ponte_botoes.size() == 3 and n.nuvens_que_somem.size() == 5
@@ -41,7 +41,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú no alto da torre", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso de cada playground: o 2, o 3 e o 4", donos == [1, 2, 3], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no alto do marco: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 21.0
 			and n.bau.global_position.distance_to(Vector3(0, 22, -97.5)) < 1.0) and ok
@@ -75,9 +75,9 @@ func rodar() -> void:
 	ok = m._conferir("pega as estrelinhas da Bolota", n.pegas == pegas + 3 and m.hud._contador.text == str(n.pegas), "(%d)" % n.pegas) and ok
 
 	# V1, na beirada embaixo da ilha do meio do playground 2.
-	j.teleportar(n.vaga_lumes[0].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[0].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("encostar no vaga-lume acha", n.achados == 1 and m.hud._luzes[0].aceso) and ok
+	ok = m._conferir("encostar no vaga-lume acha", n.faisquinhas[0].encontrado and m.hud._luzes[0].aceso) and ok
 
 	# P1, na entrada do playground 2: vira o ponto de volta; cair nas nuvens tira um coração e volta lá.
 	var p1 := n.postos[0]

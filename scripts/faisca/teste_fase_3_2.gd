@@ -31,7 +31,7 @@ func rodar() -> void:
 	await m._esperar(0.3)
 	ok = m._conferir("de 110 a 160 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 110 and n.estrelas.size() <= 160,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), n.total_estrelas()]) and ok
-	ok = m._conferir("4 postos, 3 vaga-lumes, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.vaga_lumes.size() == 3
+	ok = m._conferir("4 postos, 6 Faisquinhas, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.faisquinhas.size() == 6
 			and n.alvos.size() == 15 and n.coracoes.size() == 4 and n.bau != null, "(%d postos, %d Bolotas, %d corações)" % [n.postos.size(), n.alvos.size(), n.coracoes.size()]) and ok
 	ok = m._conferir("peças: 3 blocos de empurrar, 3 alavancas, 10 pinos, 7 pistões, 16 blocos-pisca, 5 caronas e 23 esteiras",
 			n.blocos_da_entrada.size() == 3 and n.alavancas.size() == 3 and n.pinos.size() == 10 and n.pistoes.size() == 7
@@ -47,7 +47,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú em cima da máquina", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso do playground 2, do 3 e do 5", donos == [1, 2, 4], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no topo da máquina: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 43.5
 			and Vector2(n.bau.global_position.x, n.bau.global_position.z).length() < 4.0) and ok

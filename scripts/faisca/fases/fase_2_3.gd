@@ -309,6 +309,7 @@ func _tapete_da_cidade() -> void:
 	bloco(Vector3(19.5, 0, 46), Vector3(3, 5.0, 3), Color("e94f4f"))
 	dado(Vector3(16, 0.1, 52.0), "D6_A_blue")
 	roda(Vector3(19.5, 6.0, 46), 1.0, 4)
+	faisquinha(Vector3(19.5, 6.6, 46), "3")
 	estrelinha(Vector3(16, 4.4, 46))
 
 	# Bolso: a garagem de brinquedo, com estrelinhas e o coração lá dentro.
@@ -377,10 +378,11 @@ func _tabuleiro_na_mesa() -> void:
 	do_quarto("chess_white_king", Vector3(-43.5, t, -16.5), 0.3, 5.0)
 	bolota(Vector3(-60, t, -8))
 	bolota(Vector3(-52, t, -4), false, "pinguim")
-	bolota(Vector3(-63, t, -11), false, "caranguejo")
+	# O caranguejo leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(-63, t, -11), false, "caranguejo"))
 
 	# Bolso embaixo da mesa: o V1 e estrelinhas (o brilho aparece da beirada).
-	vaga_lume(Vector3(-60, 1.2, -10))
+	faisquinha(Vector3(-60, 1.2, -10))
 	for p in [Vector3(-64, 1.0, -8), Vector3(-56, 1.0, -12), Vector3(-52, 1.0, -6)]:
 		estrelinha(p)
 
@@ -475,7 +477,7 @@ func _escrivaninha() -> void:
 	# A última fica na frente da prateleira e um pouco acima dela: o impulso do fim do puxão leva lá para cima.
 	for spec in [Vector3(-28, 18.5, -75), Vector3(-21, 23.5, -75.5), Vector3(-14, 29.0, -75.5)]:
 		argola_de_ioio(spec)
-	vaga_lume(Vector3(-12, 29.6, -81))
+	faisquinha(Vector3(-12, 29.6, -81))
 	for x in [-26.0, -20.0, -6.0, 0.0]:
 		estrelinha(Vector3(x, 29.6, -81))
 
@@ -496,6 +498,8 @@ func _escrivaninha() -> void:
 	livro(Vector3(-7.5, e, -66), Vector3(4, 4.8, 4), Color("3f8fe0"))
 	argola_de_ioio(Vector3(-1.5, e + 14.0, -66))
 	roda(Vector3(0, e + 10.4, -66), 1.8, 5)
+	# O Faisquinha 4 no topo do abajur.
+	faisquinha(Vector3(0, e + 10.9, -66), "4")
 
 	do_quarto("cup_pencils", Vector3(-34, e, -68), 0.0, 10.0)
 	do_quarto("book_set", Vector3(-20, e + 2.0, -71.5), 0.0, 8.0)
@@ -674,7 +678,7 @@ func _subida_do_castelo() -> void:
 	paredes_rachadas.append(p)
 	paredes_do_castelo.append(p)
 	bloco(oco + Vector3(0, 0, -1.75), Vector3(4, 4, 0.5), BLOCOS[2])
-	vaga_lume(oco + Vector3(0, 1.4, -0.4))
+	faisquinha(oco + Vector3(0, 1.4, -0.4))
 	for x in [-1.2, 1.2]:
 		estrelinha(oco + Vector3(x, 1.0, -0.6))
 	ponto_de_dica(oco + Vector3(0, 0.5, 6.0), 3.0, "golpe")

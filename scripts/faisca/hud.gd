@@ -1,6 +1,6 @@
 class_name Hud
 extends CanvasLayer
-## Interface do Faísca, quase sem texto: corações, estrelinhas pegas, os vaga-lumes achados, o
+## Interface do Faísca, quase sem texto: corações, estrelinhas pegas, os Faisquinhas salvos (as cabecinhas), o
 ## balão de dica do vovô (o rosto dele e o desenho do botão) e a tela de fim da fase.
 ## O A na tela de fim emite `jogar_de_novo` (na Ilha, volta para o farol).
 
@@ -12,19 +12,19 @@ var fim_aberto := false
 var dica_atual := ""
 var _coracoes: Array[IconeCoracao] = []
 var _contador: Label
-var _luzes: Array[IconeVagaLume] = []
+var _luzes: Array[IconeFaisquinha] = []
 var _balao: Control
 var _desenho_dica: DesenhoDica
 var _fim: Control
 var _fim_nome: Label
 var _fim_estrelas: Label
-var _fim_luzes: Array[IconeVagaLume] = []
+var _fim_luzes: Array[IconeFaisquinha] = []
 var _tempo_dica := 0.0
 
 
 func _ready() -> void:
 	layer = 5
-	# Corações, estrelinhas e vaga-lumes no canto de cima à direita, no mesmo lugar e tamanho dos corações e
+	# Corações, estrelinhas e Faisquinhas no canto de cima à direita, no mesmo lugar e tamanho dos corações e
 	# das moedas das crianças (pedido do usuário em 2026-10-29: "padronizar o hud entre os personagens").
 	var canto := VBoxContainer.new()
 	canto.anchor_left = 1.0
@@ -64,9 +64,10 @@ func _ready() -> void:
 	luzes.size_flags_horizontal = Control.SIZE_SHRINK_END
 	luzes.add_theme_constant_override("separation", 6)
 	canto.add_child(luzes)
-	for i in 3:
-		var v := IconeVagaLume.new()
-		v.custom_minimum_size = Vector2(32, 32)
+	for i in 6:
+		var v := IconeFaisquinha.new()
+		v.cor = Faisquinha.cor_de(i)
+		v.custom_minimum_size = Vector2(30, 34)
 		luzes.add_child(v)
 		_luzes.append(v)
 	_montar_balao()
@@ -108,8 +109,8 @@ func mostrar_estrelas(pegas: int) -> void:
 	_contador.text = str(pegas)
 
 
-## Quantos vaga-lumes há na fase (os outros espaços somem) e quantos já voltaram.
-func mostrar_vaga_lumes(achados: int, total: int) -> void:
+## Quantos Faisquinhas há na fase (os outros espaços somem) e quantos já foram salvos.
+func mostrar_faisquinhas(achados: int, total: int) -> void:
 	for i in _luzes.size():
 		_luzes[i].visible = i < total
 		_luzes[i].aceso = i < achados
@@ -127,11 +128,11 @@ func mostrar_dica(qual: String) -> void:
 	create_tween().tween_property(_balao, "modulate:a", 1.0, 0.25)
 
 
-func mostrar_fim(nome: String, pegas: int, total: int, achados: int, total_vaga_lumes: int) -> void:
+func mostrar_fim(nome: String, pegas: int, total: int, achados: int, total_faisquinhas: int) -> void:
 	_fim_nome.text = nome
 	_fim_estrelas.text = "%d / %d" % [pegas, total]
 	for i in _fim_luzes.size():
-		_fim_luzes[i].visible = i < total_vaga_lumes
+		_fim_luzes[i].visible = i < total_faisquinhas
 		_fim_luzes[i].aceso = i < achados
 		_fim_luzes[i].queue_redraw()
 	_fim.show()
@@ -212,9 +213,10 @@ func _montar_fim() -> void:
 	var vao := Control.new()
 	vao.custom_minimum_size = Vector2(30, 0)
 	linha.add_child(vao)
-	for i in 3:
-		var v := IconeVagaLume.new()
-		v.custom_minimum_size = Vector2(52, 52)
+	for i in 6:
+		var v := IconeFaisquinha.new()
+		v.cor = Faisquinha.cor_de(i)
+		v.custom_minimum_size = Vector2(46, 52)
 		linha.add_child(v)
 		_fim_luzes.append(v)
 	var botao := BotaoA.new()
@@ -265,17 +267,30 @@ class IconeCoracao extends Control:
 			draw_circle(c + Vector2(-size.x * 0.17, -size.y * 0.12), size.x * 0.07, Color(1, 1, 1, 0.7))
 
 
-## Bolinha do vaga-lume: acesa (verde-limão brilhando) ou apagada (cinza).
-class IconeVagaLume extends Control:
+## Cabecinha do Faisquinha: salvo, o capacete branco com a tela preta, os olhos ciano, as orelhas e a luzinha da
+## antena na cor dele; ainda preso, só o contorno clarinho (como o coração vazio).
+class IconeFaisquinha extends Control:
 	var aceso := false
+	var cor := Color("ff7a22")
 
 	func _draw() -> void:
-		var c := size / 2.0
-		var r := size.x * 0.36
+		var r := minf(size.x, size.y) * 0.36
+		var c := Vector2(size.x / 2.0, size.y - r - 2.0)
+		var contorno := Color("2b2140")
+		var antena := c + Vector2(0, -r * 1.55)
 		if aceso:
-			draw_circle(c, r * 1.35, Color(0.78, 1.0, 0.3, 0.35))
-		draw_circle(c, r, Color("c6ff4a") if aceso else Color(1, 1, 1, 0.3))
-		draw_arc(c, r, 0, TAU, 32, Color("2b2140"), 3.0, true)
+			draw_circle(c, r * 1.35, Color(cor, 0.3))
+		draw_line(c + Vector2(0, -r * 0.9), antena, contorno, 3.0)
+		draw_circle(antena, r * 0.24, Color("c6ff4a") if aceso else Color(1, 1, 1, 0.3))
+		for lado in [-1.0, 1.0]:
+			draw_circle(c + Vector2(r * 0.98 * lado, 0), r * 0.26, cor if aceso else Color(1, 1, 1, 0.3))
+		draw_circle(c, r, Color("f4f5f9") if aceso else Color(1, 1, 1, 0.3))
+		draw_arc(c, r, 0, TAU, 32, contorno, 3.0, true)
+		if aceso:
+			var tela := Rect2(c + Vector2(-r * 0.68, -r * 0.45), Vector2(r * 1.36, r * 0.86))
+			draw_rect(tela, Color("15121f"))
+			for lado in [-1.0, 1.0]:
+				draw_line(c + Vector2(r * 0.28 * lado, -r * 0.2), c + Vector2(r * 0.28 * lado, r * 0.15), Color("8ff3ff"), maxf(r * 0.2, 2.0))
 
 
 ## Rosto do Vovô Farol no rádio: cabeça redonda azul-acinzentada, visor com olhos bondosos,

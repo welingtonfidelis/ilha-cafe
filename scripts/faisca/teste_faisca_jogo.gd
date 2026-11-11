@@ -4,7 +4,9 @@ extends RefCounted
 ##   --faisca-jogo           confere: a migração do progresso da Parte 2 antiga, a abertura na primeira vez, o hub
 ##                           (portas dos andares, sem a saída para a ilha), a escada em espiral andando de verdade,
 ##                           porta trancada, a 1-1 com a pausa nova (Sair da fase, Menu principal), estrelinhas que
-##                           contam uma vez, a Estrela Grande, o save próprio (FaiscaSave) e a 1-2 abrindo com 30
+##                           contam uma vez, a Estrela Grande, o save próprio (FaiscaSave), a 1-2 abrindo com 30 e
+##                           os Faisquinhas no farol: cada um no andar do mundo dele, e os prêmios de 10 (o elevador,
+##                           levando o Faísca até o 2º andar, com as cancelas), 20 (o trenzinho) e 30 (o farolete)
 ##   --faisca-jogo-captura   fotos da abertura, do hub, da pausa e da 1-1 em tools/capturas/faisca/jogo/
 ## Veio da parte do farol e das fases do antigo teste --parte2 do main.gd.
 
@@ -146,7 +148,7 @@ func rodar() -> void:
 			break
 	await _faisca_em(nova.global_position - Vector3(0, 1.0, 0), 0.2)
 	ok = _conferir("uma estrelinha nova conta", lvl.pegas > pegas and j.total_estrelas() == do_farol + lvl.pegas) and ok
-	await _faisca_em(lvl.vaga_lumes[0].global_position - Vector3(0, 1.0, 0), 0.3)
+	await _faisca_em(lvl.faisquinhas[0].global_position - Vector3(0, 1.0, 0), 0.3)
 	var bau := lvl.bau
 	await _faisca_em(bau.global_position + bau.global_basis.z * 2.6, 0.2)
 	for k in 3:
@@ -156,7 +158,7 @@ func rodar() -> void:
 	await _faisca_em(bau.estrela.global_position - Vector3(0, 1.2, 0), 0.2)
 	await _ate(func() -> bool: return j.hud.fim_aberto, 6.0)
 	ok = _conferir("a Estrela Grande termina a fase, fica guardada e a pausa espera a tela de fim", "1-1" in j.grandes and j.hud.fim_aberto
-			and (j.vaga_lumes.get("1-1", []) as Array).size() == 1 and not j.pode_pausar()) and ok
+			and (j.faisquinhas.get("1-1", []) as Array).size() == 1 and not j.pode_pausar()) and ok
 	pegas = lvl.pegas
 	j.hud.jogar_de_novo.emit()
 	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
@@ -168,9 +170,9 @@ func rodar() -> void:
 	ok = _conferir("com uma Estrela Grande, a porta da nave pede as outras 7", int(hub.portas_nos["nave"].dados.falta) == 7
 			and not hub.portas_nos["nave"].dados.aberta) and ok
 	var salvo := FaiscaSave.ler()
-	ok = _conferir("o save do Faísca guarda as estrelinhas, a Estrela Grande e os vaga-lumes", "1-1" in salvo.get("grandes", [])
+	ok = _conferir("o save do Faísca guarda as estrelinhas, a Estrela Grande e os Faisquinhas", "1-1" in salvo.get("grandes", [])
 			and (salvo.estrelas.get("1-1", []) as Array).size() == pegas and (salvo.estrelas.get("farol", []) as Array).size() == do_farol
-			and (salvo.get("vaga_lumes", {}).get("1-1", []) as Array).size() == 1 and salvo.get("abertura", false), str(salvo.get("estrelas", {}))) and ok
+			and (salvo.get("faisquinhas", {}).get("1-1", []) as Array).size() == 1 and salvo.get("abertura", false), str(salvo.get("estrelas", {}))) and ok
 
 	# A 1-2 abre com 30 estrelinhas (completadas aqui com estrelinhas de mentira, tiradas na volta).
 	var falsas := []
@@ -198,9 +200,111 @@ func rodar() -> void:
 	j.carregar(FaiscaSave.ler())
 	ok = _conferir("carregar o save devolve as estrelinhas, as Estrelas Grandes e a abertura vista", j.total_estrelas() == total
 			and "1-1" in j.grandes and j.abertura_vista, "(%d de %d)" % [j.total_estrelas(), total]) and ok
+	ok = await _moradores_e_premios() and ok
 	FaiscaSave.apagar()
 	print("FAISCA-JOGO OK" if ok else "FAISCA-JOGO COM FALHAS")
 	j.get_tree().quit(0 if ok else 1)
+
+
+## Os Faisquinhas no farol (itens 1 e 2 da lista do Faísca, 2026-11-11). Completa com Faisquinhas de mentira em
+## outras fases para chegar a 10, 20 e 30.
+func _moradores_e_premios() -> bool:
+	var ok := true
+	var hub := j.hub
+	var um := hub.moradores.size()
+	ok = _conferir("o Faisquinha salvo na 1-1 mora no térreo do farol", um == j.total_faisquinhas() and um >= 1
+			and absf(hub.moradores[0].casa.y) < 0.01, "(%d no farol, %d salvos)" % [um, j.total_faisquinhas()]) and ok
+	ok = _conferir("com menos de 10, o elevador fica quebrado e as três placas mostram quantos faltam", not hub.elevador.funcionando
+			and hub.get_node_or_null("Placa_elevador") != null and hub.get_node_or_null("Placa_trem") != null
+			and hub.get_node_or_null("Placa_farolete") != null
+			and (hub.get_node("Placa_elevador/Numero") as Label3D).text == "%d/10" % um) and ok
+	j.abrir_pausa()
+	await _esperar_real(0.2)
+	ok = _conferir("a pausa no farol conta as estrelinhas, os Faisquinhas e as Estrelas Grandes", j.contador_pausa.faisquinhas.text == "%d/42" % um
+			and j.contador_pausa.grandes.text == "%d/8" % j.grandes.size() and j.contador_pausa.estrelas.text == str(j.total_estrelas()),
+			"(%s, %s, %s)" % [j.contador_pausa.estrelas.text, j.contador_pausa.faisquinhas.text, j.contador_pausa.grandes.text]) and ok
+	j.botoes_pausa.continuar.pressed.emit()
+	await _esperar_real(0.4)
+
+	# 10: o elevador funciona (a festa só uma vez), e cada um mora no andar do mundo dele.
+	j.faisquinhas["2-1"] = ["0", "1", "2", "3", "4", "5"]
+	j.faisquinhas["3-1"] = ["0", "1", "2"]
+	await _refazer_hub()
+	hub = j.hub
+	ok = _conferir("com 10 Faisquinhas, o elevador funciona, com festa", hub.elevador.funcionando and hub.premios_novos == ["elevador"]
+			and hub.get_node_or_null("Placa_elevador") == null and (hub.get_node("Placa_trem/Numero") as Label3D).text == "10/20") and ok
+	var andar_certo := hub.moradores.all(func(m: Faisquinha) -> bool:
+		var andar: int = {"1-1": 0, "2-1": 1, "3-1": 2}[m.get_meta("fase")]
+		return absf(m.casa.y - HubFarol.ANDARES[andar]) < 0.01)
+	var juntos := 99.0
+	var perto_de_porta := 99.0
+	for a in hub.moradores:
+		for b in hub.moradores:
+			if a != b and absf(a.casa.y - b.casa.y) < 0.5:
+				juntos = minf(juntos, a.casa.distance_to(b.casa))
+		for p in hub.portas_nos.values():
+			if absf((p as Node3D).global_position.y - a.casa.y) < 0.5:
+				perto_de_porta = minf(perto_de_porta, Vector2(p.global_position.x - a.casa.x, p.global_position.z - a.casa.z).length())
+	ok = _conferir("10 no farol, cada um no andar do mundo dele, longe das portas e um do outro", hub.moradores.size() == 10 and andar_certo
+			and juntos > 1.5 and perto_de_porta > 2.4, "(%.1f m entre dois, %.1f m de uma porta)" % [juntos, perto_de_porta]) and ok
+	await _refazer_hub()
+	ok = _conferir("a festa do elevador não repete", j.hub.premios_novos.is_empty() and "elevador" in j.premios_vistos) and ok
+	hub = j.hub
+	# O elevador leva o Faísca do térreo ao 2º andar; lá a cancela abre e no 3º fica fechada.
+	var elev := hub.elevador
+	await _faisca_em(elev.global_position + Vector3.UP * 0.15, 0.1)
+	await _ate(func() -> bool: return elev.andar == 1 and elev.parado, 12.0)
+	await _esperar(0.3)
+	var abertas := elev.cancelas.filter(func(c: HubFarol.Cancela) -> bool: return c.aberta).map(func(c: HubFarol.Cancela) -> int: return c.andar)
+	ok = _conferir("o elevador sobe com o Faísca até o 2º andar, e só a cancela de lá abre", absf(f.global_position.y - HubFarol.ANDARES[1]) < 0.4
+			and f.is_on_floor() and abertas == [1, 1], "(Faísca a %.1f m, cancelas abertas %s)" % [f.global_position.y, str(abertas)]) and ok
+	# Saindo pela cancela aberta, ele pisa na sacada do 2º andar.
+	var lado := elev.global_basis.z
+	await _faisca_em(elev.global_position + lado * 2.6 + Vector3.UP * 0.2, 0.4)
+	ok = _conferir("pela cancela aberta, o Faísca sai na sacada", f.is_on_floor() and absf(f.global_position.y - HubFarol.ANDARES[1]) < 0.3) and ok
+
+	# 20: o trenzinho roda no térreo.
+	j.faisquinhas["2-2"] = ["0", "1", "2", "3", "4", "5"]
+	j.faisquinhas["2-3"] = ["0", "1", "2", "3"]
+	await _refazer_hub()
+	hub = j.hub
+	var antes := hub.trem[0].global_position if hub.trem.size() == 3 else Vector3.ZERO
+	await _esperar(1.0)
+	ok = _conferir("com 20, o trenzinho roda em volta do eixo, com dois Faisquinhas no vagão", hub.trem.size() == 3
+			and hub.trem[0].global_position.distance_to(antes) > 0.5 and hub.premios_novos == ["trem"]
+			and hub.trem[2].get_node_or_null("Passageiro0") != null and (hub.get_node("Placa_farolete/Numero") as Label3D).text == "20/30") and ok
+
+	# 30: o farolete acende e gira.
+	j.faisquinhas["3-2"] = ["0", "1", "2", "3", "4", "5"]
+	j.faisquinhas["1-2"] = ["0", "1", "2", "3"]
+	await _refazer_hub()
+	hub = j.hub
+	var giro := hub.farolete.rotation.y if hub.farolete else 0.0
+	await _esperar(0.5)
+	ok = _conferir("com 30, o farolete acende e gira, sem placa nenhuma", hub.farolete != null and hub.farolete.rotation.y > giro
+			and hub.premios_novos == ["farolete"] and not hub.get_children().any(func(n: Node) -> bool: return n.name.begins_with("Placa_"))) and ok
+
+	# Dançando, os do térreo dançam junto.
+	await _faisca_em(hub.inicio, 0.6)
+	f.dancando = 2.0
+	await _esperar(0.3)
+	var do_terreo := hub.moradores.filter(func(m: Faisquinha) -> bool: return absf(m.casa.y) < 0.1)
+	ok = _conferir("quando o Faísca dança, os Faisquinhas do térreo dançam junto", not do_terreo.is_empty()
+			and do_terreo.all(func(m: Faisquinha) -> bool: return m._acao == "danca")) and ok
+	f.dancando = 0.0
+	for id in ["2-1", "3-1", "2-2", "2-3", "3-2", "1-2"]:
+		j.faisquinhas.erase(id)
+	j.premios_vistos.clear()
+	return ok
+
+
+## Sai e entra de novo no farol (como voltando de uma fase).
+func _refazer_hub() -> void:
+	j.hub.queue_free()
+	j.hub = null
+	await _esperar(0.1)
+	j._montar_hub("")
+	await _esperar(0.3)
 
 
 ## Quem jogou a Parte 2 dentro da ilha (campanha versão 3) ganha o progresso no save do Faísca, uma vez só.
@@ -219,7 +323,7 @@ func _migracao() -> bool:
 	var de_novo := FaiscaSave.migrar()
 	var ok := _conferir("quem jogou a Parte 2 dentro da ilha ganha o progresso no save do Faísca, uma vez só", trouxe and not de_novo
 			and dados.get("abertura", false) and (dados.estrelas.get("1-1", []) as Array).size() == 2 and "1-1" in dados.get("grandes", [])
-			and (dados.get("vaga_lumes", {}).get("1-1", []) as Array).size() == 1)
+			and (dados.get("faisquinhas", {}).get("1-1", []) as Array).size() == 1)
 	SaveGame.erase()
 	FaiscaSave.apagar()
 	SaveGame.path = campanha
@@ -250,6 +354,63 @@ func capturar() -> void:
 	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy(), 8.0)
 	await _esperar(0.8)
 	await _foto("j05_comeco_da_1_1")
+	j.get_tree().quit()
+
+
+## Fotos do farol com os Faisquinhas (precisa de janela), em tools/capturas/faisca/jogo/: o térreo com 4 morando e as
+## placas; depois, com 30 (de mentira), o térreo com o trenzinho, o elevador no 2º andar com a cancela aberta, o 3º
+## andar e o farolete aceso visto do topo; e a pausa dentro de uma fase, com o contador.
+## Uso: godot --path . -- --faisca-farol-captura
+func capturar_farol() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://tools/capturas/faisca/jogo/"))
+	j.abertura_vista = true
+	j.faisquinhas = {"1-1": ["0", "1", "3"], "1-2": ["2"]}
+	j.chegando = ["1-1:3"]
+	j.comecar_no_farol()
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 10.0)
+	var cam := Camera3D.new()
+	cam.fov = 62.0
+	j.add_child(cam)
+	cam.make_current()
+	cam.global_position = Vector3(0, 3.2, 10.5)
+	cam.look_at(Vector3(0, 1.0, -2.0))
+	await _esperar(1.6)
+	await _foto("f01_terreo_com_faisquinhas_e_placas")
+	var ids := ["0", "1", "2", "3", "4", "5"]
+	j.faisquinhas = {"1-1": ids, "1-2": ids, "2-1": ids, "2-2": ids, "3-1": ids}
+	await _refazer_hub()
+	var hub := j.hub
+	j.hub.festa()
+	cam.make_current()
+	f.teleportar(hub.inicio)
+	cam.global_position = Vector3(-2.5, 5.8, 7.0)
+	cam.look_at(Vector3(0.0, 0.4, 0.0))
+	await _esperar(1.5)
+	await _foto("f02_terreo_com_o_trenzinho")
+	await _ate(func() -> bool: return hub.elevador.andar == 1 and hub.elevador.parado, 15.0)
+	var e := hub.elevador.global_position
+	cam.global_position = HubFarol.ponto(176.0, 9.6, HubFarol.ANDARES[1] + 2.2)
+	cam.look_at(e + Vector3.UP * 1.0)
+	await _esperar(0.6)
+	await _foto("f03_elevador_no_2o_andar")
+	cam.global_position = HubFarol.ponto(300.0, 9.6, HubFarol.ANDARES[1] + 2.4)
+	cam.look_at(HubFarol.ponto(235.0, 9.6, HubFarol.ANDARES[1] + 0.6))
+	await _esperar(0.4)
+	await _foto("f04_2o_andar_com_faisquinhas")
+	cam.global_position = HubFarol.ponto(250.0, 10.5, HubFarol.ANDARES[3] + 2.5)
+	cam.look_at(Vector3(0, HubFarol.ANDARES[3] + 1.6, 0))
+	await _esperar(0.6)
+	await _foto("f05_farolete_aceso")
+	# A pausa dentro da 1-1, com o contador.
+	await _refazer_hub()
+	f.camera.make_current()
+	var porta11: Node3D = j.hub.portas_nos["1-1"]
+	await _faisca_em(porta11.global_position + porta11.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
+	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy(), 8.0)
+	await _esperar(0.5)
+	j.abrir_pausa()
+	await _esperar_real(0.5)
+	await _foto("f06_pausa_com_contador")
 	j.get_tree().quit()
 
 

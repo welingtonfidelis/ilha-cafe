@@ -29,8 +29,8 @@ func rodar() -> void:
 	ok = m._conferir("de 75 a 110 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 75 and n.estrelas.size() <= 110,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
 	var acesas := n.tochas.filter(func(t: Tocha) -> bool: return t.esta_acesa).size()
-	ok = m._conferir("3 postos, 3 vaga-lumes, 19 tochas (12 já acesas), 2 paredes rachadas, 1 ponte e 1 porta das tochas",
-			n.postos.size() == 3 and n.vaga_lumes.size() == 3 and n.tochas.size() == 19 and acesas == 12 and n.paredes_rachadas.size() == 2
+	ok = m._conferir("3 postos, 6 Faisquinhas, 19 tochas (12 já acesas), 2 paredes rachadas, 1 ponte e 1 porta das tochas",
+			n.postos.size() == 3 and n.faisquinhas.size() == 6 and n.tochas.size() == 19 and acesas == 12 and n.paredes_rachadas.size() == 2
 			and n.pontes.size() == 1 and n.portas_das_tochas.size() == 1, "(%d postos, %d tochas, %d acesas)" % [n.postos.size(), n.tochas.size(), acesas]) and ok
 	ok = m._conferir("13 Bolotas (com a Bolotona e as 3 filhas) e o baú dourado", n.alvos.size() == 13 and n.bau != null and n.bau.dourado,
 			"(%d)" % n.alvos.size()) and ok
@@ -46,7 +46,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú no alto do cristal", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso de cada playground: o 2, o 3 e o 4", donos == [1, 2, 3], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no alto do cristal: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 29.0
 			and Vector2(n.bau.global_position.x, n.bau.global_position.z + 66.0).length() < 14.0) and ok
@@ -197,8 +197,8 @@ func _mina_de_ouro() -> bool:
 	await m._esperar(0.4)
 	ok = m._conferir("três golpes quebram a parede rachada", parede.derrotado and parede.collision_layer == 0, "(%d golpes)" % parede.golpes) and ok
 	await _andar(Vector3(-1, 0, 0), 1.2)
-	ok = m._conferir("a passagem fica livre e o V1 está no nicho", n.achados == 1 and j.global_position.x < -56.0,
-			"(x %.1f, vaga-lumes %d)" % [j.global_position.x, n.achados]) and ok
+	ok = m._conferir("a passagem fica livre e o V1 está no nicho", n.faisquinhas[0].encontrado and j.global_position.x < -56.0,
+			"(x %.1f, Faisquinhas %d)" % [j.global_position.x, n.achados]) and ok
 	return ok
 
 
@@ -251,7 +251,7 @@ func _elevador_e_alavancas() -> bool:
 	ok = m._conferir("a passarela de tábuas segura o Faísca em cima do buraco", j.is_on_floor() and j.global_position.y > 15.8) and ok
 	j.teleportar(Vector3(-11.0, 16.1, -138.5))
 	await m._esperar(0.6)
-	ok = m._conferir("no fim da passarela está o V2", n.achados == 2, "(%d)" % n.achados) and ok
+	ok = m._conferir("no fim da passarela está o V2", n.faisquinhas[1].encontrado, "(%d)" % n.achados) and ok
 	j.teleportar(Vector3(-9.0, 16.1, -112.0))
 	await m._esperar(1.2)
 	ok = m._conferir("saindo da sala a luz volta", not n.escuro and n._ambiente.ambient_light_energy > 0.4) and ok
@@ -290,8 +290,8 @@ func _balsa_e_cristais() -> bool:
 		await m._esperar(0.45)
 	await m._esperar(0.4)
 	await _andar(Vector3(1, 0, 0), 1.2)
-	ok = m._conferir("três golpes na parede rachada do leste abrem o nicho do V3", parede.derrotado and n.achados == 3 and j.global_position.x > 44.0,
-			"(x %.1f, vaga-lumes %d)" % [j.global_position.x, n.achados]) and ok
+	ok = m._conferir("três golpes na parede rachada do leste abrem o nicho do V3", parede.derrotado and n.faisquinhas[2].encontrado and j.global_position.x > 44.0,
+			"(x %.1f, Faisquinhas %d)" % [j.global_position.x, n.achados]) and ok
 	var subida := [[0, Vector3(19.5, 21.0, -59.0), "do chão para o 1º tablado"], [1, Vector3(14.0, 25.0, -66.0), "do 1º para o 2º"],
 		[2, Vector3(5.0, 30.0, -66.0), "do 2º para a arena no alto do cristal"]]
 	for s in subida:

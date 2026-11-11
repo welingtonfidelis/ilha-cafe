@@ -128,6 +128,10 @@ func _mesa_do_cafe() -> void:
 	panela_com_tampa(Vector3(7.0, 8.0, -28.0), 18.0, 0.0)
 	ponto_de_dica(Vector3(5.0, 8.5, -23.5), 3.0, "tampa")
 	roda(Vector3(7.0, 15.5, -28.0), 1.6, 4)
+	# O Faisquinha 3 no meio da roda lá em cima (a tampa joga até ele) e o 4 em cima do vidro de ketchup, a 6 m da
+	# tampa: pulando dela e flutuando até lá.
+	faisquinha(Vector3(7.0, 15.5, -28.0), "3").set_meta("no_ar", true)
+	faisquinha(Vector3(13.0, 15.4, -30.5), "4").set_meta("sem_estrelinhas", true)
 	cozinha("ketchup", Vector3(13, 8, -30.5), 0.3, K)
 	cozinha("jar_D_large", Vector3(-12.5, 8, -13.5))
 	bolota(Vector3(2.0, 8, -24.0), true)
@@ -158,7 +162,8 @@ func _bancada_das_panelas() -> void:
 	rolo(Vector3(-60.0, 8.0, -38.0), Vector3(26.0, 0, 0), 5.0, 0.0)
 	rolo(Vector3(-60.0, 8.0, -46.5), Vector3(26.0, 0, 0), 6.0, 2.0)
 	# Na bancada: o porco dispara pela bancada e o caranguejo guarda o canto com as garras.
-	bolota(Vector3(-35.0, 8.0, -31.0), false, "porco")
+	# O porco leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(-35.0, 8.0, -31.0), false, "porco"))
 	bolota(Vector3(-58.0, 8.0, -42.0), false, "caranguejo")
 	# O vão do canto: a panela no banquinho e a prateleira com o V1.
 	bloco(Vector3(-54, 0, -26), Vector3(7.0, 5.0, 5.0), COR_MADEIRA)
@@ -166,7 +171,7 @@ func _bancada_das_panelas() -> void:
 	bloco(Vector3(-61, 15, -26), Vector3(6, 1, 16), COR_MADEIRA)
 	for z in [-20.0, -32.0]:
 		bloco(Vector3(-62.5, 12.5, z), Vector3(1.0, 2.5, 1.0), COR_MADEIRA)
-	vaga_lume(Vector3(-61.0, 17.0, -30.0))
+	faisquinha(Vector3(-61.0, 17.0, -30.0))
 	roda(Vector3(-61.0, 17.0, -22.0), 1.4, 4)
 	trilha(Vector3(-47.0, 10.0, -26.0), Vector3(-51.0, 11.0, -26.0), 2)
 	trilha_creme([Vector3(-32, 8, -26), Vector3(-37, 8, -33), Vector3(-40, 8, -42), Vector3(-40, 8, -49.5)])
@@ -213,7 +218,7 @@ func _fogao_e_pizza() -> void:
 	bloco(Vector3(-56, 8, -108), Vector3(8, 2.4, 7), Color("d9534f"))
 	bloco(Vector3(-56, 10.4, -108), Vector3(7.4, 2.2, 6.6), Color("4f8fd9"))
 	bloco(Vector3(-56, 12.6, -108), Vector3(7.8, 2.4, 7), Color("f2b134"))
-	vaga_lume(Vector3(-56.0, 16.1, -108.0))
+	faisquinha(Vector3(-56.0, 16.1, -108.0))
 	estrelinha(Vector3(-54.0, 16.2, -106.0))
 	estrelinha(Vector3(-58.0, 16.2, -110.0))
 	arco(Vector3(-46.0, 13.0, -100.0), Vector3(-53.0, 17.0, -105.0), 2.0, 3)
@@ -293,7 +298,7 @@ func _pia_e_prateleira() -> void:
 	# Segredo: a prateleira dobra atrás da geladeira, com o V3 escondido atrás da caixa.
 	bloco(Vector3(3, 13, -81), Vector3(22, 1, 6), COR_MADEIRA)
 	cozinha("crate", Vector3(1.0, 14.0, -82.0), 0.0, 2.0)
-	vaga_lume(Vector3(-5.0, 15.1, -80.0))
+	faisquinha(Vector3(-5.0, 15.1, -80.0))
 	trilha(Vector3(10.5, 15.0, -79.0), Vector3(4.5, 15.0, -82.5), 2)
 	trilha_creme([Vector3(20, 8, -98), Vector3(22, 8, -93)])
 	trilha(Vector3(18.0, 9.0, -97.0), Vector3(22.0, 9.0, -93.0), 2)

@@ -26,7 +26,7 @@ func rodar() -> void:
 	var total := n.total_estrelas()
 	ok = m._conferir("de 75 a 110 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 75 and n.estrelas.size() <= 110,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
-	ok = m._conferir("3 postos, 3 vaga-lumes, 9 Bolotas e o baú", n.postos.size() == 3 and n.vaga_lumes.size() == 3 and n.alvos.size() == 9
+	ok = m._conferir("3 postos, 6 Faisquinhas, 9 Bolotas e o baú", n.postos.size() == 3 and n.faisquinhas.size() == 6 and n.alvos.size() == 9
 			and n.bau != null, "(%d postos, %d Bolotas)" % [n.postos.size(), n.alvos.size()]) and ok
 	ok = m._conferir("peças: 3 tampas, 4 bocas, 2 rolos, a pizza, a pia, 4 pratos que se mexem, 5 bolhas e o sorvete", n.tampas.size() == 3
 			and n.bocas.size() == 4 and n.rolos.size() == 2 and n.pizzas.size() == 1 and n.aguas.size() == 1 and n.moveis.size() == 4
@@ -41,7 +41,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú em cima da geladeira", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso de cada playground: o 2, o 3 e o 4", donos == [1, 2, 3], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica em cima da geladeira: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 19.5
 			and Vector2(n.bau.global_position.x, n.bau.global_position.z + 70.0).length() < 8.0) and ok
@@ -124,9 +124,9 @@ func _mesa_e_bancada() -> bool:
 	onde = await _tampa_para(n.tampas[1], Vector3(-61.0, 16.0, -29.0))
 	ok = m._conferir("a tampa do vão joga o Faísca até a prateleira da parede", absf(onde.y - 16.0) < 0.4 and onde.x < -58.0,
 			"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-	j.teleportar(n.vaga_lumes[0].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[0].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("o V1 está na prateleira", n.achados == 1) and ok
+	ok = m._conferir("o V1 está na prateleira", n.faisquinhas[0].encontrado) and ok
 
 	# Viagem 2: o prato leva da ponta da bancada até a mesa da pizza.
 	var prato: AnimatableBody3D = n.moveis[0]
@@ -167,9 +167,9 @@ func _pizza_e_fogao() -> bool:
 	j.vida = Jogador.VIDA_MAX
 	onde = await _tampa_para(n.tampas[2], Vector3(-55.0, 15.0, -106.5))
 	ok = m._conferir("a tampa da bancada joga o Faísca em cima dos livros de receitas", absf(onde.y - 15.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-	j.teleportar(n.vaga_lumes[1].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[1].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("o V2 está em cima dos livros", n.achados == 2) and ok
+	ok = m._conferir("o V2 está em cima dos livros", n.faisquinhas[1].encontrado) and ok
 	# Viagem 3: o prato de trás da geladeira, da ponta do fogão até a bancada da pia.
 	var prato: AnimatableBody3D = n.moveis[1]
 	while prato.global_position.x > -10.0:
@@ -226,8 +226,8 @@ func _pia_e_geladeira() -> bool:
 	# Segredo: a prateleira continua atrás da geladeira até o V3.
 	j.teleportar(Vector3(11.0, 14.1, -79.0))
 	await _andar(Vector3(-1, 0, 0), 2.6)
-	ok = m._conferir("andando pela prateleira atrás da geladeira se acha o V3", n.achados == 3 and absf(j.global_position.y - 14.0) < 0.3,
-			"(x %.1f, vaga-lumes %d)" % [j.global_position.x, n.achados]) and ok
+	ok = m._conferir("andando pela prateleira atrás da geladeira se acha o V3", n.faisquinhas[2].encontrado and absf(j.global_position.y - 14.0) < 0.3,
+			"(x %.1f, Faisquinhas %d)" % [j.global_position.x, n.achados]) and ok
 	var sorvete: Area3D = n.molas[0]
 	var onde := await _quicar(sorvete, Vector3(3.0, 20.0, -72.0))
 	ok = m._conferir("o sorvete joga o Faísca até o alto da geladeira", j.is_on_floor() and absf(onde.y - 20.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok

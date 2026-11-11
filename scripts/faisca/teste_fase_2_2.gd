@@ -26,7 +26,7 @@ func rodar() -> void:
 	await m._esperar(0.3)
 	ok = m._conferir("de 110 a 160 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 110 and n.estrelas.size() <= 160,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), n.total_estrelas()]) and ok
-	ok = m._conferir("4 postos, 3 vaga-lumes, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.vaga_lumes.size() == 3
+	ok = m._conferir("4 postos, 6 Faisquinhas, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.faisquinhas.size() == 6
 			and n.alvos.size() == 15 and n.coracoes.size() == 4 and n.bau != null, "(%d postos, %d Bolotas)" % [n.postos.size(), n.alvos.size()]) and ok
 	ok = m._conferir("peças: 20 nuvens que quicam (4 somem), 3 botões, 3 flores, o canhão, 2 caronas, 3 cerejas, a vela e a casinha",
 			n.nuvens_que_quicam.size() == 20 and n.nuvens_que_quicam.filter(func(x: NuvemQueQuica) -> bool: return x.some).size() == 4
@@ -42,7 +42,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú em cima do bolo", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso do playground 2, do 3 e do 5", donos == [1, 2, 4], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no topo do bolo: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 39.5
 			and Vector2(n.bau.global_position.x, n.bau.global_position.z).length() < 4.0) and ok
@@ -132,9 +132,9 @@ func _ilhas() -> bool:
 	ok = m._conferir("da chegada, a nuvem sobre o vazio leva à ilha da direita", absf(onde.y - 9.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
 	onde = await _quicar(n.nuvens_que_quicam[13], Vector3(-103, 14, 17))
 	ok = m._conferir("e a última nuvem do meio leva à ilha do alto", absf(onde.y - 14.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-	j.teleportar(n.vaga_lumes[0].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[0].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("o V1 está na beirada embaixo da ilha do meio", n.achados == 1) and ok
+	ok = m._conferir("o V1 está na beirada embaixo da ilha do meio", n.faisquinhas[0].encontrado) and ok
 	onde = await _quicar(n.nuvens_que_quicam[15], Vector3(-100.5, 10, 45))
 	ok = m._conferir("e a nuvem da beirada devolve para a ilha do meio", absf(onde.y - 10.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
 
@@ -198,10 +198,10 @@ func _praca() -> bool:
 	await m._esperar(2.0)
 	onde = await _balao_para(Vector3(-50, 16.1, -75), Vector3(-44, 26, -76))
 	ok = m._conferir("com o balão, o Faísca chega à estação do teleférico", absf(onde.y - 26.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-	var v2 := n.vaga_lumes[1]
+	var v2 := n.faisquinhas[1]
 	onde = await _balao_para(v2.global_position + Vector3(0, -13.0, 5.0), v2.global_position + Vector3(0, -1.1, 1.5))
 	await m._esperar(0.3)
-	ok = m._conferir("e no anel alto, onde está o V2", n.achados == 2 and absf(onde.y - 28.0) < 0.4, "(altura %.1f, vaga-lumes %d)" % [onde.y, n.achados]) and ok
+	ok = m._conferir("e no anel alto, onde está o V2", n.faisquinhas[1].encontrado and absf(onde.y - 28.0) < 0.4, "(altura %.1f, Faisquinhas %d)" % [onde.y, n.achados]) and ok
 
 	var tf := n.teleferico
 	j.teleportar(tf.global_position + Vector3(0, 0.3, 0))
@@ -274,7 +274,7 @@ func _ceu_e_bolo() -> bool:
 	await m._esperar(0.6)
 	ok = m._conferir("três golpes quebram a parede rachada da casinha", parede.derrotado, "(%d golpes)" % parede.golpes) and ok
 	await _andar(-frente, 1.2)
-	ok = m._conferir("e o V3 está lá dentro", n.achados == 3, "(vaga-lumes %d)" % n.achados) and ok
+	ok = m._conferir("e o V3 está lá dentro", n.faisquinhas[2].encontrado, "(Faisquinhas %d)" % n.achados) and ok
 
 	onde = await _quicar(n.cerejas[2], n.no_bolo(-165, 16.2, 35))
 	ok = m._conferir("quem cai no anel volta lá para cima pela cereja do outro lado", absf(onde.y - 35.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok

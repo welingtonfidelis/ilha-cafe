@@ -9,6 +9,11 @@ extends Fase
 ## Cada porta mostra a imagem da fase, um ícone (nuvem para as do céu, casinha para as do chão) e quantas
 ## estrelinhas pede; fechada tem cadeado. A do topo, para a nave do Rei Bolotão, pede as Estrelas Grandes.
 ## O teto é o céu apagado: cada Estrela Grande devolvida acende uma constelação.
+## Os Faisquinhas salvos (item 1 da lista do Faísca, 2026-11-11) moram aqui, cada um no andar do mundo de onde veio
+## (os da 1-x no térreo, os da 2-x no 2º andar, os da 3-x no 3º), brincando nas vagas livres do anel. Com 10, eles
+## consertam o elevador (a plataforma laranja que sobe e desce pelo vão das sacadas, a sudeste, parando em cada
+## andar); com 20, o trenzinho de brinquedo roda em volta do eixo no térreo, com dois Faisquinhas de passageiros;
+## com 30, o farolete do topo acende e os fachos giram pela torre. Antes disso, uma placa mostra quantos faltam.
 ## O FaiscaJogo preenche `portas` antes de pôr o hub na árvore e escuta `porta_escolhida`. A porta "saida" (que
 ## voltava para a ilha) não é mais usada desde que o menu principal separou os dois jogos (2026-11-10).
 ## Ângulos em graus, como os das portas: 0 norte (-Z), 90 leste (+X), 180 sul, 270 oeste.
@@ -35,6 +40,16 @@ const DEGRAUS := 35
 ## Altura da murinha que se vê, e da parede invisível nas beiradas (o pulo com os jatos chega a uns 2,5 m).
 const MURINHA := 1.0
 const PAREDE_INVISIVEL := 3.2
+## O vão do elevador: no meio a sudeste (entre as portas e longe dos patamares), largo ELEVADOR_ABERTURA graus.
+const ELEVADOR_GRAUS := 135.0
+const ELEVADOR_ABERTURA := 24.0
+const ELEVADOR_RAIO := 9.9
+## O trilho do trenzinho, em volta do eixo no térreo.
+const TREM_RAIO := 3.2
+const TREM_VELOCIDADE := 0.25
+## Onde ficam as placas dos prêmios que faltam (graus, raio, andar).
+const PLACAS := {"elevador": [118.0, 7.6, 0], "trem": [180.0, 5.6, 0], "farolete": [55.0, 9.6, 3]}
+const PEDE := {"elevador": 10, "trem": 20, "farolete": 30}
 const MADEIRA := Color("c98b55")
 const MADEIRA_CLARA := Color("dca46c")
 const CREME := Color("f3ead8")
@@ -52,13 +67,24 @@ const CONSTELACOES := {
 }
 
 ## Uma por porta: {id, nome, tipo ("ceu", "chao", "nave" ou "saida"), andar (0 é o térreo), lado (graus),
-## pede, pede_grandes, falta, aberta, feita, imagem, grande, achados, total_vaga_lumes}.
+## pede, pede_grandes, falta, aberta, feita, imagem, grande, achados, total_faisquinhas}.
 var portas: Array = []
+## Os Faisquinhas salvos, um por item: {fase, id, andar, chegando}; os que chegam agora caem do alto.
+var moradores_dados: Array = []
+var moradores: Array[Faisquinha] = []
+## Prêmios abertos ("elevador", "trem", "farolete"), os que ainda não tiveram festa e o total de Faisquinhas.
+var premios: Array = []
+var premios_novos: Array = []
+var total_faisquinhas := 0
+var elevador: ElevadorFarol
+var trem: Array[AnimatableBody3D] = []
+var farolete: Node3D
 ## Estrelas Grandes já devolvidas (ids das fases): acendem as constelações.
 var grandes: Array = []
 ## Porta onde o Faísca aparece (voltando de uma fase); vazio é a entrada, no sul.
 var volta_de := ""
 var portas_nos := {}
+var _tempo_hub := 0.0
 
 
 func _montar() -> void:
@@ -70,6 +96,14 @@ func _montar() -> void:
 	_escada()
 	_sacadas()
 	_teto()
+	_elevador()
+	if "trem" in premios:
+		_trem()
+	if "farolete" in premios:
+		_farolete()
+	for premio in PEDE:
+		if not premio in premios:
+			_placa(premio)
 	for p in portas:
 		var porta := PortaFase.new()
 		porta.dados = p
@@ -83,6 +117,7 @@ func _montar() -> void:
 		portas_nos[p.id] = porta
 		if p.id == volta_de:
 			inicio = porta.position - fora * 3.4 + Vector3.UP * 0.1
+	_moradores()
 
 
 ## Para onde o Faísca olha ao aparecer (o yaw do Jogador: 0 olha para -Z).
@@ -353,10 +388,20 @@ func _sacadas() -> void:
 	var creme := _malha()
 	var laranja := _malha()
 	var colisao := _malha()
+	var com_vao := "elevador" in premios
+	var g0 := ELEVADOR_GRAUS - ELEVADOR_ABERTURA * 0.5
+	var g1 := ELEVADOR_GRAUS + ELEVADOR_ABERTURA * 0.5
 	for k in range(1, ANDARES.size()):
 		var y: float = ANDARES[k]
-		_bloco(madeira, SACADA, RAIO, 0.0, 360.0, y, y, 0.4)
-		_bloco(colisao, SACADA, RAIO + 0.3, 0.0, 360.0, y, y, 0.4)
+		if com_vao:
+			# O anel sem o vão, e a tira de dentro (embaixo da murinha) que passa na frente dele.
+			_bloco(madeira, SACADA, RAIO, g1, g0 + 360.0, y, y, 0.4)
+			_bloco(colisao, SACADA, RAIO + 0.3, g1, g0 + 360.0, y, y, 0.4)
+			_bloco(madeira, SACADA, ElevadorFarol.DENTRO - 0.1, g0, g1, y, y, 0.4)
+			_bloco(colisao, SACADA, ElevadorFarol.DENTRO - 0.1, g0, g1, y, y, 0.4)
+		else:
+			_bloco(madeira, SACADA, RAIO, 0.0, 360.0, y, y, 0.4)
+			_bloco(colisao, SACADA, RAIO + 0.3, 0.0, 360.0, y, y, 0.4)
 		var chegada := comeco_do_lance(k - 1) + LANCE + PATAMAR
 		_bloco(laranja, SACADA - 0.05, SACADA + 0.05, chegada, chegada + 360.0 - PATAMAR, y - 0.02, y - 0.02, 0.42)
 		_murinha(creme, laranja, colisao, SACADA, SACADA + 0.2, chegada, chegada + 360.0 - PATAMAR, y, y)
@@ -493,6 +538,306 @@ func _teto() -> void:
 				traco.look_at_from_position((pontos[k] + b) * 0.5, b)
 
 
+# --- Faisquinhas e prêmios ---------------------------------------------------------------
+
+## Os Faisquinhas salvos, cada um no andar do mundo dele, nas vagas livres do anel (longe das portas, do elevador, das
+## placas e de onde a escada chega). Olham para o meio da torre.
+func _moradores() -> void:
+	var por_andar := {}
+	for d in moradores_dados:
+		var andar: int = d.andar
+		if not por_andar.has(andar):
+			por_andar[andar] = vagas_do_andar(andar)
+		var vagas: Array = por_andar[andar]
+		if vagas.is_empty():
+			continue
+		var casa: Vector3 = vagas.pop_front()
+		var f := Faisquinha.new()
+		f.morador = true
+		f.id = d.id
+		f.name = "Faisquinha_%s_%s" % [d.fase, d.id]
+		f.set_meta("fase", d.fase)
+		f.casa = casa
+		f.olhar_casa = atan2(-casa.x, -casa.z)
+		f.position = casa + Vector3.UP * 0.5
+		add_child(f)
+		f.corpo.rotation.y = f.olhar_casa
+		moradores.append(f)
+		if d.get("chegando", false):
+			f.set_meta("chegando", true)
+			f.chegar()
+
+
+## Vagas para morar no andar: de 15 em 15 graus, em dois anéis (10 m e 8,7 m do meio), sem as que caem perto de uma
+## porta, do elevador, de uma placa, da entrada do térreo ou do patamar onde a escada chega.
+func vagas_do_andar(andar: int) -> Array:
+	var longe := [ELEVADOR_GRAUS]
+	for p in portas:
+		if int(p.get("andar", 0)) == andar:
+			longe.append(float(p.lado))
+	for premio in PLACAS:
+		if int(PLACAS[premio][2]) == andar:
+			longe.append(float(PLACAS[premio][0]))
+	if andar == 0:
+		longe.append(180.0)
+	var patamar := -1000.0
+	if andar > 0:
+		patamar = comeco_do_lance(andar - 1) + LANCE + PATAMAR * 0.5
+	var vagas := []
+	for r in [10.0, 8.7]:
+		for k in 24:
+			var g := 7.5 + k * 15.0
+			if longe.any(func(a: float) -> bool: return absf(angle_difference(deg_to_rad(g), deg_to_rad(a))) < deg_to_rad(14.0)):
+				continue
+			if absf(angle_difference(deg_to_rad(g), deg_to_rad(patamar))) < deg_to_rad(26.0):
+				continue
+			vagas.append(ponto(g, r, ANDARES[andar]))
+	return vagas
+
+
+## Festa dos prêmios novos e das chegadas: os Faisquinhas pulam e acenam.
+func festa() -> void:
+	for f in moradores:
+		f.comemorar()
+
+
+## Onde fica cada prêmio (para o confete da festa).
+func lugar_do_premio(premio: String) -> Vector3:
+	match premio:
+		"elevador":
+			return ponto(ELEVADOR_GRAUS, ELEVADOR_RAIO, 2.5)
+		"trem":
+			return ponto(180.0, TREM_RAIO, 1.5)
+		"farolete":
+			return Vector3(0, ANDARES[-1] + 2.0, 0)
+	return Vector3.ZERO
+
+
+## O elevador no vão a sudeste. Quebrado (antes de 10 Faisquinhas), fica parado no térreo, torto e apagado.
+func _elevador() -> void:
+	elevador = ElevadorFarol.new()
+	elevador.funcionando = "elevador" in premios
+	elevador.andares = ANDARES
+	# O x de dentro dele aponta para fora da torre (do meio para a parede) e o z corre ao longo do anel.
+	var a := deg_to_rad(ELEVADOR_GRAUS)
+	elevador.rotation.y = atan2(cos(a), sin(a))
+	elevador.position = ponto(ELEVADOR_GRAUS, ELEVADOR_RAIO, 0.0)
+	add_child(elevador)
+	if elevador.funcionando:
+		# As cancelas dos andares de cima, uma de cada lado do vão: fechadas quando o elevador não está ali.
+		for k in range(1, ANDARES.size()):
+			for lado in [-1.0, 1.0]:
+				var g: float = ELEVADOR_GRAUS + lado * (ELEVADOR_ABERTURA * 0.5 + 0.8)
+				var c := Cancela.new()
+				c.andar = k
+				c.position = ponto(g, (ElevadorFarol.DENTRO + RAIO) * 0.5, ANDARES[k])
+				var b := deg_to_rad(g)
+				c.rotation.y = atan2(cos(b), sin(b))
+				add_child(c)
+				elevador.cancelas.append(c)
+
+
+## O trenzinho: o trilho redondo em volta do eixo e a locomotiva, o tênder dos presentes e o vagão, cada um uma peça
+## que gira em volta do meio (dá para subir em cima), com dois Faisquinhas de passageiros no vagão.
+func _trem() -> void:
+	for raio in [TREM_RAIO - 0.45, TREM_RAIO + 0.45]:
+		var trilho := MeshInstance3D.new()
+		var anel := TorusMesh.new()
+		anel.inner_radius = raio - 0.06
+		anel.outer_radius = raio + 0.06
+		anel.rings = 48
+		trilho.mesh = anel
+		trilho.material_override = _material(Color("8a8fa6"))
+		trilho.scale = Vector3(1, 0.4, 1)
+		trilho.position.y = 0.05
+		add_child(trilho)
+	for k in 24:
+		var dormente := MeshInstance3D.new()
+		var caixa := BoxMesh.new()
+		caixa.size = Vector3(1.3, 0.06, 0.25)
+		dormente.mesh = caixa
+		dormente.material_override = _material(MADEIRA)
+		var g := k * 15.0
+		dormente.position = ponto(g, TREM_RAIO, 0.03)
+		dormente.rotation.y = deg_to_rad(-g)
+		add_child(dormente)
+	# [modelo, comprimento, altura do teto] (em 2,6x: a locomotiva tem 1,7 m de altura e o vagão 1,9 m).
+	var pecas := [["train_locomotive", 2.2, 1.7], ["train_tender_presents_A", 1.7, 1.3], ["train_wagon", 2.5, 1.9]]
+	var angulo := 0.0
+	for i in pecas.size():
+		var carro := AnimatableBody3D.new()
+		carro.name = "Trem_%d" % i
+		carro.sync_to_physics = false
+		carro.set_meta("angulo", angulo)
+		# Quem move os carros é o farol (no _physics_process dele), por isso sem sync_to_physics: com ele ligado, a
+		# posição voltava para a anterior a cada quadro e o trem ficava parado (visto em 2026-11-11).
+		carro.position = Vector3(cos(angulo) * TREM_RAIO, 0.05, -sin(angulo) * TREM_RAIO)
+		carro.rotation.y = angulo + PI
+		var modelo: Node3D = load(Fase.QUARTO + pecas[i][0] + ".gltf").instantiate()
+		modelo.scale = Vector3.ONE * 2.6
+		carro.add_child(modelo)
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = Vector3(1.1, pecas[i][2], pecas[i][1])
+		cs.shape = forma
+		cs.position.y = pecas[i][2] * 0.5
+		carro.add_child(cs)
+		if pecas[i][0] == "train_wagon":
+			# Os dois passageiros vão sentados no teto do vagão, um olhando para cada lado.
+			for lado in [-1.0, 1.0]:
+				var passageiro := Faisquinha.boneco(Faisquinha.cor_de(2 if lado < 0.0 else 4))
+				passageiro.position = Vector3(0, pecas[i][2], lado * 0.6)
+				passageiro.rotation.y = lado * PI / 2.0
+				passageiro.name = "Passageiro%d" % (0 if lado < 0.0 else 1)
+				carro.add_child(passageiro)
+		add_child(carro)
+		trem.append(carro)
+		if i + 1 < pecas.size():
+			angulo -= (pecas[i][1] * 0.5 + 0.3 + pecas[i + 1][1] * 0.5) / TREM_RAIO
+	_mover_trem(0.0)
+
+
+## Os carros andam no sentido anti-horário visto de cima, com a frente (+Z deles) para onde vão.
+func _mover_trem(tempo: float) -> void:
+	for carro in trem:
+		var a: float = carro.get_meta("angulo") + tempo * TREM_VELOCIDADE
+		carro.position = Vector3(cos(a) * TREM_RAIO, 0.05, -sin(a) * TREM_RAIO)
+		carro.rotation.y = a + PI
+		for p in carro.get_children():
+			if p.name.begins_with("Passageiro"):
+				p.position.y = 1.9 + absf(sin(tempo * 5.0 + p.position.z * 3.0)) * 0.1
+
+
+## O farolete aceso: a lâmpada mais forte e dois fachos que giram pela torre, cada um com um holofote que passa pela
+## parede.
+func _farolete() -> void:
+	farolete = Node3D.new()
+	farolete.name = "Farolete"
+	farolete.position.y = ANDARES[-1] + 0.8 + 1.3
+	add_child(farolete)
+	var luz := StandardMaterial3D.new()
+	luz.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	luz.albedo_color = Color(FarolModelo.LUZ, 0.1)
+	luz.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	luz.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	luz.cull_mode = BaseMaterial3D.CULL_DISABLED
+	for lado in [-1.0, 1.0]:
+		var facho := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.5
+		cone.bottom_radius = 2.4
+		cone.height = 9.5
+		facho.mesh = cone
+		facho.material_override = luz
+		facho.rotation.z = lado * PI / 2.0
+		facho.position.x = lado * (1.9 + 4.75)
+		farolete.add_child(facho)
+		var holofote := SpotLight3D.new()
+		holofote.light_color = FarolModelo.LUZ
+		holofote.light_energy = 6.0
+		holofote.spot_range = 14.0
+		holofote.spot_angle = 16.0
+		holofote.position.x = lado * 1.9
+		holofote.rotation.y = -lado * PI / 2.0
+		farolete.add_child(holofote)
+	var forte := OmniLight3D.new()
+	forte.light_color = FarolModelo.LUZ
+	forte.light_energy = 3.0
+	forte.omni_range = 10.0
+	farolete.add_child(forte)
+
+
+## A placa de um prêmio que ainda falta: o desenho dele em cima, um Faisquinha e "quantos tem/quantos pede".
+func _placa(premio: String) -> void:
+	var spec: Array = PLACAS[premio]
+	var raiz := Node3D.new()
+	raiz.name = "Placa_" + premio
+	raiz.position = ponto(spec[0], spec[1], ANDARES[int(spec[2])])
+	# Virada para o meio da torre (a do trem, no meio, para a entrada ao sul).
+	var para := Vector3(0, 0, RAIO) - raiz.position if premio == "trem" else -raiz.position
+	raiz.rotation.y = atan2(para.x, para.z)
+	add_child(raiz)
+	var poste := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = 0.08
+	cil.bottom_radius = 0.08
+	cil.height = 1.5
+	poste.mesh = cil
+	poste.material_override = _material(MADEIRA)
+	poste.position.y = 0.75
+	raiz.add_child(poste)
+	var tabua := MeshInstance3D.new()
+	var caixa := BoxMesh.new()
+	caixa.size = Vector3(1.9, 1.0, 0.12)
+	tabua.mesh = caixa
+	tabua.material_override = _material(MADEIRA_CLARA)
+	tabua.position.y = 1.8
+	raiz.add_child(tabua)
+	# O poste e a tábua seguram o Faísca (o revisor de física cobra).
+	var corpo := StaticBody3D.new()
+	for parte in [[Vector3(0.2, 1.5, 0.2), Vector3(0, 0.75, 0)], [Vector3(1.9, 1.0, 0.12), Vector3(0, 1.8, 0)]]:
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = parte[0]
+		cs.shape = forma
+		cs.position = parte[1]
+		corpo.add_child(cs)
+	raiz.add_child(corpo)
+	var numero := Label3D.new()
+	numero.name = "Numero"
+	numero.text = "%d/%d" % [total_faisquinhas, PEDE[premio]]
+	numero.font_size = 64
+	numero.pixel_size = 0.01
+	numero.outline_size = 14
+	numero.outline_modulate = Color(0.08, 0.06, 0.18)
+	numero.modulate = Color("ffd23f")
+	numero.position = Vector3(0.35, 1.8, 0.08)
+	raiz.add_child(numero)
+	var boneco := Faisquinha.boneco(Faisquinha.cor_de(PEDE.keys().find(premio) + 1))
+	boneco.scale = Vector3.ONE * 0.7
+	boneco.position = Vector3(-0.55, 1.42, 0.12)
+	raiz.add_child(boneco)
+	var desenho: Node3D
+	match premio:
+		"elevador":
+			desenho = MeshInstance3D.new()
+			var cubo := BoxMesh.new()
+			cubo.size = Vector3(0.6, 0.14, 0.6)
+			(desenho as MeshInstance3D).mesh = cubo
+			(desenho as MeshInstance3D).material_override = _material(LARANJA)
+		"trem":
+			desenho = load(Fase.QUARTO + "train_locomotive.gltf").instantiate()
+			desenho.scale = Vector3.ONE * 0.9
+			desenho.rotation.y = PI / 2.0
+		"farolete":
+			desenho = MeshInstance3D.new()
+			var bola := SphereMesh.new()
+			bola.radius = 0.22
+			bola.height = 0.44
+			(desenho as MeshInstance3D).mesh = bola
+			var m := StandardMaterial3D.new()
+			m.albedo_color = Color("e8ffff")
+			m.emission_enabled = true
+			m.emission = FarolModelo.LUZ
+			m.emission_energy_multiplier = 1.2
+			(desenho as MeshInstance3D).material_override = m
+	desenho.position.y = 2.45
+	raiz.add_child(desenho)
+
+
+func _physics_process(delta: float) -> void:
+	super(delta)
+	_tempo_hub += delta
+	if not trem.is_empty():
+		_mover_trem(_tempo_hub)
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	if farolete:
+		farolete.rotation.y += delta * 0.6
+
+
 ## Por dentro: sem céu à vista, luz ambiente morna e duas luzes no alto de cada andar, sem sol.
 func _montar_ceu_e_luz() -> void:
 	var env := Environment.new()
@@ -595,15 +940,35 @@ class PortaFase:
 			grande.material_override = _brilho(Color("ffd23f")) if dados.grande else _mat(Color("4a4f6a"))
 			grande.position = Vector3(0, 4.35, 0.4)
 			add_child(grande)
-			for k in int(dados.total_vaga_lumes):
-				var luz := MeshInstance3D.new()
+			# As cabecinhas dos Faisquinhas da fase: brancas com a tela preta e a luz da antena os salvos, cinza os outros.
+			var n := int(dados.total_faisquinhas)
+			for k in n:
+				var x := (k - (n - 1) * 0.5) * 0.4
+				var salvo := k < int(dados.achados)
+				var cabeca := MeshInstance3D.new()
 				var bola := SphereMesh.new()
-				bola.radius = 0.13
+				bola.radius = 0.14
 				bola.height = 0.26
-				luz.mesh = bola
-				luz.material_override = _brilho(Color("c6ff4a")) if k < int(dados.achados) else _mat(Color("3a4050"))
-				luz.position = Vector3(-0.4 + k * 0.4, 0.3, 0.35)
-				add_child(luz)
+				cabeca.mesh = bola
+				cabeca.material_override = _mat(Color("f4f5f9")) if salvo else _mat(Color("3a4050"))
+				cabeca.position = Vector3(x, 0.32, 0.35)
+				add_child(cabeca)
+				if salvo:
+					var tela := MeshInstance3D.new()
+					var caixa_tela := BoxMesh.new()
+					caixa_tela.size = Vector3(0.19, 0.11, 0.04)
+					tela.mesh = caixa_tela
+					tela.material_override = _mat(Color("15121f"))
+					tela.position = Vector3(x, 0.32, 0.48)
+					add_child(tela)
+					var luz := MeshInstance3D.new()
+					var bolinha := SphereMesh.new()
+					bolinha.radius = 0.045
+					bolinha.height = 0.09
+					luz.mesh = bolinha
+					luz.material_override = _brilho(Faisquinha.cor_de(k))
+					luz.position = Vector3(x, 0.52, 0.35)
+					add_child(luz)
 		_aviso = _rotulo("", 52, Color("ffd23f"))
 		_aviso.position = Vector3(0, 3.2, 0.6)
 		add_child(_aviso)
@@ -772,4 +1137,201 @@ class PortaFase:
 		m.emission_enabled = true
 		m.emission = cor
 		m.emission_energy_multiplier = 1.6
+		return m
+
+
+## O elevador do farol (prêmio dos 10 Faisquinhas): uma plataforma laranja com borda amarela, corrimão do lado de
+## dentro (o vão do meio) e a parede da torre do lado de fora. Sobe e desce sem parar pelo vão das sacadas, parando
+## PARADA s em cada andar. Andando, liga as paredinhas das duas pontas (para o Faísca não sair no meio do caminho);
+## parado, desliga as do elevador e abre as cancelas daquele andar. Não desce enquanto o Faísca está embaixo dele no
+## térreo. Quebrado (`funcionando` falso), fica no térreo, torto e sem luz. O x dele aponta para fora da torre.
+class ElevadorFarol:
+	extends AnimatableBody3D
+
+	## Do meio da torre até a borda de dentro da plataforma, e o tamanho dela (ao longo do raio e do anel).
+	const DENTRO := 8.2
+	const FUNDO := 3.4
+	const LARGURA := 3.0
+	const PARADA := 2.6
+	const VELOCIDADE := 2.8
+
+	var funcionando := true
+	var andares: Array = []
+	var cancelas: Array = []
+	## O andar em que está (ou o último em que parou) e para onde vai.
+	var andar := 0
+	var indo_para := 0
+	var parado := true
+	var subindo := true
+	var _espera := 0.0
+	var _paredes: Array[CollisionShape3D] = []
+	var _luz: OmniLight3D
+
+	func _ready() -> void:
+		sync_to_physics = true
+		var laranja := _mat(Color("ff7a22"))
+		var amarelo := _mat(Color("ffd23f"))
+		var branco := _mat(Color("f4f5f9"))
+		_caixa(Vector3(FUNDO, 0.3, LARGURA), Vector3(0, -0.15, 0), laranja, true)
+		for z in [-1.0, 1.0]:
+			_caixa(Vector3(FUNDO, 0.08, 0.16), Vector3(0, 0.02, z * (LARGURA * 0.5 - 0.08)), amarelo, false)
+		# Corrimão de dentro (sempre sólido) e os postes dos cantos com a moldura de cima.
+		_caixa(Vector3(0.12, 1.0, LARGURA), Vector3(-FUNDO * 0.5 + 0.06, 0.5, 0), branco, false)
+		var parede := CollisionShape3D.new()
+		var caixa := BoxShape3D.new()
+		caixa.size = Vector3(0.2, 3.0, LARGURA)
+		parede.shape = caixa
+		parede.position = Vector3(-FUNDO * 0.5 + 0.1, 1.5, 0)
+		add_child(parede)
+		for x in [-1.0, 1.0]:
+			for z in [-1.0, 1.0]:
+				_caixa(Vector3(0.14, 2.7, 0.14), Vector3(x * (FUNDO * 0.5 - 0.07), 1.35, z * (LARGURA * 0.5 - 0.07)), branco, false)
+		for x in [-1.0, 1.0]:
+			_caixa(Vector3(0.16, 0.16, LARGURA), Vector3(x * (FUNDO * 0.5 - 0.07), 2.75, 0), laranja, false)
+		# As paredinhas das pontas (ligadas só andando).
+		for z in [-1.0, 1.0]:
+			var ponta := CollisionShape3D.new()
+			var forma := BoxShape3D.new()
+			forma.size = Vector3(FUNDO, 2.6, 0.2)
+			ponta.shape = forma
+			ponta.position = Vector3(0, 1.3, z * (LARGURA * 0.5 + 0.1))
+			ponta.disabled = true
+			add_child(ponta)
+			_paredes.append(ponta)
+		_luz = OmniLight3D.new()
+		_luz.light_color = Color("ffd9a0")
+		_luz.light_energy = 1.4
+		_luz.omni_range = 5.0
+		_luz.position.y = 2.6
+		add_child(_luz)
+		if not funcionando:
+			_luz.visible = false
+			rotation.z = 0.06
+			position.y = 0.05
+		_espera = PARADA
+		_atualizar_cancelas()
+
+	func _physics_process(delta: float) -> void:
+		if not funcionando:
+			return
+		if parado:
+			_espera -= delta
+			if _espera <= 0.0:
+				_partir()
+			return
+		var alvo: float = andares[indo_para]
+		var y := move_toward(position.y, alvo, VELOCIDADE * delta)
+		if y < position.y and _faisca_embaixo():
+			return
+		position.y = y
+		if is_equal_approx(position.y, alvo):
+			andar = indo_para
+			parado = true
+			_espera = PARADA
+			for p in _paredes:
+				p.disabled = true
+			_atualizar_cancelas()
+
+	func _partir() -> void:
+		if andar >= andares.size() - 1:
+			subindo = false
+		elif andar <= 0:
+			subindo = true
+		indo_para = andar + (1 if subindo else -1)
+		parado = false
+		for p in _paredes:
+			p.disabled = false
+		_atualizar_cancelas()
+
+	## Cancela aberta só no andar em que o elevador está parado.
+	func _atualizar_cancelas() -> void:
+		for c in cancelas:
+			c.abrir(parado and c.andar == andar)
+
+	## O Faísca embaixo da plataforma (no vão, entre ela e o andar de baixo): o elevador espera.
+	func _faisca_embaixo() -> bool:
+		var j := get_tree().get_first_node_in_group("jogador") as Node3D
+		if j == null:
+			return false
+		var local := to_local(j.global_position)
+		return absf(local.x) < FUNDO * 0.5 + 0.5 and absf(local.z) < LARGURA * 0.5 + 0.5 and local.y < -0.1 and local.y > -3.0
+
+	func _caixa(tamanho: Vector3, pos: Vector3, material: Material, solida: bool) -> void:
+		var mi := MeshInstance3D.new()
+		var b := BoxMesh.new()
+		b.size = tamanho
+		mi.mesh = b
+		mi.material_override = material
+		mi.position = pos
+		add_child(mi)
+		if solida:
+			var cs := CollisionShape3D.new()
+			var forma := BoxShape3D.new()
+			forma.size = tamanho
+			cs.shape = forma
+			cs.position = pos
+			add_child(cs)
+
+	func _mat(cor: Color) -> StandardMaterial3D:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = cor
+		m.roughness = 0.5
+		return m
+
+
+## Cancela de um lado do vão do elevador, num andar de cima: a barra listrada de amarelo e preto, na altura da
+## cintura, que sobe quando o elevador para ali; fechada, uma parede invisível segura o Faísca na sacada. O x dela
+## aponta para fora da torre.
+class Cancela:
+	extends StaticBody3D
+
+	var andar := 1
+	var aberta := false
+	var _barra: Node3D
+	var _forma: CollisionShape3D
+
+	func _ready() -> void:
+		var largura := HubFarol.RAIO - ElevadorFarol.DENTRO
+		_forma = CollisionShape3D.new()
+		var caixa := BoxShape3D.new()
+		caixa.size = Vector3(largura, HubFarol.PAREDE_INVISIVEL, 0.2)
+		_forma.shape = caixa
+		_forma.position.y = HubFarol.PAREDE_INVISIVEL * 0.5
+		add_child(_forma)
+		var poste := MeshInstance3D.new()
+		var cil := CylinderMesh.new()
+		cil.top_radius = 0.09
+		cil.bottom_radius = 0.09
+		cil.height = 1.2
+		poste.mesh = cil
+		poste.material_override = _mat(Color("f4f5f9"))
+		poste.position = Vector3(-largura * 0.5 + 0.1, 0.6, 0)
+		add_child(poste)
+		# A barra gira em volta da ponta de dentro (perto do poste).
+		_barra = Node3D.new()
+		_barra.position = Vector3(-largura * 0.5 + 0.1, 1.05, 0)
+		add_child(_barra)
+		var listras := 6
+		for k in listras:
+			var pedaco := MeshInstance3D.new()
+			var b := BoxMesh.new()
+			b.size = Vector3((largura - 0.2) / listras, 0.14, 0.1)
+			pedaco.mesh = b
+			pedaco.material_override = _mat(Color("ffd23f") if k % 2 == 0 else Color("2b2140"))
+			pedaco.position.x = (k + 0.5) * (largura - 0.2) / listras
+			_barra.add_child(pedaco)
+		abrir(aberta)
+
+	func abrir(sim: bool) -> void:
+		aberta = sim
+		if _forma == null:
+			return
+		_forma.disabled = sim
+		var tw := _barra.create_tween()
+		tw.tween_property(_barra, "rotation:z", 1.35 if sim else 0.0, 0.4).set_trans(Tween.TRANS_QUAD)
+
+	func _mat(cor: Color) -> StandardMaterial3D:
+		var m := StandardMaterial3D.new()
+		m.albedo_color = cor
+		m.roughness = 0.5
 		return m

@@ -476,9 +476,25 @@ def make_music():
     save("musica/tema.wav", normalize(lowpass(out, 9000), -6.0))
 
 
+def make_faisquinhas():
+    """Sons dos Faisquinhas (2026-11-11, item 1 e 2 da lista do Faísca): o "piu-piu!" de robozinho que o Faisquinha
+    preso dá para chamar o Faísca (dois bipes subindo, o segundo com uma tremidinha) e o resgate (a bolha já estoura
+    com o "estouro"; aqui é o "ê!" de festa: arpejo rápido subindo, com brilho no fim)."""
+    random.seed(41)
+    chirp = lambda f0, f1, d: lowpass(envelope(osc(f0, f1, d, "tri", vibrato=0.02, vib_rate=30), 0.003, d * 0.6, 0.3, 0.02), 6000)
+    sfx("faisquinha_chama", mix(0.36, (chirp(1500, 2100, 0.09), 0, 0.9), (am(chirp(1700, 2800, 0.16), 24, 0.5), 0.13, 0.9)), -7)
+    notas = [72, 76, 79, 84, 88]
+    parts = [(lowpass(envelope(osc(midi(m), midi(m), 0.16, "square"), 0.002, 0.1, 0.3, 0.02), 4000), i * 0.06, 0.35)
+             for i, m in enumerate(notas)]
+    parts += [(am(envelope(osc(midi(m), midi(m), 0.5, "sine"), 0.004, 0.3), 16, 0.35), 0.3 + i * 0.05, 0.5)
+              for i, m in enumerate([96, 100, 103])]
+    sfx("faisquinha_salvo", mix(0.95, *parts), -6)
+
+
 if __name__ == "__main__":
-    make_sfx()
-    make_music()
-    make_faisca()
-    make_neve()
-    make_fabrica()
+    import sys
+    # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
+    grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
+              "faisquinhas": make_faisquinhas}
+    for nome in (sys.argv[1:] or list(grupos)):
+        grupos[nome]()

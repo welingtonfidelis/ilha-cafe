@@ -27,7 +27,7 @@ func rodar() -> void:
 	await m._esperar(0.3)
 	ok = m._conferir("de 110 a 160 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 110 and n.estrelas.size() <= 160,
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), n.total_estrelas()]) and ok
-	ok = m._conferir("4 postos, 3 vaga-lumes, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.vaga_lumes.size() == 3
+	ok = m._conferir("4 postos, 6 Faisquinhas, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.faisquinhas.size() == 6
 			and n.alvos.size() == 15 and n.coracoes.size() == 4 and n.bau != null, "(%d postos, %d Bolotas)" % [n.postos.size(), n.alvos.size()]) and ok
 	ok = m._conferir("peças: 6 dados que tombam, 1 que rola, 7 argolas do ioiô, 3 cartas, 3 caronas, 3 alavancas e a ponte levadiça",
 			n.dados.size() == 6 and n.dados_rolando.size() == 1 and n.argolas_ioio.size() == 7 and n.cartas.size() == 3
@@ -40,7 +40,7 @@ func rodar() -> void:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú no alto da torre", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
-	var donos := n.vaga_lumes.map(func(v: VagaLume) -> int: return _playground_mais_perto(v.global_position))
+	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
 	ok = m._conferir("um vaga-lume no bolso do playground 2, do 3 e do 5", donos == [1, 2, 4], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica no alto da torre do castelo: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 21.5
 			and Vector2(n.bau.global_position.x - Fase23.CASTELO.x, n.bau.global_position.z - Fase23.CASTELO.z).length() < 3.0) and ok
@@ -150,9 +150,9 @@ func _tapete_e_mesa() -> bool:
 		await m.get_tree().physics_frame
 	ok = m._conferir("e plana até a escrivaninha", aviao.estado == "em_ate" and j.is_on_floor() and j.global_position.distance_to(aviao.ate) < 2.0,
 			"(%.1f m)" % j.global_position.distance_to(aviao.ate)) and ok
-	j.teleportar(n.vaga_lumes[0].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[0].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("o V1 está embaixo da mesa", n.achados == 1) and ok
+	ok = m._conferir("o V1 está embaixo da mesa", n.faisquinhas[0].encontrado) and ok
 	return ok
 
 
@@ -177,9 +177,9 @@ func _escrivaninha() -> bool:
 			"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
 	onde = await _ioio_para(Vector3(-28, e + 0.1, -71.5), 3, Vector3(-12, 28.6, -81))
 	ok = m._conferir("três argolas em fila levam à prateleira alta", absf(onde.y - 28.6) < 0.3, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-	j.teleportar(n.vaga_lumes[1].global_position - Vector3(0, 0.8, 0))
+	j.teleportar(n.faisquinhas[1].global_position - Vector3(0, 0.8, 0))
 	await m._esperar(0.3)
-	ok = m._conferir("o V2 está na prateleira", n.achados == 2) and ok
+	ok = m._conferir("o V2 está na prateleira", n.faisquinhas[1].encontrado) and ok
 	onde = await _ioio_para(Vector3(-7.5, e + 4.9, -66), 1, Vector3(0.5, e + 9.45, -66))
 	ok = m._conferir("da escadinha de livros, a argola leva ao topo do abajur", absf(onde.y - (e + 9.45)) < 0.3, "(altura %.1f)" % onde.y) and ok
 
@@ -276,7 +276,7 @@ func _castelo() -> bool:
 	await m._esperar(0.6)
 	ok = m._conferir("três golpes quebram o bloco rachado da muralha", parede.derrotado, "(%d golpes)" % parede.golpes) and ok
 	await _andar(-frente, 1.0)
-	ok = m._conferir("e o V3 está no oco atrás dele", n.achados == 3, "(vaga-lumes %d)" % n.achados) and ok
+	ok = m._conferir("e o V3 está no oco atrás dele", n.faisquinhas[2].encontrado, "(Faisquinhas %d)" % n.achados) and ok
 	return ok
 
 

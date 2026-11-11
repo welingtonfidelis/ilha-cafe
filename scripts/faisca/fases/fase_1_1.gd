@@ -76,6 +76,8 @@ func _ilha_dos_pulinhos() -> void:
 	# Mini-marco e o bolso atrás dele.
 	arvore(1, 8, Vector3(10, 0, -26), 2.6)
 	roda(Vector3(12, 0.9, -31), 1.6, 6)
+	# O Faisquinha 3 no meio da roda, atrás do pinheiro (quem passa reto não vê).
+	faisquinha(Vector3(12, 1.4, -31), "3")
 
 	arvore(4, 1, Vector3(-12, 0, -6), 1.3)
 	arvore(2, 5, Vector3(14, 0, -3), 1.1)
@@ -134,7 +136,8 @@ func _ilhas_das_argolas() -> void:
 	# Ilha do meio.
 	morro("12x12x4", Vector3(-58, 3.5, -64))
 	bolota(Vector3(-61, 3.5, -61))
-	bolota(Vector3(-56, 3.5, -60.5), false, "cogumelo")
+	# A Bolota-cogumelo leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(-56, 3.5, -60.5), false, "cogumelo"))
 	bolota(Vector3(-62, 3.5, -67.5), false, "pinguim")
 	morro("4x4x8", Vector3(-53.5, 8.5, -69))
 	peca("flag_A_red", Vector3(-53.5, 8.5, -69), 0.0, 2.5)
@@ -144,7 +147,7 @@ func _ilhas_das_argolas() -> void:
 
 	# Bolso embaixo da ilha do meio: a beirada com o V1 (o brilho aparece de cima), e uma mola de volta.
 	morro("4x4x2", Vector3(-67.5, -1.5, -64))
-	vaga_lume(Vector3(-68, -0.4, -65))
+	faisquinha(Vector3(-68, -0.4, -65))
 	mola(Vector3(-67, -1.5, -62.5), 19.0)
 	trilha(Vector3(-64.5, 2.5, -64), Vector3(-66.5, 0.0, -64), 2)
 
@@ -199,13 +202,15 @@ func _jardim_das_flores() -> void:
 	for d: Vector3 in degraus:
 		estrelinha(d + Vector3(0, 1.1, 0))
 	morro("8x8x4", Vector3(0, 10, -186))
-	vaga_lume(Vector3(0, 11.1, -187))
+	faisquinha(Vector3(0, 11.1, -187))
 	roda(Vector3(0, 10.9, -186), 2.4, 5)
 
 	# Mola até o pilar das estrelinhas.
 	mola(Vector3(-14, 8, -157))
 	morro("4x4x4", Vector3(-15.5, 13, -161))
 	roda(Vector3(-15.5, 14, -161), 1.0, 4)
+	# O Faisquinha 4 em cima do pilar da mola.
+	faisquinha(Vector3(-15.5, 14.6, -161), "4")
 
 	for p in [Vector3(-16, 8, -134), Vector3(10, 8, -134), Vector3(-17, 8, -150)]:
 		enfeite("Bush_4_A_Color1", p, 2.6, p.z)
@@ -243,7 +248,7 @@ func _subida_das_nuvens() -> void:
 
 	# Segredo: beiradinha na face norte da torre, com o V3.
 	morro("4x4x2", t + Vector3(0, 12, -8.5))
-	vaga_lume(t + Vector3(0.5, 13.1, -9))
+	faisquinha(t + Vector3(0.5, 13.1, -9))
 	mola(t + Vector3(-1.2, 12, -8.2), 21.0)
 	trilha(t + Vector3(-7, 18, -11), t + Vector3(-2, 13.4, -9), 3)
 

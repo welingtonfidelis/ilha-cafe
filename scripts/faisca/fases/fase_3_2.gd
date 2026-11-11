@@ -485,6 +485,8 @@ func _esteiras_da_entrada() -> void:
 	caixa_solida(Vector3(50.2, 2.5, 92), Vector3(0.6, 5, 9), _mat(Color("8ea4c9"), 0.5))
 	caixa_solida(Vector3(46, 5.3, 92), Vector3(9.6, 0.6, 9.6), _mat(Color("3f8fe0"), 0.5))
 	roda(Vector3(46.5, 1.2, 92), 1.8, 4)
+	# O Faisquinha 3 lá dentro do nicho.
+	faisquinha(Vector3(46.5, 1.7, 92), "3")
 
 	# Bolso: a escada de caixotes até a prateleira do coração.
 	for spec in [[Vector2(-17.5, 125), 1], [Vector2(-20.1, 125), 2]]:
@@ -672,7 +674,7 @@ func _blocos_pisca() -> void:
 	aro.rotation.z = PI / 2.0
 	# A borda do cano é fininha (0,3 m) e fica rente a ele: enfeite.
 	add_child(so_enfeite(aro))
-	vaga_lume(Vector3(-129, 14.4, 38.5))
+	faisquinha(Vector3(-129, 14.4, 38.5))
 	estrelinha(Vector3(-126, 14.2, 38.5))
 
 	monta_carga(Vector3(-56.2, 0, 62), t, -PI / 2.0, p1)
@@ -819,12 +821,13 @@ func _oficina() -> void:
 	caixa_solida(Vector3(-47, t + 8.15, -79.1), Vector3(5, 0.5, 5), _mat(Color("c49a6c")))
 	for c in [Vector2(-49.2, -81.3), Vector2(-44.8, -81.3), Vector2(-49.2, -76.9), Vector2(-44.8, -76.9)]:
 		caixa_solida(Vector3(c.x, t + 3.95, c.y), Vector3(0.5, 7.9, 0.5), _mat(Color("6a4a2a")))
-	vaga_lume(Vector3(-47, t + 9.8, -79.6))
+	faisquinha(Vector3(-47, t + 9.8, -79.6))
 	estrelinha(Vector3(-45.5, t + 9.8, -77.6))
 	estrelinha(Vector3(-48.5, t + 9.8, -81))
 
 	monta_carga(Vector3(-96, 0, -54.4), t, PI, p2)
-	bolota(Vector3(-72, t, -70))
+	# Esta leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(-72, t, -70)))
 	bolota(Vector3(-80, t, -88), false, "capacete")
 	bolota(Vector3(-62, t, -100), false, "cogumelo")
 	for p in [Vector3(-80, t + 1.2, -63), Vector3(-74, t + 1.2, -72), Vector3(-68, t + 1.2, -84), Vector3(-47, t + 7.2, -91), Vector3(-47, t + 7.2, -97),
@@ -987,6 +990,8 @@ func _andar_da_pintura() -> void:
 	bloco_pisca(Vector3(103, t, -14), 0)
 	bloco_pisca(Vector3(105, t, -9.5), 1)
 	_lata_tombada(Vector3(107, t, -6), 3.6, 10.0)
+	# O Faisquinha 4 logo depois da boca da lata.
+	faisquinha(Vector3(107, t + 1.5, -4.6), "4")
 	coracao(Vector3(107, t + 1.4, 3.0))
 	for p in [Vector3(107, t + 1.2, -3), Vector3(107, t + 1.2, -0.8), Vector3(107, t + 1.2, 1.2)]:
 		estrelinha(p)
@@ -1238,7 +1243,7 @@ func _subida_da_maquina() -> void:
 	limao.material_override = lm
 	limao.position = Vector3(-MEIA_ALTA - 0.3, ANEL + 5.0, 7.0)
 	add_child(so_enfeite(limao))
-	vaga_lume(Vector3(-8, ANEL + 1.4, 4))
+	faisquinha(Vector3(-8, ANEL + 1.4, 4))
 	estrelinha(Vector3(-8, ANEL + 1.0, 2.8))
 	estrelinha(Vector3(-8, ANEL + 1.0, 5.2))
 	ponto_de_dica(Vector3(-14, ANEL + 0.5, 4), 3.0, "golpe")

@@ -4,14 +4,14 @@ extends Node3D
 ## embaixo e o farol da ilha ao longe (a bússola do jogador), e tem as funções que cada fase chama em
 ## `_montar()` como uma tabela: morros da floresta e plataformas do KayKit, árvores,
 ## estrelinhas em trilha e em arco, postos de recarga, molas, corações, plataformas que vão e
-## voltam, flores de luz com portão, o baú com a Estrela Grande, vaga-lumes escondidos, Bolotas
+## voltam, flores de luz com portão, o baú com a Estrela Grande, Faisquinhas presos em bolhas, Bolotas
 ## e os pontos de dica do vovô. As posições estão em metros; o Faísca tem uns 2,2 m.
-## Cada estrelinha e cada vaga-lume tem um nome (a ordem em que a fase cria, ou "b<Bolota>_<n>" nas
+## Cada estrelinha e cada Faisquinha tem um nome (a ordem em que a fase cria, ou "b<Bolota>_<n>" nas
 ## que as Bolotas soltam): os já pegos em outras vezes chegam em `ja_pegas` e `ja_achados`, aparecem
-## transparentes e não contam de novo; os novos ficam em `novas` e `novos_vaga_lumes`.
+## transparentes e não contam de novo; os novos ficam em `novas` e `novos_faisquinhas`.
 
 signal estrela_pega(pegas: int, total: int)
-signal vaga_lume_achado(achados: int, total: int)
+signal faisquinha_salvo(achados: int, total: int)
 signal posto_aceso(posto: Posto)
 signal dica(qual: String)
 signal estrela_grande_pega
@@ -41,17 +41,17 @@ var inicio := Vector3.ZERO
 ## Abaixo desta altura o Faísca caiu nas nuvens.
 var limite_queda := -12.0
 var nome := ""
-## Estrelinhas e vaga-lumes pegos em outras vezes (nome -> true), postos antes de entrar na árvore.
+## Estrelinhas e Faisquinhas pegos em outras vezes (nome -> true), postos antes de entrar na árvore.
 var ja_pegas := {}
 var ja_achados := {}
 ## Pegos desta vez (só os que não estavam em `ja_pegas` / `ja_achados`).
 var novas: Array[String] = []
-var novos_vaga_lumes: Array[String] = []
+var novos_faisquinhas: Array[String] = []
 var estrelas: Array[Area3D] = []
 var pegas := 0
 var alvos: Array[Alvo] = []
 var postos: Array[Posto] = []
-var vaga_lumes: Array[VagaLume] = []
+var faisquinhas: Array[Faisquinha] = []
 var achados := 0
 var flores: Array[FlorDeLuz] = []
 var portoes: Array[Node3D] = []
@@ -119,6 +119,7 @@ var _mat_estrela_vista: StandardMaterial3D
 var _proxima_estrela := 0
 var _cenas := {}
 var _dicas_dadas := {}
+var _faisquinhas_sem_nome := 0
 
 
 func _ready() -> void:
@@ -128,6 +129,8 @@ func _ready() -> void:
 	_montar_nuvens()
 	pegas = ja_pegas.size()
 	achados = ja_achados.size()
+	# Na ordem dos nomes: os três de antes ("0" a "2") e depois os novos, criados em qualquer ponto do caminho.
+	faisquinhas.sort_custom(func(a: Faisquinha, b: Faisquinha) -> bool: return int(a.id) < int(b.id))
 
 
 ## Cada fase monta o caminho aqui.
@@ -1271,18 +1274,32 @@ func colocar_bau(pos: Vector3, giro := 0.0, dourado := false) -> Bau:
 	return bau
 
 
-func vaga_lume(pos: Vector3) -> VagaLume:
-	var v := VagaLume.new()
-	var id := str(vaga_lumes.size())
+## Um Faisquinha preso na bolha em `pos` (o meio da bolha). Os três de antes ganham o nome pela ordem ("0" a "2");
+## os novos (2026-11-11) vêm com o nome deles ("3" e "4" nos bolsos, "5" na Bolota), para o save de quem já jogou
+## continuar valendo.
+func faisquinha(pos: Vector3, nome_dele := "") -> Faisquinha:
+	var v := Faisquinha.new()
+	var id := nome_dele
+	if id == "":
+		id = str(_faisquinhas_sem_nome)
+		_faisquinhas_sem_nome += 1
+	v.id = id
 	v.position = pos
 	v.ja_visto = ja_achados.has(id)
 	add_child(v)
-	v.achado.connect(func(_v: VagaLume):
-		if not v.ja_visto and not id in novos_vaga_lumes:
-			novos_vaga_lumes.append(id)
+	v.salvo.connect(func(_v: Faisquinha):
+		if not v.ja_visto and not id in novos_faisquinhas:
+			novos_faisquinhas.append(id)
 			achados += 1
-		vaga_lume_achado.emit(achados, vaga_lumes.size()))
-	vaga_lumes.append(v)
+		faisquinha_salvo.emit(achados, faisquinhas.size()))
+	faisquinhas.append(v)
+	return v
+
+
+## O Faisquinha que a Bolota `b` leva pendurado numa bolha: só sai quando ela é vencida.
+func faisquinha_na_bolota(b: Alvo, nome_dele := "5") -> Faisquinha:
+	var v := faisquinha(b.position + Vector3.UP * Faisquinha.ALTURA_NA_BOLOTA, nome_dele)
+	v.carregar(b)
 	return v
 
 

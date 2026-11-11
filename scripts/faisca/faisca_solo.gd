@@ -32,6 +32,8 @@ extends Node3D
 ##   --faisca-monstro        1-1: confere os monstros do Cute Monsters Pack, as animações e a regra de cada tipo
 ##                           (ver scripts/faisca/teste_monstro.gd)
 ##   --faisca-monstro-captura   fotos de cada tipo em ação em tools/capturas/faisca/monstro/ (precisa de janela)
+##   --faisca-faisquinhas    as sete fases: os seis Faisquinhas de cada uma (ver scripts/faisca/teste_faisquinhas.gd)
+##   --faisca-faisquinhas-captura  fotos do Faisquinha preso, na Bolota e solto (precisa de janela)
 ## As ações de controle (pular, golpe, recomecar...) vêm do _setup_input do main.
 
 const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--faisca-captura", "--faisca-fase", "--faisca-fase-captura",
@@ -39,7 +41,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-monstro", "--faisca-monstro-captura",
-		"--faisca-movimento", "--faisca-movimento-captura"]
+		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -59,10 +61,23 @@ var _teste31: TesteFase31
 var _teste32: TesteFase32
 var _teste_monstro: TesteMonstro
 var _teste_movimento: TesteMovimento
+var _teste_faisquinhas: TesteFaisquinhas
 
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
+	# Os Faisquinhas: o teste monta cada fase sozinho.
+	if "--faisca-faisquinhas" in args or "--faisca-faisquinhas-captura" in args:
+		jogador = Jogador.new()
+		add_child(jogador)
+		hud = Hud.new()
+		add_child(hud)
+		_teste_faisquinhas = TesteFaisquinhas.new(self)
+		if "--faisca-faisquinhas" in args:
+			_teste_faisquinhas.rodar()
+		else:
+			_teste_faisquinhas.capturar()
+		return
 	var cena_de_teste := "--faisca-teste" in args or "--faisca-smoke" in args or "--faisca-controle" in args or "--faisca-captura" in args \
 			or "--faisca-movimento" in args or "--faisca-movimento-captura" in args
 	jogador = Jogador.new()
@@ -74,7 +89,7 @@ func _ready() -> void:
 		add_child(jogador)
 		add_child(hud)
 		fase.estrela_pega.connect(_on_estrela_pega)
-		hud.mostrar_vaga_lumes(0, 0)
+		hud.mostrar_faisquinhas(0, 0)
 	else:
 		var a_1_2 := "--faisca-fase-1-2" in args or "--faisca-fase-1-2-captura" in args or "--faisca-jogar-1-2" in args
 		var a_2_1 := "--faisca-fase-2-1" in args or "--faisca-fase-2-1-captura" in args or "--faisca-jogar-2-1" in args
@@ -102,14 +117,14 @@ func _ready() -> void:
 		add_child(jogador)
 		add_child(hud)
 		nivel.estrela_pega.connect(func(pegas: int, _total: int): hud.mostrar_estrelas(pegas))
-		nivel.vaga_lume_achado.connect(hud.mostrar_vaga_lumes)
+		nivel.faisquinha_salvo.connect(hud.mostrar_faisquinhas)
 		nivel.posto_aceso.connect(func(p: Posto): jogador.ponto_retorno = p.ponto())
 		nivel.dica.connect(hud.mostrar_dica)
 		nivel.estrela_grande_pega.connect(_terminar_fase)
 		hud.jogar_de_novo.connect(func():
 			if not testando:
 				get_tree().reload_current_scene())
-		hud.mostrar_vaga_lumes(0, nivel.vaga_lumes.size())
+		hud.mostrar_faisquinhas(0, nivel.faisquinhas.size())
 	jogador.vida_mudou.connect(hud.mostrar_vida)
 	hud.mostrar_vida(jogador.vida)
 
@@ -200,7 +215,7 @@ func _terminar_fase() -> void:
 	jogador.robo.animar("festa/Cheering", 0.2)
 	nivel.bau.estrela_sobe()
 	await get_tree().create_timer(2.6).timeout
-	hud.mostrar_fim(nivel.nome, nivel.pegas, nivel.total_estrelas(), nivel.achados, nivel.vaga_lumes.size())
+	hud.mostrar_fim(nivel.nome, nivel.pegas, nivel.total_estrelas(), nivel.achados, nivel.faisquinhas.size())
 
 
 func _on_estrela_pega(pegas: int, total: int) -> void:

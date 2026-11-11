@@ -362,6 +362,7 @@ func _campo_de_algodao() -> void:
 	nuvem_que_quica(Vector3(8, 1.0, 94), 2.2, 17.0)
 	coracao(Vector3(14, 6.9, 90))
 	roda(Vector3(14, 6.4, 90), 2.8, 5)
+	faisquinha(Vector3(14, 6.9, 90), "3")
 
 	for spec in [[1, Vector3(-20, 0, 106), 1.3], [4, Vector3(-10, 0, 128), 1.1], [2, Vector3(22, 0, 116), 1.2], [5, Vector3(-14, 0, 88), 1.0]]:
 		arvore(spec[0], 8, spec[1], spec[2])
@@ -430,7 +431,7 @@ func _ilhas_de_biscoito() -> void:
 
 	# Bolso embaixo da ilha do meio: a beirada com o V1 e uma nuvem forte que devolve lá para cima.
 	ilha(Vector3(-104, 3, 47), 3.5, BISCOITO)
-	vaga_lume(Vector3(-104.8, 4.2, 46.2))
+	faisquinha(Vector3(-104.8, 4.2, 46.2))
 	nuvem_que_quica(Vector3(-101.8, 4.3, 48.8), 1.6, 19.0)
 	trilha(Vector3(-102, 9.5, 46), Vector3(-104, 5.0, 47), 3)
 
@@ -461,7 +462,8 @@ func _praca_do_carrossel() -> void:
 	for p in [Vector3(-73, 16, -60.5), Vector3(-64, 16, -64.5), Vector3(-55, 16, -70.5), Vector3(-50, 16, -78)]:
 		doce("lantern_decorated", p, 0.0, 1.2)
 	ponto_de_dica(Vector3(-79, 16.5, -63), 3.0, "agarrar")
-	bolota(Vector3(-82, 16, -70), false, "porco")
+	# O porco leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(-82, 16, -70), false, "porco"))
 	bolota(Vector3(-63, 16, -90), false, "caranguejo")
 	bolota(Vector3(-77, 16, -92), false, "cogumelo")
 
@@ -476,7 +478,7 @@ func _praca_do_carrossel() -> void:
 		var p := PRACA + Vector3(cos(a) * 21.0, 12.0, sin(a) * 21.0)
 		ilha(p, 4.0, CHICLETE_ROSA if i % 2 else CHICLETE_AZUL)
 		if i == 2:
-			vaga_lume(p + Vector3(0, 1.1, 0))
+			faisquinha(p + Vector3(0, 1.1, 0))
 		else:
 			roda(p + Vector3(0, 1.0, 0), 1.8, 4)
 
@@ -629,6 +631,8 @@ func _ceu_de_chiclete() -> void:
 	ilha(bolso, 3.5, CHICLETE_ROSA)
 	coracao(bolso + Vector3(0, 1.4, 0))
 	roda(bolso + Vector3(0, 1.0, 0), 2.2, 4)
+	# O Faisquinha 4 em cima do coração (só com o balão).
+	faisquinha(bolso + Vector3(0, 2.6, 0), "4")
 
 	# A saída: o arco na última ilha e a ponte de wafer até o anel do bolo.
 	var g4: Vector3 = ilhas[3][0]
@@ -710,7 +714,7 @@ func _casinha_secreta(centro: Vector3, ang_rad: float) -> void:
 		(mi as MeshInstance3D).material_override = _material(Color("d9a066"))
 	paredes_rachadas.append(p)
 	paredes_do_bolo.append(p)
-	vaga_lume(raiz.to_global(Vector3(0, 1.4, -1.2)))
+	faisquinha(raiz.to_global(Vector3(0, 1.4, -1.2)))
 	for x in [-1.6, 1.6]:
 		estrelinha(raiz.to_global(Vector3(x, 1.0, -0.6)))
 	estrelinha(raiz.to_global(Vector3(0, 1.0, 1.0)))

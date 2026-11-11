@@ -23,6 +23,8 @@ const ALL := [
 	"sino", "gelo",
 	# 3-2 Fábrica de Blocos.
 	"martelo", "tique", "pistao",
+	# Faisquinhas (o chamado e o resgate).
+	"faisquinha_chama", "faisquinha_salvo",
 ]
 
 ## Nos testes, anota o nome de cada som tocado (não dá para ouvir num teste sem tela).

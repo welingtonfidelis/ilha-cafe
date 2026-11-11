@@ -2234,6 +2234,126 @@ Depois da separação dos jogos, o usuário pediu para seguir ("vamos seguir") n
 - **Bolotas da turma:** abelhas e morcegos (que voam) nas ilhas e nos moinhos, o porco disparando pelo pasto, e cogumelos, pinguins, aliens e um ciclope.
 - **Depois da 3-3:** a fase da nave Aspiratrão, com o Rei Bolotão e o final da história, para o jogo do Faísca ter fim.
 
+### Lista de melhorias e novidades do Faísca (2026-11-11)
+
+Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jogo Faísca sobre melhorias e novidades, reforçando que a grande inspiração do jogo é o Astro Bot". Ficam de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+**O que o Faísca já tem do Astro:**
+- o movimento fluido (2026-11-10/11);
+- soco em sequência, giro, giro carregado, pisão, agarrar e arremessar a Bolota, a dancinha e o voo com o laser dos pés;
+- um poder novo por fase desde a 2-2: Balão de Chiclete, Ioiô, Luva de Neve, Martelinho de Apito e, na maquete da 3-3, a Pipa;
+- fases em playgrounds com tarefa para abrir a saída;
+- o farol de andares com o teto de constelações;
+- sem fim de jogo, e com o Modo Fácil.
+
+**O que falta, comparando com o Astro Bot:**
+1. **Ninguém para resgatar.** No Astro, os robôs perdidos são o coração do jogo: cada fase esconde vários, e eles enchem o hub e abrem coisas lá. No Faísca, os 3 vaga-lumes de cada fase só acendem luzinhas na moldura da porta.
+2. **Nada para gastar.** O Astro tem moedas em todo canto e a máquina de brindes. O Faísca não tem moedas.
+3. **Sem chefes.** O Astro fecha cada galáxia com um chefão grande, em fases. No Faísca, nenhum andar tem chefe (está no "Em aberto").
+4. **O controle quase parado.** O Astro usa o DualSense o tempo todo: vibração com textura de chão, gatilhos, giroscópio e luz. O Faísca só tem a vibração simples, e os gatilhos, que agora funcionam na ilha, ainda não chegam nele.
+5. **O mundo reage pouco.** No Astro quase tudo se mexe ao encostar (grama, objetos, moedas saindo do que quebra).
+6. **Uma música só** (a da ilha) para todas as fases. No Astro, cada fase tem a sua.
+7. **A câmera é sempre a livre.** O Astro escolhe o ângulo de cada trecho (de lado, de cima, num trilho).
+8. **Poucos momentos especiais.** Faltam perseguições e a fase que se transforma no meio.
+9. **Sem fases de desafio**, as curtas e difíceis que o Astro abre para quem já passou de tudo.
+10. **A viagem é pela escada.** No Astro, a viagem entre os mundos é um voo de nave.
+
+| # | Melhoria ou novidade | Tamanho | Situação |
+|---|---|---|---|
+| 1 | **Faisquinhas para resgatar:** os vaga-lumes viram robozinhos presos em bolhas das Bolotas, 6 por fase (os 3 de hoje e mais 3 em lugares difíceis). No farol eles aparecem brincando, acenando e dançando junto, e cada grupo abre uma coisa nova (10 consertam o elevador do farol, 20 abrem a sala de brinquedos, 30 acendem o farolete do topo) | M/G | feito em 2026-11-11 (a sala de brinquedos virou o trenzinho do térreo) |
+| 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
+| 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | |
+| 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | |
+| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | |
+| 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
+| 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
+| 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | |
+| 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
+| 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
+| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | |
+
+**Ordem sugerida:**
+- primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
+- depois o 3, que é barato porque os gatilhos já funcionam;
+- depois o 4, que dá uso aos Faisquinhas e às moedas;
+- em seguida um chefe (o 5), começando pelo andar 1;
+- o charme (6 e 7) entra junto com as fases novas.
+
+As telas novas seguem a regra das crianças: figura primeiro, o ganho em destaque e o texto só de apoio.
+
+### Faisquinhas para resgatar (itens 1 e 2 da lista, feitos em 2026-11-11)
+
+Pedido do usuário: "comeca", depois da lista acima, pelos itens 1 e 2. O vaga-lume virou o **Faisquinha** (`scripts/faisca/faisquinha.gd`), como os robôs perdidos do Astro Bot.
+
+**Como ele é:**
+- um Faísca pequenininho, de uns 0,9 m: capacete branco com a tela preta e os olhos ciano;
+- a antena com a luzinha verde-limão de quando era vaga-lume;
+- corpo, orelhas, mãos e pés na cor dele, uma por número (`Faisquinha.CORES`: laranja, azul, rosa, verde, roxo e amarelo);
+- feito por código, com as malhas e os materiais em cache (leve para ter 40 no farol).
+
+**Seis por fase.** Os três de antes continuam com os nomes "0" a "2" (o save de quem já jogou vale). Os novos têm o nome fixo, criado em qualquer ponto do caminho:
+
+| Fase | 3 (bolso) | 4 (bolso mais difícil) | 5 (na Bolota) |
+|---|---|---|---|
+| 1-1 | no meio da roda atrás do pinheiro rosa | em cima do pilar da mola, no Jardim | a Bolota-cogumelo das Ilhas das Argolas |
+| 1-2 | no andaime do Salão das Tochas | no bolso embaixo do abismo da Mina | a Bolota do Poço dos Cristais |
+| 2-1 | no meio da roda lá no alto (a tampa joga até ele) | em cima do vidro de ketchup, pulando da tampa e flutuando | o porco da Bancada |
+| 2-2 | no morro de algodão | em cima do coração no bolso alto (só com o balão) | o porco da Praça do Carrossel |
+| 2-3 | na torre de blocos | no topo do abajur | o caranguejo do Tabuleiro |
+| 3-1 | dentro do iglu do Lago | na caverna atrás da segunda cachoeira | o pinguim da Vila do Iglu |
+| 3-2 | no nicho atrás da torre de blocos | logo depois da boca da lata tombada | a Bolota da Oficina |
+
+**O que acontece com ele:**
+- **Preso:** fica numa bolha lilás das Bolotas, flutuando, com os bracinhos empurrando a bolha. Encostar estoura a bolha. Ele pula duas vezes, acena e sobe girando para o farol, com o som novo `faisquinha_salvo`.
+- **Na Bolota:** o 5 vai numa bolha amarrada por um fio em cima de uma Bolota que anda e não dá para encostar. Vencida a Bolota, a bolha estoura e ele cai no chão embaixo (ou onde a Bolota estava, se embaixo não tiver chão). Fica pulando e acenando até o Faísca encostar.
+- **Já salvo em outra vez:** transparente, como antes.
+
+**O chamado (item 2).** Quem ainda está preso, a menos de 14 m, chama com um "piu-piu!" de robozinho (`faisquinha_chama`, gerado no `tools/gerar_sons.py`, que agora aceita o grupo: `python3 tools/gerar_sons.py faisquinhas`). A menos de 9 m, o controle dá tremidinhas no motor fraco (`Jogador.tremidinha`), mais rápidas quanto mais perto. Respeitam a vibração dos Ajustes.
+
+**Contadores com figura (item 2).**
+- No canto do HUD, as 6 cabecinhas de Faisquinha na cor de cada um, cheias quando salvos.
+- Na tela de fim, as 6 cabecinhas maiores.
+- Na pausa, uma linha com a estrelinha, o Faisquinha e a Estrela Grande, cada um com o número. Na fase é "pegas/total"; no farol é o jogo todo (estrelinhas, "salvos/42" e "Estrelas Grandes/8").
+- Na porta de cada fase, 6 cabecinhas: brancas com a tela e a luz da antena se salvos, cinza se não.
+
+**No farol (`HubFarol`).** Cada Faisquinha salvo mora no andar do mundo de onde veio: os da 1-x no térreo, os da 2-x no 2º andar e os da 3-x no 3º. As vagas ficam de 15 em 15 graus, em dois anéis, longe das portas, do elevador, das placas, da entrada e do patamar da escada. No farol eles são 1,3x maiores (a sala tem 24 m e, do tamanho das fases, quase não apareciam). Lá eles:
+- ficam perto de casa e de vez em quando dão um pulinho, um giro ou um aceno;
+- olham e acenam quando o Faísca chega perto;
+- dançam junto quando ele dança, todos os do mesmo andar;
+- pulam para o lado quando ele esbarra.
+
+Os salvos na última fase chegam caindo do alto, girando, com confete, e aparece a faixa "Faisquinhas no farol!".
+
+**Os prêmios (`FaiscaJogo.PREMIOS`).** Antes de abrir, cada prêmio tem uma placa com o desenho dele, um Faisquinha e "quantos tem/quantos pede". Quando abre, a festa aparece uma vez só (faixa, confete e os Faisquinhas pulando), e o save guarda em `premios`.
+- **10, o elevador:** a plataforma laranja no vão das sacadas a sudeste (135°), parando 2,6 s em cada andar.
+  - Andando, fecha as pontas para o Faísca não sair no meio.
+  - Em cada andar de cima, uma cancela listrada de cada lado do vão abre só quando o elevador está ali.
+  - Não desce se o Faísca estiver embaixo dele no térreo.
+  - Antes dos 10, fica parado no térreo, torto e apagado, e as sacadas não têm o vão.
+- **20, o trenzinho:** locomotiva, tênder de presentes e vagão (do pacote do quarto), rodando devagar num trilho em volta do eixo no térreo, com dois Faisquinhas de passageiros sentados no teto do vagão. Dá para subir em cima: a colisão de cada carro tem a altura do modelo. Os carros vão sem `sync_to_physics`, porque quem move é o farol; com ele ligado (o padrão do AnimatableBody3D), o trem ficava parado no meio da torre. A ideia da "sala de brinquedos" virou o trenzinho: o farol não tem uma sala a mais.
+- **30, o farolete:** a lâmpada do topo fica mais forte, e dois fachos com holofotes giram pela torre.
+
+**Save.** A chave virou `faisquinhas`; quem tem a antiga, `vaga_lumes`, é lido do mesmo jeito. A migração da Parte 2 já grava a nova.
+
+**Testes:**
+- `--faisca-faisquinhas`, nas sete fases:
+  - os seis de cada fase;
+  - o 5 numa Bolota que anda;
+  - chão embaixo e bolha livre;
+  - os novos num bolso com estrelinhas, com duas exceções marcadas na fase: o 3 da 2-1 fica no ar e o 4 está no ketchup;
+  - o chamado e a tremidinha;
+  - salvar encostando;
+  - a Bolota vencida soltando o 5 num chão firme.
+- `--faisca-jogo`: os moradores e os três prêmios, com Faisquinhas de mentira:
+  - o elevador levando o Faísca ao 2º andar, com a cancela;
+  - o trenzinho;
+  - o farolete;
+  - as placas;
+  - o contador da pausa;
+  - a dança junto.
+- Fotos: `--faisca-faisquinhas-captura` (o Faisquinha preso, na Bolota, solto e salvo) e `--faisca-farol-captura` (o farol com os prêmios e a pausa).
+
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
@@ -2241,9 +2361,9 @@ Depois da separação dos jogos, o usuário pediu para seguir ("vamos seguir") n
 - Se o Faísca pode dirigir o kart.
 - **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando. A parte das peças atravessadas já foi feita no revisor de física de 2026-10-30: as cadeiras, o sorvete, o rolo e a torneira ganharam colisão.
 - **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 e a 2-3 já nascem maiores, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 1-1, a 1-2 e a 2-1 do mesmo jeito.
-- **Teste `--ilha` instável na viela** (visto em 2026-10-30): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
+- **Teste `--ilha` instável na viela** (visto em 2026-10-30; resolvido em 2026-11-11: o esqueleto que dorme em (30, 110) acordava e travava a viela, e o teste agora tira ele antes): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
   - Na bateria de 2026-10-30, depois do revisor de física, falhou de novo no mesmo ponto. Desta vez o `--armas` também falhou uma vez ("com duas pistolas, cada tiro tira 75% do dano", sem valor medido). Sozinhos, os dois passaram.
-- **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Ainda não investigado.
+- **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Resolvido em 2026-10-31: o piloto rival vinha da pasta que fica fora da build (ver a memória do projeto e a seção do kart).
   - Foram dois fechamentos seguidos, às 17:53:17 e às 17:53:57, os dois por SIGSEGV na thread principal. A pilha repete sempre o mesmo trio de endereços do executável (`+0x3e89ce`, `+0x2c2e402`, `+0x2a61dc6`, `+0x526b10`), o que lembra recursão infinita em GDScript (estouro da pilha; a build de release não escreve o erro no log).
   - Os coredumps estão no PC (`coredumpctl info 152449` e `154948`). O log da Godot nessas sessões só tem o erro de sempre do `Mage.glb` na abertura.
   - Para começar: não se sabe se era uma criança ou o Faísca no kart. Rodar o `--atividades` e o `--pista-kart`, e uma volta de kart com o Faísca, na build de debug.

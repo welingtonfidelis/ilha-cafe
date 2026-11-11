@@ -161,7 +161,7 @@ func _criar(id: String) -> Node3D:
 			for f in FaiscaJogo.FASES:
 				hub.portas.append({"id": f.id, "nome": f.nome, "tipo": f.tipo, "andar": f.andar, "lado": f.lado, "pede": f.pede,
 					"pede_grandes": int(f.get("pede_grandes", 0)), "falta": 0, "aberta": true, "feita": f.cena != "",
-					"imagem": f.imagem, "grande": false, "achados": 0, "total_vaga_lumes": 3})
+					"imagem": f.imagem, "grande": false, "achados": 0, "total_faisquinhas": 6})
 			return hub
 		"1-1":
 			return Fase11.new()
@@ -189,7 +189,7 @@ func _onde_se_anda(nivel: Node3D) -> PackedVector3Array:
 		return lista
 	var f := nivel as Fase
 	lista.append(f.to_global(f.inicio))
-	for grupo in [f.estrelas, f.vaga_lumes, f.postos, f.coracoes, f.alvos]:
+	for grupo in [f.estrelas, f.faisquinhas, f.postos, f.coracoes, f.alvos]:
 		for n in grupo:
 			if is_instance_valid(n) and n.is_inside_tree():
 				lista.append((n as Node3D).global_position)

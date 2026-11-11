@@ -387,6 +387,8 @@ func _lago_congelado() -> void:
 	# Bolso: o iglu pequeno, com estrelinhas lá dentro.
 	iglu(Vector3(-19, 0, 123), 4.5, PI * 0.3)
 	roda(Vector3(-19, 1.0, 123), 1.6, 4)
+	# O Faisquinha 3 dentro do iglu.
+	faisquinha(Vector3(-19, 1.5, 123), "3")
 
 	# Bolso: o monte do coração, subindo pela pilha de bolas de neve.
 	for b in [[Vector3(-24.5, -0.2, 108), 1.8], [Vector3(-26.5, 1.4, 111.5), 1.8], [Vector3(-27.5, 2.8, 115), 1.8]]:
@@ -519,7 +521,7 @@ func _ilhas_de_gelo() -> void:
 
 	# Bolso embaixo da ilha do meio: a beirada com o V1 e um monte de neve fofa que devolve lá para cima.
 	ilha(Vector3(-104, 3, 49), 3.5, PEDRA)
-	vaga_lume(Vector3(-104.8, 4.2, 48.2))
+	faisquinha(Vector3(-104.8, 4.2, 48.2))
 	neve_fofa(Vector3(-101.8, 3.3, 50.8), 1.6, 19.0)
 	trilha(Vector3(-102, 9.5, 48.5), Vector3(-104, 5.0, 49), 3)
 
@@ -608,7 +610,7 @@ func _vila_do_iglu() -> void:
 	var pedra := Vector3(-88, 30, -92)
 	coluna(pedra, 1.4, 12.0, Color("8f99ae"))
 	ilha(pedra, 3.5, PEDRA, 2.5)
-	vaga_lume(pedra + Vector3(0, 1.4, 0))
+	faisquinha(pedra + Vector3(0, 1.4, 0))
 	var para_meio := atan2(VILA.z - pedra.z, VILA.x - pedra.x)
 	for i in 7:
 		var a := para_meio - PI * 0.5 + i * PI / 6.0
@@ -648,7 +650,8 @@ func _vila_do_iglu() -> void:
 
 	ponto_de_dica(Vector3(-79, 18.5, -62), 3.0, "agarrar")
 	bolota(Vector3(-80, 18, -70), false, "fantasma")
-	bolota(Vector3(-63, 18, -86), false, "pinguim")
+	# O pinguim leva o Faisquinha 5 pendurado.
+	faisquinha_na_bolota(bolota(Vector3(-63, 18, -86), false, "pinguim"))
 	bolota(Vector3(-70, 18, -94), false, "cogumelo")
 	for spec in [["christmas_tree_withoutLights", Vector3(-92, 18, -58), 2.0], ["christmas_tree_withoutLights", Vector3(-70, 18, -108), 2.0],
 			["christmas_tree_withoutLights", Vector3(-98, 18, -90), 1.8], ["snowman_B", Vector3(-74, 18, -64), 2.4], ["snowman_A", Vector3(-82, 18, -92), 2.2],
@@ -844,6 +847,8 @@ func _encosta_das_avalanches() -> void:
 	iglu(cav, 3.0, atan2(cav.x, cav.z), PEDRA[0])
 	coracao(cav + Vector3(0, 1.3, 0))
 	roda(cav + Vector3(0, 1.0, 0), 1.6, 3)
+	# O Faisquinha 4 na caverna, em cima do coração.
+	faisquinha(cav + Vector3(0, 2.2, 0), "4")
 
 	# A saída: o arco na última plataforma e a ponte de gelo até o anel do pico.
 	var g4: Vector3 = g[4][0]
@@ -1003,7 +1008,7 @@ func _gruta_secreta(centro: Vector3, ang_rad: float) -> void:
 		(mi as MeshInstance3D).material_override = _material(Color("bcd8ee"))
 	paredes_rachadas.append(p)
 	paredes_do_pico.append(p)
-	vaga_lume(raiz.to_global(Vector3(0, 1.4, -1.2)))
+	faisquinha(raiz.to_global(Vector3(0, 1.4, -1.2)))
 	for x in [-1.3, 1.3]:
 		estrelinha(raiz.to_global(Vector3(x, 1.0, -0.6)))
 	estrelinha(raiz.to_global(Vector3(0, 1.0, 1.0)))

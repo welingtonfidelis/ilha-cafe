@@ -169,6 +169,7 @@ var agarrada: Alvo
 ## Tempo que falta do giro forte e da dancinha.
 var giro_forte := 0.0
 var dancando := 0.0
+var tremidinhas := 0
 ## Tem o Balão de Chiclete (a fase liga; o FaiscaJogo desliga ao entrar em outra) e está subindo nele agora.
 var balao_de_chiclete := false
 var no_balao := false
@@ -1702,6 +1703,13 @@ func _atualizar_lasers() -> void:
 ## Fim do laser `i` (para os testes).
 func ponta_do_laser(i: int) -> Vector3:
 	return _impactos[i].global_position
+
+
+## Tremidinha curta no motor fraco do controle (o Faisquinha escondido chamando, item 2 da lista do Faísca).
+## Conta em `tremidinhas` (os testes olham, sem controle ligado).
+func tremidinha(forca: float) -> void:
+	tremidinhas += 1
+	_tremer(forca, 0.0, 0.07)
 
 
 func _tremer(fraco: float, forte: float, duracao: float) -> void:

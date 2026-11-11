@@ -2,7 +2,8 @@ class_name FaiscaSave
 extends RefCounted
 ## Progresso do jogo do Faísca num JSON em user:// (faisca.json, ao lado da campanha da ilha), separado dela desde
 ## que o menu principal separou os dois jogos (pedido do usuário em 2026-11-10). Guarda as estrelinhas pegas por
-## fase (e na escada do farol), as Estrelas Grandes devolvidas, os vaga-lumes achados e se a abertura já passou.
+## fase (e na escada do farol), as Estrelas Grandes devolvidas, os Faisquinhas salvos (até 2026-11-11, "vaga_lumes"),
+## os prêmios deles que já tiveram festa e se a abertura já passou.
 ## Quem jogou a Parte 2 dentro da ilha (campanha versão 3, chave "parte2") ganha esse progresso aqui uma vez
 ## (`migrar`, chamado pelo menu principal antes de a ilha salvar a campanha sem a Parte 2). Os testes desligam o
 ## salvamento (`enabled`) ou usam outro arquivo (`path`), como no SaveGame.
@@ -50,6 +51,6 @@ static func migrar() -> bool:
 	var estrelas: Dictionary = parte2.get("estrelas", {})
 	if not parte2.get("aberta", false) and estrelas.is_empty():
 		return false
-	gravar({"estrelas": estrelas, "grandes": parte2.get("grandes", []), "vaga_lumes": parte2.get("vaga_lumes", {}),
+	gravar({"estrelas": estrelas, "grandes": parte2.get("grandes", []), "faisquinhas": parte2.get("vaga_lumes", {}),
 		"abertura": true})
 	return true
