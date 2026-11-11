@@ -153,8 +153,11 @@ var mundo_que_reage := true
 var estilo := ""
 ## Os caminhos creme ([pontos, largura]), que nada do mundo que reage pode tapar.
 var trilhas: Array = []
-## Quantas peças de chão ganharam o desenho da textura (item 13, para os testes).
+## Quantas peças de chão ganharam o desenho da textura (item 13, para os testes), e quais ([peça, desenho]).
 var pecas_com_textura := 0
+var pecas_de_chao: Array = []
+## A vegetação e as miudezas do chão (grama, musgo, granulado, pecinhas, porcas...), pedido de 2026-11-11.
+var vegetacao: VegetacaoDaFase
 
 
 func _ready() -> void:
@@ -169,7 +172,8 @@ func _ready() -> void:
 	faisquinhas.sort_custom(func(a: Faisquinha, b: Faisquinha) -> bool: return int(a.id) < int(b.id))
 	_mundo_que_reage()
 	# A textura no chão (item 13): o desenho da superfície da fase por cima das peças de chão.
-	pecas_com_textura = TexturaDoChao.na_fase(self, superficie)
+	pecas_com_textura = TexturaDoChao.na_fase(self, superficie, pecas_de_chao)
+	_vegetar()
 
 
 ## Cada fase monta o caminho aqui.
@@ -443,6 +447,19 @@ func poca(centro: Vector3, raio := 1.6, tipo := "agua") -> Poca:
 	add_child(p)
 	pocas.append(p)
 	return p
+
+
+## Depois do mundo que reage (as poças e as caixas já no lugar), a vegetação e as miudezas do mundo da fase em cima
+## das peças de chão (VegetacaoDaFase). O farol não tem.
+func _vegetar() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if not is_inside_tree() or self is HubFarol:
+		return
+	vegetacao = VegetacaoDaFase.new()
+	vegetacao.name = "Vegetacao"
+	add_child(vegetacao)
+	vegetacao.montar(self, pecas_de_chao)
 
 
 ## Depois do primeiro quadro de física (o chão já responde aos raios), espalha em cada playground o que o mundo da

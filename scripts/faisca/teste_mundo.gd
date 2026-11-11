@@ -50,6 +50,8 @@ func _moedas(n: Fase) -> int:
 
 
 func rodar() -> void:
+	# A vegetação das fases só é montada com tela; aqui, para conferir onde ela nasce.
+	VegetacaoDaFase.nos_testes = true
 	for id in FASES:
 		await _conferir_fase(id)
 	await _na_1_1()
@@ -106,8 +108,64 @@ func _conferir_fase(id: String) -> void:
 		return false)
 	_conferir("%s: o chão tem textura, e só o que fica parado" % id, n.pecas_com_textura >= 10 and mexendo.is_empty(),
 			"(%d peças, %d que se mexem)" % [n.pecas_com_textura, mexendo.size()])
+	await _conferir_vegetacao(id, n)
+	if n.superficie == "grama":
+		var com_cor := n.find_children("*", "MeshInstance3D", true, false).filter(func(mi: Node) -> bool:
+			var m := (mi as MeshInstance3D).material_override as ShaderMaterial
+			return m != null and m.shader.resource_path.ends_with("grama_das_fases.gdshader")).size()
+		_conferir("%s: a grama ganha o campo da ilha, com cor" % id, com_cor >= 10, "(%d peças)" % com_cor)
 	n.queue_free()
 	await _esperar(0.1)
+
+
+## A vegetação e as miudezas do mundo (VegetacaoDaFase): nascem nas peças de chão e nenhuma fica embaixo de outra coisa,
+## em cima do gelo, nem perto de botão, mola, posto ou poça (até 400 de cada fase, sorteadas).
+func _conferir_vegetacao(id: String, n: Fase) -> void:
+	await _ate(func() -> bool: return n.vegetacao != null, 1.0)
+	var v := n.vegetacao
+	var total := 0
+	if v:
+		for k in v.plantas:
+			total += int(v.plantas[k])
+	var minimo := 100 if n.superficie == "madeira" else 300
+	_conferir("%s: a vegetação do mundo nasce no chão" % id, total >= minimo, "(%s)" % (v.plantas if v else {}))
+	if v == null:
+		return
+	var espaco := n.get_world_3d().direct_space_state
+	var usados: Array[Node3D] = []
+	for c in n.get_children():
+		if c is Node3D and c.get_script() != null and not (c is Quebravel or c is Mato or c is VegetacaoDaFase or c is Poca):
+			if c is Area3D or c is StaticBody3D or c is AnimatableBody3D:
+				usados.append(c)
+	var ruins: Array[String] = []
+	var vistas := 0
+	for par in v.amostra:
+		var tipo: String = par[0]
+		var p: Vector3 = par[1]
+		vistas += 1
+		var r := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p + Vector3.UP * 2.0, p + Vector3.DOWN * 0.3, 1))
+		if r.is_empty() or absf((r.position as Vector3).y - p.y) > 0.25 or (r.collider as Node).has_meta("gelo"):
+			ruins.append("%s embaixo ou no gelo %s" % [tipo, p.snapped(Vector3.ONE * 0.1)])
+		elif _na_poca(n, p):
+			ruins.append("%s na poça" % tipo)
+		else:
+			for c in usados:
+				var no := c as Node3D
+				var raio := 0.5 if no is Area3D else 1.0
+				if Vector2(no.global_position.x - p.x, no.global_position.z - p.z).length() < raio and absf(no.global_position.y - p.y) < 2.0:
+					ruins.append("%s perto de %s" % [tipo, no.name])
+					break
+		if ruins.size() > 4:
+			break
+	_conferir("%s: nada da vegetação embaixo de outra coisa, no gelo, na poça ou em cima do que se usa" % id, ruins.is_empty(),
+			"(%d vistas %s)" % [vistas, ruins.slice(0, 4)])
+
+
+func _na_poca(n: Fase, p: Vector3) -> bool:
+	for o in n.pocas:
+		if Vector2(o.global_position.x - p.x, o.global_position.z - p.z).length() < o.raio and absf(o.global_position.y - p.y) < 1.0:
+			return true
+	return false
 
 
 func _na_1_1() -> void:
@@ -222,12 +280,10 @@ func _na_1_1() -> void:
 	_conferir("com o Faísca parado, a Bolota encosta e machuca", j.vida < Jogador.VIDA_MAX)
 	j.vida = Jogador.VIDA_MAX
 	j._invencivel = 999.0
-	# O empurrão da batida joga o Faísca longe: de volta ao lado dela.
-	await _esperar(0.6)
-	j.teleportar(b.global_position + lado + Vector3.UP * 0.1)
-	await _esperar(0.8)
-	# Ela chega colada nele, que dança bem nessa hora: olhando, não machuca.
-	await _ate(func() -> bool: return Vector2(b.global_position.x - j.global_position.x, b.global_position.z - j.global_position.z).length() < 1.18, 5.0)
+	# O empurrão da batida joga o Faísca longe: de volta, já encostado nela (no lado que tem chão), e ele dança.
+	await _esperar(1.2)
+	j.teleportar(b.global_position + lado.normalized() * 1.15 + Vector3.UP * 0.05)
+	await _esperar(0.3)
 	j._invencivel = 0.15
 	j.forcar_danca = true
 	await _esperar(1.0)

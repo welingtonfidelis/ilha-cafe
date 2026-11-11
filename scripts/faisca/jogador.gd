@@ -618,6 +618,15 @@ func _quina_amiga() -> void:
 	velocity.y = maxf(velocity.y, 0.0)
 
 
+## Para quem carrega o Faísca com o processo de física dele desligado (o canhão, que leva ele pelo ar): a câmera
+## continua indo atrás. Sem isso ela ficava parada no canhão enquanto ele voava (relato do usuário em 2026-11-11), já
+## que a câmera é solta e só segue o Faísca dentro do `_physics_process` dele.
+func acompanhar_camera(delta: float) -> void:
+	camera_pivo.rotation.y = yaw
+	camera_inclina.rotation.x = pitch
+	_seguir_camera(delta, Vector2.ZERO)
+
+
 ## A câmera segue o Faísca com um atrasinho no plano (e olhando um pouco à frente da corrida). Na altura, segura
 ## no pulo: só acompanha quando ele pousa, cai abaixo de onde estava ou sobe mais de CAMERA_PULO. Mexer na câmera
 ## deixa ela onde a criança pôs; correndo para a frente um tempo sem mexer, ela volta devagar para trás dele.

@@ -68,6 +68,9 @@ func _ilha() -> void:
 		mi.mesh = forma
 		mi.material_override = _material(spec[4])
 		mi.position.y = spec[3]
+		# O tampo de grama é chão (a colisão é um corpo à parte): ganha a grama com o desenho do campo.
+		if spec[4] == Color("8ad16a"):
+			mi.set_meta("chao", true)
 		add_child(mi)
 	# A parede invisível da beira, mais alta que o pulo com os jatos.
 	var muro := StaticBody3D.new()

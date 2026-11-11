@@ -4,7 +4,7 @@ extends SceneTree
 ## Uso (precisa de janela): godot --path . --resolution 1280x720 -s res://tools/foto_chao.gd [-- ilha 1-1 ...]
 ## Saída: tools/capturas/chao/<vista>_com.png e <vista>_sem.png
 
-const FASES := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2"]
+const FASES := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "chefe-1"]
 ## Vistas da ilha: [nome, posição da câmera, para onde olha].
 const ILHA := [
 	["ilha_campo", Vector3(-6, 6, 160), Vector3(-14, 0, 140)],
@@ -98,16 +98,19 @@ func _ilha() -> void:
 
 
 func _fase(id: String) -> void:
-	var n := TesteFaisquinhas.nova_fase(id)
+	var n: Fase = TesteFaisquinhas.nova_fase(id) if not id.begins_with("chefe") else load("res://scripts/faisca/fases/%s.gd" % id.replace("-", "_")).new()
 	n.name = "Fase"
 	root.add_child(n)
-	for k in 3:
+	for k in 4:
 		await physics_frame
-	print("%s: %d peças com textura" % [id, n.pecas_com_textura])
-	# Perto: da entrada do primeiro playground olhando o chão na frente; meia distância: de cima, para o centro.
-	var pg: Dictionary = n.playgrounds[0]
-	var entrada: Vector3 = pg.entrada
-	var centro: Vector3 = pg.centro
+	print("%s: %d peças com textura; vegetação %s" % [id, n.pecas_com_textura, n.vegetacao.plantas if n.vegetacao else {}])
+	# Perto: da entrada do primeiro playground olhando o chão na frente; meia distância: de cima, para o centro. Nas
+	# arenas (sem playground), do começo para o meio.
+	var entrada: Vector3 = n.inicio
+	var centro := Vector3.ZERO
+	if not n.playgrounds.is_empty():
+		entrada = n.playgrounds[0].entrada
+		centro = n.playgrounds[0].centro
 	var para := (centro - entrada)
 	para.y = 0.0
 	para = para.normalized() if para.length() > 0.1 else Vector3.FORWARD
@@ -131,8 +134,12 @@ func _par(nome: String) -> void:
 
 
 func _forca(f: float) -> void:
+	# A vegetação das fases entra e sai junto com o desenho do chão.
+	for v in root.find_children("Vegetacao", "Node3D", true, false):
+		(v as Node3D).visible = f > 0.0
 	for m in TexturaDoChao._materiais.values():
-		(m as ShaderMaterial).set_shader_parameter("forca", f)
+		# A grama com cor vai de 0 a 1; os outros, de 0 a 1 também (a ilha usa 1,3 de força: volta para ela).
+		(m as ShaderMaterial).set_shader_parameter("forca", f if f < 1.0 or (m as ShaderMaterial).shader.resource_path.get_file() != "terreno_da_ilha.gdshader" else 1.3)
 
 
 func _foto(nome: String) -> void:

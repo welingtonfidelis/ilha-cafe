@@ -7,7 +7,8 @@ extends RefCounted
 ## - Na ilha, o terreno gerado ganha o `terreno_da_ilha.gdshader`, que escolhe o desenho pela cor de cada pedaço
 ##   (grama, mata, areia, pedra das encostas, terra das trilhas, calçada e praça da cidade).
 ## - Nas fases do Faísca, cada peça de chão ganha o `detalhe_do_chao.gdshader` por cima (material_overlay), com o
-##   desenho da `superficie` da fase; os morros do Forest Nature levam grama em cima e pedra nas encostas.
+##   desenho da `superficie` da fase. A grama (os morros do Forest Nature e o chão da arena do Bolotão Fofão) ganha o
+##   campo da ilha, com cor, no `grama_das_fases.gdshader` no lugar do material, e pedra nas encostas.
 
 ## A mesma ordem do `pc_padrao` do shader.
 const PADROES := ["grama", "terra", "areia", "pedra", "calcada", "praca", "madeira", "tapete", "neve", "gelo", "metal", "algodao"]
@@ -54,8 +55,9 @@ static func na_ilha(ilha: Node) -> bool:
 
 ## Põe o desenho em cada peça de chão da fase: o que é sólido, largo, de material comum (nem transparente, nem de
 ## shader próprio, como a água) e não é enfeite, personagem ou coisa de pegar. As plataformas de plástico do
-## Platformer ficam lisas (são brinquedo). Devolve quantas peças ganharam.
-static func na_fase(fase: Node3D, superficie: String) -> int:
+## Platformer ficam lisas (são brinquedo). Devolve quantas peças ganharam; cada uma vai também para a `lista`
+## ([peça, desenho]), onde a VegetacaoDaFase espalha as plantas e as miudezas.
+static func na_fase(fase: Node3D, superficie: String, lista: Array = []) -> int:
 	var padrao: String = DA_SUPERFICIE.get(superficie, "")
 	var n := 0
 	for no in fase.find_children("*", "MeshInstance3D", true, false):
@@ -75,9 +77,36 @@ static func na_fase(fase: Node3D, superficie: String) -> int:
 			topo = "gelo"
 		if topo == "":
 			continue
+		# A grama ganha o campo da ilha, com cor (no lugar do material); o resto, o desenho por cima.
+		lista.append([mi, topo])
+		if topo == "grama" and _grama_com_cor(mi, lado):
+			n += 1
+			continue
 		mi.material_overlay = por_cima(topo, lado)
 		n += 1
 	return n
+
+
+## Troca o material da peça de grama pelo `grama_das_fases.gdshader`, com a textura e a cor dela por baixo. Só quando
+## dá: um material só, comum (StandardMaterial3D), sem cor de vértice. Devolve se trocou.
+static func _grama_com_cor(mi: MeshInstance3D, lado: String) -> bool:
+	var mat := mi.get_active_material(0) as StandardMaterial3D
+	if mat == null or mat.vertex_color_use_as_albedo:
+		return false
+	for k in range(1, mi.mesh.get_surface_count()):
+		if mi.get_active_material(k) != mat:
+			return false
+	var chave := "grama/%s/%s/%s" % [mat.albedo_texture.resource_path if mat.albedo_texture else "", mat.albedo_color.to_html(), lado]
+	if not _materiais.has(chave):
+		var m := ShaderMaterial.new()
+		m.shader = load("res://scripts/chao/grama_das_fases.gdshader")
+		if mat.albedo_texture:
+			m.set_shader_parameter("textura", mat.albedo_texture)
+		m.set_shader_parameter("cor_base", mat.albedo_color)
+		m.set_shader_parameter("padrao_lado", PADROES.find(lado) if lado != "" else -1)
+		_materiais[chave] = m
+	mi.material_override = _materiais[chave]
+	return true
 
 
 ## O chão de gelo (meta "gelo" no corpo, como o lago da 3-1) leva o desenho do gelo.
@@ -111,7 +140,8 @@ static func _e_chao(mi: MeshInstance3D, fase: Node) -> bool:
 		if n is StaticBody3D or n is AnimatableBody3D:
 			solido = true
 		n = n.get_parent()
-	if not solido:
+	# O meta "chao" marca de propósito o desenho de um chão cuja colisão é um corpo à parte (a arena do Bolotão Fofão).
+	if not solido and not mi.has_meta("chao"):
 		return false
 	var caixa := mi.global_transform * mi.get_aabb()
 	return caixa.size.x >= LARGURA_MINIMA and caixa.size.z >= LARGURA_MINIMA

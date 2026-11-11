@@ -89,12 +89,18 @@ func _disparar() -> void:
 
 func _physics_process(delta: float) -> void:
 	_espera -= delta
-	if not voando or _de == Vector3.ZERO:
+	if not voando or not is_instance_valid(_jogador):
+		return
+	# Com o Faísca no canhão, o processo de física dele fica desligado: o canhão leva a câmera junto (dentro do cano
+	# e no voo).
+	if _de == Vector3.ZERO:
+		_jogador.acompanhar_camera(delta)
 		return
 	_tempo += delta
 	var t := clampf(_tempo / VOO, 0.0, 1.0)
 	_jogador.global_position = ponto_do_voo(_de, destino, t)
 	_jogador.visual.rotation.x = TAU * 2.0 * t
+	_jogador.acompanhar_camera(delta)
 	if t >= 1.0:
 		_pousar()
 

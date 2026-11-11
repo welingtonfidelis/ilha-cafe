@@ -1599,6 +1599,11 @@ Pedido: "antes de irmos pra novas fases, queria melhorar a jogabilidade dele: mo
   - a 1-2 mudou uma conferência: com a arrancada mais rápida, a corridinha antes do pulo do caixote da alavanca amarela às vezes pousa em cima da alavanca, que fica no próprio caixote, e as duas valem;
   - `-- --faisca-movimento-captura` (com janela) tira quatro fotos em `tools/capturas/faisca/movimento/`: a curva, a derrapada, o pulo e o pouso.
 
+**Conserto do canhão (relato do usuário em 2026-11-11):** "na fase 1-1 quando faisca entra no canhao, a camera fica parada enquanto ele voa até a proxima plataforma".
+- Com o movimento fluido, a câmera ficou solta (`top_level`) e só segue o Faísca dentro do `_physics_process` dele. O canhão desliga esse processo durante o voo, e a câmera ficava no canhão.
+- Agora o canhão chama `Jogador.acompanhar_camera` a cada quadro, dentro do cano e no voo. Vale para os três canhões (1-1, 2-2 e 3-1).
+- O `--faisca-fase` confere que a câmera já saiu do canhão no meio do voo e chega junto com o Faísca.
+
 ### Sons do Faísca (pedido do usuário em 2026-10-29: "faltam sons novos pro faisca lutando, voando, etc")
 
 O Faísca usava só uns poucos sons emprestados das crianças, e pegar estrelinha nem tinha som.
@@ -2272,7 +2277,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | |
-| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha. **Falta:** levar para as fases do Faísca as texturas melhores da ilha (o campo com cor e florzinhas e o chão da mata), pedido do usuário em 2026-11-11: "vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca" |
+| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
 
 **Ordem sugerida:**
 - primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
@@ -2705,6 +2710,32 @@ Ideia do usuário: "colocar texturas no solo ao invés do chao cru, tanto pro fa
 - **O custo:** no Mac (M4, 1280x720), um campo cheio tem uns 20 a 28 mil tufos na tela e custou por volta de 1 a 1,5 ms por quadro. Ainda não foi medido no PC.
 - Sem tela (os testes), a vegetação não é montada.
 - **Fotos:** `godot --path . --resolution 1280x720 -s res://tools/foto_vegetacao.gd` (com e sem as plantas, com a contagem e o tempo de cada quadro) e, no jogo de verdade, `-- --vegetacao-captura` (o personagem no campo, no morro e na mata, em `tools/capturas/veg_*.png`).
+
+**A grama e as miudezas nas fases do Faísca** (2026-11-11, depois do item 7; pedidos do usuário: "vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca" e "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase"):
+- **A grama com o campo da ilha:** os morros da 1-1 e o chão da arena do Bolotão Fofão trocam de material para o `grama_das_fases.gdshader`, que usa a textura e a cor da peça por baixo e desenha em cima o mesmo campo da ilha. As encostas ficam com as lajes de pedra. Os tufinhos em "V" ficam mais fracos que na ilha (`tufos` = 0,35), porque a câmera do Faísca é mais baixa e eles apareciam como setinhas. O campo e a mata da ilha moram em `campo_e_mata.gdshaderinc`, usado pelos dois.
+- **A vegetação e as miudezas de cada mundo** (`scripts/vegetacao/vegetacao_da_fase.gd` e as peças em `miudezas_3d.gd`): o mesmo jeito da vegetação da ilha (MultiMesh com o `vegetacao.gdshader`, em pedaços de 16 m que somem a uns 46 m), por cima das peças de chão que ganharam a textura:
+
+| Mundo | O que nasce no chão |
+|---|---|
+| grama (1-1 e a arena do Bolotão Fofão) | tufos de grama na cor da grama embaixo, trevos e florzinhas |
+| pedra (túneis da 1-2) | musgo baixinho e pedrinhas |
+| madeira (cozinha da 2-1 e a mesa do Chef) | farelos e granulado |
+| algodão (nuvens da 2-2) | granulado colorido e confeitos |
+| tapete (quarto da 2-3) | pecinhas de montar e bolinhas de gude (brilhantes), poucas para não parecerem coisa de pegar |
+| neve (pico da 3-1 e a arena do Pinguinzão) | tufos de geada saindo da neve, montinhos de neve e cristais (nada em cima do lago congelado) |
+| metal (fábrica da 3-2) | porcas e parafusos de metal |
+
+- **Onde nasce:** nas faces de cima de cada peça de chão do mundo, sorteadas pela área. Cada ponto é conferido por um raio de cima: nada embaixo de outra peça ou de caixa, nem em cima do gelo. Fica longe:
+  - do que se usa no chão (botões, molas, postos, alavancas e o que mais tem regra própria);
+  - do caminho de quem anda de um lado para o outro (rolo de massa, bolas de neve, dados, carrinhos, caronas e plataformas);
+  - das poças e do caminho creme.
+- As miudezas não balançam, e a luz usa as normais delas (o shader ganhou o modo `rigido`, com aspereza, metal e brilho de cada uma).
+- Sem tela (os testes), não é montada; o `--faisca-mundo` liga para conferir (`VegetacaoDaFase.nos_testes`). Para isso, a vegetação guarda uma amostra de onde pôs cada tipo, já que sem tela o Godot não guarda as posições do MultiMesh.
+- **Testes:** o `--faisca-mundo` confere, em cada fase:
+  - que a turma do mundo nasce no chão;
+  - que, das quase 10 mil amostras, nenhuma fica embaixo de outra coisa, no gelo, numa poça ou em cima do que se usa;
+  - que a grama da 1-1 ganhou o campo com cor.
+- **Fotos:** o `tools/foto_chao.gd` tira a vegetação junto com o desenho nas fotos "sem", e fotografa também a arena do Bolotão Fofão (`-- chefe-1`).
 
 **No Faísca:** cada fase, ao terminar de montar, põe o `detalhe_do_chao.gdshader` por cima (`material_overlay`) das peças de chão, com o desenho da `superficie` dela (`TexturaDoChao.na_fase`).
 - Contam como chão: as peças sólidas, de pelo menos 3 x 3 m, com material comum.

@@ -297,10 +297,18 @@ func _pecas() -> bool:
 	j.teleportar(c.global_position + Vector3(0, 0.8, 0.6))
 	await m._esperar(0.3)
 	var disparou := c.voando
-	await m._esperar(Canhao.VOO + 1.2)
+	# A câmera vai junto no voo (antes ficava parada no canhão): no meio do voo ela já saiu de lá e, no pouso, está
+	# perto do Faísca.
+	var cam_no_canhao := j.camera_pivo.global_position
+	await m._esperar(Canhao.VOO * 0.6)
+	var cam_no_meio := j.camera_pivo.global_position.distance_to(cam_no_canhao)
+	await m._esperar(Canhao.VOO * 0.4 + 1.2)
+	var cam_no_fim := Vector2(j.camera_pivo.global_position.x - j.global_position.x, j.camera_pivo.global_position.z - j.global_position.z).length()
 	ok = m._conferir("o canhão lança o Faísca até o Jardim das Flores, pegando as estrelinhas do voo", disparou and not c.voando
 			and j.is_on_floor() and j.controle_ligado and j.global_position.distance_to(c.destino) < 2.5 and n.pegas >= pegas + 4,
 			"(%.1f m do destino, %d estrelinhas)" % [j.global_position.distance_to(c.destino), n.pegas - pegas]) and ok
+	ok = m._conferir("a câmera voa junto com o Faísca e chega com ele", cam_no_meio > 8.0 and cam_no_fim < 3.0,
+			"(andou %.1f m no meio do voo, a %.1f m dele no pouso)" % [cam_no_meio, cam_no_fim]) and ok
 	return ok
 
 
