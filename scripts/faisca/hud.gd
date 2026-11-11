@@ -12,6 +12,7 @@ var fim_aberto := false
 var dica_atual := ""
 var _coracoes: Array[IconeCoracao] = []
 var _contador: Label
+var _moedas: Label
 var _luzes: Array[IconeFaisquinha] = []
 var _balao: Control
 var _desenho_dica: DesenhoDica
@@ -60,6 +61,18 @@ func _ready() -> void:
 	estrela.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	estrelas.add_child(estrela)
 
+	# As moedas da carteira (item 4 da lista do Faísca), embaixo das estrelinhas, do mesmo jeito.
+	var moedas := HBoxContainer.new()
+	moedas.size_flags_horizontal = Control.SIZE_SHRINK_END
+	moedas.add_theme_constant_override("separation", 8)
+	canto.add_child(moedas)
+	_moedas = _rotulo(28)
+	moedas.add_child(_moedas)
+	var moeda := IconeMoeda.new()
+	moeda.custom_minimum_size = Vector2(34, 34)
+	moeda.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	moedas.add_child(moeda)
+
 	var luzes := HBoxContainer.new()
 	luzes.size_flags_horizontal = Control.SIZE_SHRINK_END
 	luzes.add_theme_constant_override("separation", 6)
@@ -73,6 +86,7 @@ func _ready() -> void:
 	_montar_balao()
 	_montar_fim()
 	mostrar_estrelas(0)
+	mostrar_moedas(0)
 
 
 func _process(delta: float) -> void:
@@ -107,6 +121,19 @@ func mostrar_coracoes(on: bool) -> void:
 
 func mostrar_estrelas(pegas: int) -> void:
 	_contador.text = str(pegas)
+
+
+func mostrar_moedas(n: int) -> void:
+	if _moedas.text != str(n) and _moedas.text != "":
+		var tw := create_tween()
+		_moedas.pivot_offset = _moedas.size * 0.5
+		tw.tween_property(_moedas, "scale", Vector2.ONE * 1.25, 0.06)
+		tw.tween_property(_moedas, "scale", Vector2.ONE, 0.1)
+	_moedas.text = str(n)
+
+
+func moedas_texto() -> String:
+	return _moedas.text
 
 
 ## Quantos Faisquinhas há na fase (os outros espaços somem) e quantos já foram salvos.
@@ -246,6 +273,21 @@ class IconeEstrela extends Control:
 		draw_colored_polygon(pts, Color("ffd23f"))
 		pts.append(pts[0])
 		draw_polyline(pts, Color("2b2140"), maxf(size.x * 0.07, 3.0), true)
+
+
+## Moeda dourada desenhada: o disco com a borda mais escura e uma estrelinha no meio, como a do pacote.
+class IconeMoeda extends Control:
+	func _draw() -> void:
+		var c := size / 2.0
+		var r := minf(size.x, size.y) * 0.46
+		draw_circle(c, r, Color("e0a21c"))
+		draw_circle(c, r * 0.8, Color("ffd23f"))
+		var pts := PackedVector2Array()
+		for i in 10:
+			var a := -PI / 2.0 + i * PI / 5.0
+			pts.append(c + Vector2(cos(a), sin(a)) * (r * 0.5 if i % 2 == 0 else r * 0.22))
+		draw_colored_polygon(pts, Color("fff3b0"))
+		draw_arc(c, r, 0, TAU, 32, Color("2b2140"), maxf(r * 0.14, 2.5), true)
 
 
 ## Coração cheio (vermelho) ou vazio (só o contorno, clarinho).

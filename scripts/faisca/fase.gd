@@ -15,6 +15,8 @@ signal faisquinha_salvo(achados: int, total: int)
 signal posto_aceso(posto: Posto)
 signal dica(qual: String)
 signal estrela_grande_pega
+## Pegou uma moeda (item 4 da lista do Faísca): quantas desta vez.
+signal moeda_pega(pegas: int)
 
 const PLATAFORMA := "res://assets/faisca/plataforma/"
 const FLORESTA := "res://assets/faisca/floresta/"
@@ -35,6 +37,10 @@ const CAMADA_LUZ := 1 << 5
 const CAMADA_LIMITE := 1 << 4
 ## Cada Bolota derrotada solta estas estrelinhas (já contam no total desde o começo).
 const ESTRELAS_POR_BOLOTA := 3
+## Moedas (item 4): cada Bolota vencida, cada Faisquinha salvo e o baú aberto soltam estas.
+const MOEDAS_POR_BOLOTA := 3
+const MOEDAS_POR_FAISQUINHA := 5
+const MOEDAS_DO_BAU := 20
 
 ## Onde o Faísca começa.
 var inicio := Vector3.ZERO
@@ -55,6 +61,8 @@ var alvos: Array[Alvo] = []
 var postos: Array[Posto] = []
 var faisquinhas: Array[Faisquinha] = []
 var achados := 0
+## Moedas pegas desta vez (vão para a carteira do FaiscaJogo uma a uma, pelo sinal moeda_pega).
+var moedas_pegas := 0
 var flores: Array[FlorDeLuz] = []
 var portoes: Array[Node3D] = []
 var tochas: Array[Tocha] = []
@@ -318,6 +326,39 @@ func _soltar_estrelinhas(alvo: Alvo) -> void:
 		tw.tween_property(e, "position", destino + Vector3.UP * 1.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tw.tween_property(e, "position", destino, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tw.tween_callback(func(): e.monitoring = true)
+	soltar_moedas(centro + Vector3.UP * 0.4, MOEDAS_POR_BOLOTA)
+
+
+## `n` moedas saem pulando de `centro` para os lados e caem no chão em volta (pegáveis um instante depois).
+func soltar_moedas(centro: Vector3, n: int, raio := 1.6) -> void:
+	var espaco := get_world_3d().direct_space_state
+	for i in n:
+		var a := TAU * i / n + randf() * 0.6
+		var r := raio * randf_range(0.6, 1.0)
+		var destino := centro + Vector3(cos(a) * r, 0, sin(a) * r)
+		# Cai no chão embaixo do destino, se tiver chão até 2 m abaixo; senão (a beira de um bolso, o vão) fica
+		# flutuando na altura de onde saiu, como as moedas do Astro, em vez de cair lá embaixo.
+		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(destino + Vector3.UP * 1.5, destino + Vector3.DOWN * 2.0, 1))
+		if not chao.is_empty():
+			destino = chao.position + Vector3.UP * 0.55
+		var m := moeda(centro)
+		m.pegavel = false
+		var tw := m.create_tween()
+		var alto := (centro + destino) * 0.5 + Vector3.UP * randf_range(1.2, 1.8)
+		tw.tween_property(m, "position", to_local(alto), 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(m, "position", to_local(destino), 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func() -> void: m.pegavel = true)
+
+
+## Uma moeda parada em `pos`.
+func moeda(pos: Vector3) -> Moeda:
+	var m := Moeda.new()
+	m.position = to_local(pos)
+	add_child(m)
+	m.pega.connect(func(_m: Moeda) -> void:
+		moedas_pegas += 1
+		moeda_pega.emit(moedas_pegas))
+	return m
 
 
 # --- coisas da fase ------------------------------------------------------------------
@@ -1274,6 +1315,7 @@ func colocar_bau(pos: Vector3, giro := 0.0, dourado := false) -> Bau:
 	bau.rotation.y = giro
 	add_child(bau)
 	bau.estrela_pega.connect(func(): estrela_grande_pega.emit())
+	bau.aberto.connect(func() -> void: soltar_moedas(bau.global_position + Vector3.UP * 1.2, MOEDAS_DO_BAU, 2.4))
 	return bau
 
 
@@ -1291,6 +1333,7 @@ func faisquinha(pos: Vector3, nome_dele := "") -> Faisquinha:
 	v.ja_visto = ja_achados.has(id)
 	add_child(v)
 	v.salvo.connect(func(_v: Faisquinha):
+		soltar_moedas(v.global_position, MOEDAS_POR_FAISQUINHA, 0.9)
 		if not v.ja_visto and not id in novos_faisquinhas:
 			novos_faisquinhas.append(id)
 			achados += 1

@@ -14,6 +14,8 @@ extends Fase
 ## consertam o elevador (a plataforma laranja que sobe e desce pelo vão das sacadas, a sudeste, parando em cada
 ## andar); com 20, o trenzinho de brinquedo roda em volta do eixo no térreo, com dois Faisquinhas de passageiros;
 ## com 30, o farolete do topo acende e os fachos giram pela torre. Antes disso, uma placa mostra quantos faltam.
+## No térreo ficam também a Máquina de Brindes (a sudoeste), a estante das figurinhas (na parede a noroeste) e o
+## cabide das roupinhas do Faísca (ao norte), do item 4 da lista (2026-11-11).
 ## O FaiscaJogo preenche `portas` antes de pôr o hub na árvore e escuta `porta_escolhida`. A porta "saida" (que
 ## voltava para a ilha) não é mais usada desde que o menu principal separou os dois jogos (2026-11-10).
 ## Ângulos em graus, como os das portas: 0 norte (-Z), 90 leste (+X), 180 sul, 270 oeste.
@@ -50,6 +52,10 @@ const TREM_VELOCIDADE := 0.25
 ## Onde ficam as placas dos prêmios que faltam (graus, raio, andar).
 const PLACAS := {"elevador": [118.0, 7.6, 0], "trem": [180.0, 5.6, 0], "farolete": [55.0, 9.6, 3]}
 const PEDE := {"elevador": 10, "trem": 20, "farolete": 30}
+## Os móveis dos brindes no térreo (graus, raio).
+const MAQUINA := [225.0, 9.4]
+const ESTANTE := [325.0, 11.25]
+const CABIDE := [354.0, 10.2]
 const MADEIRA := Color("c98b55")
 const MADEIRA_CLARA := Color("dca46c")
 const CREME := Color("f3ead8")
@@ -77,6 +83,11 @@ var premios: Array = []
 var premios_novos: Array = []
 var total_faisquinhas := 0
 var elevador: ElevadorFarol
+## Os brindes que já saíram da máquina (ids de Brindes), e os três móveis deles.
+var brindes: Array = []
+var maquina: MaquinaDeBrindes
+var estante: EstanteDeFigurinhas
+var cabide: CabideDeRoupas
 var trem: Array[AnimatableBody3D] = []
 var farolete: Node3D
 ## Estrelas Grandes já devolvidas (ids das fases): acendem as constelações.
@@ -105,6 +116,7 @@ func _montar() -> void:
 	for premio in PEDE:
 		if not premio in premios:
 			_placa(premio)
+	_moveis_dos_brindes()
 	for p in portas:
 		var porta := PortaFase.new()
 		porta.dados = p
@@ -580,7 +592,7 @@ func vagas_do_andar(andar: int) -> Array:
 		if int(PLACAS[premio][2]) == andar:
 			longe.append(float(PLACAS[premio][0]))
 	if andar == 0:
-		longe.append(180.0)
+		longe.append_array([180.0, MAQUINA[0], ESTANTE[0] - 13.0, ESTANTE[0], ESTANTE[0] + 13.0, CABIDE[0]])
 	var patamar := -1000.0
 	if andar > 0:
 		patamar = comeco_do_lance(andar - 1) + LANCE + PATAMAR * 0.5
@@ -594,6 +606,27 @@ func vagas_do_andar(andar: int) -> Array:
 				continue
 			vagas.append(ponto(g, r, ANDARES[andar]))
 	return vagas
+
+
+## A Máquina de Brindes, a estante e o cabide, no térreo, virados para o meio da torre.
+func _moveis_dos_brindes() -> void:
+	maquina = MaquinaDeBrindes.new()
+	maquina.name = "MaquinaDeBrindes"
+	_no_terreo(maquina, MAQUINA)
+	estante = EstanteDeFigurinhas.new()
+	estante.name = "Estante"
+	_no_terreo(estante, ESTANTE)
+	estante.mostrar(brindes)
+	cabide = CabideDeRoupas.new()
+	cabide.name = "Cabide"
+	_no_terreo(cabide, CABIDE)
+	cabide.mostrar(brindes)
+
+
+func _no_terreo(no: Node3D, onde: Array) -> void:
+	no.position = ponto(onde[0], onde[1], 0.0)
+	no.rotation.y = atan2(-no.position.x, -no.position.z)
+	add_child(no)
 
 
 ## Festa dos prêmios novos e das chegadas: os Faisquinhas pulam e acenam.

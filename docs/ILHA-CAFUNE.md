@@ -2263,7 +2263,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 1 | **Faisquinhas para resgatar:** os vaga-lumes viram robozinhos presos em bolhas das Bolotas, 6 por fase (os 3 de hoje e mais 3 em lugares difíceis). No farol eles aparecem brincando, acenando e dançando junto, e cada grupo abre uma coisa nova (10 consertam o elevador do farol, 20 abrem a sala de brinquedos, 30 acendem o farolete do topo) | M/G | feito em 2026-11-11 (a sala de brinquedos virou o trenzinho do térreo) |
 | 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
 | 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
-| 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | |
+| 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
 | 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | |
@@ -2399,6 +2399,45 @@ A ilha não manda luz, e o bloco dela fica igual. Saindo do jogo depois de mexer
 **Tremidinhas de festa** (`Jogador.festa_no_controle`): na estrelinha, no Faisquinha salvo (duas), no coração, na Estrela Grande e no prêmio do farol. Tudo respeita a vibração dos Ajustes.
 
 **Teste:** `--faisca-dualsense`. Confere os bytes (USB e Bluetooth), cada escolha do `ControleFaisca` e os passos tremendo na grama, na pedra, no algodão e no metal. Confere também a esteira, o gelo, o pouso e as festas. No PC, falta o usuário sentir com o controle de verdade. Se o Steam estiver mandando na luz do controle, ela pode brigar com a do jogo.
+
+### Moedas e a Máquina de Brindes (item 4 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "Pode seguir pra proxima etapa", depois do DualSense. Como o laboratório de brindes do Astro Bot.
+
+**As moedas** (`scripts/faisca/moeda.gd`):
+- **O modelo:** a moeda do Board Game Bits em pé, girando, com uns 0,5 m (o modelo tem 1 m).
+- **De onde saem** (`Fase.soltar_moedas`): 3 de cada Bolota vencida, 5 de cada Faisquinha salvo e 20 do baú aberto. Saem pulando para os lados e caem no chão até 2 m abaixo; sem chão perto (a beira de um bolso), ficam flutuando, em vez de cair lá embaixo.
+- **Pegar:** a até 3,5 m (o ímã) elas voam até o Faísca. Somem em 30 s se ninguém pegar.
+- **A carteira:** vão para a carteira do save (`moedas`) uma a uma e voltam em cada visita, como no Astro. Aparecem no HUD embaixo das estrelinhas (o número e a moeda desenhada) e na linha da pausa.
+- **Sons:** `moeda` (o "plim-plim") e `maquina`, no grupo `brindes` do `tools/gerar_sons.py`.
+
+**A Máquina de Brindes** (`scripts/faisca/maquina_de_brindes.gd`), no térreo, a sudoeste:
+- **Como ela é:** base vermelha, cúpula de vidro com cápsulas coloridas, o botão amarelo e a placa "25" com uma moeda.
+- **Pedir:** o soco no botão pede (ela fica no grupo dos alvos, como o baú). Sem moedas ou já com tudo, ela balança que não e a placa pisca, com a faixa "Faltam N moedas" ou "Você já tem todos os brindes!".
+- **Pagando 25:**
+  - a máquina chacoalha;
+  - a cápsula sai pela boca e rola, abre com confete e o brinde sobe girando ("Figurinha nova!" ou "Roupinha nova!", com o nome);
+  - depois voa para a vaga da estante ou para a cabeça do Faísca.
+- **O sorteio** (`Brindes.sortear`): nunca repete. A 1ª é uma figurinha e a 2ª uma roupinha, para a criança ver as duas coisas logo.
+
+**Os 18 brindes** (`scripts/faisca/brindes.gd`):
+- **12 figurinhas** para a estante (`estante_de_figurinhas.gd`, na parede a noroeste, duas prateleiras de 6): os 11 monstros da turma das Bolotas, mexendo na animação de parado, e um Faisquinha dourado. A que falta é uma cápsula cinza com "?".
+- **6 roupinhas** (chapéus da lojinha da ilha): palha, mago, palhaço, urso, duende e soldadinho. A coroa ficou de fora, por ser a do Necromante, com caveira.
+  - **No Faísca:** vão no osso da cabeça (`Robo.vestir_chapeu`), 1,35x maiores e mais altos que nas crianças, com o ajuste de cada um conferido nas fotos (`Robo.AJUSTES_CHAPEU`).
+  - **Trocar:** a nova ele já veste. O cabide ao norte (`cabide_de_roupas.gd`) mostra as que saíram, e o soco nele troca para a próxima e depois para nenhuma.
+
+**Save:** `moedas`, `brindes` e `roupa`.
+
+**Testes:**
+- `--faisca-moedas`:
+  - a Bolota soltando 3, que caem no chão e ficam paradas longe;
+  - o ímã pegando e o HUD contando;
+  - o Faisquinha dando 5 e o baú dando 20.
+- `--faisca-jogo`:
+  - o soco de verdade no botão sem moedas;
+  - a figurinha na estante e a roupinha na cabeça;
+  - o cabide trocando, o save e "já tem todos".
+- Fotos: `--faisca-brindes-captura`, com a máquina, a cápsula aberta, a estante com o cabide e o Faísca com cada chapéu.
 
 ### Em aberto
 

@@ -6,7 +6,9 @@ extends RefCounted
 ##                           porta trancada, a 1-1 com a pausa nova (Sair da fase, Menu principal), estrelinhas que
 ##                           contam uma vez, a Estrela Grande, o save próprio (FaiscaSave), a 1-2 abrindo com 30 e
 ##                           os Faisquinhas no farol: cada um no andar do mundo dele, e os prêmios de 10 (o elevador,
-##                           levando o Faísca até o 2º andar, com as cancelas), 20 (o trenzinho) e 30 (o farolete)
+##                           levando o Faísca até o 2º andar, com as cancelas), 20 (o trenzinho) e 30 (o farolete);
+##                           as moedas e a Máquina de Brindes (o soco no botão, sem e com moedas, a figurinha na
+##                           estante, a roupinha na cabeça, o cabide trocando, o save e "já tem todos")
 ##   --faisca-jogo-captura   fotos da abertura, do hub, da pausa e da 1-1 em tools/capturas/faisca/jogo/
 ## Veio da parte do farol e das fases do antigo teste --parte2 do main.gd.
 
@@ -201,6 +203,7 @@ func rodar() -> void:
 	ok = _conferir("carregar o save devolve as estrelinhas, as Estrelas Grandes e a abertura vista", j.total_estrelas() == total
 			and "1-1" in j.grandes and j.abertura_vista, "(%d de %d)" % [j.total_estrelas(), total]) and ok
 	ok = await _moradores_e_premios() and ok
+	ok = await _brindes() and ok
 	FaiscaSave.apagar()
 	print("FAISCA-JOGO OK" if ok else "FAISCA-JOGO COM FALHAS")
 	j.get_tree().quit(0 if ok else 1)
@@ -295,6 +298,78 @@ func _moradores_e_premios() -> bool:
 	for id in ["2-1", "3-1", "2-2", "2-3", "3-2", "1-2"]:
 		j.faisquinhas.erase(id)
 	j.premios_vistos.clear()
+	return ok
+
+
+## As moedas e a Máquina de Brindes (item 4 da lista do Faísca, 2026-11-11).
+func _brindes() -> bool:
+	var ok := true
+	# Na rodada rápida da 1-1 o Faísca sai antes de juntar todas as do baú: basta ter vindo moeda.
+	ok = _conferir("a 1-1 desta rodada deu moedas para a carteira (o baú e o Faisquinha)", j.moedas >= 10, "(%d)" % j.moedas) and ok
+	j.moedas = 0
+	j.brindes.clear()
+	j.vestir("")
+	await _refazer_hub()
+	var hub := j.hub
+	var maq := hub.maquina
+	# O soco de verdade no botão, sem moedas: a máquina balança que não.
+	var frente := maq.global_position + maq.global_basis.z * 1.6
+	await _faisca_em(frente + Vector3.UP * 0.1, 0.3)
+	f.yaw = atan2(-(maq.global_position - frente).x, -(maq.global_position - frente).z)
+	f.visual.rotation.y = f.yaw + PI
+	await _esperar(0.1)
+	var pedidos := [0]
+	maq.pedido.connect(func() -> void: pedidos[0] += 1)
+	f.forcar_golpe = true
+	await _esperar(0.1)
+	f.forcar_golpe = false
+	await _esperar(0.5)
+	ok = _conferir("o soco no botão da máquina pede um brinde; sem moedas, ela nega", pedidos[0] == 1 and j.brindes.is_empty()
+			and j.faixa_titulo_texto().begins_with("Faltam 25"), "(%d pedidos, faixa %s)" % [pedidos[0], j.faixa_titulo_texto()]) and ok
+	# Com 60 moedas: a primeira é uma figurinha, que vai para a estante.
+	j.moedas = 60
+	maq._imune = 0.0
+	maq.receber_golpe(1, f.global_position)
+	var primeiro: String = j.brindes[0] if not j.brindes.is_empty() else ""
+	await _ate(func() -> bool: return not maq.ocupada, 8.0)
+	await _esperar(0.2)
+	ok = _conferir("com moedas: paga 25, a cápsula abre e a figurinha nova vai para a estante", j.moedas == 35
+			and Brindes.dados(primeiro).get("tipo", "") == "figurinha" and hub.estante.tem_figurinha(primeiro)
+			and j.faixa_titulo_texto() == "Figurinha nova!", "(%s, %d moedas)" % [primeiro, j.moedas]) and ok
+	# A segunda é uma roupinha: o Faísca já sai vestido, e ela aparece no cabide.
+	maq._imune = 0.0
+	maq.receber_golpe(1, f.global_position)
+	var segundo: String = j.brindes[1] if j.brindes.size() > 1 else ""
+	await _ate(func() -> bool: return not maq.ocupada, 8.0)
+	await _esperar(0.2)
+	ok = _conferir("a segunda é uma roupinha: o Faísca já sai com ela, e ela vai para o cabide", Brindes.dados(segundo).get("tipo", "") == "roupa"
+			and j.roupa == segundo and f.robo.chapeu == Brindes.chapeu_de(segundo) and hub.cabide.tem_roupa(segundo)
+			and f.robo.get_node_or_null("%Chapeu") == null and f.robo.find_child("Chapeu", true, false) != null, "(%s)" % segundo) and ok
+	# O cabide: tira a roupinha e põe de novo.
+	hub.cabide._imune = 0.0
+	hub.cabide.receber_golpe(1, f.global_position)
+	var sem := f.robo.chapeu
+	hub.cabide._imune = 0.0
+	hub.cabide.receber_golpe(1, f.global_position)
+	ok = _conferir("o soco no cabide tira a roupinha e o seguinte põe de novo", sem == "" and j.roupa == segundo
+			and f.robo.chapeu == Brindes.chapeu_de(segundo)) and ok
+	var salvo := FaiscaSave.ler()
+	ok = _conferir("o save guarda as moedas, os brindes e a roupinha", int(salvo.get("moedas", -1)) == 10
+			and (salvo.get("brindes", []) as Array).size() == 2 and salvo.get("roupa", "") == segundo) and ok
+	# Com todos os brindes, a máquina avisa.
+	j.brindes = Brindes.LISTA.map(func(b: Dictionary) -> String: return b.id)
+	j.moedas = 100
+	await _refazer_hub()
+	hub = j.hub
+	var todas: bool = Brindes.ids("figurinha").all(func(id: String) -> bool: return j.hub.estante.tem_figurinha(id))
+	hub.maquina.receber_golpe(1, f.global_position)
+	await _esperar(0.3)
+	ok = _conferir("com todos: a estante cheia, o cabide com as 6 roupinhas e a máquina avisa que já tem tudo", todas and j.moedas == 100
+			and Brindes.ids("roupa").all(func(id: String) -> bool: return j.hub.cabide.tem_roupa(id))
+			and j.faixa_titulo_texto() == "Você já tem todos os brindes!") and ok
+	j.brindes.clear()
+	j.moedas = 0
+	j.vestir("")
 	return ok
 
 
@@ -411,6 +486,58 @@ func capturar_farol() -> void:
 	j.abrir_pausa()
 	await _esperar_real(0.5)
 	await _foto("f06_pausa_com_contador")
+	j.get_tree().quit()
+
+
+## Fotos dos brindes (precisa de janela), em tools/capturas/faisca/jogo/: a Máquina de Brindes com o Faísca na frente,
+## a cápsula abrindo, a estante com algumas figurinhas e o cabide, e o Faísca com cada um dos 6 chapéus.
+## Uso: godot --path . -- --faisca-brindes-captura
+func capturar_brindes() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://tools/capturas/faisca/jogo/"))
+	j.abertura_vista = true
+	j.brindes = ["fig_alien", "fig_pinguim", "fig_porco", "fig_abelha", "fig_fantasma", "roupa_palha", "roupa_urso"]
+	j.moedas = 80
+	j.comecar_no_farol()
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 10.0)
+	var hub := j.hub
+	var cam := Camera3D.new()
+	cam.fov = 55.0
+	j.add_child(cam)
+	cam.make_current()
+	var maq := hub.maquina
+	var frente := maq.global_position + maq.global_basis.z * 2.2
+	f.teleportar(frente + Vector3.UP * 0.1)
+	f.yaw = atan2(maq.global_basis.z.x, maq.global_basis.z.z)
+	f.visual.rotation.y = f.yaw
+	cam.global_position = maq.global_position + maq.global_basis.z * 5.5 + maq.global_basis.x * 2.5 + Vector3.UP * 2.6
+	cam.look_at(maq.global_position + Vector3.UP * 1.4)
+	await _esperar(1.0)
+	await _foto("b01_maquina_de_brindes")
+	maq.receber_golpe(1, f.global_position)
+	await _ate(func() -> bool: return j.faixa_titulo_texto().ends_with("nova!"), 6.0)
+	await _esperar(0.5)
+	await _foto("b02_capsula_abriu")
+	await _ate(func() -> bool: return not maq.ocupada, 8.0)
+	var est := hub.estante
+	# Do anel de fora da escada (a escada passa entre o meio e a estante).
+	cam.global_position = HubFarol.ponto(296.0, 9.4, 2.0)
+	cam.look_at(est.global_position + Vector3.UP * 1.3 + est.global_basis.x * 1.2)
+	await _esperar(0.6)
+	await _foto("b03_estante_e_cabide")
+	# O Faísca de frente, com cada chapéu.
+	f.teleportar(Vector3(0, 0.1, 8.5))
+	f.yaw = 0.0
+	f.visual.rotation.y = 0.0
+	f.controle_ligado = false
+	await _esperar(0.5)
+	for k in Brindes.ids("roupa").size():
+		var id: String = Brindes.ids("roupa")[k]
+		f.robo.vestir_chapeu(Brindes.chapeu_de(id))
+		var cabeca := f.global_position + Vector3.UP * 2.0
+		cam.global_position = cabeca + Vector3(1.4, 0.5, 2.6)
+		cam.look_at(cabeca + Vector3.UP * 0.1)
+		await _esperar(0.3)
+		await _foto("b%02d_faisca_%s" % [4 + k, Brindes.chapeu_de(id)])
 	j.get_tree().quit()
 
 

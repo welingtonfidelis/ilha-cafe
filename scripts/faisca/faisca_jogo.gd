@@ -10,13 +10,14 @@ extends Node3D
 ## - os Faisquinhas morando no farol e os prêmios que eles abrem (PREMIOS: o elevador, o trenzinho e o farolete);
 ## - a pausa (Start ou Esc): continuar, sair da fase, os Ajustes (PainelAjustes), voltar ao menu principal e sair do
 ##   jogo;
-## - o DualSense (nó DualSense com o perfil ControleFaisca): gatilhos, barra de luz, LEDs e as tremidinhas de festa.
+## - o DualSense (nó DualSense com o perfil ControleFaisca): gatilhos, barra de luz, LEDs e as tremidinhas de festa;
+## - as moedas (a carteira) e a Máquina de Brindes do farol: as figurinhas da estante e as roupinhas do Faísca.
 ## As portas abrem com o total de estrelinhas (cada uma conta uma vez, para sempre).
 ## Testes: --faisca-jogo (confere, ver teste_faisca_jogo.gd), --faisca-jogo-captura e --faisca-farol-captura (fotos,
 ## precisam de janela).
 
 const CENA := "res://scenes/faisca.tscn"
-const MODOS := ["--faisca-jogo", "--faisca-jogo-captura", "--faisca-farol-captura"]
+const MODOS := ["--faisca-jogo", "--faisca-jogo-captura", "--faisca-farol-captura", "--faisca-brindes-captura"]
 ## As fases, na ordem das portas, com o andar do farol (0 é o térreo; cada andar é um mundo) e o lado da
 ## parede em graus. "cena" vazia é porta que abre mas ainda mostra "Em breve". Nomes e números das que
 ## faltam fazer vêm do mapa da seção 11 do doc e mudam quando cada uma for planejada. A nave, no topo,
@@ -62,6 +63,11 @@ var faisquinhas := {}
 var premios_vistos: Array = []
 ## Faisquinhas salvos na última fase ("1-1:3"), que chegam caindo do alto quando o Faísca volta ao farol.
 var chegando: Array = []
+## A carteira (item 4 da lista do Faísca), os brindes que já saíram da máquina e a roupinha que ele veste ("" nenhuma).
+var moedas := 0
+var brindes: Array = []
+var roupa := ""
+var _sorteio := RandomNumberGenerator.new()
 var abertura_vista := false
 var faisca: Jogador
 var hud: Hud
@@ -109,6 +115,7 @@ func _ready() -> void:
 	if not testando:
 		FaiscaSave.migrar()
 		carregar(FaiscaSave.ler())
+	_sorteio.randomize()
 	if "--faisca-jogo" in args:
 		_teste = TesteFaiscaJogo.new(self)
 		_teste.rodar()
@@ -118,6 +125,9 @@ func _ready() -> void:
 	elif "--faisca-farol-captura" in args:
 		_teste = TesteFaiscaJogo.new(self)
 		_teste.capturar_farol()
+	elif "--faisca-brindes-captura" in args:
+		_teste = TesteFaiscaJogo.new(self)
+		_teste.capturar_brindes()
 	elif abertura_vista:
 		comecar_no_farol()
 	else:
@@ -259,12 +269,14 @@ func _montar_contador() -> HBoxContainer:
 	var linha := HBoxContainer.new()
 	linha.alignment = BoxContainer.ALIGNMENT_CENTER
 	linha.add_theme_constant_override("separation", 10)
-	for qual in ["estrelas", "faisquinhas", "grandes"]:
+	for qual in ["estrelas", "faisquinhas", "grandes", "moedas"]:
 		var icone: Control
 		if qual == "faisquinhas":
 			var f := Hud.IconeFaisquinha.new()
 			f.aceso = true
 			icone = f
+		elif qual == "moedas":
+			icone = Hud.IconeMoeda.new()
 		else:
 			icone = Hud.IconeEstrela.new()
 		icone.custom_minimum_size = Vector2(44, 46) if qual != "estrelas" else Vector2(36, 36)
@@ -278,7 +290,7 @@ func _montar_contador() -> HBoxContainer:
 		linha.add_child(numero)
 		contador_pausa[qual] = numero
 		contador_pausa[qual + "_icone"] = icone
-		if qual != "grandes":
+		if qual != "moedas":
 			var vao := Control.new()
 			vao.custom_minimum_size = Vector2(18, 0)
 			linha.add_child(vao)
@@ -297,6 +309,7 @@ func _atualizar_contador() -> void:
 		contador_pausa.faisquinhas.text = "%d/%d" % [total_faisquinhas(), feitas * FAISQUINHAS_POR_FASE]
 		contador_pausa.grandes.text = "%d/%d" % [grandes.size(), FASES.size() - 1]
 	(contador_pausa.grandes_icone as Control).custom_minimum_size = Vector2(46, 46)
+	contador_pausa.moedas.text = str(moedas)
 
 
 func _entrada(event: InputEvent) -> void:
@@ -436,7 +449,10 @@ func _montar_hub(volta_de: String) -> void:
 	for p in hub.premios_novos:
 		premios_vistos.append(p)
 	hub.total_faisquinhas = total_faisquinhas()
+	hub.brindes = brindes.duplicate()
 	add_child(hub)
+	hub.maquina.pedido.connect(_pedir_brinde)
+	hub.cabide.trocar.connect(trocar_roupa)
 	hub.estrela_pega.connect(func(_pegas: int, _total: int) -> void:
 		_juntar(ID_FAROL, hub.novas, estrelas)
 		hud.mostrar_estrelas(total_estrelas())
@@ -453,6 +469,7 @@ func _montar_hub(volta_de: String) -> void:
 	hud.visible = true
 	hud.mostrar_estrelas(total_estrelas())
 	hud.mostrar_faisquinhas(0, 0)
+	hud.mostrar_moedas(moedas)
 
 
 func entrar_fase(id: String) -> void:
@@ -487,6 +504,9 @@ func entrar_fase(id: String) -> void:
 	nivel.posto_aceso.connect(func(p: Posto) -> void: faisca.ponto_retorno = p.ponto())
 	nivel.dica.connect(hud.mostrar_dica)
 	nivel.estrela_grande_pega.connect(_terminar_fase)
+	nivel.moeda_pega.connect(func(_pegas: int) -> void:
+		moedas += 1
+		hud.mostrar_moedas(moedas))
 	faisca.limite_queda = nivel.limite_queda
 	faisca.pode_recomecar = true
 	faisca.tirar_poderes()
@@ -494,6 +514,7 @@ func entrar_fase(id: String) -> void:
 	hud.mostrar_vida(faisca.vida)
 	hud.mostrar_estrelas(nivel.pegas)
 	hud.mostrar_faisquinhas(nivel.achados, nivel.faisquinhas.size())
+	hud.mostrar_moedas(moedas)
 	faisca.yaw = 0.0
 	faisca.pitch = -0.32
 	faisca.visual.rotation.y = PI
@@ -561,6 +582,65 @@ func sair_da_fase() -> void:
 	faisca.controle_ligado = true
 	_trocando = false
 	_festa_no_farol()
+
+
+## O soco no botão da Máquina de Brindes: paga PRECO moedas e solta um brinde novo (a figurinha vai para a estante,
+## a roupinha para a cabeça do Faísca). Sem moedas, ou já com todos, a máquina balança que não.
+func _pedir_brinde() -> void:
+	if lugar != "hub" or not is_instance_valid(hub) or hub.maquina.ocupada:
+		return
+	var id := Brindes.sortear(brindes, _sorteio)
+	if id == "":
+		hub.maquina.negar()
+		faixa("Você já tem todos os brindes!", "As figurinhas estão na estante e as roupinhas no cabide", Color("#ffd23f"), 3.0)
+		return
+	if moedas < Brindes.PRECO:
+		hub.maquina.negar()
+		faixa("Faltam %d moedas" % (Brindes.PRECO - moedas), "Vença as Bolotas e salve os Faisquinhas para ganhar moedas",
+				Color("#ffd23f"), 2.6)
+		return
+	moedas -= Brindes.PRECO
+	hud.mostrar_moedas(moedas)
+	brindes.append(id)
+	_salvar()
+	var maquina := hub.maquina
+	var dados := Brindes.dados(id)
+	var e_roupa: bool = dados.tipo == "roupa"
+	maquina.revelado.connect(func(_id: String) -> void:
+		faixa("Roupinha nova!" if e_roupa else "Figurinha nova!", String(dados.nome), Color("#8ff3ff"), 2.6)
+		faisca.festa_no_controle("premio")
+		controle.piscar(Color8(255, 200, 40), 1.5), CONNECT_ONE_SHOT)
+	maquina.entregue.connect(func(_id: String) -> void:
+		if not is_instance_valid(hub):
+			return
+		if e_roupa:
+			vestir(id)
+			hub.cabide.mostrar(brindes)
+		else:
+			hub.estante.por(id), CONNECT_ONE_SHOT)
+	var destino := func() -> Vector3:
+		if e_roupa:
+			return faisca.global_position + Vector3.UP * 2.3
+		return hub.estante.lugar(id) if is_instance_valid(hub) else Vector3.ZERO
+	maquina.soltar(id, destino)
+
+
+## Veste a roupinha `id` (um brinde de roupa, ou "" para nenhuma) e guarda.
+func vestir(id: String) -> void:
+	roupa = id
+	faisca.robo.vestir_chapeu(Brindes.chapeu_de(id))
+	_salvar()
+
+
+## O soco no cabide: a próxima roupinha das que já saíram, e depois nenhuma.
+func trocar_roupa() -> void:
+	var tem := Brindes.ids("roupa").filter(func(r: String) -> bool: return r in brindes)
+	if tem.is_empty():
+		return
+	var ordem := [""] + tem
+	vestir(ordem[(ordem.find(roupa) + 1) % ordem.size()])
+	Sfx.play(self, "faisca_agarra", -4.0, 0.1)
+	Fx.confetti(self, faisca.global_position + Vector3.UP * 2.2, 10, 1.5)
 
 
 ## Chegando no farol: a faixa dos Faisquinhas que acabaram de chegar (eles caem do alto) e a festa de cada prêmio
@@ -758,11 +838,17 @@ func carregar(dados: Dictionary) -> void:
 	# Até 2026-11-11 a chave era "vaga_lumes" (os três de cada fase eram vaga-lumes).
 	faisquinhas = dados.get("faisquinhas", dados.get("vaga_lumes", {}))
 	premios_vistos = dados.get("premios", [])
+	moedas = int(dados.get("moedas", 0))
+	brindes = dados.get("brindes", [])
+	roupa = String(dados.get("roupa", ""))
+	if is_instance_valid(faisca) and faisca.robo:
+		faisca.robo.vestir_chapeu(Brindes.chapeu_de(roupa))
 	abertura_vista = dados.get("abertura", false)
 
 
 func dados_salvos() -> Dictionary:
-	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "abertura": abertura_vista}
+	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "moedas": moedas,
+		"brindes": brindes, "roupa": roupa, "abertura": abertura_vista}
 
 
 func _salvar() -> void:

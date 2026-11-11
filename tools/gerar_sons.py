@@ -491,10 +491,24 @@ def make_faisquinhas():
     sfx("faisquinha_salvo", mix(0.95, *parts), -6)
 
 
+def make_brindes():
+    """Sons das moedas e da Máquina de Brindes (2026-11-11, item 4 da lista do Faísca): a moeda é um "plim-plim" de
+    metal (duas notas subindo, com o brilho da parcial aguda); a máquina é a catraca da manivela (estalinhos) e o
+    "vrum" do motorzinho subindo, até o "tum" da cápsula caindo."""
+    random.seed(44)
+    def plim(f, d):
+        return mix(d, (envelope(osc(f, f, d, "sine"), 0.001, d * 0.5), 0, 0.8), (envelope(osc(f * 2.76, f * 2.76, d, "sine"), 0.001, d * 0.2), 0, 0.3))
+    sfx("moeda", mix(0.3, (plim(midi(88), 0.12), 0, 0.8), (plim(midi(95), 0.22), 0.07, 0.9)), -8)
+    clics = [(envelope(highpass(noise(0.02), 2500), 0.0005, 0.008), 0.05 + k * 0.07, 0.5) for k in range(10)]
+    motor = sweep_lowpass(envelope(osc(90, 220, 0.8, "saw"), 0.05, 0.5, 0.4, 0.1), 600, 1800)
+    tum = envelope(osc(160, 60, 0.2, "sine"), 0.001, 0.08)
+    sfx("maquina", mix(1.05, *clics, (motor, 0.0, 0.35), (tum, 0.85, 0.9)), -6)
+
+
 if __name__ == "__main__":
     import sys
     # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
     grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
-              "faisquinhas": make_faisquinhas}
+              "faisquinhas": make_faisquinhas, "brindes": make_brindes}
     for nome in (sys.argv[1:] or list(grupos)):
         grupos[nome]()

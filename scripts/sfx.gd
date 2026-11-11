@@ -25,6 +25,8 @@ const ALL := [
 	"martelo", "tique", "pistao",
 	# Faisquinhas (o chamado e o resgate).
 	"faisquinha_chama", "faisquinha_salvo",
+	# Moedas e a Máquina de Brindes.
+	"moeda", "maquina",
 ]
 
 ## Nos testes, anota o nome de cada som tocado (não dá para ouvir num teste sem tela).
