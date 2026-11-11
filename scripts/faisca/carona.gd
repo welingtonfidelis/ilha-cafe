@@ -366,7 +366,9 @@ func _caixa(tamanho: Vector3, pos: Vector3, material: Material, solida: bool) ->
 	malha.size = tamanho
 	mi.mesh = malha
 	mi.material_override = material
-	mi.position = pos
+	# O desenho das partes sólidas fica 1,5 cm acima da colisão: parada na estação, o piso da carona ficava no mesmo
+	# plano do chão de lá, e os dois piscavam.
+	mi.position = pos + (Vector3.UP * 0.015 if solida else Vector3.ZERO)
 	add_child(mi)
 	if solida:
 		var cs := CollisionShape3D.new()

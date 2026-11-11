@@ -14,15 +14,31 @@ extends Fase
 ##   3 Fogão e Pizza (ao norte): a pizza que gira com as Bolotas, as bocas do fogão, a tampa que joga até os livros
 ##     do V2 e o coração (P2)
 ##   viagem: o prato que vai e volta por trás da geladeira (atalho)
-##   4 Pia e Prateleira (a leste): pratos boiando e bolhas na pia, bolhas de degrau até a prateleira, o V3 atrás da
-##     geladeira e o sorvete que joga lá para cima (P3)
+##   4 Pia (a leste): pratos boiando e bolhas na pia (P3); no fim, o registro que solta a água
+##   5 Cozinha Alagando (no canto da janela): o momento especial (item 9, 2026-11-11). Cada registro girado faz a
+##     água subir uma etapa no chão da cozinha inteira, e o que boia (esponjas, pratos, o patinho com o V3, o pote)
+##     sobe junto e vira caminho: da bancada da pia até a escadinha (P4), dela até o balde, e dele até a torre de
+##     potes, de onde a bandeja leva até a prateleira atrás da geladeira e o sorvete
 ##   Arena em cima da geladeira (20 m): o baú e duas Bolotas
+## Mais longa desde 2026-11-11 (item 12): a Cozinha Alagando no lugar das bolhas de degrau que iam da bancada da pia
+## até a prateleira, e a saída da pia pede o registro.
 
 const K := 8.0
 const COR_PAREDE := Color("f3e2c7")
 const COR_ACO := Color("c6ccd8")
 const COR_ARMARIO := Color("8fc6c0")
 const COR_MADEIRA := Color("c58a52")
+## O que é de madeira na cozinha, o único que leva o desenho de tábuas (`TexturaDoChao.na_fase`).
+const DE_MADEIRA := ["kitchencounter", "kitchentable", "table_round", "cuttingboard", "chair", "crate"]
+## A enchente (o momento especial), os três registros e a bandeja que leva da torre de potes até a prateleira.
+var enchente: Enchente
+var registros: Array[Registro] = []
+var bandeja: AnimatableBody3D
+var escadinha_topo := Vector3(53.0, 8.5, -52.0)
+var balde_topo := Vector3(53.0, 7.6, -77.0)
+## O que boia, na ordem do caminho (os testes pulam de uma para a outra).
+var boias_do_caminho: Array[Boia] = []
+var patinho: Boia
 ## O marco: o meio de baixo da geladeira (o tampo dela, a 20 m, vai de x -8 a 8 e de z -78 a -62).
 const GELADEIRA := Vector3(0, 0, -70)
 
@@ -40,6 +56,7 @@ func _montar() -> void:
 	_fogao_e_pizza()
 	_prato_atras_da_geladeira()
 	_pia_e_prateleira()
+	_cozinha_alagando()
 	_em_cima_da_geladeira()
 
 
@@ -53,13 +70,14 @@ func _sala() -> void:
 	_parede(Vector3(0, 0, -127), Vector3(130, 46, 2), COR_PAREDE)
 	_parede(Vector3(0, 0, 7), Vector3(130, 46, 2), COR_PAREDE)
 	# Rodapé e azulejos (faixas de cor) nas paredes compridas.
+	# Do lado de dentro, de uma parede do fundo à outra (mais compridos, as pontas ficavam no plano delas, por fora).
 	for x in [-62.9, 62.9]:
-		_parede(Vector3(x, 0, -60), Vector3(0.3, 3, 136), Color("c58a52"), false)
-		_parede(Vector3(x, 14, -60), Vector3(0.3, 10, 136), Color("cde9f2"), false)
+		_parede(Vector3(x, 0, -60), Vector3(0.3, 3, 132), Color("c58a52"), false)
+		_parede(Vector3(x, 14, -60), Vector3(0.3, 10, 132), Color("cde9f2"), false)
 	# Janela grande com a luz do dia, na parede da direita.
 	var janela := MeshInstance3D.new()
 	var plano := QuadMesh.new()
-	plano.size = Vector2(60, 22)
+	plano.size = Vector2(60, 14)
 	janela.mesh = plano
 	var luz_da_janela := StandardMaterial3D.new()
 	luz_da_janela.albedo_color = Color("dff3ff")
@@ -67,10 +85,23 @@ func _sala() -> void:
 	luz_da_janela.emission = Color("dff3ff")
 	luz_da_janela.emission_energy_multiplier = 1.4
 	janela.material_override = luz_da_janela
-	janela.position = Vector3(62.8, 26, -40)
+	# Acima da faixa de azulejo (antes ficava atrás dela, a 5 cm).
+	janela.position = Vector3(62.7, 31, -40)
 	janela.rotation.y = -PI / 2.0
 	add_child(janela)
 	cozinha("fridge_A", GELADEIRA)
+
+
+## Só a madeira ganha tábuas: as peças de madeira do pacote e as caixas feitas aqui com a cor de madeira (revisão de
+## 2026-11-11: a geladeira, os pratos, as panelas, o fogão e a caixa de cereal ficavam com tábuas em cima).
+func leva_desenho(mi: MeshInstance3D, arquivo: String) -> bool:
+	if arquivo == "":
+		var m := mi.get_active_material(0) as StandardMaterial3D
+		return m != null and m.albedo_color.is_equal_approx(COR_MADEIRA)
+	for p in DE_MADEIRA:
+		if arquivo.begins_with(p):
+			return true
+	return false
 
 
 func _parede(base: Vector3, tamanho: Vector3, cor: Color, solida := true) -> void:
@@ -145,8 +176,10 @@ func _mesa_do_cafe() -> void:
 
 ## Viagem 1: duas tábuas de cortar, rentes ao tampo, da beirada da mesa até a bancada; um pote gigante segura o meio.
 func _ponte_de_tabuas() -> void:
-	cozinha("cuttingboard", Vector3(-20, 6.8, -26))
-	cozinha("cuttingboard", Vector3(-25.5, 6.8, -26))
+	# Uns centímetros acima do tampo e uma acima da outra: no mesmo plano, as faces de cima piscavam (z-fighting,
+	# um dos glitches da revisão de 2026-11-11).
+	cozinha("cuttingboard", Vector3(-20, 6.83, -26))
+	cozinha("cuttingboard", Vector3(-25.5, 6.86, -26.03))
 	cozinha("jar_A_large", Vector3(-22.5, 0, -26), 0.0, K * 6.8 / 6.0)
 	trilha(Vector3(-16.5, 9.0, -26), Vector3(-29.0, 9.0, -26), 4)
 
@@ -197,7 +230,7 @@ func _fogao_e_pizza() -> void:
 	playground("3 · Fogão e Pizza", Vector3(-38.0, 8.0, -90.0), 20.0, Vector3(-40.0, 8.0, -72.5))
 	cozinha("table_round_A", Vector3(-38, 0, -82))
 	# Afundada no tampo: em cima dela fica a 9,2 m, um degrau de pulo da beirada.
-	pizza(Vector3(-38.0, 7.4, -82.0), 0.35, 6.0)
+	pizza(Vector3(-38.0, 7.42, -82.0), 0.35, 6.0)
 	posto(Vector3(-41.0, 8.0, -72.8))
 	bolota(Vector3(-35.0, 9.2, -82.0), false, "cacto")
 	bolota(Vector3(-40.0, 9.2, -85.0), false, "pinguim")
@@ -282,14 +315,15 @@ func _pia_e_prateleira() -> void:
 		corpo.add_child(cs)
 		add_child(corpo)
 
-	# Da bancada do fim, bolhas de degrau sobem até a prateleira encostada na geladeira.
-	bolota(Vector3(26.0, 8.0, -45.0), false, "caranguejo")
-	nuvem_que_some(Vector3(19.0, 9.6, -45.5), 2.0, true)
-	nuvem_que_some(Vector3(17.5, 11.2, -48.8), 2.0, true)
-	nuvem_que_some(Vector3(16.5, 12.8, -52.2), 2.0, true)
-	for p in [Vector3(19.0, 10.8, -45.5), Vector3(17.5, 12.4, -48.8), Vector3(16.5, 14.0, -52.2)]:
-		estrelinha(p)
-	bloco(Vector3(11, 13, -62), Vector3(6, 1, 36), COR_MADEIRA)
+	# Na bancada do fim, o registro que solta a água (a saída da pia: item 12, 2026-11-11). Antes ficavam aqui as
+	# bolhas de degrau até a prateleira; agora se chega lá pela Cozinha Alagando.
+	bolota(Vector3(21.0, 8.0, -45.0), false, "caranguejo")
+	var r1 := registro(Vector3(26.5, 8.0, -52.0))
+	ponto_de_dica(Vector3(23.5, 8.5, -51.0), 3.2, "registro")
+	arco_de_saida(Vector3(29.3, 8.0, -46.0), PI / 2.0, "yellow")
+	r1.girado.connect(func(_r: Registro) -> void: enchente.subir())
+	# Termina onde começa a prateleira de trás da geladeira (as duas no mesmo lugar piscavam).
+	bloco(Vector3(11, 13, -61), Vector3(6, 1, 34), COR_MADEIRA)
 	for z in [-46.0, -58.0, -70.0]:
 		bloco(Vector3(13.4, 9.0, z), Vector3(1.0, 4.0, 1.0), COR_MADEIRA)
 	bolota(Vector3(11.0, 14.0, -50.0), false, "cacto")
@@ -299,13 +333,140 @@ func _pia_e_prateleira() -> void:
 	# Segredo: a prateleira dobra atrás da geladeira, com o V3 escondido atrás da caixa.
 	bloco(Vector3(3, 13, -81), Vector3(22, 1, 6), COR_MADEIRA)
 	cozinha("crate", Vector3(1.0, 14.0, -82.0), 0.0, 2.0)
-	faisquinha(Vector3(-5.0, 15.1, -80.0))
+	# O V3 mudou para as costas do patinho da enchente; aqui atrás ficou um coração.
+	coracao(Vector3(-5.0, 15.6, -80.0))
 	trilha(Vector3(10.5, 15.0, -79.0), Vector3(4.5, 15.0, -82.5), 2)
 	trilha_creme([Vector3(20, 8, -98), Vector3(22, 8, -93)])
 	trilha(Vector3(18.0, 9.0, -97.0), Vector3(22.0, 9.0, -93.0), 2)
-	trilha(Vector3(22.5, 9.0, -54.0), Vector3(23.0, 9.0, -47.0), 3)
-	trilha_creme([Vector3(22, 8, -55), Vector3(20, 8, -46)])
-	trilha_creme([Vector3(11, 14, -45.5), Vector3(11, 14, -70)])
+	trilha(Vector3(22.5, 9.0, -54.0), Vector3(25.5, 9.0, -49.0), 3)
+	trilha_creme([Vector3(22, 8, -55), Vector3(25, 8, -50), Vector3(29, 8, -46)])
+	trilha_creme([Vector3(13, 14, -81), Vector3(11, 14, -75)])
+
+
+## Playground 5 · Cozinha Alagando (o momento especial da 2-1, item 9 da lista, 2026-11-11), no canto da janela, a
+## leste da pia. O registro da bancada da pia (a saída do playground 4) faz a pia transbordar e o chão da cozinha
+## inteira encher; cada registro sobe a água mais uma etapa (`Enchente`), e o que boia sobe junto:
+##   etapa 1 (3,1 m): a esponja, o prato e a esponja levam da bancada até o degrau de baixo da escadinha (P4 em cima);
+##   etapa 2 (5,2 m): do alto da escadinha, esponja, prato e esponja até o balde virado (o registro 3 em cima); o
+##     patinho, de lado, leva o V3 nas costas;
+##   etapa 3 (7,2 m): do balde, o prato e o pote de sorvete (alto) até a torre de potes; de lá, a bandeja leva até a
+##     prateleira atrás da geladeira, com o coração e o sorvete que joga lá para cima.
+## Antes da água, o que boia fica deitado no chão (que é "lava"), e nada do playground se alcança da bancada.
+func _cozinha_alagando() -> void:
+	playground("5 · Cozinha Alagando", Vector3(51.0, 7.0, -62.0), 20.0, escadinha_topo)
+	enchente = Enchente.new()
+	enchente.agua_da_pia = _agua_da_pia()
+	add_child(enchente)
+	# A escadinha de madeira: dois degraus e o alto, encostados um no outro, com o P4 e o registro 2 em cima.
+	bloco(Vector3(53, 0, -42), Vector3(8, 4.5, 4), COR_MADEIRA)
+	bloco(Vector3(53, 0, -46), Vector3(8, 6.5, 4), COR_MADEIRA)
+	bloco(Vector3(53, 0, -52), Vector3(8, 8.5, 8), COR_MADEIRA)
+	posto(Vector3(52.0, 8.5, -51.0))
+	var r2 := registro(Vector3(55.5, 8.5, -55.0))
+	bolota(Vector3(50.5, 8.5, -54.5), false, "cogumelo")
+	estrelinha(Vector3(53.0, 5.7, -42.0))
+	estrelinha(Vector3(53.0, 7.7, -46.0))
+	# O balde azul virado de boca para baixo, com a alça, e o registro 3 em cima.
+	cilindro_solido(Vector3(53, 0, -77), 3.0, 3.6, 7.6, Color("3f8fe0"))
+	var alca := MeshInstance3D.new()
+	var toro := TorusMesh.new()
+	toro.inner_radius = 3.3
+	toro.outer_radius = 3.55
+	toro.rings = 40
+	alca.mesh = toro
+	alca.material_override = _material(Color("2f6fb8"))
+	alca.position = Vector3(53, 3.2, -77)
+	alca.rotation = Vector3(0, 0, PI / 2.0 - 0.25)
+	add_child(so_enfeite(alca))
+	var r3 := registro(balde_topo + Vector3(0.9, 0, -0.9))
+	roda(balde_topo + Vector3(0, 1.4, 0), 2.2, 4)
+	# A torre de potes, encostada na pia: o degrau (11,1 m) e o alto (13 m), de onde sai a bandeja. Cada um fica 1,9 m
+	# acima do anterior (o pote boiando está a 9,2 m), um pulo sem aperto; da borda da pia (8 m) não se alcança.
+	cilindro_solido(Vector3(33.8, 0, -79.5), 2.3, 2.5, 11.1, Color("ffe08a"))
+	cilindro_solido(Vector3(33.8, 0, -84.6), 2.4, 2.6, 13.0, Color("ff9fd0"))
+	for spec in [[Vector3(33.8, 11.1, -79.5), 2.45, Color("e2553f")], [Vector3(33.8, 13.0, -84.6), 2.55, Color("4cc27a")]]:
+		cilindro_solido(spec[0] - Vector3(0, 0.6, 0), spec[1], spec[1], 0.63, spec[2], false)
+	trilha(Vector3(33.8, 12.3, -79.5), Vector3(33.8, 14.2, -84.6), 2)
+	# A bandeja sobe 1 m no caminho: sai na altura da torre e chega na da prateleira (dá para descer andando).
+	bandeja = movel_peca(COZINHA, "plate", K, Vector3(27.4, 13.0, -84.6), Vector3(7.4, 0.8, 7.4), Vector3(-9.4, 1.0, 0), 10.0, 0.0, true, 0.22)
+	trilha(Vector3(26.0, 14.8, -84.6), Vector3(18.0, 15.6, -84.6), 3)
+	# O que boia: deitado no chão seco, perto de onde vai servir.
+	for spec in [
+		["esponja", Vector3(33.4, 0, -46.5), 0.1], ["prato", Vector3(40.6, 0, -45.0), 0.0], ["esponja", Vector3(46.6, 0, -42.5), PI / 2.0],
+		["esponja", Vector3(53.0, 0, -59.5), 0.15], ["prato", Vector3(52.0, 0, -65.5), 0.0], ["esponja", Vector3(53.5, 0, -71.5), -0.1],
+		["prato", Vector3(45.5, 0, -78.5), 0.0], ["pote", Vector3(39.0, 0, -79.5), 0.0]]:
+		var b := boia(spec[0], spec[1], spec[2])
+		boias_do_caminho.append(b)
+		_estrelinha_na(b, 1.3)
+	# O patinho olha para a parede: quem chega do prato cai nas costas dele, perto do rabo, e anda até o V3.
+	patinho = boia("patinho", Vector3(60.0, 0, -63.5), -PI / 2.0 + 0.25)
+	faisquinha(Vector3(60.0, 1.6 + 1.1, -63.5)).prender_em(patinho, Vector3(0, 1.1, 0.2))
+	r2.girado.connect(func(_r: Registro) -> void: enchente.subir())
+	r3.girado.connect(func(_r: Registro) -> void: enchente.subir())
+	trilha_creme([escadinha_topo + Vector3(-1, 0, 3), escadinha_topo + Vector3(0, 0, -3.5)])
+
+
+## O registro (a roda vermelha) em `pos`, no tampo.
+func registro(pos: Vector3) -> Registro:
+	var r := Registro.new()
+	r.position = pos
+	add_child(r)
+	registros.append(r)
+	return r
+
+
+## Uma coisa que boia na enchente, deitada no chão em `pos` (x, z), virada `giro`.
+func boia(tipo: String, pos: Vector3, giro := 0.0) -> Boia:
+	var b := Boia.new()
+	b.tipo = tipo
+	b.enchente = enchente
+	b.position = Vector3(pos.x, 0, pos.z)
+	b.rotation.y = giro
+	add_child(b)
+	enchente.boias.append(b)
+	return b
+
+
+## Estrelinha que vai junto com a boia, `altura` acima do topo dela.
+func _estrelinha_na(b: Boia, altura: float) -> void:
+	var e := estrelinha(b.position + Vector3(0, b.seca + altura, 0))
+	e.reparent(b)
+	e.position = Vector3(0, altura, 0)
+
+
+## Cilindro sólido com o pé em `base` (o balde, a torre de potes).
+func cilindro_solido(base: Vector3, r_cima: float, r_baixo: float, altura: float, cor: Color, solido := true) -> Node3D:
+	var mi := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = r_cima
+	cil.bottom_radius = r_baixo
+	cil.height = altura
+	cil.radial_segments = 40
+	mi.mesh = cil
+	mi.material_override = _material(cor)
+	if not solido:
+		mi.position = base + Vector3.UP * altura * 0.5
+		add_child(mi)
+		return mi
+	var corpo := StaticBody3D.new()
+	corpo.position = base + Vector3.UP * altura * 0.5
+	corpo.add_child(mi)
+	var cs := CollisionShape3D.new()
+	var forma := CylinderShape3D.new()
+	forma.radius = (r_cima + r_baixo) * 0.5
+	forma.height = altura
+	cs.shape = forma
+	corpo.add_child(cs)
+	add_child(corpo)
+	return corpo
+
+
+## O plano da água da pia (a enchente sobe ela até perto da borda).
+func _agua_da_pia() -> Node3D:
+	for c in get_children():
+		if c is MeshInstance3D and c.mesh is PlaneMesh and (c.mesh as PlaneMesh).size == Vector2(12.0, 35.7):
+			return c
+	return null
 
 
 ## Arena em cima da geladeira (20 m): o baú, duas Bolotas e a coluna de luz que aparece da cozinha toda.

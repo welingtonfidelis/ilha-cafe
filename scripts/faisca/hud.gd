@@ -436,7 +436,7 @@ class BotaoA extends Control:
 ##   gelo: o analógico empurra e o Faísca escorrega no gelo azul; luva: X joga a bola de neve até o sino laranja (3-1).
 ##   esteira: a faixa com as setas andando leva o Faísca; pisca: os blocos lilases se revezam e ele pula de um para o
 ##   outro; martelo: X no ar, ele desce reto com o martelinho e o pino laranja afunda; tinta: pular de lata em lata, sem
-##   encostar na tinta rosa (3-2).
+##   encostar na tinta rosa (3-2). registro: X na roda vermelha, que gira; a água sobe e a esponja boia junto (2-1).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -444,7 +444,7 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo"]
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo", "registro"]
 		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
 		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
 		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
@@ -561,6 +561,30 @@ class DesenhoDica extends Control:
 				var cabo := f + Vector2(27, 40)
 				draw_line(cabo, cabo + Vector2(sin(vira), -cos(vira)) * 30, Color("ffd23f"), 6.0)
 				draw_circle(cabo + Vector2(sin(vira), -cos(vira)) * 30, 6, Color("ff5d5d"))
+			"registro":
+				# Soca a roda vermelha (ela gira), a água sobe e a esponja boia com ela até perto do Faísca (2-1).
+				var ciclo := fmod(tempo, 2.4)
+				var bate := ciclo < 0.6 and fmod(tempo * 2.5, 1.0) < 0.35
+				var p := f + Vector2(-34 + (6.0 if bate else 0.0), -4)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(26 if bate else 20, 6), Color("ff7a22"), 7.0)
+				var roda := f + Vector2(8, 4)
+				draw_rect(Rect2(roda + Vector2(-4, 6), Vector2(8, 22)), Color("8a8fa8"))
+				var giro := clampf(ciclo / 0.9, 0.0, 1.0) * TAU * 2.0
+				draw_arc(roda, 13, 0, TAU, 24, Color("e2304a"), 5.0, true)
+				for i in 2:
+					var a := giro + PI / 2.0 * i
+					draw_line(roda - Vector2(cos(a), sin(a)) * 12, roda + Vector2(cos(a), sin(a)) * 12, Color("e2304a"), 3.0)
+				draw_circle(roda, 4, Color("ffd23f"))
+				# A água sobe do fundo e a esponja vem junto.
+				var sobe := clampf((ciclo - 0.6) / 1.4, 0.0, 1.0)
+				var nivel := 58.0 - sobe * 26.0
+				draw_rect(Rect2(f + Vector2(-50, nivel), Vector2(110, 60 - nivel + 4)), Color(0.42, 0.72, 1.0, 0.85))
+				var esponja := f + Vector2(42, nivel - 9)
+				draw_rect(Rect2(esponja + Vector2(-14, 0), Vector2(28, 10)), Color("ffd84a"))
+				draw_rect(Rect2(esponja + Vector2(-14, -3), Vector2(28, 4)), Color("5fc46a"))
+				for i in 3:
+					draw_circle(f + Vector2(-30 + i * 34, nivel + 3 + sin(tempo * 4.0 + i) * 1.5), 3, Color(1, 1, 1, 0.8))
 			"agarrar":
 				# A Bolota tonta (estrelinhas girando); segura Y: o Faísca gira com ela pendurada pela antena;
 				# solta: ela voa longe.

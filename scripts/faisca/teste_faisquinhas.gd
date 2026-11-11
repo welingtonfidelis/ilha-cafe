@@ -112,6 +112,11 @@ func _conferir_fase(id: String) -> void:
 		var antes := n.achados
 		# Em pé no chão embaixo dele (o que está no ar, a 0,8 m abaixo do meio da bolha, como no pulo).
 		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(f.global_position, f.global_position + Vector3.DOWN * 2.9, 1))
+		# Em cima de uma boia ainda seca (o V3 da 2-1, no patinho), primeiro enche a cozinha: no chão seco, pisar é cair.
+		if not chao.is_empty() and chao.collider is Boia and not (chao.collider as Boia).boiando():
+			(n.get("enchente") as Enchente).encher_ate(2)
+			await _esperar(0.3)
+			chao = espaco.intersect_ray(PhysicsRayQueryParameters3D.create(f.global_position, f.global_position + Vector3.DOWN * 2.9, 1))
 		j.teleportar(chao.position + Vector3.UP * 0.05 if not chao.is_empty() else f.global_position - Vector3(0, 0.8, 0))
 		j.velocity = Vector3.ZERO
 		await _esperar(0.25)

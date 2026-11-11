@@ -175,7 +175,8 @@ func maquina(centro_topo: Vector3, largura: float, fundo: float, faixa: Color, b
 func passarela(a: Vector3, b: Vector3, largura := 2.4) -> StaticBody3D:
 	var d := b - a
 	var comprimento := Vector2(d.x, d.z).length()
-	var corpo := caixa_solida((a + b) * 0.5 - Vector3(0, 0.25, 0), Vector3(largura, 0.5, comprimento), _mat(Color("aab6cc"), 0.5))
+	# 2 cm acima das plataformas em que encosta (no mesmo plano, as duas piscavam).
+	var corpo := caixa_solida((a + b) * 0.5 - Vector3(0, 0.23, 0), Vector3(largura, 0.5, comprimento), _mat(Color("aab6cc"), 0.5))
 	corpo.rotation.y = atan2(d.x, d.z)
 	return corpo
 

@@ -4,8 +4,10 @@ extends RefCounted
 ##   --faisca-fase-2-1           confere a fase de ponta a ponta: contagens, o padrão de playgrounds (o brilho do
 ##                               baú à vista de cada entrada), a mesa (tampa e caixa de cereal), a ponte de tábuas,
 ##                               a bancada (rolos e a tampa do vão até o V1), os dois pratos que levam, a pizza, as
-##                               bocas, a tampa até os livros do V2, a pia (prato, bolha e água), as bolhas de degrau,
-##                               o V3 atrás da geladeira, o sorvete até o alto da geladeira, o baú e a tela de fim
+##                               bocas, a tampa até os livros do V2, a pia (prato, bolha e água), a Cozinha Alagando
+##                               (o registro da pia, as três etapas da enchente com os pulos de boia em boia, o V3 no
+##                               patinho, a torre de potes e a bandeja), o coração atrás da geladeira, o sorvete até o
+##                               alto da geladeira, o baú e a tela de fim
 ##   --faisca-fase-2-1-captura   fotos de cada playground em tools/capturas/faisca/fase_2_1/ (precisa de janela)
 
 var m: Node
@@ -24,25 +26,26 @@ func rodar() -> void:
 	var ok := true
 	await m._esperar(0.3)
 	var total := n.total_estrelas()
-	ok = m._conferir("de 75 a 110 estrelinhas no caminho e nos bolsos (fora as das Bolotas)", n.estrelas.size() >= 75 and n.estrelas.size() <= 110,
-			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
-	ok = m._conferir("3 postos, 6 Faisquinhas, 9 Bolotas e o baú", n.postos.size() == 3 and n.faisquinhas.size() == 6 and n.alvos.size() == 9
+	ok = m._conferir("de 95 a 125 estrelinhas soltas, e de 125 a 160 com as das Bolotas", n.estrelas.size() >= 95 and n.estrelas.size() <= 125
+			and total >= 125 and total <= 160, "(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), total]) and ok
+	ok = m._conferir("4 postos, 6 Faisquinhas, 10 Bolotas e o baú", n.postos.size() == 4 and n.faisquinhas.size() == 6 and n.alvos.size() == 10
 			and n.bau != null, "(%d postos, %d Bolotas)" % [n.postos.size(), n.alvos.size()]) and ok
-	ok = m._conferir("peças: 3 tampas, 4 bocas, 2 rolos, a pizza, a pia, 4 pratos que se mexem, 5 bolhas e o sorvete", n.tampas.size() == 3
-			and n.bocas.size() == 4 and n.rolos.size() == 2 and n.pizzas.size() == 1 and n.aguas.size() == 1 and n.moveis.size() == 4
-			and n.nuvens_que_somem.size() == 5 and n.molas.size() == 1) and ok
+	ok = m._conferir("peças: 3 tampas, 4 bocas, 2 rolos, a pizza, a pia, 4 pratos e a bandeja que se mexem, 2 bolhas, o sorvete, 3 registros e 9 boias",
+			n.tampas.size() == 3 and n.bocas.size() == 4 and n.rolos.size() == 2 and n.pizzas.size() == 1 and n.aguas.size() == 1
+			and n.moveis.size() == 5 and n.nuvens_que_somem.size() == 2 and n.molas.size() == 1 and n.registros.size() == 3
+			and n.enchente.boias.size() == 9, "(%d móveis, %d bolhas, %d boias)" % [n.moveis.size(), n.nuvens_que_somem.size(), n.enchente.boias.size()]) and ok
 
 	# O padrão de playgrounds: os móveis em volta da geladeira, um arco de saída em cada um dos três primeiros, o
 	# brilho do baú à vista de todas as entradas e um vaga-lume no bolso de cada um dos três últimos.
 	await m.get_tree().physics_frame
 	var espaco := j.get_world_3d().direct_space_state
-	ok = m._conferir("4 playgrounds e 3 arcos de saída", n.playgrounds.size() == 4 and n.saidas.size() == 3) and ok
+	ok = m._conferir("5 playgrounds e 4 arcos de saída", n.playgrounds.size() == 5 and n.saidas.size() == 4) and ok
 	var cegos := n.playgrounds.filter(func(p: Dictionary) -> bool:
 		return not espaco.intersect_ray(PhysicsRayQueryParameters3D.create(p.entrada + Vector3.UP * 2.0, n.brilho_do_marco, 1)).is_empty())
 	ok = m._conferir("da entrada de cada playground dá para ver o brilho do baú em cima da geladeira", cegos.is_empty(),
 			"(sem ver: %s)" % ", ".join(cegos.map(func(p: Dictionary) -> String: return p.nome))) and ok
 	var donos := n.faisquinhas.slice(0, 3).map(func(v: Faisquinha) -> int: return _playground_mais_perto(v.global_position))
-	ok = m._conferir("um vaga-lume no bolso de cada playground: o 2, o 3 e o 4", donos == [1, 2, 3], "(%s)" % str(donos)) and ok
+	ok = m._conferir("um vaga-lume no bolso do playground 2, do 3 e do 5 (o do 5 nas costas do patinho)", donos == [1, 2, 4], "(%s)" % str(donos)) and ok
 	ok = m._conferir("a arena fica em cima da geladeira: o baú é o ponto mais alto do caminho", n.bau.global_position.y > 19.5
 			and Vector2(n.bau.global_position.x, n.bau.global_position.z + 70.0).length() < 8.0) and ok
 	# As Bolotas ficam paradas no teste (a 1-1 já confere o jeito delas), menos a primeira, que dorme.
@@ -185,7 +188,8 @@ func _pizza_e_fogao() -> bool:
 	return ok
 
 
-## Playground 4 e a arena: o P3, a pia, as bolhas de degrau, o V3 atrás da geladeira e o sorvete.
+## Playground 4, a Cozinha Alagando e a arena: o P3, a pia, o registro da saída, as três etapas da enchente (pulando
+## de boia em boia de verdade), o V3 no patinho, a torre de potes, a bandeja, o coração atrás da geladeira e o sorvete.
 func _pia_e_geladeira() -> bool:
 	var ok := true
 	var p3 := n.postos[2]
@@ -211,27 +215,182 @@ func _pia_e_geladeira() -> bool:
 			and j.global_position.distance_to(p3.ponto()) < 1.5, "(vida %d)" % j.vida) and ok
 	j.vida = Jogador.VIDA_MAX
 	await m._esperar(3.4)
-	# As bolhas de degrau, da bancada do fim até a prateleira, pulando de verdade.
-	var degraus := [[Vector3(22.5, 8.1, -45.5), n.nuvens_que_somem[2], "da bancada para a 1ª bolha"],
-		[null, n.nuvens_que_somem[3], "para a 2ª"], [null, n.nuvens_que_somem[4], "para a 3ª"]]
-	var de: Vector3 = degraus[0][0]
-	for d in degraus:
-		var b: NuvemQueSome = d[1]
-		var onde := await _pular_para(de, b.global_position)
-		ok = m._conferir("bolhas de degrau: pula %s" % d[2], absf(onde.y - b.global_position.y) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-		de = onde + Vector3.UP * 0.1
-	var na_prateleira := await _pular_para(de, Vector3(12.0, 14.0, -53.0))
-	ok = m._conferir("e da última bolha para a prateleira encostada na geladeira", absf(na_prateleira.y - 14.0) < 0.3 and na_prateleira.x < 14.0,
-			"(%.1f, %.1f, %.1f)" % [na_prateleira.x, na_prateleira.y, na_prateleira.z]) and ok
-	# Segredo: a prateleira continua atrás da geladeira até o V3.
-	j.teleportar(Vector3(11.0, 14.1, -79.0))
-	await _andar(Vector3(-1, 0, 0), 2.6)
-	ok = m._conferir("andando pela prateleira atrás da geladeira se acha o V3", n.faisquinhas[2].encontrado and absf(j.global_position.y - 14.0) < 0.3,
-			"(x %.1f, Faisquinhas %d)" % [j.global_position.x, n.achados]) and ok
+	ok = await _cozinha_alagando() and ok
+	# Da bandeja para a prateleira atrás da geladeira: o coração e, andando até a outra, o sorvete.
+	j.vida = Jogador.VIDA_MAX - 1
+	j.teleportar(Vector3(11.0, 14.1, -79.6))
+	await _andar(Vector3(-1, 0, 0), 2.8)
+	ok = m._conferir("andando pela prateleira atrás da geladeira se acha o coração", j.vida == Jogador.VIDA_MAX and absf(j.global_position.y - 14.0) < 0.3,
+			"(x %.1f, vida %d)" % [j.global_position.x, j.vida]) and ok
 	var sorvete: Area3D = n.molas[0]
 	var onde := await _quicar(sorvete, Vector3(3.0, 20.0, -72.0))
 	ok = m._conferir("o sorvete joga o Faísca até o alto da geladeira", j.is_on_floor() and absf(onde.y - 20.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
 	return ok
+
+
+## A Cozinha Alagando (item 9 da lista, 2026-11-11): da bancada da pia até a bandeja que leva para a prateleira.
+func _cozinha_alagando() -> bool:
+	var ok := true
+	var e := n.enchente
+	var boias := n.boias_do_caminho
+	var seca := e.etapa == 0 and e.nivel < 0.0 and boias.all(func(b: Boia) -> bool: return b.global_position.y < n.limite_queda)
+	ok = m._conferir("antes do registro a água fica embaixo do chão e o que boia fica deitado no chão (abaixo da queda)", seca,
+			"(etapa %d, nível %.1f)" % [e.etapa, e.nivel]) and ok
+	# Sem a água, da bancada não se chega à escadinha: o pulo mais longo, flutuando até o fim, cai no chão (que é lava).
+	j.vida = Jogador.VIDA_MAX
+	var p3 := n.postos[2]
+	var longe := await _pular_longe(Vector3(29.0, 8.1, -46.0), Vector3(53.0, 4.5, -42.0))
+	ok = m._conferir("sem a água, da bancada não se chega à escadinha (o pulo mais longo cai no chão)", j.vida == Jogador.VIDA_MAX - 1
+			and j.global_position.distance_to(p3.ponto()) < 1.5, "(chegou a x %.1f)" % longe.x) and ok
+	j.vida = Jogador.VIDA_MAX
+	# O registro da saída da pia.
+	j.teleportar(Vector3(23.5, 8.1, -50.5))
+	await m._esperar(0.5)
+	ok = m._conferir("perto do registro o Vovô mostra a dica dele", m.hud.dica_atual == "registro", "(%s)" % m.hud.dica_atual) and ok
+	if not await _girar(n.registros[0]):
+		ok = m._conferir("um soco gira o registro da pia", false) and ok
+	await m._esperar(0.3)
+	ok = m._conferir("o soco gira o registro, a pia transborda e a água começa a subir", n.registros[0].girado_ja and e.etapa == 1 and e.subindo_agora) and ok
+	await _ate(func() -> bool: return not e.subindo_agora, 10.0)
+	ok = m._conferir("a água para na etapa 1 (3,1 m) e o que boia sobe junto", absf(e.nivel - 3.1) < 0.05
+			and boias.all(func(b: Boia) -> bool: return b.boiando()), "(nível %.2f)" % e.nivel) and ok
+	# Etapa 1: da bancada pulando de boia em boia até a escadinha, e subindo os degraus até o P4.
+	var de := Vector3(29.0, 8.1, -46.5)
+	for i in 3:
+		var b: Boia = boias[i]
+		var onde := await _pular_para(_na_beira(de, b.global_position, boias[i - 1] if i > 0 else null), b.global_position)
+		ok = m._conferir("etapa 1: pula %s (%s)" % ["da bancada na 1ª boia" if i == 0 else "para a %dª boia" % (i + 1), b.tipo],
+				absf(onde.y - b.global_position.y) < 0.4 and Vector2(onde.x - b.global_position.x, onde.z - b.global_position.z).length() < 2.6,
+				"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+		de = onde + Vector3.UP * 0.1
+	de = _na_beira(de, Vector3(50.5, 4.5, -42.0), boias[2])
+	for degrau in [Vector3(50.5, 4.5, -42.0), Vector3(51.0, 6.5, -46.0), Vector3(52.0, 8.5, -50.0)]:
+		var onde := await _pular_para(de, degrau)
+		ok = m._conferir("etapa 1: pula no degrau de %.1f m da escadinha" % degrau.y, absf(onde.y - degrau.y) < 0.3,
+				"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+		de = onde + Vector3.UP * 0.1
+	var p4 := n.postos[3]
+	await m._esperar(0.3)
+	ok = m._conferir("o P4 acende em cima da escadinha", p4.acendido) and ok
+	# Cair na água é cair, como na pia.
+	j.teleportar(Vector3(44.0, 6.0, -60.0))
+	await m._esperar(1.4)
+	ok = m._conferir("e cair na água da enchente é cair: perde um coração e volta no P4", j.vida == Jogador.VIDA_MAX - 1
+			and j.global_position.distance_to(p4.ponto()) < 1.5, "(vida %d, %.1f, %.1f, %.1f)" % [j.vida, j.global_position.x, j.global_position.y, j.global_position.z]) and ok
+	j.vida = Jogador.VIDA_MAX
+	# Etapa 2: o registro da escadinha.
+	if not await _girar(n.registros[1]):
+		ok = m._conferir("um soco gira o registro da escadinha", false) and ok
+	await _ate(func() -> bool: return e.etapa == 2 and not e.subindo_agora, 10.0)
+	ok = m._conferir("o registro da escadinha sobe a água para a etapa 2 (5,2 m), cobrindo o degrau de baixo", absf(e.nivel - 5.2) < 0.05
+			and e.nivel > 4.5, "(nível %.2f)" % e.nivel) and ok
+	de = n.escadinha_topo + Vector3(0, 0.1, -2.5)
+	for i in range(3, 5):
+		var b: Boia = boias[i]
+		var onde := await _pular_para(_na_beira(de, b.global_position, boias[i - 1] if i > 3 else null), b.global_position)
+		ok = m._conferir("etapa 2: pula para a %dª boia (%s)" % [i - 2, b.tipo], absf(onde.y - b.global_position.y) < 0.4,
+				"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+		de = onde + Vector3.UP * 0.1
+	# O bolso: o patinho de lado, com o V3 nas costas.
+	var costas := n.patinho.global_position + n.patinho.global_basis * Vector3(0, 0, 0.6)
+	var no_patinho := await _pular_para(_na_beira(de, costas, boias[4]), costas)
+	var v3 := n.faisquinhas[2]
+	await _andar(Vector3(v3.global_position.x - j.global_position.x, 0, v3.global_position.z - j.global_position.z), 0.35)
+	no_patinho = j.global_position
+	await m._esperar(0.4)
+	ok = m._conferir("etapa 2: do prato se pula nas costas do patinho e acha o V3", n.faisquinhas[2].encontrado,
+			"(%.1f, %.1f, %.1f)" % [no_patinho.x, no_patinho.y, no_patinho.z]) and ok
+	var volta := await _pular_para(no_patinho + Vector3.UP * 0.1, boias[4].global_position)
+	de = volta + Vector3.UP * 0.1
+	var onde5 := await _pular_para(_na_beira(de, boias[5].global_position, boias[4]), boias[5].global_position)
+	ok = m._conferir("etapa 2: volta ao prato e pula para a 3ª boia", absf(onde5.y - boias[5].global_position.y) < 0.4,
+			"(%.1f, %.1f, %.1f)" % [onde5.x, onde5.y, onde5.z]) and ok
+	var no_balde := await _pular_para(_na_beira(onde5 + Vector3.UP * 0.1, n.balde_topo, boias[5]), n.balde_topo + Vector3(-1.2, 0, 1.4))
+	ok = m._conferir("etapa 2: e da boia para cima do balde", absf(no_balde.y - n.balde_topo.y) < 0.3,
+			"(%.1f, %.1f, %.1f)" % [no_balde.x, no_balde.y, no_balde.z]) and ok
+	# Etapa 3: o registro do balde.
+	if not await _girar(n.registros[2]):
+		ok = m._conferir("um soco gira o registro do balde", false) and ok
+	await _ate(func() -> bool: return e.etapa == 3 and not e.subindo_agora, 10.0)
+	ok = m._conferir("o registro do balde sobe a água para a etapa 3 (7,2 m), abaixo dos tampos", absf(e.nivel - 7.2) < 0.05,
+			"(nível %.2f)" % e.nivel) and ok
+	de = n.balde_topo + Vector3(-1.5, 0.1, 0.5)
+	for i in range(6, 8):
+		var b: Boia = boias[i]
+		var onde := await _pular_para(_na_beira(de, b.global_position, boias[i - 1] if i > 6 else null), b.global_position)
+		ok = m._conferir("etapa 3: pula para %s" % ("o prato" if i == 6 else "o pote de sorvete (alto)"), absf(onde.y - b.global_position.y) < 0.4,
+				"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+		de = onde + Vector3.UP * 0.1
+	de = _na_beira(de, Vector3(34.3, 11.1, -79.5), boias[7])
+	for alto in [Vector3(34.3, 11.1, -79.5), Vector3(33.8, 13.0, -84.0)]:
+		var onde := await _pular_para(de, alto)
+		ok = m._conferir("etapa 3: sobe na torre de potes (%.1f m)" % alto.y, absf(onde.y - alto.y) < 0.3,
+				"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+		# Do degrau, pula da beirada que dá para o alto.
+		de = Vector3(33.8, 11.2, -81.2)
+	# A bandeja: espera ela encostar na torre, pula nela, vai até a prateleira e desce.
+	var bandeja := n.bandeja
+	await _ate(func() -> bool: return bandeja.global_position.x > 27.2, 14.0)
+	var na_bandeja := await _pular_para(de, bandeja.global_position + Vector3(0, 0.8, 0))
+	await _ate(func() -> bool: return bandeja.global_position.x < 18.2, 14.0)
+	await _andar(Vector3(-1, 0, 0), 1.4)
+	ok = m._conferir("a bandeja leva da torre de potes até a prateleira atrás da geladeira", absf(na_bandeja.y - 13.0) < 0.4
+			and absf(j.global_position.y - 14.0) < 0.3 and j.global_position.x < 14.0, "(%.1f, %.1f, %.1f)" % [j.global_position.x, j.global_position.y, j.global_position.z]) and ok
+	return ok
+
+
+## Onde pular na boia `em` (ou no chão firme, sem ela) para alcançar `alvo`: perto da beirada dela, na direção do
+## alvo, como faz quem joga. Sem `em`, fica em `de`.
+func _na_beira(de: Vector3, alvo: Vector3, em: Boia) -> Vector3:
+	if em == null:
+		return de
+	var raio: float = {"esponja": 1.1, "prato": 2.7, "patinho": 1.0, "pote": 1.4}[em.tipo]
+	var dir := Vector3(alvo.x - em.global_position.x, 0, alvo.z - em.global_position.z).normalized()
+	return em.global_position + dir * raio + Vector3.UP * 0.1
+
+
+## Soca o registro (de frente para ele, do lado de dentro do tampo, que nos três fica para -x e +z). Devolve se girou.
+func _girar(r: Registro) -> bool:
+	var frente := Vector3(-1, 0, 1).normalized() * 1.4
+	j.teleportar(r.global_position + frente + Vector3.UP * 0.1)
+	j.visual.rotation.y = atan2(-frente.x, -frente.z)
+	await m._esperar(0.4)
+	await m._toque(JOY_BUTTON_X)
+	await m._esperar(0.8)
+	return r.girado_ja
+
+
+## Espera `cond` ficar verdade (até `segundos`).
+func _ate(cond: Callable, segundos: float) -> void:
+	var t := 0.0
+	while t < segundos and not cond.call():
+		await m.get_tree().physics_frame
+		t += 1.0 / Engine.physics_ticks_per_second
+
+
+## O pulo mais longo de `de` na direção de `alvo`: correndo, segurando o pulo até o fim (flutua) e o laser. Devolve o
+## ponto mais longe que alcançou (em direção ao alvo) antes de cair ou pousar.
+func _pular_longe(de: Vector3, alvo: Vector3) -> Vector3:
+	var dir := Vector3(alvo.x - de.x, 0, alvo.z - de.z).normalized()
+	j.teleportar(de - dir * 3.0)
+	await m._esperar(0.3)
+	j.yaw = atan2(-dir.x, -dir.z)
+	j.forcar_direcao = Vector2(0, -1)
+	var mais_longe := j.global_position
+	var pulou := false
+	for i in 400:
+		await m.get_tree().physics_frame
+		if not pulou and (j.global_position - de).dot(dir) > -0.3:
+			j.forcar_pulo = true
+			pulou = true
+		if (j.global_position - de).dot(dir) > (mais_longe - de).dot(dir):
+			mais_longe = j.global_position
+		if pulou and i > 30 and (j.is_on_floor() or j.global_position.y < n.limite_queda + 0.5):
+			break
+	j.forcar_direcao = Vector2.ZERO
+	j.forcar_pulo = false
+	await m._esperar(1.2)
+	return mais_longe
 
 
 ## Índice do playground com o centro mais perto de `p`.
@@ -343,6 +502,23 @@ func capturar() -> void:
 	await _foto_em(Vector3(22.0, 8.1, -95.0), 0.0, -0.25, "fase_2_1/04b_pia_de_dentro")
 	await _foto_em(Vector3(11.0, 14.1, -48.0), 0.0, 0.1, "fase_2_1/04c_prateleira")
 	await _foto_em(Vector3(4.0, 20.1, -64.0), 0.4, -0.3, "fase_2_1/05_em_cima_da_geladeira")
+	# A Cozinha Alagando: seca, e depois de cada etapa da enchente.
+	await _foto_de_cima(Vector3(10, 30, -20), Vector3(46, 4, -62), "fase_2_1/06_cozinha_seca")
+	await _foto_em(Vector3(27.0, 8.1, -47.0), -PI / 2.0 + 0.15, -0.25, "fase_2_1/06b_registro_e_arco")
+	n.enchente.encher_ate(1)
+	await m._esperar(0.4)
+	await _foto_de_cima(Vector3(10, 30, -20), Vector3(46, 4, -62), "fase_2_1/07_etapa_1")
+	await _foto_em(Vector3(27.0, 8.1, -47.0), -PI / 2.0 + 0.15, -0.3, "fase_2_1/07b_etapa_1_da_bancada")
+	await _foto_de_cima(Vector3(48, 18, -40), Vector3(30, 5, -74), "fase_2_1/07c_cascata")
+	n.enchente.encher_ate(2)
+	await m._esperar(0.4)
+	await _foto_em(n.escadinha_topo + Vector3(0, 0.1, 2.0), 0.0, -0.3, "fase_2_1/08_etapa_2_da_escadinha")
+	await _foto_em(n.patinho.global_position + Vector3(-5, 0.6, 3), -0.9, -0.25, "fase_2_1/08b_patinho")
+	n.enchente.encher_ate(3)
+	await m._esperar(0.4)
+	await _foto_em(n.balde_topo + Vector3(0, 0.1, 1.0), PI / 2.0 - 0.1, -0.2, "fase_2_1/09_etapa_3_do_balde")
+	await _foto_de_cima(Vector3(60, 26, -60), Vector3(28, 10, -82), "fase_2_1/09b_torre_e_bandeja")
+	await _foto_de_cima(Vector3(10, 70, 0), Vector3(30, 4, -64), "fase_2_1/09c_cozinha_alagada")
 	m.get_tree().quit()
 
 

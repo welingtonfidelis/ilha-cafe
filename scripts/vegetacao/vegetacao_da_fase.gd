@@ -239,8 +239,9 @@ func _o_que_evitar(fase: Fase) -> Array:
 		# O caminho de quem anda de um lado para o outro (rolo de massa, bola de neve, dado, carrinho, carona).
 		if "de" in no and "ate" in no and no.get("de") is Vector3:
 			o.append([no.get("de"), no.get("ate"), 1.8])
+		# A faixa toda por onde ele passa: o rolo de massa tem quase 9 m de comprimento atravessado no caminho.
 		if "caminho" in no and no.get("caminho") is Vector3:
-			o.append([no.global_position, no.global_position + (no.get("caminho") as Vector3), 1.8])
+			o.append([no.global_position, no.global_position + (no.get("caminho") as Vector3), maxf(1.8, _meia_largura(no) + 0.4)])
 		if "caminho" in no and no.get("caminho") is Array:
 			var c: Array = no.get("caminho")
 			for i in c.size() - 1:
@@ -255,6 +256,17 @@ func _o_que_evitar(fase: Fase) -> Array:
 		for i in pontos.size() - 1:
 			o.append([pontos[i], pontos[i + 1], float(t[1]) * 0.5 + 0.1])
 	return o
+
+
+## Metade da maior largura (em x ou z) do desenho de `no`.
+func _meia_largura(no: Node3D) -> float:
+	var caixa := AABB()
+	var primeira := true
+	for mi in no.find_children("*", "MeshInstance3D", true, false):
+		var a: AABB = (mi as MeshInstance3D).global_transform * (mi as MeshInstance3D).get_aabb()
+		caixa = a if primeira else caixa.merge(a)
+		primeira = false
+	return 0.0 if primeira else maxf(caixa.size.x, caixa.size.z) * 0.5
 
 
 func _perto_de_algo(p: Vector3, o: Array) -> bool:

@@ -1756,7 +1756,7 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
   - a geladeira fica no meio da cozinha, em (0, 0, -70), com a arena em cima (20 m);
   - Mesa do Café ao sul, ponte de tábuas de cortar até a Bancada das Panelas (oeste), prato que leva até o Fogão e Pizza (norte), prato que vai e volta por trás da geladeira até a Pia e Prateleira (leste), e o sorvete na prateleira encostada na geladeira;
   - a pizza fica afundada na mesa (`pizza` ganhou `escala`; em 6, com 12 m), para subir nela com um pulo;
-  - o V3 fica na prateleira que dobra atrás da geladeira;
+  - o V3 fica na prateleira que dobra atrás da geladeira (desde 2026-11-11, nas costas do patinho da Cozinha Alagando; atrás da geladeira ficou um coração);
   - 81 estrelinhas soltas (108 com as das Bolotas), 9 Bolotas, 3 tampas, 4 bocas, 2 rolos, 4 pratos que se mexem, 5 bolhas, 3 postos;
   - `--faisca-fase-2-1` confere 39 pontos, com os pulos de verdade na caixa de cereal, na pizza, nas três tampas, nas bolhas de degrau e no sorvete.
 - **Fotos:** `--faisca-fase-captura`, `--faisca-fase-1-2-captura` e `--faisca-fase-2-1-captura` tiram uma foto de cima da fase toda, uma de cada playground de cima e de dentro, e a da arena.
@@ -2170,6 +2170,7 @@ A maquete veio antes (`docs/level-design/maquete-3-2-fabrica-de-blocos.html`, ar
 
 O pedido: "consegue criar um revisor ou script que teste os itens que deveriam ter física sólida mas não têm? exemplo: doces na fase de algodão doce".
 
+- **Irmão:** o revisor de piscadas (`tools/revisor_piscadas.gd`, 2026-11-11), que acha peças no mesmo plano (ver "Momentos especiais e fases mais longas", na 2-1).
 - **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3, a 3-1, a 3-2 (cada uma desde que ficou pronta) e a ilha em poucos segundos.
   - Com nomes depois do `--` (`-- 2-2 ilha`), revisa só esses.
   - Com `--ver <começo do nome>`, lista os pontos descobertos de cada peça com esse nome (para achar a peça no código).
@@ -2273,10 +2274,10 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa) e o da 1-2 (a fuga no carrinho de mina) |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina) e o da 2-1 (a cozinha alagando) |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
-| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 1-1 e a 1-2 já estão mais longas |
+| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
 | 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
 
 **Ordem sugerida:**
@@ -2760,7 +2761,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 |---|---|
 | 1-1 | a Bolota gigante rolando na Ponte Fofa (feito) |
 | 1-2 | a fuga no carrinho de mina, com o túnel desmoronando (feito) |
-| 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas |
+| 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas (feito) |
 | 2-2 | a chuva de confeitos gigantes, que viram degraus |
 | 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho |
 | 3-1 | a avalanche na Encosta das Avalanches |
@@ -2826,13 +2827,36 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - a viagem inteira: dentro o tempo todo, as estrelinhas do trilho, as pedras caindo atrás, os pulos nos três arcos (9 de 9), a câmera solta na chegada e o Faísca andando para dentro do Poço dos Cristais.
 - **Fotos:** `--faisca-fase-1-2-captura` ganhou os caixotes do elevador, a estação de cima, o trilho visto de longe, a fuga por trás e a fuga na curva.
 
+**2-1 Cozinha Gigante (feito em 2026-11-11):**
+- **A revisão dos glitches** (o pedido de 2026-10-30, "a fase da cozinha tem muitos glitches visuais"). As fotos não mostravam nada quebrado parado, então procurei o que pisca com a câmera andando: duas peças com faces no mesmo plano (z-fighting).
+  - Na 2-1: as duas tábuas da ponte uma por cima da outra e rentes ao tampo da mesa e da bancada; a pizza com o prato no plano do tampo da mesa (girando, o pisca mudava o tempo todo); as duas prateleiras de trás da geladeira no mesmo lugar; e a janela 5 cm atrás da faixa de azulejo. As tábuas e a pizza subiram uns centímetros, a prateleira ficou mais curta e a janela foi para cima do azulejo.
+  - Nas outras fases, o mesmo problema: o pilar de doce e a cobertura dele, a ilha alta e a ponte de wafer (2-2); os pilares do trem repetidos nas quinas, em cores diferentes, e a ponte levadiça no plano da parede do castelo (2-3); a pedra e o gelo do pico no plano das tampas de neve, e a coluna da pedra alta do V2 (3-1); a coluna dos pistões no meio da placa laranja, e as passarelas rentes às plataformas (3-2); os ladrilhos, as paredes e as plataformas de tábua rentes às rochas (1-2). As caronas parando na estação (o piso delas no plano do chão de lá) também: o desenho fica 1,5 cm acima da colisão.
+  - O revisor de piscadas, `godot --headless --path . -s res://tools/revisor_piscadas.gd [-- 2-1 ...]`, faz essa busca em todas as fases e arenas de chefe. Ficam de fora as faces viradas para baixo, as escondidas dentro de outra peça e as de material igual. Depois dos consertos, dá 0.
+  - O desenho de tábuas (item 13) ia em cima de tudo o que é chão na 2-1, inclusive a geladeira, os pratos, as panelas e o fogão. A fase agora escolhe (`Fase21.leva_desenho`, chamado pelo `TexturaDoChao.na_fase`): só a madeira (bancadas, mesas, cadeiras, tábuas, caixotes e as prateleiras).
+  - De quebra, a vegetação passou a desviar da faixa inteira por onde rola o rolo de massa (ele tem quase 9 m atravessados), e não só da linha do meio.
+- **A Cozinha Alagando, o playground 5 novo** (no canto da janela, a leste da pia; no lugar das bolhas de degrau que iam da bancada da pia até a prateleira):
+  - a saída da pia é o registro (a roda vermelha, `Registro`) na bancada do fim, com o arco amarelo e a dica nova do Vovô ("registro": o soco, a roda girando, a água subindo e a esponja boiando);
+  - cada registro girado sobe a água uma etapa (`Enchente`): o jorro da torneira, a pia transbordando numa cascata pela frente dela (com espuma embaixo) e o chão da cozinha inteira enchendo, devagar, com o som novo `enchente` (`python3 tools/gerar_sons.py momentos`). As etapas param em 3,1, 5,2 e 7,2 m, abaixo dos tampos (8 m) e fora da altura de qualquer tampo, para a água não piscar com eles;
+  - o que boia (`Boia`: esponjas, pratos, o patinho de borracha e o pote de sorvete) fica deitado no chão seco, onde pisar é cair, e sobe com a água. Encostar na água é cair, como na pia;
+  - etapa 1: esponja, prato e esponja levam da bancada até o degrau de baixo da escadinha de madeira; ela sobe até o P4 e o registro 2, com uma Bolota cogumelo;
+  - etapa 2 (o degrau de baixo fica embaixo d'água): esponja, prato e esponja até o balde azul virado, com o registro 3 em cima; de lado, o patinho leva o V3 nas costas (ele olha para a parede, e quem chega do prato cai perto do rabo);
+  - etapa 3: prato e o pote de sorvete (que boia mais alto) até a torre de potes, que sobe de 1,9 em 1,9 m; do alto dela, a bandeja leva (subindo 1 m) até a prateleira atrás da geladeira, onde agora tem um coração, e dali ao sorvete que joga para a arena;
+  - sem a água, da bancada não se chega a nada do playground, e da borda da pia não se sobe na torre.
+- **As contas:** 97 estrelinhas soltas e 127 com as das Bolotas (eram 81 e 108), 10 Bolotas, 4 postos, 5 coisas que se mexem (os 4 pratos e a bandeja), 3 registros e 9 boias.
+- **Testes:** o `--faisca-fase-2-1` confere as contas novas e os cinco playgrounds. Na enchente, confere:
+  - a água escondida antes do registro, e que o pulo mais longo da bancada (correndo e flutuando) cai no chão;
+  - a dica, cada registro e cada etapa;
+  - todos os pulos de boia em boia de verdade, saindo da beirada como quem joga;
+  - o V3 no patinho, cair na água, a torre, a bandeja, o coração e o sorvete.
+- **Fotos:** `--faisca-fase-2-1-captura` ganhou a cozinha seca, o registro, as três etapas, a cascata, o patinho, a torre com a bandeja e a cozinha alagada de cima.
+
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
 - Se o Faísca pode dirigir o kart.
-- **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando. A parte das peças atravessadas já foi feita no revisor de física de 2026-10-30: as cadeiras, o sorvete, o rolo e a torneira ganharam colisão.
-- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 e a 2-3 já nascem maiores, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 2-1 do mesmo jeito (a 1-1 e a 1-2 ficaram mais longas em 2026-11-11, ver "Momentos especiais e fases mais longas").
+- **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Feito em 2026-11-11 (ver "Momentos especiais e fases mais longas"): as peças no mesmo plano que piscavam e as tábuas desenhadas na geladeira e nas louças. Se o usuário ainda vir algo jogando, pedir o lugar.
+- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). Feito: a 2-2 e a 2-3 já nasceram com cinco playgrounds e tarefa em cada saída, e a 1-1, a 1-2 e a 2-1 ficaram assim em 2026-11-11 (ver "Momentos especiais e fases mais longas").
 - **Teste `--ilha` instável na viela** (visto em 2026-10-30; resolvido em 2026-11-11: o esqueleto que dorme em (30, 110) acordava e travava a viela, e o teste agora tira ele antes): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
   - Na bateria de 2026-10-30, depois do revisor de física, falhou de novo no mesmo ponto. Desta vez o `--armas` também falhou uma vez ("com duas pistolas, cada tiro tira 75% do dano", sem valor medido). Sozinhos, os dois passaram.
 - **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Resolvido em 2026-10-31: o piloto rival vinha da pasta que fica fora da build (ver a memória do projeto e a seção do kart).

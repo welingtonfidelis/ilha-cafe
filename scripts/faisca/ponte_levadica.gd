@@ -26,6 +26,12 @@ func _ready() -> void:
 	malha.material_override = madeira
 	malha.position = Vector3(0, ESPESSURA * 0.5, COMPRIMENTO * 0.5)
 	_tabua.add_child(malha)
+	# O desenho 2 cm para fora da parede: em pé, a face de trás ficava no plano da parede do castelo e as duas
+	# piscavam (a colisão continua no lugar).
+	malha.position.y += 0.02
+	# E 2 cm mais curto: em pé, a ponta de cima ficava no plano do alto da parede.
+	caixa.size.z -= 0.02
+	malha.position.z -= 0.01
 	# Ripas escuras atravessadas e as duas correntes (enfeite).
 	var escuro := StandardMaterial3D.new()
 	escuro.albedo_color = Color("7a4a2a")
@@ -41,7 +47,7 @@ func _ready() -> void:
 	var forma := BoxShape3D.new()
 	forma.size = Vector3(LARGURA, ESPESSURA, COMPRIMENTO)
 	cs.shape = forma
-	cs.position = malha.position
+	cs.position = Vector3(0, ESPESSURA * 0.5, COMPRIMENTO * 0.5)
 	_tabua.add_child(cs)
 	_tabua.rotation.x = -PI / 2.0
 

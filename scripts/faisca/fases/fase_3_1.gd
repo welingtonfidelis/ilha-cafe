@@ -316,11 +316,12 @@ func _pico() -> void:
 	var corpo := StaticBody3D.new()
 	add_child(corpo)
 	var baixo := TOPO_PE + 10.0
-	_malha(corpo, _cilindro(RAIO_PE, RAIO_PE - 1.5, baixo), Color("9aa7bf"), Vector3(0, TOPO_PE - baixo * 0.5, 0))
+	# A pedra e o gelo ficam 3 cm abaixo das tampas de neve (no mesmo plano, piscavam).
+	_malha(corpo, _cilindro(RAIO_PE, RAIO_PE - 1.5, baixo), Color("9aa7bf"), Vector3(0, TOPO_PE - baixo * 0.5 - 0.03, 0))
 	_malha(corpo, _cilindro(RAIO_PE + 0.1, RAIO_PE + 0.1, 1.0), NEVE[0], Vector3(0, TOPO_PE - 0.5, 0))
 	var alto := TOPO_CUME - TOPO_PE
 	var cima := _cilindro(RAIO_CUME, RAIO_BASE_CIMA, alto)
-	_malha(corpo, cima, Color("d9e6f5"), Vector3(0, TOPO_PE + alto * 0.5, 0))
+	_malha(corpo, cima, Color("d9e6f5"), Vector3(0, TOPO_PE + alto * 0.5 - 0.03, 0))
 	_malha(corpo, _cilindro(RAIO_CUME + 0.1, RAIO_CUME + 0.1, 0.6), NEVE[0], Vector3(0, TOPO_CUME - 0.3, 0))
 	# Faixas de gelo na parede do pico de cima, para dar a cara de gelo.
 	for y in [34.0, 39.5]:
@@ -609,7 +610,7 @@ func _vila_do_iglu() -> void:
 
 	# A pedra alta do V2 e a escada de gelo em volta dela (escondida até o quarto sino tocar).
 	var pedra := Vector3(-88, 30, -92)
-	coluna(pedra, 1.4, 12.0, Color("8f99ae"))
+	coluna(pedra + Vector3.DOWN * 0.03, 1.4, 12.0, Color("8f99ae"))
 	ilha(pedra, 3.5, PEDRA, 2.5)
 	faisquinha(pedra + Vector3(0, 1.4, 0))
 	var para_meio := atan2(VILA.z - pedra.z, VILA.x - pedra.x)

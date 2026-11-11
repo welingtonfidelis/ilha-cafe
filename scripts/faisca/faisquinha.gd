@@ -109,6 +109,14 @@ func _ready() -> void:
 		_amarrar()
 
 
+## Passa o Faisquinha preso para outro pai, em `local` dele (o patinho que boia na enchente da 2-1): o balanço
+## dele passa a ser em volta desse lugar novo.
+func prender_em(pai: Node3D, local: Vector3) -> void:
+	reparent(pai)
+	position = local
+	_base = local
+
+
 func _process(delta: float) -> void:
 	_tempo += delta
 	if not is_instance_valid(_jogador):

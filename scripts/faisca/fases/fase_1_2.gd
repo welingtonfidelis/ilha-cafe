@@ -218,7 +218,7 @@ func _carrinho_ate_a_mina() -> void:
 		estrelinha(de.lerp(ate, (i + 1) / 5.0) + Vector3(0, 2.1, 0))
 	tocha(Vector3(-23.2, 0.0, -29.4), true, true)
 	# Chegada: a plataforma da mina, com o P1.
-	rocha(-24.0, -18.0, -46.0, -52.0, 8.0)
+	rocha(-24.0, -18.03, -46.0, -52.0, 8.0)
 	chao_pedaco(Vector3(-21.0, 8.0, -49.0), Vector2(6.0, 6.0))
 	posto(Vector3(-21.0, 8.0, -50.5))
 
@@ -428,7 +428,7 @@ func _estacao_dos_trilhos() -> void:
 	playground("4 · Estação dos Trilhos", Vector3(30.0, 16.0, -111.0), 12.0, Vector3(31.0, 16.0, -110.0))
 	rocha(24.0, 36.0, -105.0, -117.0, 16.0)
 	chao([27.0, 33.0], -108.0, -114.0, 16.0, "floor_tile_large")
-	rocha(24.0, 36.0, -116.4, -117.0, 16.9, 16.0)
+	rocha(24.03, 36.0, -116.4, -117.0, 16.9, 16.0)
 	posto(Vector3(26.5, 16.0, -107.0))
 	var t1 := tocha(Vector3(27.5, 16.0, -115.0))
 	caixote(Vector3(31.2, 16.0, -106.4), Vector3(2.2, 1.6, 2.2))
@@ -697,13 +697,15 @@ func chao(xs: Array, z0: float, z1: float, y: float, tipo := "floor_dirt_large")
 			if tipo == "floor_dirt_large" and sorteio == 0:
 				nome = "floor_dirt_large_rocky"
 			var desce := 0.15 if tipo.begins_with("floor_dirt") else 0.07
-			peca_de(MASMORRA, nome, Vector3(x, y - desce, z), PI / 2.0 * (sorteio % 4), S, false)
+			# 0,3% mais largo: a beirada do ladrilho passa uns milímetros da parede da rocha embaixo (no mesmo plano, as
+			# duas piscavam; revisão de 2026-11-11).
+			peca_de(MASMORRA, nome, Vector3(x, y - desce, z), PI / 2.0 * (sorteio % 4), Vector3(S * 1.003, S, S * 1.003), false)
 		z -= M
 
 
 ## Pedaço de chão de pedra de qualquer tamanho (em cima dos pilares do abismo).
 func chao_pedaco(centro: Vector3, tamanho: Vector2) -> void:
-	peca_de(MASMORRA, "floor_tile_large", centro + Vector3.DOWN * 0.07, 0.0, Vector3(tamanho.x / 4.0, S, tamanho.y / 4.0), false)
+	peca_de(MASMORRA, "floor_tile_large", centro + Vector3.DOWN * 0.07, 0.0, Vector3(tamanho.x / 4.0 * 1.003, S, tamanho.y / 4.0 * 1.003), false)
 
 
 ## Paredes ao longo de z (de frente para o corredor) em `x`, com centros de z0 a z1 de 6 em 6, em `linhas`
@@ -713,7 +715,9 @@ func parede_z(x: float, z0: float, z1: float, y: float, linhas := 1, nome := "wa
 	var g := (PI / 2.0 if x < 0.0 else -PI / 2.0) if giro == INF else giro
 	while z >= z1 - 0.01:
 		for k in linhas:
-			peca_de(MASMORRA, nome, Vector3(x, y + M * k, z), g, S, false)
+			# 0,3% mais compridas: a ponta da parede passa uns milímetros da rocha em que encosta (no mesmo plano, as
+			# duas piscavam; revisão de 2026-11-11).
+			peca_de(MASMORRA, nome, Vector3(x, y + M * k, z), g, Vector3(S * 1.003, S, S), false)
 		z -= M
 	var comprimento := absf(z0 - z1) + M
 	_muro(Vector3(x, y, (z0 + z1) * 0.5), Vector3(1.5, M * linhas, comprimento))
@@ -724,7 +728,7 @@ func parede_z(x: float, z0: float, z1: float, y: float, linhas := 1, nome := "wa
 func parede_x(z: float, xs: Array, y: float, linhas := 1, nome := "wall", giro := 0.0) -> void:
 	for x in xs:
 		for k in linhas:
-			peca_de(MASMORRA, nome, Vector3(x, y + M * k, z), giro, S, false)
+			peca_de(MASMORRA, nome, Vector3(x, y + M * k, z), giro, Vector3(S * 1.003, S, S), false)
 		_muro(Vector3(x, y, z), Vector3(M, M * linhas, 1.5))
 		_muro(Vector3(x, y + M * linhas, z), Vector3(M, LIMITE, 1.5), true)
 
@@ -749,7 +753,8 @@ func tablado(topo: Vector3, tamanho: Vector2, chao_y := 0.0, com_pernas := true)
 	corpo.add_child(tabuas)
 	var lado := MeshInstance3D.new()
 	var caixa := BoxMesh.new()
-	caixa.size = Vector3(tamanho.x, 0.4, tamanho.y)
+	# 2 cm mais estreita que as tábuas: com a lateral rente à delas, as duas piscavam.
+	caixa.size = Vector3(tamanho.x - 0.02, 0.4, tamanho.y - 0.02)
 	lado.mesh = caixa
 	lado.material_override = _material(COR_MADEIRA)
 	lado.position.y = -0.3
@@ -788,7 +793,7 @@ func elevador(topo: Vector3, subida: float, periodo: float, atraso: float, camin
 	corpo.add_child(tabuas)
 	var base := MeshInstance3D.new()
 	var caixa := BoxMesh.new()
-	caixa.size = Vector3(4.0, 0.5, 4.0)
+	caixa.size = Vector3(3.98, 0.5, 3.98)
 	base.mesh = caixa
 	base.material_override = _material(COR_MADEIRA)
 	base.position.y = -0.35

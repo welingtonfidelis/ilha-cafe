@@ -35,7 +35,8 @@ func _ready() -> void:
 	c.size = Vector3(lado * 0.62, total, lado * 0.62)
 	coluna.mesh = c
 	coluna.material_override = ferro
-	coluna.position.y = PLACA - total * 0.5
+	# A coluna acaba 2 cm abaixo do topo da placa (no mesmo plano, o cinza piscava no meio do laranja).
+	coluna.position.y = PLACA - total * 0.5 - 0.02
 	add_child(coluna)
 	var placa := MeshInstance3D.new()
 	placa.mesh = Forma.caixa_redonda(Vector3(lado, PLACA, lado), 0.08)

@@ -66,6 +66,9 @@ static func na_fase(fase: Node3D, superficie: String, lista: Array = []) -> int:
 			continue
 		var cena := String(mi.owner.scene_file_path) if mi.owner else ""
 		var arquivo := cena.get_file()
+		# A fase pode escolher o que leva o desenho (a cozinha da 2-1: só a madeira ganha tábuas).
+		if fase.has_method("leva_desenho") and not fase.call("leva_desenho", mi, arquivo):
+			continue
 		var topo := padrao
 		var lado := ""
 		if arquivo.begins_with("Hill_"):

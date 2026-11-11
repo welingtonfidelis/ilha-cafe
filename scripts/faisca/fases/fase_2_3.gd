@@ -340,6 +340,9 @@ func _viagem_trem() -> void:
 		var n := int(a.distance_to(b) / 4.0)
 		for k in n + 1:
 			var p := a.lerp(b, float(k) / maxf(n, 1))
+			# Na quina, o pilar já veio do trecho de antes (dois no mesmo lugar, de cores diferentes, piscavam).
+			if k == 0 and i > 0:
+				continue
 			if p.y > 0.4:
 				bloco(Vector3(p.x, 0, p.z), Vector3(1.2, p.y - 0.05, 1.2), BLOCOS[k % 4])
 	for t in [0.3, 0.6]:

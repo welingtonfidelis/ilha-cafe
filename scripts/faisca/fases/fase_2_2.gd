@@ -101,7 +101,8 @@ func coluna(topo: Vector3, raio: float, altura: float, cores: Array) -> StaticBo
 	var corpo := StaticBody3D.new()
 	corpo.position = topo
 	add_child(corpo)
-	_malha(corpo, _cilindro(raio, raio * 1.12, altura), cores[2], Vector3(0, -altura * 0.5, 0))
+	# O pilar fica 3 cm abaixo da cobertura (no mesmo plano, as duas piscavam).
+	_malha(corpo, _cilindro(raio, raio * 1.12, altura), cores[2], Vector3(0, -altura * 0.5 - 0.03, 0))
 	_malha(corpo, _cilindro(raio + 0.05, raio + 0.05, 0.6), cores[0], Vector3(0, -0.3, 0))
 	var toro := TorusMesh.new()
 	toro.inner_radius = raio - 0.2
@@ -415,7 +416,7 @@ func _ilhas_de_biscoito() -> void:
 		flor(p)
 		estrelinha(p + Vector3(0, 2.0, 0))
 	var alto: Vector3 = ilhas["alto"][0]
-	bloco(Vector3(alto.x, alto.y - 0.5, 1.5), Vector3(4, 1, 9), Color("f2d6a2"))
+	bloco(Vector3(alto.x, alto.y - 0.48, 1.5), Vector3(4, 1, 9), Color("f2d6a2"))
 	portao(Vector3(alto.x, alto.y, 1.5), 0.0)
 	ilha(Vector3(alto.x, alto.y, -5.5), 3.0, BISCOITO)
 	canhao(Vector3(alto.x, alto.y, -6.0), Vector3(-78, 16.05, -52), "red")
@@ -639,7 +640,7 @@ func _ceu_de_chiclete() -> void:
 	var g4: Vector3 = ilhas[3][0]
 	var ang := atan2(g4.x, g4.z)
 	arco_de_saida(no_bolo(-26, 30.5, 26), ang, "green")
-	bloco(no_bolo(-26, 26.8, 25.5), Vector3(3.6, 1.0, 7.4), Color("f2d6a2"), ang)
+	bloco(no_bolo(-26, 26.8, 25.52), Vector3(3.6, 1.0, 7.4), Color("f2d6a2"), ang)
 	trilha(no_bolo(-26, 29, 27), no_bolo(-26, 24, 27), 3)
 
 
