@@ -18,6 +18,7 @@ var _setas: StandardMaterial3D
 
 
 func _ready() -> void:
+	set_meta("superficie", "esteira")
 	collision_layer = 1
 	collision_mask = 0
 	constant_linear_velocity = global_basis.z * velocidade

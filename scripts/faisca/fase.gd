@@ -38,6 +38,8 @@ const ESTRELAS_POR_BOLOTA := 3
 
 ## Onde o Faísca começa.
 var inicio := Vector3.ZERO
+## O chão de sempre da fase, para a tremida de cada passo (Jogador.TEXTURAS): cada fase diz o seu no _montar.
+var superficie := "grama"
 ## Abaixo desta altura o Faísca caiu nas nuvens.
 var limite_queda := -12.0
 var nome := ""
@@ -123,6 +125,7 @@ var _faisquinhas_sem_nome := 0
 
 
 func _ready() -> void:
+	add_to_group("fase_do_faisca")
 	_montar_ceu_e_luz()
 	_montar()
 	# Depois do caminho, que diz a altura das nuvens (`limite_queda`).

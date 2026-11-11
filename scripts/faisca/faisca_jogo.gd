@@ -9,7 +9,8 @@ extends Node3D
 ## - as estrelinhas, as Estrelas Grandes e os Faisquinhas salvos de cada fase, no save próprio (FaiscaSave);
 ## - os Faisquinhas morando no farol e os prêmios que eles abrem (PREMIOS: o elevador, o trenzinho e o farolete);
 ## - a pausa (Start ou Esc): continuar, sair da fase, os Ajustes (PainelAjustes), voltar ao menu principal e sair do
-##   jogo.
+##   jogo;
+## - o DualSense (nó DualSense com o perfil ControleFaisca): gatilhos, barra de luz, LEDs e as tremidinhas de festa.
 ## As portas abrem com o total de estrelinhas (cada uma conta uma vez, para sempre).
 ## Testes: --faisca-jogo (confere, ver teste_faisca_jogo.gd), --faisca-jogo-captura e --faisca-farol-captura (fotos,
 ## precisam de janela).
@@ -73,6 +74,8 @@ var menu_aberto := false
 var botoes_pausa := {}
 var painel_ajustes: PainelAjustes
 var fade: ColorRect
+var dualsense: DualSense
+var controle: ControleFaisca
 
 var _camada: CanvasLayer
 var _pausa: Control
@@ -98,6 +101,11 @@ func _ready() -> void:
 	FaiscaSave.enabled = not testando
 	_montar_interface()
 	_criar_faisca()
+	controle = ControleFaisca.new(faisca, func() -> bool: return menu_aberto or busy() or hud.fim_aberto or not lugar in ["hub", "fase"])
+	dualsense = DualSense.new()
+	dualsense.name = "DualSense"
+	dualsense.perfil = controle.escolher
+	add_child(dualsense)
 	if not testando:
 		FaiscaSave.migrar()
 		carregar(FaiscaSave.ler())
@@ -376,6 +384,8 @@ func _criar_faisca() -> void:
 	faisca.name = "Faisca"
 	add_child(faisca)
 	faisca.vida_mudou.connect(hud.mostrar_vida)
+	# Ganhou um coração: piscada rosa (a tremidinha é do Jogador).
+	faisca.curou.connect(func() -> void: controle.piscar(Color8(255, 80, 120), 0.8))
 	hud.jogar_de_novo.connect(_fim_aceito)
 	hud.mostrar_vida(faisca.vida)
 	_esconder_faisca()
@@ -464,12 +474,15 @@ func entrar_fase(id: String) -> void:
 	fase_atual = id
 	nivel.estrela_pega.connect(func(pegas: int, _total: int) -> void:
 		_juntar(id, nivel.novas, estrelas)
+		faisca.festa_no_controle("estrelinha")
 		hud.mostrar_estrelas(pegas))
 	nivel.faisquinha_salvo.connect(func(achados: int, total: int) -> void:
 		_juntar(id, nivel.novos_faisquinhas, faisquinhas)
 		for n in nivel.novos_faisquinhas:
 			if not "%s:%s" % [id, n] in chegando:
 				chegando.append("%s:%s" % [id, n])
+		faisca.festa_no_controle("faisquinha")
+		controle.piscar(Color8(198, 255, 74), 1.2)
 		hud.mostrar_faisquinhas(achados, total))
 	nivel.posto_aceso.connect(func(p: Posto) -> void: faisca.ponto_retorno = p.ponto())
 	nivel.dica.connect(hud.mostrar_dica)
@@ -505,6 +518,8 @@ func _comecar_fase() -> void:
 
 ## Pegou a Estrela Grande: o Faísca comemora, a estrela sobe e aparece a tela de fim.
 func _terminar_fase() -> void:
+	faisca.festa_no_controle("estrela_grande")
+	controle.piscar(Color8(255, 200, 40), 3.0)
 	faisca.controle_ligado = false
 	faisca.golpe_atual = -1
 	faisca.visual.rotation.y = faisca.yaw
@@ -567,6 +582,8 @@ func _festa_no_farol() -> void:
 		faixa(dados.titulo, dados.sub, Color("#ffd23f"), 3.4)
 		Fx.confetti(este, este.lugar_do_premio(id), 50, 5.0)
 		Sfx.play(self, "faisquinha_salvo")
+		faisca.festa_no_controle("premio")
+		controle.piscar(Color8(255, 200, 40), 2.5)
 		este.festa()
 		await get_tree().create_timer(4.2).timeout
 

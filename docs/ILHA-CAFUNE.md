@@ -2262,7 +2262,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 |---|---|---|---|
 | 1 | **Faisquinhas para resgatar:** os vaga-lumes viram robozinhos presos em bolhas das Bolotas, 6 por fase (os 3 de hoje e mais 3 em lugares difíceis). No farol eles aparecem brincando, acenando e dançando junto, e cada grupo abre uma coisa nova (10 consertam o elevador do farol, 20 abrem a sala de brinquedos, 30 acendem o farolete do topo) | M/G | feito em 2026-11-11 (a sala de brinquedos virou o trenzinho do térreo) |
 | 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
-| 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | |
+| 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
 | 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | |
 | 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | |
@@ -2353,6 +2353,52 @@ Os salvos na última fase chegam caindo do alto, girando, com confete, e aparece
   - o contador da pausa;
   - a dança junto.
 - Fotos: `--faisca-faisquinhas-captura` (o Faisquinha preso, na Bolota, solto e salvo) e `--faisca-farol-captura` (o farol com os prêmios e a pausa).
+
+### DualSense no Faísca (item 3 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "Sim, começa", depois dos Faisquinhas.
+
+**Como funciona.** O nó `DualSense` da ilha ganhou o `perfil`: fora da ilha, quem escolhe os efeitos é o `ControleFaisca` (`scripts/faisca/controle_faisca.gd`), criado pelo `FaiscaJogo`. Ele devolve os dois gatilhos, a cor da barra de luz e os 5 LEDs de baixo. Os bytes são os da página de teste do usuário:
+- a luz: a bandeira 0x04 no byte 1 e o RGB nos bytes 44 a 46;
+- os LEDs: a bandeira 0x10 no byte 1 e o desenho no byte 43.
+
+A ilha não manda luz, e o bloco dela fica igual. Saindo do jogo depois de mexer na luz, ela volta para o azul de quando o controle liga.
+
+**Gatilhos.** O R2 também dá o golpe e o L2 também agarra (`Controles`). Contam passando da metade, onde fica o estalo.
+- **R2:**
+  - um estalinho em cada soco;
+  - segurando para o giro forte, endurece em 4 degraus;
+  - girando forte, treme;
+  - com o Martelinho de Apito, o estalo forte;
+  - puxado pelo Ioiô, treme como o fio esticado;
+  - com a Luva de Neve, um estalo fofo.
+- **L2:** pesa com uma Bolota agarrada.
+- **Soltos:** na pausa, na cena, na tela de fim e com a vibração desligada nos Ajustes.
+
+**Luz e LEDs.**
+- A luz fica no azul do Faísca ou na cor do poder da fase: rosa no Balão, verde no Ioiô, branco-azulado na Luva e laranja no Martelinho.
+- Com 1 coração, fica vermelha piscando.
+- Pisca de festa ao salvar um Faisquinha (verde-limão), na Estrela Grande e no prêmio do farol (dourado) e no coração (rosa).
+- Os LEDs mostram os corações no desenho de jogador do controle: 1 no meio, 2 separados, 3 alternados.
+
+**Vibração com textura de chão** (`Jogador.TEXTURAS`).
+- Cada passo treme de um jeito, bem de leve, conforme o chão:
+  - motor fraco, o agudo: grama, madeira, algodão, tapete, gelo, metal, esteira;
+  - motor forte, o grave: pedra e neve.
+- O chão é o da fase (`Fase.superficie`):
+  - grama na 1-1;
+  - pedra na 1-2;
+  - madeira na 2-1 e no farol;
+  - algodão na 2-2;
+  - tapete na 2-3;
+  - neve na 3-1;
+  - metal na 3-2.
+- Alguns corpos têm o chão marcado: as nuvens que quicam e as que somem são "nuvem", as esteiras são "esteira" e o gelo da 3-1 é "gelo".
+- Deslizando no gelo, um chiadinho. No pouso, a tremida do chão mais forte.
+
+**Tremidinhas de festa** (`Jogador.festa_no_controle`): na estrelinha, no Faisquinha salvo (duas), no coração, na Estrela Grande e no prêmio do farol. Tudo respeita a vibração dos Ajustes.
+
+**Teste:** `--faisca-dualsense`. Confere os bytes (USB e Bluetooth), cada escolha do `ControleFaisca` e os passos tremendo na grama, na pedra, no algodão e no metal. Confere também a esteira, o gelo, o pouso e as festas. No PC, falta o usuário sentir com o controle de verdade. Se o Steam estiver mandando na luz do controle, ela pode brigar com a do jogo.
 
 ### Em aberto
 

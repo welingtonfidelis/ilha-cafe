@@ -81,6 +81,7 @@ var _mats := {}
 
 
 func _montar() -> void:
+	superficie = "metal"
 	nome = "3-2 Fábrica de Blocos"
 	inicio = Vector3(12, 0.2, 130)
 	limite_queda = -5.0

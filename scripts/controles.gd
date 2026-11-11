@@ -72,6 +72,12 @@ static func configurar() -> void:
 	_bind_button("agarrar", JOY_BUTTON_Y)
 	_bind_key("dancar", [KEY_V])
 	_bind_button("dancar", JOY_BUTTON_DPAD_DOWN)
+	# DualSense no Faísca (2026-11-11): o R2 também dá o golpe e o L2 também agarra, para sentir os efeitos dos
+	# gatilhos (ControleFaisca). Contam passando da metade, onde o estalo do R2 fica.
+	_bind_axis("golpe", JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	InputMap.action_set_deadzone("golpe", 0.5)
+	_bind_axis("agarrar", JOY_AXIS_TRIGGER_LEFT, 1.0)
+	InputMap.action_set_deadzone("agarrar", 0.4)
 	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
 	_bind_button("ui_accept", JOY_BUTTON_A)
 	_bind_button("ui_cancel", JOY_BUTTON_B)

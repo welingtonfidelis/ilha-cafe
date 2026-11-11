@@ -28,6 +28,7 @@ const GELADEIRA := Vector3(0, 0, -70)
 
 
 func _montar() -> void:
+	superficie = "madeira"
 	nome = "2-1 Cozinha Gigante"
 	inicio = Vector3(0, 8.1, -15)
 	limite_queda = 3.0

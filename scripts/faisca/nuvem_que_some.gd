@@ -19,6 +19,7 @@ var _contando := -1.0
 
 
 func _ready() -> void:
+	set_meta("superficie", "nuvem")
 	collision_layer = 1
 	collision_mask = 0
 	_visual = Node3D.new()

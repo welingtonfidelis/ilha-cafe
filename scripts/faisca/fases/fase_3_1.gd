@@ -57,6 +57,7 @@ var _neve_caindo: CPUParticles3D
 
 
 func _montar() -> void:
+	superficie = "neve"
 	nome = "3-1 Pico Gelado"
 	inicio = Vector3(12, 0.1, 128)
 	limite_queda = -10.0

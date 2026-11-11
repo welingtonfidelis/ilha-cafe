@@ -34,6 +34,8 @@ extends Node3D
 ##   --faisca-monstro-captura   fotos de cada tipo em ação em tools/capturas/faisca/monstro/ (precisa de janela)
 ##   --faisca-faisquinhas    as sete fases: os seis Faisquinhas de cada uma (ver scripts/faisca/teste_faisquinhas.gd)
 ##   --faisca-faisquinhas-captura  fotos do Faisquinha preso, na Bolota e solto (precisa de janela)
+##   --faisca-dualsense      o DualSense no Faísca: bytes, gatilhos, luz, LEDs e a tremida de cada chão
+##                           (ver scripts/faisca/teste_controle_faisca.gd)
 ## As ações de controle (pular, golpe, recomecar...) vêm do _setup_input do main.
 
 const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--faisca-captura", "--faisca-fase", "--faisca-fase-captura",
@@ -41,7 +43,8 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-monstro", "--faisca-monstro-captura",
-		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura"]
+		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
+		"--faisca-dualsense"]
 const PASTA_CAPTURAS := "res://tools/capturas/faisca/"
 
 ## Cena de teste (só nos modos de teste dela).
@@ -62,11 +65,21 @@ var _teste32: TesteFase32
 var _teste_monstro: TesteMonstro
 var _teste_movimento: TesteMovimento
 var _teste_faisquinhas: TesteFaisquinhas
+var _teste_controle: TesteControleFaisca
 
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	# Os Faisquinhas: o teste monta cada fase sozinho.
+	if "--faisca-dualsense" in args:
+		jogador = Jogador.new()
+		add_child(jogador)
+		hud = Hud.new()
+		add_child(hud)
+		# Guardado aqui: sem ninguém segurando, o teste some no primeiro await.
+		_teste_controle = TesteControleFaisca.new(self)
+		_teste_controle.rodar()
+		return
 	if "--faisca-faisquinhas" in args or "--faisca-faisquinhas-captura" in args:
 		jogador = Jogador.new()
 		add_child(jogador)

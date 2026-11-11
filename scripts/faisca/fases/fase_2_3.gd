@@ -51,6 +51,7 @@ var _bola_de_ioio: Area3D
 
 
 func _montar() -> void:
+	superficie = "tapete"
 	nome = "2-3 Quarto de Brinquedos"
 	inicio = Vector3(16, 0.2, 70)
 	limite_queda = -5.0

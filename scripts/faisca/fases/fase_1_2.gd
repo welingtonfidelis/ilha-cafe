@@ -39,6 +39,7 @@ var _grade_da_arena: Grade
 
 
 func _montar() -> void:
+	superficie = "pedra"
 	nome = "1-2 Túneis do Morro"
 	inicio = Vector3(-3, 0.1, -16)
 	limite_queda = -12.0

@@ -49,6 +49,7 @@ var _bola_de_chiclete: Area3D
 
 
 func _montar() -> void:
+	superficie = "algodao"
 	nome = "2-2 Nuvens de Algodão-Doce"
 	inicio = Vector3(12, 0.1, 128)
 	limite_queda = -10.0

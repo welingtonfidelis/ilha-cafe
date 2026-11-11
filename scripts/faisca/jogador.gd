@@ -13,6 +13,8 @@ extends CharacterBody3D
 ## Base tirada do aventureiro da Ilha Cafuné. Quem cuida do farol e das fases é o FaiscaJogo.
 
 signal vida_mudou(vida: int)
+## Pegou um coração (a luz do controle pisca rosa).
+signal curou
 
 @export var velocidade := 6.5
 ## No gelo continua o jeito antigo (aproximação suave, que escorrega).
@@ -61,6 +63,13 @@ const FOV := 60.0
 const FOV_CORRENDO := 66.0
 ## Poeira dos passos: um a cada tanto de chão andado correndo.
 const PASSO := 1.15
+## Cada chão treme de um jeito a cada passo (item 3 da lista do Faísca, como as texturas do Astro): [fraco, forte,
+## duração]. O motor fraco é o agudo (grama, metal, gelo), o forte o grave (pedra, neve). Bem de leve.
+const TEXTURAS := {
+	"grama": [0.10, 0.0, 0.045], "pedra": [0.0, 0.2, 0.05], "madeira": [0.14, 0.06, 0.04], "algodao": [0.06, 0.0, 0.09],
+	"nuvem": [0.07, 0.0, 0.1], "tapete": [0.05, 0.03, 0.06], "neve": [0.04, 0.1, 0.08], "gelo": [0.22, 0.0, 0.025],
+	"metal": [0.28, 0.05, 0.03], "esteira": [0.18, 0.0, 0.03],
+}
 const PITCH_MIN := -1.1
 const PITCH_MAX := 0.3
 const DISTANCIA_CAMERA := 7.5
@@ -170,6 +179,10 @@ var agarrada: Alvo
 var giro_forte := 0.0
 var dancando := 0.0
 var tremidinhas := 0
+## Quantas tremidas de passo cada chão deu e quantas festas no controle (os testes olham).
+var tremidas_por_chao := {}
+var festas := {}
+var _deslize := 0.0
 ## Tem o Balão de Chiclete (a fase liga; o FaiscaJogo desliga ao entrar em outra) e está subindo nele agora.
 var balao_de_chiclete := false
 var no_balao := false
@@ -655,6 +668,7 @@ func _pousou(tempo_no_ar: float) -> void:
 	_mola = clampf(0.08 + tempo_no_ar * 0.12, 0.08, 0.3)
 	_mola_vel = 0.0
 	_poeira(global_position, clampf(0.7 + tempo_no_ar * 0.5, 0.7, 1.5), 14)
+	_tremer_passo(clampf(1.5 + tempo_no_ar * 2.0, 1.5, 3.5))
 
 
 ## Nuvenzinha de poeira no chão: bolinhas claras que se espalham para os lados, sobem um pouco e somem
@@ -704,6 +718,13 @@ func _poeira(pos: Vector3, forca: float, quantas := 8) -> void:
 ## Passinhos correndo: poeirinha alternando os pés e um tique baixinho de robô.
 func _passos(delta: float) -> void:
 	var vel_h := Vector2(velocity.x, velocity.z).length()
+	# Deslizando no gelo: um chiadinho no motor fraco, sem passos.
+	if no_gelo and is_on_floor() and vel_h > 2.0:
+		_deslize -= delta
+		if _deslize <= 0.0:
+			_deslize = 0.14
+			tremidas_por_chao["gelo"] = tremidas_por_chao.get("gelo", 0) + 1
+			_tremer(0.12, 0.0, 0.05)
 	if not is_on_floor() or vel_h < 3.0 or no_gelo:
 		_passo = 0.0
 		return
@@ -714,6 +735,59 @@ func _passos(delta: float) -> void:
 	_passo_lado = -_passo_lado
 	_poeira(global_position + visual.global_basis.x * 0.2 * _passo_lado, 0.45, 4)
 	Sfx.play(self, "tique", -18.0, 0.15)
+	_tremer_passo()
+
+
+## O chão embaixo dele: o "gelo" e a "superficie" marcados no corpo que ele pisa (as nuvens, as esteiras), ou o
+## chão de sempre da fase (Fase.superficie). Vazio no ar.
+func superficie_embaixo() -> String:
+	if not is_on_floor():
+		return ""
+	for k in get_slide_collision_count():
+		var col := get_slide_collision(k)
+		var quem := col.get_collider()
+		if col.get_normal().y > 0.6 and quem is Node:
+			if (quem as Node).has_meta("gelo"):
+				return "gelo"
+			if (quem as Node).has_meta("superficie"):
+				return String((quem as Node).get_meta("superficie"))
+	var fase := get_tree().get_first_node_in_group("fase_do_faisca")
+	return String(fase.get("superficie")) if fase else "grama"
+
+
+## A tremida do chão (num passo, `forca` 1; no pouso, mais forte).
+func _tremer_passo(forca := 1.0) -> void:
+	var chao := superficie_embaixo()
+	if chao == "":
+		return
+	var t: Array = TEXTURAS.get(chao, TEXTURAS.grama)
+	tremidas_por_chao[chao] = tremidas_por_chao.get(chao, 0) + 1
+	_tremer(minf(t[0] * forca, 0.6), minf(t[1] * forca, 0.6), t[2] * (1.0 + (forca - 1.0) * 0.3))
+
+
+## O quanto ele está segurando o golpe para o giro forte, de 0 a 1 (o R2 vai endurecendo, item 3).
+func carga_do_golpe() -> float:
+	if _segurando_golpe < 0.12 or giro_forte > 0.0:
+		return 0.0
+	return clampf(_segurando_golpe / (TEMPO_CARREGAR + TEMPO_CARGA), 0.0, 1.0)
+
+
+## Tremidinhas de festa no controle (item 3): a estrelinha, o Faisquinha salvo (duas), o coração, a Estrela Grande e
+## o prêmio do farol.
+func festa_no_controle(qual: String) -> void:
+	festas[qual] = festas.get(qual, 0) + 1
+	match qual:
+		"estrelinha":
+			_tremer(0.16, 0.0, 0.04)
+		"faisquinha":
+			_tremer(0.3, 0.15, 0.09)
+			get_tree().create_timer(0.16).timeout.connect(func() -> void: _tremer(0.35, 0.2, 0.12))
+		"coracao":
+			_tremer(0.2, 0.1, 0.12)
+		"estrela_grande":
+			_tremer(0.45, 0.35, 0.6)
+		"premio":
+			_tremer(0.3, 0.3, 0.4)
 
 
 ## Põe o Faísca parado em `pos` (testes e capturas). No quadro seguinte o is_on_floor ainda
@@ -773,6 +847,8 @@ func curar() -> bool:
 	vida_mudou.emit(vida)
 	robo.expressao("coracao", 1.0)
 	Sfx.play(self, "coracao")
+	festa_no_controle("coracao")
+	curou.emit()
 	return true
 
 

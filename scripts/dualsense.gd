@@ -15,8 +15,16 @@ extends Node
 ## O que cada gatilho faz no jogo (`escolher`): o R2 muda com o blaster (estalinho na pistola, tremidinho na rajada da
 ## metralhadora, estalo forte na escopeta, gatilho duro no rifle), o L2 tem uma resistência leve para mirar, no kart o
 ## R2 acelera macio e o L2 freia duro, e com menu aberto, tonto ou a vibração desligada nos Ajustes, tudo solto.
+## No jogo do Faísca (item 3 da lista dele, 2026-11-11) quem escolhe é o `perfil` (ControleFaisca), que também manda a
+## cor da barra de luz (bandeira 0x04 no byte 1, RGB nos bytes 44 a 46) e os 5 LEDs de baixo (0x10 no byte 1, o
+## desenho no 43), os mesmos bytes da página de teste do usuário. A ilha não mexe na luz.
 
 const SONY := "054c"
+## A luz que fica quando o jogo sai depois de ter mexido nela (o azul de quando o controle liga) e o LED do meio.
+const LUZ_AO_SAIR := Color8(0, 0, 128)
+const LEDS_AO_SAIR := 0x04
+## "Não mexe na luz" (alfa zero).
+const SEM_LUZ := Color(0, 0, 0, 0)
 const DUALSENSE := ["0ce6", "0df2"]
 
 ## Caminho do dispositivo e se é Bluetooth (vazio: nenhum DualSense achado).
@@ -27,6 +35,9 @@ var atual := []
 ## Quantos relatórios foram mandados (os testes olham).
 var enviados := 0
 var game: Node
+## Fora da ilha: quem escolhe os efeitos, devolvendo [R2, L2, luz, leds] (luz SEM_LUZ e leds -1 não mexem).
+var perfil: Callable
+var _mexeu_na_luz := false
 ## O `dd` que escreve no controle: o cano de entrada dele e o número do processo.
 var _cano: FileAccess
 var _pid := -1
@@ -114,11 +125,13 @@ func _physics_process(delta: float) -> void:
 		return
 	var par := escolher()
 	if par != atual:
-		mandar(par[0], par[1])
+		mandar(par[0], par[1], par[2] if par.size() > 2 else SEM_LUZ, par[3] if par.size() > 3 else -1)
 
 
 ## Os efeitos de agora: [R2, L2].
 func escolher() -> Array:
+	if perfil.is_valid():
+		return perfil.call()
 	var solto := [efeito_solto(), efeito_solto()]
 	if game == null or not Ajustes.vibracao or game.menu_state != "":
 		return solto
@@ -143,7 +156,9 @@ func escolher() -> Array:
 
 
 func soltar() -> void:
-	if caminho != "" and atual != [efeito_solto(), efeito_solto()]:
+	if caminho != "" and _mexeu_na_luz:
+		mandar(efeito_solto(), efeito_solto(), LUZ_AO_SAIR, LEDS_AO_SAIR)
+	elif caminho != "" and atual != [efeito_solto(), efeito_solto()]:
 		mandar(efeito_solto(), efeito_solto())
 	if _cano:
 		# Um instante para o dd escrever o último antes de fechar.
@@ -151,15 +166,16 @@ func soltar() -> void:
 		_fechar()
 
 
-func mandar(r2: PackedByteArray, l2: PackedByteArray) -> void:
-	atual = [r2, l2]
+func mandar(r2: PackedByteArray, l2: PackedByteArray, luz := SEM_LUZ, leds := -1) -> void:
+	atual = [r2, l2] if luz.a <= 0.0 and leds < 0 else [r2, l2, luz, leds]
 	if _cano == null:
 		return
 	if _pid > 0 and not OS.is_process_running(_pid):
 		# O controle desligou (o dd sai quando a escrita falha): procura de novo depois.
 		_fechar()
 		return
-	_cano.store_buffer(relatorio(bloco_comum(r2, l2), bluetooth))
+	_cano.store_buffer(relatorio(bloco_comum(r2, l2, luz, leds), bluetooth))
+	_mexeu_na_luz = _mexeu_na_luz or luz.a > 0.0 or leds >= 0
 	_cano.flush()
 	enviados += 1
 
@@ -235,14 +251,23 @@ static func efeito_arma(inicio: int, fim: int, forca: int) -> PackedByteArray:
 	return e
 
 
-## O bloco comum de 47 bytes: só as bandeiras dos dois gatilhos, R2 no byte 10 e L2 no 21.
-static func bloco_comum(r2: PackedByteArray, l2: PackedByteArray) -> PackedByteArray:
+## O bloco comum de 47 bytes: as bandeiras dos dois gatilhos, R2 no byte 10 e L2 no 21; com `luz`, a bandeira 0x04
+## do byte 1 e o RGB nos bytes 44 a 46; com `leds` (0 a 0x1F, um bit por LED), a bandeira 0x10 e o desenho no 43.
+static func bloco_comum(r2: PackedByteArray, l2: PackedByteArray, luz := SEM_LUZ, leds := -1) -> PackedByteArray:
 	var c := PackedByteArray()
 	c.resize(47)
 	c[0] = 0x04 | 0x08
 	for i in 11:
 		c[10 + i] = r2[i]
 		c[21 + i] = l2[i]
+	if luz.a > 0.0:
+		c[1] |= 0x04
+		c[44] = luz.r8
+		c[45] = luz.g8
+		c[46] = luz.b8
+	if leds >= 0:
+		c[1] |= 0x10
+		c[43] = leds & 0x1F
 	return c
 
 

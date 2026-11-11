@@ -89,6 +89,7 @@ var _tempo_hub := 0.0
 
 func _montar() -> void:
 	nome = "Farol"
+	superficie = "madeira"
 	limite_queda = -6.0
 	inicio = Vector3(0, 0.1, RAIO - 3.5)
 	_sala()
