@@ -150,11 +150,11 @@ func _montar_quadro() -> void:
 		foto.pixel_size = 0.0032
 		foto.position = pos
 		_quadro.add_child(foto)
-		var trofeu := _taca(0.45)
+		var trofeu := taca(0.45)
 		trofeu.position = pos + Vector3(0.42, -0.42, 0.05)
 		_quadro.add_child(trofeu)
 		_trofeus[id] = trofeu
-	_trofeu_grande = _taca(1.1)
+	_trofeu_grande = taca(1.1)
 	_trofeu_grande.position = Vector3(0, 3.95, 0.25)
 	_quadro.add_child(_trofeu_grande)
 	_circulo = MeshInstance3D.new()
@@ -172,7 +172,7 @@ func _montar_quadro() -> void:
 
 
 ## Taça de troféu: copo, alças, haste e base (a cor muda com as estrelas).
-func _taca(tamanho: float) -> Node3D:
+static func taca(tamanho: float) -> Node3D:
 	var t := Node3D.new()
 	var copo := MeshInstance3D.new()
 	var cil := CylinderMesh.new()

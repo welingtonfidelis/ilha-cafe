@@ -110,6 +110,8 @@ var records := {"festa": 0, "tiro": 0}
 ## bilhetes achados pela ilha.
 var derrotados := {}
 var bilhetes: Array[String] = []
+## Roupinhas compradas na lojinha (chapéus e pinturas).
+var roupas: Array[String] = []
 ## Legenda da foto tirada quando cada região é vencida.
 const PHOTO_CAPTIONS := {
 	"praca": "A primeira defesa, na praia do cais",
@@ -597,6 +599,8 @@ func snapshot() -> Dictionary:
 		"esconde": game.esconde.dados_salvos() if game.esconde else {},
 		"derrotados": derrotados.duplicate(),
 		"revanche": game.revanche.dados_salvos() if game.revanche else {},
+		"copa": game.copa.dados_salvos() if game.copa else {},
+		"roupas": {"tem": roupas.duplicate(), "chapeu": player.chapeu, "pintura": player.pintura},
 		"bilhetes": bilhetes.duplicate(),
 	}
 
@@ -846,6 +850,17 @@ func restore(data: Dictionary) -> void:
 		game.esconde.carregar(data.get("esconde", {}))
 	if game.revanche:
 		game.revanche.carregar(data.get("revanche", {}))
+	if game.copa:
+		game.copa.carregar(data.get("copa", {}))
+	var guardadas: Dictionary = data.get("roupas", {})
+	roupas.clear()
+	for id in guardadas.get("tem", []):
+		if not Roupas.dados(String(id)).is_empty():
+			roupas.append(String(id))
+	var chapeu_salvo := String(guardadas.get("chapeu", ""))
+	var pintura_salva := String(guardadas.get("pintura", ""))
+	player.vestir_chapeu(chapeu_salvo if chapeu_salvo in roupas else "")
+	player.pintar_blasters(pintura_salva if pintura_salva in roupas else "")
 	derrotados.clear()
 	var salvos: Dictionary = data.get("derrotados", {})
 	for tipo in salvos:

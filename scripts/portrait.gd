@@ -112,6 +112,29 @@ func _animate() -> void:
 		ap.play(anim, 0.25)
 
 
+## Põe (ou tira) um chapéu da lojinha no boneco do retrato (a prova do guarda-roupa e o cartão da pausa).
+func vestir(id: String) -> void:
+	var model: Node3D = _models.get(key)
+	if model == null or model is Robo:
+		return
+	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
+	if sk == null:
+		return
+	var osso := sk.get_node_or_null("OssoDoChapeu") as BoneAttachment3D
+	if osso == null:
+		osso = BoneAttachment3D.new()
+		osso.name = "OssoDoChapeu"
+		osso.bone_name = "head"
+		sk.add_child(osso)
+	for c in osso.get_children():
+		osso.remove_child(c)
+		c.queue_free()
+	if id != "":
+		var c := Roupas.chapeu(id)
+		if c:
+			osso.add_child(c)
+
+
 func _build_model(char_key: String) -> Node3D:
 	if char_key == "faisca":
 		return Robo.new()

@@ -144,6 +144,10 @@ var dourado_marker: ObjectiveMarker
 ## Revanche dos guardiões no cemitério, no pós-jogo (item 9 da lista de melhorias), e o painel da escolha.
 var revanche: Revanche
 var revanche_panel: Revanche.Painel
+## Copa de Kart com pódio (item 10 da lista de melhorias). Nula na arena.
+var copa: CopaKart
+## Guarda-roupa das roupinhas, aberto pelo celular (item 11 da lista de melhorias).
+var roupas_panel: PainelRoupas
 ## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
 var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
@@ -434,6 +438,12 @@ func _ready() -> void:
 		for v in fun.get_node("Vagas").get_children():
 			kart_race.spots.append((v as Node3D).global_transform)
 		add_child(kart_race)
+		copa = CopaKart.new()
+		copa.name = "CopaKart"
+		copa.game = self
+		copa.story = story
+		copa.kr = kart_race
+		add_child(copa)
 		story.coins_changed.connect(func(n: int) -> void:
 			coins_bar.set_coins(n, story.coins_ever)
 			if menu_state == "loja":
@@ -660,6 +670,18 @@ func _ready() -> void:
 	elif "--revanche" in args:
 		select_panel.hide()
 		_run_rematch_test()
+	elif "--copa" in args:
+		select_panel.hide()
+		_run_cup_test()
+	elif "--roupas" in args:
+		select_panel.hide()
+		_run_outfits_test()
+	elif "--roupas-captura" in args:
+		select_panel.hide()
+		_run_outfits_capture()
+	elif "--copa-captura" in args:
+		select_panel.hide()
+		_run_cup_capture()
 	elif "--revanche-captura" in args:
 		select_panel.hide()
 		_run_rematch_capture()
@@ -789,6 +811,8 @@ func _menu_input(event: InputEvent) -> void:
 			ajustes_panel.fechar()
 		"album":
 			album_panel.fechar()
+		"roupas":
+			roupas_panel.fechar()
 		"revanche":
 			revanche_panel.fechar()
 		"confirmar":
@@ -828,6 +852,7 @@ func open_menu(state: String) -> void:
 	controls_panel.visible = state == "comandos"
 	ajustes_panel.visible = state == "ajustes"
 	album_panel.visible = state == "album"
+	roupas_panel.visible = state == "roupas"
 	if revanche_panel:
 		revanche_panel.visible = state == "revanche"
 	menu_dim.visible = true
@@ -868,6 +893,8 @@ func open_menu(state: String) -> void:
 			ajustes_panel.abrir()
 		"album":
 			album_panel.abrir()
+		"roupas":
+			roupas_panel.abrir()
 		"revanche":
 			revanche_panel.abrir()
 
@@ -883,6 +910,7 @@ func close_menus() -> void:
 	controls_panel.hide()
 	ajustes_panel.hide()
 	album_panel.hide()
+	roupas_panel.hide()
 	if revanche_panel:
 		revanche_panel.hide()
 	menu_dim.hide()
@@ -1358,6 +1386,15 @@ func _build_ui() -> void:
 		if menu_state == "ajustes":
 			open_menu("pausa")
 			_pause_ajustes.grab_focus.call_deferred())
+	roupas_panel = PainelRoupas.new()
+	layer.add_child(roupas_panel)
+	roupas_panel.montar(layer, self)
+	roupas_panel.hide()
+	# Voltar das roupinhas: de volta à lojinha, com o botão marcado.
+	roupas_panel.fechou.connect(func() -> void:
+		if menu_state == "roupas":
+			open_menu("loja")
+			shop_menu.roupinhas.grab_focus.call_deferred())
 	album_panel = PainelAlbum.new()
 	layer.add_child(album_panel)
 	album_panel.montar(layer, self)
@@ -1601,6 +1638,7 @@ func _build_pause_menu(layer: CanvasLayer) -> void:
 func _refresh_pause_card() -> void:
 	var who := player.character_name
 	_pause_portrait.show_character(who)
+	_pause_portrait.vestir(player.chapeu)
 	_pause_name.text = CHARACTER_LABELS.get(who, "")
 	_pause_card.add_theme_stylebox_override("panel", _pause_card_style(Portrait.BACKGROUNDS.get(who, Color.WHITE)))
 	_pause_swap_icon.visible = _pause_switch.visible
@@ -1779,9 +1817,13 @@ func _process(_delta: float) -> void:
 			hint = esconde.dica(button)
 		elif menu_state == "" and revanche and revanche.dica(button) != "":
 			hint = revanche.dica(button)
+		elif menu_state == "" and copa and copa.dica(button) != "":
+			hint = copa.dica(button)
 		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
+		if copa and copa.na_cena:
+			hint = ""
 		hint_label.text = hint
 		hint_label.visible = hint != ""
 		var view := get_viewport().get_visible_rect().size
@@ -1789,7 +1831,8 @@ func _process(_delta: float) -> void:
 		wave_label.position = Vector2(view.x * 0.5 - wave_label.size.x * 0.5, top)
 		banner_title.position = Vector2(view.x * 0.5 - banner_title.size.x * 0.5, view.y * 0.2)
 		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
-		var show_target := menu_state == "" and not (ending and ending.busy()) and not (pescaria and pescaria.pescando())
+		var show_target := menu_state == "" and not (ending and ending.busy()) and not (pescaria and pescaria.pescando()) \
+				and not (copa and copa.na_cena)
 		var view_cam := get_viewport().get_camera_3d()
 		var target := story.objective_target
 		var shop_target := story.shop_target()
@@ -5609,6 +5652,197 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Roupinhas (item 11 da lista de melhorias): o botão no celular abre o guarda-roupa; marcar um chapéu prova no
+## retrato; sem moedas não compra; comprar veste (o chapéu na cabeça, a pintura nos blasters); A de novo tira; a
+## pintura fica ao trocar de blaster; o chapéu fica ao trocar de personagem e aparece na pausa; B volta à lojinha;
+## salvar e carregar. Uso: godot --headless --path . -- --roupas
+func _run_outfits_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	story.stage = "cidade"
+	open_menu("loja")
+	await _wait(0.3)
+	shop_menu.roupinhas.pressed.emit()
+	await _wait(0.3)
+	all_ok = _check("o botão Roupinhas do celular abre o guarda-roupa com 11 chapéus e 6 pinturas", menu_state == "roupas"
+			and roupas_panel.visible and roupas_panel.cartoes.size() == 17
+			and get_viewport().gui_get_focus_owner() == roupas_panel.cartoes.sem_chapeu.botao) and all_ok
+	(roupas_panel.cartoes.coroa.botao as Button).grab_focus()
+	await _wait(0.2)
+	var osso := roupas_panel.retrato.find_child("OssoDoChapeu", true, false)
+	all_ok = _check("marcar a coroa já prova no retrato", osso != null and osso.get_child_count() == 1) and all_ok
+	story.coins = 10
+	roupas_panel.escolher("coroa")
+	all_ok = _check("sem moedas não compra e avisa quantas faltam", not "coroa" in story.roupas and player.chapeu == ""
+			and "Faltam 50" in roupas_panel.mensagem.text, "(%s)" % roupas_panel.mensagem.text) and all_ok
+	story.coins = 200
+	roupas_panel.escolher("coroa")
+	await _wait(0.1)
+	var na_cabeca := player.find_children("Chapeu", "Node3D", true, false).filter(func(n: Node) -> bool: return n.is_inside_tree())
+	all_ok = _check("comprar a coroa: 60 moedas, é sua e já está na cabeça", "coroa" in story.roupas and story.coins == 140
+			and player.chapeu == "coroa" and na_cabeca.size() == 1 and roupas_panel.cartoes.coroa.estado.text == "usando") and all_ok
+	roupas_panel.escolher("coroa")
+	all_ok = _check("A de novo tira o chapéu", player.chapeu == "" and roupas_panel.cartoes.coroa.estado.text == "é seu") and all_ok
+	roupas_panel.escolher("coroa")
+	roupas_panel.escolher("rosa")
+	var pintado := func() -> bool:
+		for m: MeshInstance3D in player.find_children("*", "MeshInstance3D", true, false):
+			if m.is_inside_tree() and m.find_parent("Coice") != null:
+				var mat := m.get_surface_override_material(0) as StandardMaterial3D
+				return mat != null and mat.albedo_color.r > mat.albedo_color.g
+		return false
+	all_ok = _check("a pintura rosa vai para o blaster", player.pintura == "rosa" and pintado.call()) and all_ok
+	player._equip_model()
+	await _wait(0.1)
+	all_ok = _check("trocando de blaster, a pintura continua", pintado.call()) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B volta para a lojinha, com as Roupinhas marcadas", menu_state == "loja"
+			and get_viewport().gui_get_focus_owner() == shop_menu.roupinhas) and all_ok
+	close_menus()
+	await _wait(0.3)
+	player.set_character("menina" if player.character_name == "menino" else "menino")
+	await _wait(0.3)
+	na_cabeca = player.find_children("Chapeu", "Node3D", true, false).filter(func(n: Node) -> bool: return n.is_inside_tree())
+	all_ok = _check("trocando de personagem, a coroa vai junto", player.chapeu == "coroa" and na_cabeca.size() == 1) and all_ok
+	open_menu("pausa")
+	await _wait(0.3)
+	osso = _pause_portrait.find_child("OssoDoChapeu", true, false)
+	all_ok = _check("a pausa mostra a coroa no retrato", osso != null and osso.get_child_count() == 1) and all_ok
+	close_menus()
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda o que é seu e o que está usando", foto.roupas.tem == ["coroa", "rosa"] and foto.roupas.chapeu == "coroa"
+			and foto.roupas.pintura == "rosa") and all_ok
+	foto.roupas = {"tem": ["urso", "nada"], "chapeu": "coroa", "pintura": ""}
+	story.restore(foto)
+	await _wait(0.3)
+	all_ok = _check("carregando: só o que existe e o que é seu", story.roupas == ["urso"] and player.chapeu == "" and player.pintura == "") and all_ok
+	print("ROUPAS OK" if all_ok else "ROUPAS COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos das roupinhas (roupas_1 e roupas_2): o guarda-roupa provando o gorro de urso e o aventureiro na ilha de
+## coroa e blaster rosa. Uso: godot --path . -- --roupas-captura
+func _run_outfits_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	player.using_gamepad = true
+	story.coins = 300
+	story.stage = "cidade"
+	open_menu("loja")
+	await _wait(0.3)
+	shop_menu.roupinhas.pressed.emit()
+	await _wait(0.3)
+	roupas_panel.escolher("coroa")
+	roupas_panel.escolher("rosa")
+	(roupas_panel.cartoes.urso.botao as Button).grab_focus()
+	await _wait(0.6)
+	await _shot("roupas_1_guarda_roupa.png")
+	close_menus()
+	await _wait(0.4)
+	player.set_yaw(PI)
+	await _wait(0.8)
+	await _shot("roupas_2_coroa.png")
+	get_tree().quit()
+
+
+## Copa de Kart (item 10 da lista de melhorias): o pódio com o círculo; B começa a copa no kart com dois rivais e duas
+## voltas; os pontos de cada corrida; a 2ª ao contrário (largada virada, marcas invertidas, rivais correndo para o
+## outro lado); a cena do pódio com o campeão no bloco do meio, moedas e a taça; descer do kart cancela; a campanha
+## guarda a melhor. Uso: godot --headless --path . -- --copa
+func _run_cup_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	all_ok = _check("pódio com três blocos, a placa e o círculo, sem taça ainda", copa._blocos.size() == 3 and not copa._taca.visible
+			and copa._placa.visible) and all_ok
+	await _stand(copa.ponto_do_circulo() + Vector3.UP * 0.3)
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso chama para a copa", "Copa de Kart" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.4)
+	all_ok = _check("B começa a copa: no kart, contagem da corrida 1 de duas voltas, com dois rivais", copa.rodando
+			and kart_race.state == "contagem" and kart_race.voltas == 2 and not kart_race.reverso and kart_race.rivals.size() == 2
+			and "Copa 1/3" in kart_race.hud_text(), "(%s)" % kart_race.hud_text()) and all_ok
+	var frente_normal: Vector3 = kart_race.kart.forward()
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	kart_race._finish()
+	all_ok = _check("chegando em 1º na corrida 1: 3 pontos", copa.pontos.voce == 3 and copa.corrida == 1, str(copa.pontos)) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "contagem", 8.0)
+	await _wait(0.2)
+	all_ok = _check("a corrida 2 é ao contrário: largada virada e marcas na ordem inversa", kart_race.reverso
+			and kart_race.kart.forward().dot(frente_normal) < -0.8 and kart_race.gates_da_volta()[0] == kart_race.gates[kart_race.gates.size() - 2]
+			and "ao contrário" in kart_race.hud_text()) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	await _wait(5.0)
+	var runs: Array = kart_race.rivals.map(func(r: Dictionary) -> float: return float(r.run))
+	all_ok = _check("ao contrário, os rivais correm para o outro lado sem empacar", runs.size() == 2 and runs.all(func(m: float) -> bool: return m > 30.0)
+			and kart_race.rival_resets <= 1, "(%s m, %d voltas para a pista)" % [str(runs), kart_race.rival_resets]) and all_ok
+	for r in kart_race.rivals:
+		r.done = true
+		r.time = 1.0
+	kart_race._finish()
+	all_ok = _check("chegando em 3º na corrida 2: 1 ponto", copa.pontos.voce == 4 and copa.corrida == 2, str(copa.pontos)) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 12.0)
+	all_ok = _check("a corrida 3 volta para o lado de sempre", not kart_race.reverso) and all_ok
+	var moedas := story.coins
+	kart_race._finish()
+	await _wait_until(func() -> bool: return copa.na_cena, 8.0)
+	await _wait(1.5)
+	var bloco1: Node3D = copa._blocos[1].no
+	all_ok = _check("a cena do pódio: câmera do pódio, campeão no bloco do meio, os rivais nos outros e 40 moedas", copa.lugar_final == 1
+			and get_viewport().get_camera_3d() == copa.camera and player.global_position.distance_to(bloco1.global_position) < 1.6
+			and copa._convidados.size() == 2 and story.coins == moedas + CopaKart.MOEDAS[0], "(%dº, %s)" % [copa.lugar_final, copa.placar()]) and all_ok
+	await _wait_until(func() -> bool: return not copa.rodando, 10.0)
+	await _wait(0.8)
+	all_ok = _check("depois da cena: de volta a pé, com a taça de ouro no pedestal", get_viewport().get_camera_3d() == player.camera
+			and player.input_enabled and copa._taca.visible and copa.melhor == 1 and not kart_race.copa_ativa and kart_race.voltas == KartRace.LAPS) and all_ok
+	await _stand(copa.ponto_do_circulo() + Vector3.UP * 0.3)
+	await _wait(0.3)
+	copa.comecar()
+	await _wait(0.5)
+	kart_race.leave()
+	await _wait(0.3)
+	all_ok = _check("descer do kart no meio da copa cancela", not copa.rodando and not kart_race.copa_ativa and not kart_race.reverso) and all_ok
+	all_ok = _check("a campanha guarda a melhor copa", story.snapshot().get("copa", {}).get("melhor", 0) == 1) and all_ok
+	print("COPA OK" if all_ok else "COPA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da copa (copa_1 a copa_3): o pódio com o círculo, a largada ao contrário e a cena do pódio.
+## Uso: godot --path . -- --copa-captura
+func _run_cup_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	player.using_gamepad = true
+	var c := copa.ponto_do_circulo()
+	await _stand(c + CopaKart.FRENTE * 5.0 + Vector3(0, 0.3, 3.0))
+	var olhar: Vector3 = CopaKart.PODIO + Vector3.UP * 1.5 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.2)
+	await _shot("copa_1_podio.png")
+	await _stand(c + Vector3.UP * 0.3)
+	copa.comecar()
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	kart_race._finish()
+	await _wait_until(func() -> bool: return kart_race.state == "contagem", 8.0)
+	await _wait(1.0)
+	await _shot("copa_2_ao_contrario.png")
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	kart_race._finish()
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 12.0)
+	kart_race._finish()
+	await _wait_until(func() -> bool: return copa.na_cena, 8.0)
+	await _wait(2.5)
+	await _shot("copa_3_podio_cena.png")
 	get_tree().quit()
 
 

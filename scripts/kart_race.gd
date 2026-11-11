@@ -50,8 +50,18 @@ const GARAGE := [
 	["Kart Limão", KART, Color("#ffe066")],
 ]
 
+## A corrida da Copa de Kart acabou (item 10 da lista de melhorias): o lugar do jogador e a ordem de chegada
+## ("voce", "0" e "1" para os rivais).
+signal corrida_terminou(lugar: int, ordem: Array)
+
 var game: Node
 var story: Story
+## Copa de Kart (CopaKart): pista ao contrário, quantas voltas, o começo da faixa de cima e se a chegada é da copa
+## (sem recorde nem moedas: a copa paga no fim).
+var reverso := false
+var voltas := LAPS
+var prefixo := ""
+var copa_ativa := false
 ## Para onde o aventureiro vai ao descer dentro da pista (no box, entre as vagas e a pista).
 var paddock := Vector3.ZERO
 var start := Transform3D.IDENTITY
@@ -176,11 +186,12 @@ func in_entry(p: Vector3) -> bool:
 func hud_text() -> String:
 	match state:
 		"contagem":
-			return "Prepare-se!"
+			return prefixo + "  ·  Prepare-se!" if prefixo != "" else "Prepare-se!"
 		"correndo":
 			var best: float = story.records.get("kart", 0.0)
 			var where := "  ·  %dº de %d" % [place, rivals.size() + 1] if not rivals.is_empty() else ""
-			return "Volta %d de %d  ·  %s%s%s" % [mini(lap + 1, LAPS), LAPS, format_time(time), where, "  ·  recorde %s" % format_time(best) if best > 0.0 else ""]
+			var recorde := "  ·  recorde %s" % format_time(best) if best > 0.0 and not copa_ativa else ""
+			return "%sVolta %d de %d  ·  %s%s%s" % [prefixo + "  ·  " if prefixo != "" else "", mini(lap + 1, voltas), voltas, format_time(time), where, recorde]
 		"dirigindo":
 			return "%s  ·  B (ou E): descer" % kart.display_name
 	return ""
@@ -232,7 +243,10 @@ func _physics_process(delta: float) -> void:
 						_send_rivals_home()
 				if not on_track(p):
 					_armed = true
-				elif _armed and in_entry(p):
+				elif _armed and in_entry(p) and not copa_ativa:
+					reverso = false
+					voltas = LAPS
+					prefixo = ""
 					_start_race()
 			elif state == "contagem":
 				_countdown(delta)
@@ -294,10 +308,26 @@ func leave(send_home := false) -> void:
 		game.exit_vehicle(spot + Vector3.UP * 0.3)
 
 
+## A largada: a de sempre, ou virada para trás na pista ao contrário.
+func largada() -> Transform3D:
+	return Transform3D(start.basis.rotated(Vector3.UP, PI), start.origin) if reverso else start
+
+
+## As marcas de uma volta, na ordem: ao contrário, o fundo da volta sul vem primeiro (a chegada é sempre a última).
+func gates_da_volta() -> Array[Vector3]:
+	if not reverso:
+		return gates
+	var g: Array[Vector3] = []
+	for k in range(gates.size() - 2, -1, -1):
+		g.append(gates[k])
+	g.append(gates[gates.size() - 1])
+	return g
+
+
 func _start_race() -> void:
 	state = "contagem"
 	_armed = false
-	kart.global_transform = start
+	kart.global_transform = largada()
 	kart.speed = 0.0
 	kart.velocity = Vector3.ZERO
 	kart.input_enabled = false
@@ -310,8 +340,9 @@ func _start_race() -> void:
 	place = 1
 	game.show_message("3", Color("#ffd23f"), 0.7)
 	Sfx.play(game, "alerta", 0.0, 0.0)
-	game.banner("Corrida!", "%d voltas contra %d rivais. Frente (ou RT) acelera, trás (ou LT) freia." % [LAPS, rivals.size()] if not rivals.is_empty()
-			else "%d voltas contra o relógio. Frente (ou RT) acelera, trás (ou LT) freia." % LAPS, Color("#ffd23f"), 2.6)
+	if not copa_ativa:
+		game.banner("Corrida!", "%d voltas contra %d rivais. Frente (ou RT) acelera, trás (ou LT) freia." % [voltas, rivals.size()] if not rivals.is_empty()
+				else "%d voltas contra o relógio. Frente (ou RT) acelera, trás (ou LT) freia." % voltas, Color("#ffd23f"), 2.6)
 
 
 func _countdown(delta: float) -> void:
@@ -330,17 +361,18 @@ func _countdown(delta: float) -> void:
 
 func _check_gates() -> void:
 	var p := kart.global_position
-	var gate: Vector3 = gates[_next_gate]
+	var marcas := gates_da_volta()
+	var gate: Vector3 = marcas[_next_gate]
 	# A ponte passa em cima do começo da reta: a marca dela só vale lá em cima.
 	if Vector2(p.x - gate.x, p.z - gate.z).length() > GATE_RADIUS or absf(p.y - gate.y) > 3.0:
 		return
 	_next_gate += 1
-	if _next_gate < gates.size():
+	if _next_gate < marcas.size():
 		return
 	_next_gate = 0
 	lap += 1
-	if lap < LAPS:
-		game.show_message("Volta %d!" % (lap + 1) if lap < LAPS - 1 else "Última volta!", Color("#ffd23f"), 1.2)
+	if lap < voltas:
+		game.show_message("Volta %d!" % (lap + 1) if lap < voltas - 1 else "Última volta!", Color("#ffd23f"), 1.2)
 		Sfx.play(game, "ui_ok", 0.0, 0.0)
 		return
 	_finish()
@@ -350,6 +382,12 @@ func _check_gates() -> void:
 func _finish() -> void:
 	state = "dirigindo"
 	_armed = false
+	if copa_ativa:
+		place = 1 + rivals.filter(func(r: Dictionary) -> bool: return r.done).size()
+		_rivals_home_in = 4.0
+		Fx.confetti(game, kart.global_position + Vector3.UP * 2.0, 60, 6.0)
+		corrida_terminou.emit(place, ordem_de_chegada())
+		return
 	var best: float = story.records.get("kart", 0.0)
 	var record := best <= 0.0 or time < best
 	if record:
@@ -365,6 +403,17 @@ func _finish() -> void:
 	story.save()
 
 
+## Quem chegou primeiro: os rivais que já chegaram (pelo tempo), o jogador e os que ainda correm (pelo tanto andado).
+func ordem_de_chegada() -> Array:
+	var lista := [{"quem": "voce", "t": time, "run": INF}]
+	for k in rivals.size():
+		var r: Dictionary = rivals[k]
+		lista.append({"quem": str(k), "t": float(r.time) if r.done else INF, "run": float(r.run)})
+	lista.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.t < b.t if a.t != b.t else a.run > b.run)
+	return lista.map(func(e: Dictionary) -> String: return e.quem)
+
+
 # --- rivais ------------------------------------------------------------------
 
 func is_rival(v: Kart) -> bool:
@@ -378,10 +427,11 @@ func _place_rivals() -> void:
 	var free := vehicles.filter(func(v: Kart) -> bool: return v != kart and v.is_home())
 	var me: String = game.player.character_name
 	var pilots: Array = [Player.CHARACTERS["menino" if me == "menina" else "menina"]] + RIVAL_PILOTS
+	var base := largada()
 	for k in mini(RIVALS, free.size()):
 		var v: Kart = free[k]
-		var xf := start
-		xf.origin += start.basis.x.normalized() * 4.2 * (1.0 if k % 2 == 0 else -1.0) - start.basis.z.normalized() * 3.0
+		var xf := base
+		xf.origin += base.basis.x.normalized() * 4.2 * (1.0 if k % 2 == 0 else -1.0) - base.basis.z.normalized() * 3.0
 		v.global_transform = xf
 		v.drive_ai(load(pilots[k % pilots.size()]).instantiate())
 		v.max_speed = RIVAL_SPEEDS[k]
@@ -408,11 +458,11 @@ func _drive_rivals(delta: float) -> void:
 		if not is_instance_valid(v):
 			continue
 		var p := v.global_position
-		var near := _advance(r.i, p)
+		var near := _advance(r.i, p, reverso)
 		r.i = near.i
 		r.run += near.step
-		var ahead: Dictionary = samples[(int(r.i) + RIVAL_LOOK) % n]
-		var dir: Vector3 = ahead.dir
+		var ahead: Dictionary = samples[(int(r.i) + (-RIVAL_LOOK if reverso else RIVAL_LOOK) + n) % n]
+		var dir: Vector3 = -ahead.dir if reverso else ahead.dir
 		var to: Vector3 = ahead.pos + Vector3(-dir.z, 0, dir.x) * float(r.lane) - p
 		to.y = 0.0
 		var fwd := v.forward()
@@ -425,7 +475,7 @@ func _drive_rivals(delta: float) -> void:
 		r.stuck = float(r.stuck) + delta if v.speed < 1.5 else 0.0
 		if float(r.stuck) > 2.5 or p.y < SEA_LEVEL - 0.9 or float(near.dist) > KartCircuit.WIDTH:
 			_reset_rival(r)
-		if not r.done and float(r.run) >= LAPS * KartCircuit.length():
+		if not r.done and float(r.run) >= voltas * KartCircuit.length():
 			r.done = true
 			r.time = time
 	if state == "correndo":
@@ -436,7 +486,7 @@ func _drive_rivals(delta: float) -> void:
 func _reset_rival(r: Dictionary) -> void:
 	var v: Kart = r.kart
 	var sm: Dictionary = KartCircuit.samples()[int(r.i)]
-	var dir: Vector3 = sm.dir
+	var dir: Vector3 = -sm.dir if reverso else sm.dir
 	v.global_transform = Transform3D(Basis(Vector3.UP.cross(dir).normalized(), Vector3.UP, dir), sm.pos + Vector3(-dir.z, 0, dir.x) * float(r.lane)
 			+ Vector3.UP * 0.6)
 	v.speed = 0.0
@@ -446,7 +496,7 @@ func _reset_rival(r: Dictionary) -> void:
 
 
 func _track_player() -> void:
-	var near := _advance(_player_i, kart.global_position)
+	var near := _advance(_player_i, kart.global_position, reverso)
 	_player_i = near.i
 	_player_run += near.step
 
@@ -465,14 +515,15 @@ static func _nearest_index(p: Vector3) -> int:
 
 
 ## Anda a contagem de quem estava na amostra `i` e agora está em `p`: procura só um pouco atrás e à frente (no
-## cruzamento do 8 valem as duas pistas). Devolve {i, step (metros andados), dist (até a linha do meio)}.
-static func _advance(i: int, p: Vector3) -> Dictionary:
+## cruzamento do 8 valem as duas pistas). Ao contrário, procura para trás e conta para a frente do mesmo jeito.
+## Devolve {i, step (metros andados), dist (até a linha do meio)}.
+static func _advance(i: int, p: Vector3, ao_contrario := false) -> Dictionary:
 	var samples := KartCircuit.samples()
 	var n := samples.size()
 	var best := i
 	var best_d := INF
-	for k in range(-4, 26):
-		var j := (i + k + n) % n
+	for k in (range(-25, 5) if ao_contrario else range(-4, 26)):
+		var j: int = (i + int(k) + n) % n
 		var d := Vector2(samples[j].pos.x - p.x, samples[j].pos.z - p.z).length()
 		if d < best_d:
 			best_d = d
@@ -480,4 +531,6 @@ static func _advance(i: int, p: Vector3) -> Dictionary:
 	var step := (best - i + n) % n
 	if step > n / 2:
 		step -= n
+	if ao_contrario:
+		step = -step
 	return {"i": best, "step": step * KartCircuit.length() / n, "dist": best_d}

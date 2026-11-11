@@ -177,6 +177,9 @@ var _phone: Node3D
 ## e o corpo na pose de pescar (Fishing_Idle). A Pescaria cuida da linha, da boia e do peixe.
 var pescando := false
 var vara: Node3D
+## Roupinhas da lojinha (item 11 da lista de melhorias): o chapéu na cabeça e a pintura dos blasters (vazio: nenhum).
+var chapeu := ""
+var pintura := ""
 var _node_melee_speed: AnimationNodeTimeScale
 var _node_aim: AnimationNodeAnimation
 var _shake := 0.0
@@ -339,6 +342,7 @@ func _install_model(new_model: Node3D) -> void:
 		anim_tree.set("parameters/celular/blend_amount", 1.0)
 		_show_blasters(false)
 	vara = null
+	_colocar_chapeu()
 	if pescando:
 		# Trocou de personagem pescando: a vara vai para a mão do novo.
 		_criar_vara()
@@ -500,6 +504,7 @@ func _equip_model() -> void:
 	muzzle.name = "BocaDoCano"
 	muzzle.position = def.boca
 	holder.add_child(muzzle)
+	_pintar(_recoil)
 
 
 ## A pistola da mão esquerda (só com as duas pistolas na mão).
@@ -527,6 +532,40 @@ func _equip_left_model() -> void:
 	muzzle_l.name = "BocaDoCano"
 	muzzle_l.position = def.boca
 	holder.add_child(muzzle_l)
+	_pintar(_recoil_l)
+
+
+## Põe (ou tira, com vazio) o chapéu da lojinha.
+func vestir_chapeu(id: String) -> void:
+	chapeu = id
+	_colocar_chapeu()
+
+
+func _colocar_chapeu() -> void:
+	if not is_instance_valid(_head):
+		return
+	for c in _head.get_children():
+		if c.name == "Chapeu":
+			_head.remove_child(c)
+			c.queue_free()
+	if chapeu != "":
+		var c := Roupas.chapeu(chapeu)
+		if c:
+			_head.add_child(c)
+
+
+## Troca a pintura dos blasters (vazio: a cor de fábrica).
+func pintar_blasters(id: String) -> void:
+	pintura = id
+	_pintar(_recoil)
+	_pintar(_recoil_l)
+
+
+func _pintar(no: Node) -> void:
+	if not is_instance_valid(no):
+		return
+	var spec := Roupas.dados(pintura)
+	Roupas.pintar(no, spec.get("cor", Color.WHITE))
 
 
 ## Encaixe da pistola da mão esquerda: o espelho exato do encaixe da direita (Weapons.ROTATION e pos). Os eixos

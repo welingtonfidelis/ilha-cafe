@@ -675,8 +675,8 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 | 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | feito em 2026-11-10 (ver "Álbum de figurinhas e bilhetes") |
 | 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | feito em 2026-11-10 (ver "Esqueleto dourado") |
 | 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | feito em 2026-11-10 (ver "Revanche dos guardiões") |
-| 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | |
-| 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | |
+| 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | feito em 2026-11-10 (ver "Copa de Kart") |
+| 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | feito em 2026-11-10 (ver "Roupinhas"): 10 chapéus e 5 pinturas |
 | 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | |
 | 13 | **Vozes** gravadas para os momentos principais | M | |
 | 14 | **Pressão nos gatilhos do DualSense** quando ele estiver conectado (pedido do usuário em 2026-11-10): gatilho duro no Pé-de-Moleque, tremidinho na rajada, estalo na escopeta | M | |
@@ -684,6 +684,54 @@ Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cri
 **Sobre o item 14:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
 
 Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Roupinhas (item 11 da lista, feito em 2026-11-10)
+
+`scripts/roupas.gd` (os dados e como vestir), `scripts/painel_roupas.gd` (o guarda-roupa) e o botão "Roupinhas" no celular da lojinha.
+
+- **Os chapéus (10)** vêm dos personagens do KayKit, que usam todos o mesmo esqueleto:
+  - coroa (do Mestre Ossinho, 60 moedas), chapéu de mago (40), chapéu de bruxa (40), chapéu de palhaço (30), chapéu de palha (25), chapéu de soldadinho (35), chapéu de trilha (25), gorro de urso (50), elmo de cavaleiro (50) e gorro de duende (35);
+  - a malha do chapéu sai do modelo de origem e vai para o osso da cabeça de quem joga, no mesmo lugar em relação ao osso;
+  - conferido em `tools/foto_chapeus.gd` (fotos `chapeus_<menino|menina>_<id>`): todos servem nas duas crianças sem ajuste. O campo `ajuste` fica para quando precisar;
+  - o Barbarian, o Knight e o Helper_A foram copiados para `assets/characters/roupas/`, porque a pasta dos aventureiros não vai na build.
+- **As pinturas dos blasters (5):** rosa-chiclete, azul-piscina, verde-limão e roxo-uva (20 cada) e dourado (50). Elas tingem as malhas dos blasters que estão na mão, as duas pistolas inclusive, e continuam ao trocar de blaster.
+- **O guarda-roupa:**
+  - no celular, "Roupinhas" fica ao lado de "Guardar o celular";
+  - à esquerda, o retrato de quem joga, que já prova o chapéu marcado (`Portrait.vestir`); à direita, os cartões dos chapéus (miniaturas de `tools/gerar_roupas.gd` em `assets/ui/roupas/`) e das pinturas (a silhueta da Paçoca na cor);
+  - cada cartão mostra o preço, "é seu" ou "usando", e "Sem chapéu" e "Sem pintura" tiram;
+  - A compra (se der as moedas) e já veste; no que é seu, A veste ou tira; sem moedas, avisa quantas faltam. B volta para a lojinha.
+- **Onde aparece:** o chapéu fica na cabeça do aventureiro na ilha e no retrato da pausa, e vai junto ao trocar de personagem.
+- **Campanha:** a chave "roupas" guarda o que é seu, o chapéu e a pintura em uso.
+- **Testes:**
+  - `-- --roupas` confere 12 pontos: o guarda-roupa; a prova; sem moedas; comprar e vestir; tirar; a pintura; trocar de blaster; voltar; trocar de personagem; a pausa; salvar; carregar;
+  - `-- --roupas-captura` (com janela) tira duas fotos: `roupas_1_guarda_roupa` e `roupas_2_coroa`.
+
+### Copa de Kart (item 10 da lista, feito em 2026-11-10)
+
+`scripts/copa_kart.gd`, com a pista ao contrário e o número de voltas no `KartRace`.
+
+- **Onde:** no gramado a oeste das vagas do box (79, -13):
+  - o pódio de três blocos (ouro no meio, prata e bronze dos lados, com os números);
+  - a placa "COPA DE KART, 3 corridas";
+  - o pedestal com a taça da melhor copa, da cor do melhor lugar;
+  - um círculo dourado na frente.
+- **Como joga:** no círculo, B (ou E) começa: o aventureiro entra num kart do box e corre três corridas de 2 voltas contra os dois rivais (a outra criança e o Mago). Cada corrida tem contagem, e a faixa de cima diz "Copa 2/3 · ao contrário".
+- **A 2ª corrida é ao contrário:**
+  - a largada vem virada e as marcas da volta valem na ordem inversa (`gates_da_volta`);
+  - os rivais seguem a linha do meio para trás (`_advance` procura para trás e conta para a frente);
+  - nos testes, cada rival correu uns 60 m em 5 s sem voltar para a pista nenhuma vez.
+- **Pontos:** 3 para o 1º, 2 para o 2º e 1 para o 3º em cada corrida. A faixa mostra o lugar e o placar ("Você 7 · Ana 6 · Mago 5"). Quem somar mais ganha, e no empate fica o jogador.
+- **A cena do pódio:**
+  - a tela escurece, e o aventureiro e os dois rivais sobem nos blocos pela classificação;
+  - uma câmera própria mostra o pódio, com confete, fogos e a taça girando em cima do campeão, sem a interface;
+  - a faixa diz "Campeão da Copa de Kart!" (ou o 2º ou o 3º lugar), com os pontos;
+  - depois de 6 s, volta a pé ao lado do círculo, e a taça do pedestal muda se for a melhor.
+- **Moedas:** 40, 25 ou 15 pelo lugar final. Na copa, as corridas não mexem no recorde nem dão as moedas da corrida avulsa.
+- **Cancelar:** descer do kart, cair no mar ou ficar tonto no meio da copa cancela. A corrida avulsa (entrar pela LARGADA) continua igual, com 3 voltas.
+- **Campanha:** a chave "copa" guarda a melhor colocação.
+- **Testes:**
+  - `-- --copa` confere 12 pontos: o pódio; o aviso; a largada da copa; os pontos; a corrida ao contrário; os rivais ao contrário; o 3º lugar; a 3ª corrida do lado de sempre; a cena do pódio; a volta a pé com a taça; cancelar; salvar;
+  - `-- --copa-captura` (com janela) tira três fotos: `copa_1_podio`, `copa_2_ao_contrario` e `copa_3_podio_cena`.
 
 ### Revanche dos guardiões (item 9 da lista, feito em 2026-11-10)
 
