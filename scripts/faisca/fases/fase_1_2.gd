@@ -10,12 +10,16 @@ extends Fase
 ##   1 Salão das Tochas (chão, ao sul): três tochas abrem a porta do carrinho; andaime com estrelinhas
 ##   viagem: carrinho de mina subindo a rampa
 ##   2 Mina de Ouro (8 m, a oeste): abismo com a ponte da tocha ou os tablados; V1 atrás da parede rachada (P1)
-##   viagem: elevador
+##   viagem: elevador (parado até o soco na alavanca no alto dos caixotes)
 ##   3 Sala das Alavancas (16 m, ao norte): três grades; a da saída, a da sala escura (V2) e a do depósito
 ##     (coração) (P2)
-##   viagem: balsa que vai e volta (atalho)
-##   4 Poço dos Cristais (16 m, a leste): cristais que jogam para o alto, subindo até a arena; V3 atrás da
+##   4 Estação dos Trilhos (16 m, a leste da sala): duas lanternas acesas pelo laser ligam o carrinho da fuga, o
+##     momento especial (item 9, 2026-11-11): o trilho comprido no escuro, com curvas e sobe e desce, o túnel
+##     desmoronando atrás e a câmera por trás, até a entrada do Poço dos Cristais
+##   5 Poço dos Cristais (16 m, a leste): cristais que jogam para o alto, subindo até a arena; V3 atrás da
 ##     parede rachada (P3)
+## Mais longa desde 2026-11-11 (item 12): a Estação dos Trilhos e a fuga no lugar da balsa, e as saídas com tarefa (o
+## elevador da mina só anda depois da alavanca; a grade da sala e a porta das tochas já eram).
 ##   Arena no alto do cristal (30 m): a Bolotona; vencida com as filhas, a grade da alcova do baú abre
 
 ## Escala das peças de construção e o tamanho de um módulo.
@@ -36,6 +40,12 @@ var _ambiente: Environment
 var _luz_de_cima: DirectionalLight3D
 var escuro := false
 var _grade_da_arena: Grade
+## O elevador da mina (parado até a alavanca) e o carrinho da fuga (item 9), para os testes.
+var elevador_da_mina: AnimatableBody3D
+var carrinho_da_fuga: CarrinhoDaFuga
+## As estrelinhas dos arcos altos do trilho da fuga (só pulando no carrinho), e onde fica o meio de cada arco.
+var estrelas_altas_da_fuga: Array[Area3D] = []
+const ARCOS_DA_FUGA := [28.0, 52.0, 76.0]
 
 
 func _montar() -> void:
@@ -59,7 +69,7 @@ func _montar() -> void:
 	_sala_das_alavancas()
 	_sala_escura()
 	_deposito()
-	_balsa_ate_os_cristais()
+	_estacao_dos_trilhos()
 	_poco_dos_cristais()
 	_arena_no_cristal()
 
@@ -282,8 +292,26 @@ func _mina_de_ouro() -> void:
 
 
 ## Viagem 2: o elevador do canto nordeste da mina sobe até o patamar da Sala das Alavancas (16 m), onde fica o P2.
+## Desde 2026-11-11 (item 12) ele fica parado embaixo até o soco na alavanca lá no alto de dois caixotes (o pulo alto).
 func _elevador_ate_as_alavancas() -> void:
-	saidas.append(elevador(Vector3(-27.0, 8.0, -82.0), 8.0, 10.0, 0.0))
+	var elev := elevador(Vector3(-27.0, 8.0, -82.0), 8.0, 10.0, 0.0)
+	saidas.append(elev)
+	var parado: Array = _moveis.pop_back()
+	caixote(Vector3(-43.5, 8.0, -80.5), Vector3(2.4, 1.6, 2.4))
+	caixote(Vector3(-47.0, 8.0, -81.0), Vector3(2.6, 3.0, 2.6))
+	var alavanca := Alavanca.new()
+	alavanca.cor = "yellow"
+	alavanca.position = Vector3(-47.0, 11.0, -81.0)
+	add_child(alavanca)
+	alavancas.append(alavanca)
+	alavanca.puxada.connect(func(_a: Alavanca) -> void:
+		# Começa embaixo: o tempo do vaivém conta a partir de agora.
+		parado[4] = -_tempo
+		_moveis.append(parado))
+	elevador_da_mina = elev
+	ponto_de_dica(Vector3(-30.0, 8.5, -79.0), 2.6, "alavanca")
+	estrelinha(Vector3(-43.5, 10.6, -80.5))
+	estrelinha(Vector3(-47.0, 12.2, -81.6))
 	trilha(Vector3(-27.0, 11.0, -82.0), Vector3(-27.0, 15.0, -82.0), 3)
 	rocha(-30.0, -18.0, -84.0, -90.0, 16.0)
 	chao_pedaco(Vector3(-24.0, 16.0, -87.0), Vector2(12.0, 6.0))
@@ -299,13 +327,15 @@ func _sala_das_alavancas() -> void:
 	chao([-21.0, -15.0, -9.0, -3.0, 3.0, 9.0, 15.0, 21.0], -93.0, -117.0, 16.0, "floor_tile_large")
 	parede_z(-24.75, -93.0, -117.0, 16.0)
 	parede_x(-120.75, [-21.0, -15.0, -3.0, 3.0, 9.0, 21.0], 16.0)
-	parede_z(24.75, -99.0, -117.0, 16.0)
+	parede_z(24.75, -93.0, -105.0, 16.0)
+	parede_z(24.75, -117.0, -117.0, 16.0)
 	rocha(-18.0, 24.0, -90.0, -90.8, 16.9, 16.0)
 	ponto_de_dica(Vector3(-18.0, 16.5, -94.0), 2.6, "alavanca")
 
 	caixote(Vector3(19.5, 16.0, -101.5), Vector3(3.0, 1.6, 3.0))
-	saidas.append(portao_de_grade(Vector3(24.75, 16.0, -93.0), PI / 2.0, Vector3(20.0, 17.6, -102.6), "yellow"))
-	_lados_da_grade(Vector3(24.75, 16.0, -93.0), true)
+	# A grade da saída fica no fim da parede leste (desde 2026-11-11): ela dá na Estação dos Trilhos.
+	saidas.append(portao_de_grade(Vector3(24.75, 16.0, -111.0), PI / 2.0, Vector3(20.0, 17.6, -102.6), "yellow"))
+	_lados_da_grade(Vector3(24.75, 16.0, -111.0), true)
 	estrelinha(Vector3(19.0, 18.8, -100.8))
 	portao_de_grade(Vector3(-9.0, 16.0, -120.75), 0.0, Vector3(-3.0, 16.0, -114.0), "red")
 	portao_de_grade(Vector3(15.0, 16.0, -120.75), 0.0, Vector3(11.0, 16.0, -116.5), "blue")
@@ -323,12 +353,13 @@ func _sala_das_alavancas() -> void:
 	tocha(Vector3(-22.6, 16.0, -118.6), true, true)
 	tocha(Vector3(22.6, 16.0, -118.6), true, true)
 	tocha(Vector3(-22.6, 16.0, -96.0), true, true)
-	trilha_creme([Vector3(-24, 16, -87), Vector3(-16, 16, -93.5), Vector3(-4, 16, -97), Vector3(10, 16, -96), Vector3(23.5, 16, -93)])
+	trilha_creme([Vector3(-24, 16, -87), Vector3(-16, 16, -93.5), Vector3(-4, 16, -97), Vector3(10, 16, -100), Vector3(23.5, 16, -111)])
 	trilha(Vector3(-14.0, 17.0, -94.0), Vector3(-2.0, 17.0, -97.0), 4)
 	trilha(Vector3(9.0, 17.0, -96.0), Vector3(15.0, 17.0, -95.0), 2)
 	roda(Vector3(0, 17.0, -105.0), 2.2, 5)
 	enfeite_m("crates_stacked", Vector3(-21.6, 16.0, -108.0), 1.2, 0.2)
-	enfeite_m("barrel_large", Vector3(21.6, 16.0, -111.0), 1.0)
+	# Era na frente da porta nova da saída (2026-11-11): foi para o lado.
+	enfeite_m("barrel_large", Vector3(21.6, 16.0, -96.0), 1.0)
 
 
 ## Bolso da Sala das Alavancas: a sala escura. A luz da caverna quase apaga quando o Faísca entra. O caminho é uma
@@ -388,20 +419,116 @@ func _deposito() -> void:
 	tocha(Vector3(16.6, 16.0, -132.4), true, true)
 
 
-## Viagem 3: do lado de fora da grade da saída, a balsa de madeira vai e volta até o Poço dos Cristais (é também o
-## atalho de volta).
-func _balsa_ate_os_cristais() -> void:
-	rocha(24.0, 31.5, -90.0, -96.0, 16.0)
-	chao_pedaco(Vector3(28.5, 16.0, -93.0), Vector2(6.0, 6.0))
-	elevador(Vector3(28.5, 16.0, -88.0), 0.0, 12.0, 0.0, Vector3(0, 0, 8.0))
-	trilha(Vector3(28.5, 17.4, -88.0), Vector3(28.5, 17.4, -81.0), 3)
+## Playground 4 · Estação dos Trilhos (o momento especial, item 9): do lado de fora da grade da saída, a estação no
+## escuro, com o posto, duas Bolotas e o carrinho da fuga parado, de lanternas apagadas. A tarefa: acender com o laser
+## as duas lanternas da estação (uma no chão, outra no alto do caixote, pelo voo). Ligado, o carrinho leva pelo trilho
+## comprido pendurado no escuro (curvas, sobe e desce, o túnel desmoronando atrás, a câmera por trás) até a estação
+## da entrada do Poço dos Cristais. Estrelinhas no trilho e, mais alto, em arcos que só se pegam pulando no carrinho.
+func _estacao_dos_trilhos() -> void:
+	playground("4 · Estação dos Trilhos", Vector3(30.0, 16.0, -111.0), 12.0, Vector3(31.0, 16.0, -110.0))
+	rocha(24.0, 36.0, -105.0, -117.0, 16.0)
+	chao([27.0, 33.0], -108.0, -114.0, 16.0, "floor_tile_large")
+	rocha(24.0, 36.0, -116.4, -117.0, 16.9, 16.0)
+	posto(Vector3(26.5, 16.0, -107.0))
+	var t1 := tocha(Vector3(27.5, 16.0, -115.0))
+	caixote(Vector3(31.2, 16.0, -106.4), Vector3(2.2, 1.6, 2.2))
+	caixote(Vector3(34.2, 16.0, -106.4), Vector3(2.4, 3.0, 2.4))
+	var t2 := tocha(Vector3(34.2, 19.0, -106.4), false)
+	ponto_de_dica(Vector3(27.0, 16.5, -111.0), 2.6, "tocha")
+	bolota(Vector3(29.0, 16.0, -113.0), false, "cogumelo")
+	bolota(Vector3(33.0, 16.0, -111.0))
+	trilha(Vector3(26.0, 17.0, -109.0), Vector3(29.5, 17.0, -109.0), 3)
+	estrelinha(Vector3(31.2, 18.6, -106.4))
+	tocha(Vector3(24.8, 16.0, -116.0), true, true)
+	# O trilho da fuga: sai da estação para leste, desce e sobe no escuro e volta pelo norte até a outra estação.
+	var caminho := [Vector3(31.5, 16, -111), Vector3(40, 16, -111), Vector3(48, 15, -112), Vector3(57, 13.5, -108),
+			Vector3(63, 13, -98), Vector3(64.5, 13.5, -86), Vector3(63, 14.5, -74), Vector3(57, 16, -67),
+			Vector3(49, 16.5, -70), Vector3(42, 16.5, -77), Vector3(36, 16, -81), Vector3(30.5, 16, -81)]
+	var c := CarrinhoDaFuga.new()
+	c.caminho = PackedVector3Array(caminho)
+	add_child(c)
+	carrinhos.append(c)
+	carrinho_da_fuga = c
+	for t in [t1, t2]:
+		t.acesa.connect(func(_t: Tocha) -> void:
+			if t1.esta_acesa and t2.esta_acesa:
+				c.ligar())
+	_trilho_da_fuga(c)
+	# A estação de chegada, na entrada do Poço dos Cristais.
+	rocha(24.0, 38.0, -78.0, -85.0, 16.0)
+	chao([27.0, 33.0], -81.0, -81.0, 16.0, "floor_tile_large")
+	tocha(Vector3(37.0, 16.0, -84.0), true, true)
+
+
+## Os trilhos da fuga em cima de cavaletes, os arcos de madeira do túnel e as estrelinhas: no trilho (pega sozinho) e
+## em três arcos mais altos (só pulando no carrinho).
+func _trilho_da_fuga(c: CarrinhoDaFuga) -> void:
+	var total := c.comprimento()
+	var madeira := _material(COR_MADEIRA)
+	var passo := 2.0
+	var d := 0.0
+	while d < total - 0.01:
+		var a := c.ponto(d)
+		var b := c.ponto(minf(d + passo, total))
+		trilhos(a, b)
+		d += passo
+	var k := 0
+	d = 3.0
+	while d < total - 3.0:
+		var p := c.ponto(d)
+		var frente := (c.ponto(d + 0.5) - c.ponto(d - 0.5))
+		frente.y = 0.0
+		var lado := Vector3.UP.cross(frente.normalized()) if frente.length() > 0.01 else Vector3.RIGHT
+		var fora_das_estacoes := p.distance_to(Vector3(31, 16, -111)) > 7.0 and p.distance_to(Vector3(31, 16, -81)) > 7.0
+		# Cavaletes embaixo do trilho (no escuro) e, de 3 em 3, o arco do túnel por cima.
+		if fora_das_estacoes:
+			for s in [-0.9, 0.9]:
+				var poste := MeshInstance3D.new()
+				var cil := CylinderMesh.new()
+				cil.top_radius = 0.14
+				cil.bottom_radius = 0.18
+				cil.height = 18.0
+				poste.mesh = cil
+				poste.material_override = madeira
+				add_child(so_enfeite(poste))
+				poste.global_position = p + lado * s + Vector3.DOWN * 9.1
+			if k % 3 == 0:
+				for s in [-1.6, 1.6]:
+					var coluna := MeshInstance3D.new()
+					var cil2 := CylinderMesh.new()
+					cil2.top_radius = 0.16
+					cil2.bottom_radius = 0.16
+					cil2.height = 5.6
+					coluna.mesh = cil2
+					coluna.material_override = madeira
+					add_child(so_enfeite(coluna))
+					coluna.global_position = p + lado * s + Vector3.UP * 2.8
+				var viga := MeshInstance3D.new()
+				var caixa := BoxMesh.new()
+				caixa.size = Vector3(3.6, 0.3, 0.3)
+				viga.mesh = caixa
+				viga.material_override = madeira
+				add_child(so_enfeite(viga))
+				viga.global_transform = Transform3D(Basis(lado, Vector3.UP, lado.cross(Vector3.UP)), p + Vector3.UP * 5.6)
+		k += 1
+		d += 5.0
+	# As estrelinhas: no trilho, de 6 em 6 m; e três arcos altos, que só se pegam pulando.
+	d = 9.0
+	while d < total - 6.0:
+		estrelinha(c.ponto(d) + Vector3.UP * 1.7)
+		d += 6.0
+	for meio in ARCOS_DA_FUGA:
+		for i in 3:
+			estrelas_altas_da_fuga.append(estrelinha(c.ponto(meio + (i - 1) * 1.6) + Vector3.UP * (3.6 + (0.3 if i == 1 else 0.0))))
+	for d2 in [20.0, 44.0, 68.0, 90.0]:
+		moeda(c.ponto(d2) + Vector3.UP * 1.6)
 
 
 ## Playground 4 · Poço dos Cristais (reviravolta): a sala a leste do poço, a 16 m. Os cristais azuis jogam para o
 ## alto: do chão da sala para o primeiro tablado dentro do poço, dele para o segundo, e dele para a arena no alto
 ## do cristal. A parede rachada do leste esconde o V3, e as estrelinhas no chão levam até ela. Duas Bolotas.
 func _poco_dos_cristais() -> void:
-	playground("4 · Poço dos Cristais", Vector3(26.0, 22.0, -63.0), 16.0, Vector3(28.0, 16.0, -76.0))
+	playground("5 · Poço dos Cristais", Vector3(26.0, 22.0, -63.0), 16.0, Vector3(28.0, 16.0, -76.0))
 	rocha(24.0, 42.0, -48.0, -78.0, 16.0)
 	chao([27.0, 33.0, 39.0], -51.0, -75.0, 16.0, "floor_tile_large")
 	parede_x(-47.25, [27.0, 33.0, 39.0], 16.0)

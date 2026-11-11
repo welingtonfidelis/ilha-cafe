@@ -1748,7 +1748,7 @@ As páginas carregam a three.js do jsDelivr, então precisam de internet. A past
 - **1-1 Pulinhos nas Nuvens:** marco na Torre de Nuvens, em (0, 0, -96), com a arena a 22 m. Tem 82 estrelinhas soltas (118 com as das Bolotas), 12 Bolotas, 3 postos, 5 esteiras, 4 argolas, 3 botões, 5 nuvens que somem, o canhão e 3 plataformas que se mexem. `--faisca-fase` confere 44 pontos.
 - **1-2 Túneis do Morro:**
   - o marco é o Poço do Cristal, em (0, 0, -66): um prisma de cristal de 10 m de largura, aceso, do fundo do poço (-24 m) até a arena (30 m);
-  - Salão das Tochas no chão, carrinho subindo a rampa até a Mina de Ouro (8 m), elevador até a Sala das Alavancas (16 m), balsa até o Poço dos Cristais (16 m) e três cristais até a arena;
+  - Salão das Tochas no chão, carrinho subindo a rampa até a Mina de Ouro (8 m), elevador até a Sala das Alavancas (16 m), balsa até o Poço dos Cristais (16 m) e três cristais até a arena (desde 2026-11-11, a balsa deu lugar à Estação dos Trilhos e à fuga no carrinho; ver "Momentos especiais e fases mais longas");
   - os lados das grades ganharam colisão (`_lados_da_grade`), e o chão passa por baixo das portas e das paredes rachadas;
   - 83 estrelinhas soltas (122 com as das Bolotas), 13 Bolotas (com a Bolotona e as filhas), 19 tochas (12 já acesas), 2 paredes rachadas, 1 ponte, 3 postos;
   - `--faisca-fase-1-2` confere 58 pontos, com os pulos de verdade nos caixotes, nos tablados do abismo, no caixote da alavanca e nos três cristais.
@@ -2273,10 +2273,10 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: o da 1-1 (a Bolota gigante na Ponte Fofa) feito |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa) e o da 1-2 (a fuga no carrinho de mina) |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
-| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 1-1 já está mais longa |
+| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 1-1 e a 1-2 já estão mais longas |
 | 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
 
 **Ordem sugerida:**
@@ -2759,7 +2759,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 | Fase | Momento especial |
 |---|---|
 | 1-1 | a Bolota gigante rolando na Ponte Fofa (feito) |
-| 1-2 | a fuga no carrinho de mina, com o túnel desmoronando |
+| 1-2 | a fuga no carrinho de mina, com o túnel desmoronando (feito) |
 | 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas |
 | 2-2 | a chuva de confeitos gigantes, que viram degraus |
 | 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho |
@@ -2798,13 +2798,41 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - na Ponte Fofa: a Bolota caindo atrás com a câmera de lado; parado, ela alcança e ele volta sem perder coração; fora da estrada, a câmera solta; e uma corrida de verdade, com o analógico para a direita da tela e os três pulos, em que ela não alcança, cai e o prêmio aparece.
 - **Fotos:** `--faisca-fase-captura` ganhou a cancela, a alavanca, o canhão com rolha, a Ponte Fofa de cima e a corrida de lado.
 
+**1-2 Túneis do Morro (feito em 2026-11-11):**
+- **A Estação dos Trilhos, o playground 4 novo** (no lugar da balsa que ia da Sala das Alavancas até o Poço dos Cristais; o Poço virou o 5):
+  - a grade amarela da sala agora leva a uma estação de pedra a leste (16 m de altura), com posto, duas Bolotas (uma cogumelo dormindo) e a dica da tocha;
+  - o carrinho da fuga fica parado de lanternas apagadas; ele só sai com as duas tochas da estação acesas pelo laser, uma no chão e outra em cima do caixote de 3 m (o pulo do caixote baixo para o alto);
+  - o barril da sala mudou de lugar para não tapar a porta nova.
+- **A fuga no carrinho** (`scripts/faisca/carrinho_da_fuga.gd`, que herda o `CarrinhoDeMina`):
+  - um trilho de uns 105 m pendurado no escuro, em cavaletes, com curvas macias, uma descida de 3 m e a volta pelo norte até a estação de chegada, na entrada do Poço dos Cristais;
+  - o Faísca vai sentado: o carrinho leva ele (como o canhão), porque solto ele saía voando nas curvas. O pulo (A) é só para cima, dentro do carrinho;
+  - a câmera vai por trás, virando junto nas curvas (`camera_guiada` com o yaw do trilho);
+  - atrás, o túnel desmorona: pedras grandes caindo no trilho uns 6 m depois do carrinho, com poeira, o som `rolar` e o controle tremendo;
+  - estrelinhas no trilho (pegam sozinhas) e três arcos altos de três estrelinhas, que só se pegam pulando na hora;
+  - na chegada, ele desce na frente do carrinho, com o controle e a câmera soltos, e o carrinho volta sozinho para a estação depois de 2 s vazio.
+- **As saídas com tarefa:**
+  - o elevador da mina fica parado embaixo até o soco na alavanca em cima de dois caixotes no canto da mina (com a dica da alavanca);
+  - a porta das tochas e a grade amarela já eram tarefas;
+  - o carrinho da fuga pede as duas lanternas.
+- **As contas:**
+  - 110 estrelinhas soltas e 155 com as das Bolotas;
+  - 15 Bolotas (com a Bolotona e as 3 filhas);
+  - 4 postos, 23 tochas (14 já acesas);
+  - 1 plataforma que se mexe (a balsa saiu).
+- **Testes:** o `--faisca-fase-1-2` confere:
+  - as contas novas e os cinco playgrounds;
+  - o elevador parado até a alavanca, com os pulos de verdade nos caixotes;
+  - o carrinho da fuga apagado até o laser nas duas lanternas;
+  - a viagem inteira: dentro o tempo todo, as estrelinhas do trilho, as pedras caindo atrás, os pulos nos três arcos (9 de 9), a câmera solta na chegada e o Faísca andando para dentro do Poço dos Cristais.
+- **Fotos:** `--faisca-fase-1-2-captura` ganhou os caixotes do elevador, a estação de cima, o trilho visto de longe, a fuga por trás e a fuga na curva.
+
 ### Em aberto
 
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
 - Se o Faísca pode dirigir o kart.
 - **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Ainda sem a lista do que aparece. Na revisão, pedir os detalhes e passar as fotos do `--faisca-fase-2-1-captura` atrás de peças atravessadas, sumidas ou piscando. A parte das peças atravessadas já foi feita no revisor de física de 2026-10-30: as cadeiras, o sorvete, o rolo e a torneira ganharam colisão.
-- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 e a 2-3 já nascem maiores, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 1-1, a 1-2 e a 2-1 do mesmo jeito.
+- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). A 2-2 e a 2-3 já nascem maiores, com cinco playgrounds e uma tarefa obrigatória para abrir cada saída. Falta esticar a 2-1 do mesmo jeito (a 1-1 e a 1-2 ficaram mais longas em 2026-11-11, ver "Momentos especiais e fases mais longas").
 - **Teste `--ilha` instável na viela** (visto em 2026-10-30; resolvido em 2026-11-11: o esqueleto que dorme em (30, 110) acordava e travava a viela, e o teste agora tira ele antes): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
   - Na bateria de 2026-10-30, depois do revisor de física, falhou de novo no mesmo ponto. Desta vez o `--armas` também falhou uma vez ("com duas pistolas, cada tiro tira 75% do dano", sem valor medido). Sozinhos, os dois passaram.
 - **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Resolvido em 2026-10-31: o piloto rival vinha da pasta que fica fora da build (ver a memória do projeto e a seção do kart).
