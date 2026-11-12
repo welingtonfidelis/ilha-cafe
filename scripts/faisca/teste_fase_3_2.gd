@@ -382,7 +382,12 @@ func _pintura() -> bool:
 	ok = m._conferir("dá para entrar na lata tombada e pegar as estrelinhas dela", j.global_position.z > -4.0 and absf(j.global_position.y - t) < 0.6
 			and n.pegas >= pegas + 2, "(%.1f, %.1f, %d estrelinhas)" % [j.global_position.y, j.global_position.z, n.pegas - pegas]) and ok
 
-	# A ponte, degrau por degrau, até o anel da máquina.
+	ok = await _linha_disparada() and ok
+	# A ponte, degrau por degrau, até o anel da máquina (com a linha parada: os blocos já foram conferidos).
+	n.linha.pausada = true
+	for b in n.linha.blocos():
+		(b.no as Node3D).hide()
+	n.linha.blocos().clear()
 	var degraus := [[Vector3(58, t + 0.1, Fase32.PONTE_Z), Vector3(53.5, 21.5, Fase32.PONTE_Z)], [Vector3(46, 21.6, Fase32.PONTE_Z), Vector3(40.5, 23.0, Fase32.PONTE_Z)],
 		[Vector3(33, 23.1, Fase32.PONTE_Z), Vector3(27.5, 24.5, Fase32.PONTE_Z)], [Vector3(20, 24.6, Fase32.PONTE_Z), Vector3(14.5, Fase32.ANEL, Fase32.PONTE_Z)]]
 	var onde := Vector3.ZERO
@@ -392,7 +397,71 @@ func _pintura() -> bool:
 		subiu = subiu and absf(onde.y - d[1].y) < 0.45
 	ok = m._conferir("pela ponte de blocos se sobe, degrau por degrau, até o anel da máquina", subiu and absf(onde.y - Fase32.ANEL) < 0.3,
 			"(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+	n.linha.pausada = false
 	return ok
+
+
+## A linha de montagem disparada (item 9 da lista, 2026-11-11): ela dispara com a ponte pronta; o bloco empurra quem
+## está na faixa dele (sem tirar coração), passa do lado de quem está na outra, e o largo se passa pulando.
+func _linha_disparada() -> bool:
+	var ok := true
+	var linha := n.linha
+	ok = m._conferir("com a ponte pronta, a linha de montagem dispara: o giroflex, a sirene e os blocos ponte abaixo", linha.ligada
+			and linha.blocos_soltos > 0, "(%d blocos)" % linha.blocos_soltos) and ok
+	var z := linha.caminho[0].z
+	var x := 37.0
+	# Na faixa do bloco que vem: ele empurra ponte abaixo, sem tirar coração.
+	j.vida = Jogador.VIDA_MAX
+	var b := await _bloco_chegando(false, x - 6.0)
+	var vez := linha.vezes_que_empurrou
+	j.teleportar(Vector3(x, 23.1, z + float(b.desvio)))
+	await _ate(func() -> bool: return linha.vezes_que_empurrou > vez, 6.0)
+	await m._esperar(0.8)
+	ok = m._conferir("parado na faixa do bloco, ele empurra ponte abaixo, sem tirar coração", linha.vezes_que_empurrou == vez + 1
+			and j.vida == Jogador.VIDA_MAX and j.global_position.x > x + 1.0, "(%d empurrões, vida %d, x %.1f)" % [linha.vezes_que_empurrou - vez, j.vida, j.global_position.x]) and ok
+	# Na outra faixa, ele passa do lado.
+	b = await _bloco_chegando(false, x - 6.0)
+	vez = linha.vezes_que_empurrou
+	j.teleportar(Vector3(x, 23.1, z - float(b.desvio)))
+	var no := b.no as Node3D
+	await _ate(func() -> bool: return not is_instance_valid(no) or no.global_position.x > x + 3.0, 6.0)
+	ok = m._conferir("na outra faixa, o bloco passa do lado", linha.vezes_que_empurrou == vez) and ok
+	# O largo pega as duas faixas: só pulando (segurando o pulo, flutua por cima dele).
+	b = await _bloco_chegando(true, x - 8.0)
+	vez = linha.vezes_que_empurrou
+	j.teleportar(Vector3(x, 23.1, z))
+	no = b.no as Node3D
+	await _ate(func() -> bool: return no.global_position.x > x - 2.0, 6.0)
+	j.forcar_pulo = true
+	await m._esperar(1.0)
+	j.forcar_pulo = false
+	await _ate(func() -> bool: return not is_instance_valid(no) or no.global_position.x > x + 3.0, 6.0)
+	ok = m._conferir("o bloco largo pega as duas faixas: pulando, o Faísca passa por cima", linha.vezes_que_empurrou == vez,
+			"(%d empurrões)" % (linha.vezes_que_empurrou - vez)) and ok
+	return ok
+
+
+## Espera sair da máquina um bloco (largo ou pequeno) e chegar perto de `x` (ainda antes dele, vindo do anel). Devolve
+## o bloco (o dicionário da linha).
+func _bloco_chegando(largo: bool, x: float) -> Dictionary:
+	var achado := {}
+	for i in int(20.0 * Engine.physics_ticks_per_second):
+		await m.get_tree().physics_frame
+		for b in n.linha.blocos():
+			var px := (b.no as Node3D).global_position.x
+			if (float(b.desvio) == 0.0) == largo and px > x - 4.0 and px < x:
+				achado = b
+		if not achado.is_empty():
+			break
+	return achado
+
+
+## Espera `cond` ficar verdade (até `segundos`).
+func _ate(cond: Callable, segundos: float) -> void:
+	var t := 0.0
+	while t < segundos and not cond.call():
+		await m.get_tree().physics_frame
+		t += 1.0 / Engine.physics_ticks_per_second
 
 
 ## Playground 5: a subida pela parede da máquina, o painel rachado e a chegada ao topo.
@@ -567,6 +636,14 @@ func capturar() -> void:
 	await _foto_de_cima(Vector3(44, 60, 40), Vector3(88, 18, -18), "fase_3_2/04_andar_da_pintura")
 	await _foto_em(Vector3(96, 20.1, -44), 2.6, -0.1, "fase_3_2/04b_pintura_de_dentro")
 	await _foto_de_cima(Vector3(60, 40, 36), Vector3(30, 18, 4), "fase_3_2/04c_ponte_de_blocos")
+	# A linha de montagem disparada: a ponte sobe, a máquina dispara e os blocos descem; de dentro da ponte e de lado.
+	for i in 3:
+		n._subir_vao(i)
+	await m._esperar(3.0)
+	n.linha.disparar(j)
+	await m._esperar(6.0)
+	await _foto_em(Vector3(50, 21.6, Fase32.PONTE_Z + 1.2), PI / 2.0 + 0.1, 0.1, "fase_3_2/04d_linha_disparada")
+	await _foto_de_cima(Vector3(36, 30, 26), Vector3(28, 22, 3), "fase_3_2/04e_blocos_na_ponte")
 	await _foto_de_cima(Vector3(40, 56, 48), Vector3(0, 34, 2), "fase_3_2/05_subida_da_maquina")
 	await _foto_em(Vector3(14, 26.1, 6), -0.2, 0.35, "fase_3_2/05b_anel")
 	await _foto_em(Vector3(4, 44.1, 8), 0.3, -0.25, "fase_3_2/06_arena")

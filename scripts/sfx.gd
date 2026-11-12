@@ -28,7 +28,7 @@ const ALL := [
 	# Moedas e a Máquina de Brindes.
 	"moeda", "maquina",
 	# O mundo que reage (item 6) e a Bolota gigante da 1-1 (item 9).
-	"mato", "caixa_quebra", "pote_quebra", "presente_abre", "poca", "rolar", "enchente", "confeitos", "interruptor", "brilha",
+	"mato", "caixa_quebra", "pote_quebra", "presente_abre", "poca", "rolar", "enchente", "confeitos", "interruptor", "brilha", "alarme",
 ]
 
 ## Nos testes, anota o nome de cada som tocado (não dá para ouvir num teste sem tela).

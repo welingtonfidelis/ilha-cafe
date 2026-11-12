@@ -2274,7 +2274,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos), o da 2-3 (a luz do quarto apagando) e o da 3-1 (a avalanche) |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos), o da 2-3 (a luz do quarto apagando), o da 3-1 (a avalanche) e o da 3-2 (a linha de montagem disparada); falta o da 3-3, quando ela for construída |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
@@ -2765,7 +2765,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 | 2-2 | a chuva de confeitos gigantes, que viram degraus (feito) |
 | 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho (feito) |
 | 3-1 | a avalanche na Encosta das Avalanches (feito) |
-| 3-2 | a linha de montagem dispara |
+| 3-2 | a linha de montagem dispara (feito) |
 | 3-3 | o vendaval (quando for construída) |
 
 **1-1 Pulinhos nas Nuvens (feito em 2026-11-11):**
@@ -2886,6 +2886,23 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - parado na calha, a onda pega e ele volta ao abrigo sem perder coração;
   - a travessia de verdade: esperando cada onda passar e correndo com o analógico conforme a câmera, de abrigo em abrigo até o P4, sem ser pego.
 - **Fotos:** `--faisca-fase-3-1-captura` ganhou a avalanche grande, a onda no anel e as calhas de fora.
+
+**3-2 Fábrica de Blocos (feito em 2026-11-11):** também já tinha cinco playgrounds e tarefas. O momento ficou na ponte de blocos, entre o Andar da Pintura e o anel da máquina (`scripts/faisca/linha_de_montagem.gd`).
+- **A linha dispara** quando o último vão da ponte chega no lugar:
+  - o giroflex vermelho em cima da boca da máquina (nova, na parede leste da parte de cima, de frente para a ponte) acende e gira;
+  - a sirene toca (som novo `alarme`), sai vapor e o controle treme.
+- **Os blocos:** a máquina passa a cuspir blocos de brinquedo amarelos a cada 2,8 s (da mesma cor da ponte, vermelhos, azuis e verdes, eles sumiam nela).
+  - Eles deslizam ponte abaixo a 4 m/s, descendo cada degrau, e no fim tombam lá para baixo.
+  - Vêm numa faixa ou na outra (dá para desviar, e o meio da ponte fica livre dos pequenos), e a cada quatro vem um largo, que pega a ponte toda e só se passa pulando.
+  - A linha fica 85 cm para o sul do meio da ponte, para a faixa de cá não encostar na primeira saliência da subida.
+  - Quem um bloco pega é empurrado ponte abaixo, sem perder coração.
+- **Testes:** o `--faisca-fase-3-2` confere:
+  - a linha disparando com a ponte pronta;
+  - o bloco empurrando quem fica na faixa dele, sem tirar coração;
+  - o bloco passando ao lado de quem está na outra faixa;
+  - o pulo por cima do largo.
+  - A subida degrau por degrau, que já era conferida, roda com a linha pausada (`LinhaDeMontagem.pausada`).
+- **Fotos:** `--faisca-fase-3-2-captura` ganhou a linha disparada de dentro da ponte e os blocos na ponte de lado.
 
 ### Em aberto
 

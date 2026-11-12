@@ -18,7 +18,9 @@ extends Fase
 ##     a escada até a estante da empilhadeira; o quarto pino liga o pistão alto do V2 (P2)
 ##   viagem: a empilhadeira, pela passarela alta
 ##   4 Andar da Pintura (20 m, a leste): o chão é tinta; latas de ilha, esteiras e blocos-pisca; o pino de cada lata sobe
-##     um vão da ponte de blocos (P3)
+##     um vão da ponte de blocos (P3). Com a ponte pronta, o momento especial (item 9, 2026-11-11): a linha de montagem
+##     dispara (giroflex, sirene e vapor) e a máquina cospe blocos que deslizam ponte abaixo, numa faixa ou na outra, e
+##     de vez em quando um largo, só pulando; quem um bloco pega é empurrado ponte abaixo, sem perder coração
 ##   5 Subida da Máquina (do anel a 26 m até o topo a 44 m): um pino em cada canto sobe o pistão seguinte; V3 atrás do
 ##     painel rachado (P4)
 ##   Arena no topo: o baú, três Bolotas (uma de capacete) e o guindaste
@@ -64,6 +66,8 @@ var pino_secreto: Pino
 var pistao_alto: Pistao
 var pinos_da_pintura: Array[Pino] = []
 var vaos_da_ponte: Array[AnimatableBody3D] = []
+## A linha de montagem disparada (o momento especial), que solta os blocos ponte abaixo.
+var linha: LinhaDeMontagem
 var pinos_da_subida: Array[Pino] = []
 var pistoes_da_subida: Array[Pistao] = []
 var tintas: Array[Area3D] = []
@@ -1159,6 +1163,37 @@ func _ponte_de_blocos() -> void:
 		add_child(corpo)
 		vaos_da_ponte.append(corpo)
 		estrelinha(no_lugar + Vector3.UP * 1.4)
+	_linha_de_montagem()
+
+
+## A linha de montagem (o momento especial): a boca na parede leste da parte de cima da máquina, no anel, de frente para
+## a ponte, e o caminho dos blocos da boca até o fim da ponte (descendo cada degrau), onde eles tombam lá para baixo.
+func _linha_de_montagem() -> void:
+	# A linha fica 85 cm para o sul do meio da ponte: a faixa de cá passa longe da primeira saliência da subida.
+	var z := PONTE_Z - 0.85
+	var boca := Vector3(MEIA_ALTA + 0.6, ANEL, z)
+	# A boca: o buraco escuro na parede, com a moldura laranja.
+	caixa_visual(Vector3(MEIA_ALTA + 0.08, ANEL + 1.8, z), Vector3(0.2, 3.4, 3.8), _mat(Color("2b2140"), 0.9))
+	var laranja := _mat(Color("ff7a22"), 0.5)
+	for spec in [[Vector3(MEIA_ALTA + 0.2, ANEL + 3.65, z), Vector3(0.4, 0.4, 4.2)], [Vector3(MEIA_ALTA + 0.2, ANEL + 1.8, z - 1.9), Vector3(0.4, 3.6, 0.4)],
+			[Vector3(MEIA_ALTA + 0.2, ANEL + 1.8, z + 1.9), Vector3(0.4, 3.6, 0.4)]]:
+		caixa_visual(spec[0], spec[1], laranja)
+	linha = LinhaDeMontagem.new()
+	linha.boca = boca
+	linha.pasta_blocos = FABRICA
+	# Faixas a 1,2 m do meio: com a folga do bloco pequeno (0,8 + 0,3), o meio da ponte fica livre dele.
+	linha.faixa = 1.2
+	# Da boca até a beira do anel, e cada vão da ponte, do mais alto (perto do anel) ao mais baixo, caindo de um para
+	# o outro; no fim, o começo firme da ponte, onde eles tombam.
+	var pontos := [boca, Vector3(MEIA_BAIXA + 0.3, ANEL, z)]
+	for i in range(VAOS.size() - 1, -1, -1):
+		var v: Array = VAOS[i]
+		pontos.append(Vector3(v[1] + 0.3, v[2], z))
+		pontos.append(Vector3(v[0] + 0.3, v[2], z))
+	pontos.append(Vector3(VAOS[0][0] + 0.3, TOPO_PINTURA, z))
+	pontos.append(Vector3(60.5, TOPO_PINTURA, z))
+	linha.caminho = PackedVector3Array(pontos)
+	add_child(linha)
 
 
 ## O pino da lata `i` bateu: a fileira de blocos do vão `i` sobe até o lugar.
@@ -1169,7 +1204,10 @@ func _subir_vao(i: int) -> void:
 	tw.tween_property(corpo, "position", corpo.get_meta("lugar"), 2.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func() -> void:
 		Fx.confetti(self, corpo.position + Vector3.UP * 1.5, 30, 3.5)
-		Sfx.play(self, "bandeira", 0.0, 0.0))
+		Sfx.play(self, "bandeira", 0.0, 0.0)
+		# Com a ponte inteira, a linha de montagem dispara.
+		if ponte_pronta():
+			linha.disparar(get_tree().get_first_node_in_group("jogador") as Jogador))
 	Sfx.play_at(self, "pistao", corpo.global_position, 0.0)
 
 

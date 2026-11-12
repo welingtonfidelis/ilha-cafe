@@ -710,7 +710,7 @@ class Faixa:
 def make_momentos():
     """Sons dos momentos especiais das fases (item 9 da lista do Faísca, 2026-11-11). O "rolar" é o ronco da Bolota
     gigante descendo a Ponte Fofa: um rumor grave que repete sem emenda (o tamanho fecha os ciclos), com uns
-    "tum" de quique. A "enchente" é a água correndo na cozinha alagando da 2-1; "confeitos", o pote chacoalhando na 2-2; "interruptor" e "brilha", a luz do quarto apagando na 2-3."""
+    "tum" de quique. A "enchente" é a água correndo na cozinha alagando da 2-1; "confeitos", o pote chacoalhando na 2-2; "interruptor" e "brilha", a luz do quarto apagando na 2-3; "alarme", a linha de montagem disparando na 3-2."""
     random.seed(90)
     dur = 1.0
     ronco = sweep_lowpass(noise(dur), 180, 260)
@@ -741,6 +741,10 @@ def make_momentos():
     sfx("interruptor", mix(0.2, (estalo(420), 0.0, 1.0), (estalo(300), 0.07, 0.8)), -3)
     plim = mix(0.6, (envelope(osc(1320, 1320, 0.6, "sine"), 0.004, 0.45), 0, 0.7), (envelope(osc(1980, 1980, 0.4, "sine"), 0.004, 0.3), 0, 0.3))
     sfx("brilha", plim, -6)
+    # A linha de montagem disparando na 3-2: a sirene de fábrica, dois tons que sobem e descem (três vezes).
+    sirene = mix(1.8, *[(envelope(osc(620, 880, 0.3, "triangle", "lin"), 0.02, 0.28), k * 0.6, 0.6) for k in range(3)],
+                 *[(envelope(osc(880, 620, 0.3, "triangle", "lin"), 0.02, 0.28), k * 0.6 + 0.3, 0.6) for k in range(3)])
+    sfx("alarme", fade_edges(sirene, 20), -4)
 
 
 def make_musica_faisca():
