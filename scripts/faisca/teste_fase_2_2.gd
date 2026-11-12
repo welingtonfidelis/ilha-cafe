@@ -28,10 +28,11 @@ func rodar() -> void:
 			"(%d soltas, %d com as das Bolotas)" % [n.estrelas.size(), n.total_estrelas()]) and ok
 	ok = m._conferir("4 postos, 6 Faisquinhas, 15 Bolotas, 4 corações e o baú", n.postos.size() == 4 and n.faisquinhas.size() == 6
 			and n.alvos.size() == 15 and n.coracoes.size() == 4 and n.bau != null, "(%d postos, %d Bolotas)" % [n.postos.size(), n.alvos.size()]) and ok
-	ok = m._conferir("peças: 20 nuvens que quicam (4 somem), 3 botões, 3 flores, o canhão, 2 caronas, 3 cerejas, a vela e a casinha",
+	ok = m._conferir("peças: 20 nuvens que quicam (4 somem), 3 botões, 3 flores, o canhão, 2 caronas, 2 cerejas, a vela, a casinha e o pote de confeitos",
 			n.nuvens_que_quicam.size() == 20 and n.nuvens_que_quicam.filter(func(x: NuvemQueQuica) -> bool: return x.some).size() == 4
-			and n.botoes.size() == 3 and n.flores.size() == 3 and n.canhoes.size() == 1 and n.caronas.size() == 2 and n.cerejas.size() == 3
-			and n.velas.size() == 1 and n.paredes_do_bolo.size() == 1) and ok
+			and n.botoes.size() == 3 and n.flores.size() == 3 and n.canhoes.size() == 1 and n.caronas.size() == 2 and n.cerejas.size() == 2
+			and n.velas.size() == 1 and n.paredes_do_bolo.size() == 1 and n.pote_de_confeitos != null
+			and n.pote_de_confeitos.degraus.size() == 3) and ok
 
 	# O padrão de playgrounds, já mais longo: cinco em volta do bolo, um arco de saída nos quatro primeiros, o brilho do
 	# baú à vista de todas as entradas e um vaga-lume no bolso do 2, do 3 e do 5.
@@ -276,11 +277,85 @@ func _ceu_e_bolo() -> bool:
 	await _andar(-frente, 1.2)
 	ok = m._conferir("e o V3 está lá dentro", n.faisquinhas[2].encontrado, "(Faisquinhas %d)" % n.achados) and ok
 
-	onde = await _quicar(n.cerejas[2], n.no_bolo(-165, 16.2, 35))
+	onde = await _quicar(n.cerejas[1], n.no_bolo(-165, 16.2, 35))
 	ok = m._conferir("quem cai no anel volta lá para cima pela cereja do outro lado", absf(onde.y - 35.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
-	onde = await _quicar(n.cerejas[1], n.no_bolo(-190, 10.0, 40))
-	ok = m._conferir("e a cereja do último biscoito joga até a arena no topo do bolo", absf(onde.y - 40.0) < 0.4, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+	ok = await _chuva_de_confeitos() and ok
 	return ok
+
+
+## A chuva de confeitos (item 9 da lista, 2026-11-11): o pote no último biscoito, a chuva e a escadinha até a arena.
+func _chuva_de_confeitos() -> bool:
+	var ok := true
+	var pote := n.pote_de_confeitos
+	var ultimo := n.no_bolo(-190, 16.2, 35)
+	var penultimo := n.no_bolo(-165, 16.2, 35)
+	var rumo := (ultimo - penultimo).normalized()
+	ok = m._conferir("antes do pote, os confeitos grandes não estão lá", pote.degraus.all(func(d: PoteDeConfeitos.Degrau) -> bool:
+			return not d.visible and d.forma.disabled)) and ok
+	# Sem os confeitos (e sem o balão), do último biscoito não se chega à arena: o pulo mais longo cai no anel.
+	var com_balao := j.balao_de_chiclete
+	j.balao_de_chiclete = false
+	var longe := await _pular_longe(ultimo + Vector3(0, 0.1, 0) + rumo * 1.4, n.degraus_da_chuva_em(2))
+	j.balao_de_chiclete = com_balao
+	ok = m._conferir("sem os confeitos, do último biscoito não se chega à arena (o pulo mais longo cai)", longe.y < 39.5,
+			"(parou em %.1f, %.1f, %.1f)" % [longe.x, longe.y, longe.z]) and ok
+	# O Vovô mostra o pote e um soco vira ele.
+	j.teleportar(ultimo - rumo * 1.7 + Vector3(0, 0.1, 0))
+	j.visual.rotation.y = atan2(rumo.x, rumo.z)
+	await m._esperar(0.5)
+	ok = m._conferir("no último biscoito o Vovô mostra o pote de confeitos", m.hud.dica_atual == "confeitos", "(%s)" % m.hud.dica_atual) and ok
+	await m._toque(JOY_BUTTON_X)
+	await m._esperar(0.4)
+	ok = m._conferir("um soco no pote: ele pula lá para o alto e vira", pote.virado_ja) and ok
+	var chegou := false
+	for i in int(6.0 * Engine.physics_ticks_per_second):
+		await m.get_tree().physics_frame
+		if pote.degraus.all(func(d: PoteDeConfeitos.Degrau) -> bool: return d.pronto):
+			chegou = true
+			break
+	await m._esperar(1.5)
+	ok = m._conferir("chove confeito no bolo e os três grandes cravam na parede", chegou and pote.miudos_no_bolo > 20,
+			"(%d miudinhos no bolo)" % pote.miudos_no_bolo) and ok
+	# A escadinha de confeitos, pulando de verdade, e do último para a arena.
+	var de := ultimo - rumo * 0.5 + Vector3(0, 0.1, 0)
+	for k in 3:
+		var alvo := n.degraus_da_chuva_em(k) + Vector3(0, 0, 0)
+		var onde := await _pular_para(_beira_para(de, alvo, 1.2), alvo)
+		ok = m._conferir("pula no %dº confeito (%.1f m)" % [k + 1, alvo.y], absf(onde.y - alvo.y) < 0.3, "(%.1f, %.1f, %.1f)" % [onde.x, onde.y, onde.z]) and ok
+		de = onde + Vector3(0, 0.1, 0)
+	var na_arena := n.no_bolo(-240, 11.0, 40.0)
+	var onde_arena := await _pular_para(_beira_para(de, na_arena, 1.4), na_arena)
+	ok = m._conferir("e do último confeito se sobe na arena no topo do bolo", absf(onde_arena.y - 40.0) < 0.3,
+			"(%.1f, %.1f, %.1f)" % [onde_arena.x, onde_arena.y, onde_arena.z]) and ok
+	return ok
+
+
+## Um pouco adiante de `de`, na direção de `alvo` (para pular da beirada, como quem joga).
+func _beira_para(de: Vector3, alvo: Vector3, quanto: float) -> Vector3:
+	var dir := Vector3(alvo.x - de.x, 0, alvo.z - de.z).normalized()
+	return de + dir * quanto
+
+
+## O pulo mais longo de `de` na direção de `alvo`: correndo, segurando o pulo até o fim (flutua). Devolve onde parou.
+func _pular_longe(de: Vector3, alvo: Vector3) -> Vector3:
+	var dir := Vector3(alvo.x - de.x, 0, alvo.z - de.z).normalized()
+	j.teleportar(de - dir * 1.2)
+	await m._esperar(0.3)
+	j.yaw = atan2(-dir.x, -dir.z)
+	j.forcar_direcao = Vector2(0, -1)
+	var pulou := false
+	for i in 400:
+		await m.get_tree().physics_frame
+		if not pulou and (j.global_position - de).dot(dir) > -0.2:
+			j.forcar_pulo = true
+			pulou = true
+		if pulou and i > 30 and j.is_on_floor():
+			break
+	j.forcar_direcao = Vector2.ZERO
+	j.forcar_pulo = false
+	var onde := j.global_position
+	await m._esperar(0.3)
+	return onde
 
 
 const TOPO_BOLO_TESTE := 26.0
@@ -406,6 +481,17 @@ func capturar() -> void:
 	var de_casinha := n.no_bolo(-112, 21.0, 26.1)
 	var para_casinha := n.no_bolo(-135, 17.0, 26.0) - de_casinha
 	await _foto_em(de_casinha, atan2(-para_casinha.x, -para_casinha.z), -0.1, "fase_2_2/05c_casinha")
+	# A chuva de confeitos: o pote no último biscoito, a chuva caindo e a escadinha pronta (com os miudinhos no bolo).
+	var ultimo := n.no_bolo(-190, 16.2, 35)
+	var rumo := (ultimo - n.no_bolo(-165, 16.2, 35)).normalized()
+	await _foto_em(ultimo - rumo * 1.7 + Vector3(0, 0.1, 0), atan2(-rumo.x, -rumo.z), -0.1, "fase_2_2/07_pote_de_confeitos")
+	n.pote_de_confeitos.virar()
+	await m._esperar(2.3)
+	await _foto_de_cima(n.no_bolo(-205, 44, 50), n.no_bolo(-215, 10, 40), "fase_2_2/07b_chuva_de_confeitos")
+	await m._esperar(3.5)
+	var para := n.degraus_da_chuva_em(1) - ultimo
+	await _foto_em(ultimo - rumo * 0.5 + Vector3(0, 0.1, 0), atan2(-para.x, -para.z), 0.15, "fase_2_2/07c_escadinha_de_confeitos")
+	await _foto_de_cima(n.no_bolo(-250, 34, 58), n.no_bolo(-220, 14, 38), "fase_2_2/07d_escadinha_de_fora")
 	await _foto_em(Vector3(4, 40.1, 9), 0.4, -0.3, "fase_2_2/06_arena")
 	m.get_tree().quit()
 

@@ -710,7 +710,7 @@ class Faixa:
 def make_momentos():
     """Sons dos momentos especiais das fases (item 9 da lista do Faísca, 2026-11-11). O "rolar" é o ronco da Bolota
     gigante descendo a Ponte Fofa: um rumor grave que repete sem emenda (o tamanho fecha os ciclos), com uns
-    "tum" de quique. A "enchente" é a água correndo na cozinha alagando da 2-1."""
+    "tum" de quique. A "enchente" é a água correndo na cozinha alagando da 2-1; "confeitos", o pote chacoalhando na 2-2."""
     random.seed(90)
     dur = 1.0
     ronco = sweep_lowpass(noise(dur), 180, 260)
@@ -725,6 +725,16 @@ def make_momentos():
     fundo = am(sweep_lowpass(noise(dur), 220, 320), 0.5, 0.2)
     bolhas = [(envelope(osc(random.uniform(500, 900), random.uniform(1100, 1700), 0.07, "sine"), 0.003, 0.05), random.uniform(0.0, dur - 0.1), 0.22) for _ in range(14)]
     sfx_loop("enchente", mix(dur, (agua, 0, 0.7), (fundo, 0, 0.8), *bolhas), -5)
+    # A chuva de confeitos da 2-2: um chacoalhar de pote (tiquinhos de ruído agudo, cada vez mais) com "tins" de bala
+    # batendo, por uns 3 s.
+    dur = 3.0
+    tiques = []
+    for k in range(150):
+        t = random.uniform(0.0, dur - 0.05) ** 0.9
+        tique = envelope(highpass(noise(0.03), random.uniform(2500, 5000)), 0.001, 0.018)
+        tiques.append((tique, t, random.uniform(0.15, 0.45)))
+    tins = [(envelope(osc(random.uniform(1800, 3200), random.uniform(1700, 3000), 0.12, "sine"), 0.002, 0.09), random.uniform(0.1, dur - 0.2), 0.18) for _ in range(22)]
+    sfx("confeitos", fade_edges(mix(dur, *tiques, *tins), 40), -5)
 
 
 def make_musica_faisca():

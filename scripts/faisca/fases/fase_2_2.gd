@@ -20,7 +20,9 @@ extends Fase
 ##     num bolso alto que só o balão alcança (P3)
 ##   ponte de wafer até o bolo
 ##   5 Subida do Bolo (y 26 a 40, em volta do andar de cima do bolo): cereja que quica, vela que sobe e desce e uma
-##     fileira de biscoitos presos no bolo; V3 na casinha de biscoito com a parede rachada, lá embaixo no anel (P4)
+##     fileira de biscoitos presos no bolo; V3 na casinha de biscoito com a parede rachada, lá embaixo no anel (P4).
+##     No fim, o momento especial (item 9, 2026-11-11): o pote de confeitos no último biscoito; um soco e chove
+##     confeito, e os três grandes cravam na parede do bolo: a escadinha até a arena (antes, uma cereja jogava lá)
 ##   Arena no topo do bolo (40 m): o baú e três Bolotas
 
 const DOCES := "res://assets/faisca/doces/"
@@ -35,6 +37,8 @@ const TOPO_BOLO := 26.0
 const RAIO_TOPO := 14.0
 const TOPO_ARENA := 40.0
 const CAMPO := Vector3(0, 0, 108)
+## O pote da chuva de confeitos (o momento especial), no último biscoito da Subida do Bolo.
+var pote_de_confeitos: PoteDeConfeitos
 const PRACA := Vector3(-70, 16, -78)
 
 ## A bola de chiclete da máquina já foi pega.
@@ -94,6 +98,11 @@ func ilha(topo: Vector3, raio: float, cores: Array, fundura := -1.0) -> StaticBo
 	cs_cone.position.y = -1.2 - h * 0.5
 	corpo.add_child(cs_cone)
 	return corpo
+
+
+## Onde fica o topo do confeito grande `k` da chuva (0 é o primeiro, logo depois do último biscoito).
+func degraus_da_chuva_em(k: int) -> Vector3:
+	return pote_de_confeitos.degraus_em[k]
 
 
 ## Pilar de doce com `topo` em cima (o pilar dos botões, a estação do teleférico).
@@ -667,14 +676,29 @@ func _subida_do_bolo() -> void:
 	for b in biscoitos:
 		var topo := no_bolo(b[0], 16.2, b[1])
 		doce("cube_gingerbread_large_A", topo - Vector3(0, 4.0, 0), deg_to_rad(b[0]), 1.0, true)
-		estrelinha(topo + Vector3(0, 1.1, 0))
+		# No último fica o pote de confeitos.
+		if b[0] != -190.0:
+			estrelinha(topo + Vector3(0, 1.1, 0))
 	vela(no_bolo(-95, 17.5, 30.5), 4.5, 6.0)
 	estrelinha(no_bolo(-95, 17.5, 32))
 	for par in [[-140.0, -165.0], [-165.0, -190.0]]:
 		arco(no_bolo(par[0] - 6.0, 16.2, 36.1), no_bolo(par[1] + 6.0, 16.2, 36.1), 1.6, 2)
 	bolota(no_bolo(-140, 16.2, 35.0), false, "pinguim")
-	cereja(no_bolo(-190, 16.2, 35.0), 16.0)
-	arco(no_bolo(-190, 16.2, 38.5), no_bolo(-190, 10.0, 41.5), 1.5, 3)
+	# A chuva de confeitos (o momento especial): o pote no último biscoito; os três confeitos grandes cravam na parede,
+	# continuando no sentido do relógio, cada um 1,4 m acima do outro, e do último se sobe na arena (0,8 m).
+	pote_de_confeitos = PoteDeConfeitos.new()
+	pote_de_confeitos.position = no_bolo(-190, 16.2, 35.0)
+	pote_de_confeitos.ponto_alto = no_bolo(-223, 10.0, 49.0)
+	pote_de_confeitos.raio_cima = RAIO_TOPO
+	pote_de_confeitos.topo_cima = TOPO_ARENA
+	pote_de_confeitos.raio_baixo = RAIO_BOLO
+	pote_de_confeitos.topo_baixo = TOPO_BOLO
+	for k in 3:
+		var degrau := no_bolo(-206.0 - 17.0 * k, 15.6, 36.4 + 1.4 * k)
+		pote_de_confeitos.degraus_em.append(degrau)
+		estrelinha(degrau + Vector3(0, 1.2, 0))
+	add_child(pote_de_confeitos)
+	ponto_de_dica(no_bolo(-190, 16.2, 35.5), 3.0, "confeitos")
 
 	# A cereja do outro lado do anel, para quem caiu, devolve lá para cima (até o quarto biscoito).
 	cereja(no_bolo(-160, 20.5, TOPO_BOLO), 22.0)

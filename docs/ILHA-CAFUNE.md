@@ -1873,7 +1873,7 @@ A porta do 2º andar do farol pede 90 estrelinhas. O código fica em `scripts/fa
      - a saída é a ponte de wafer até o anel do bolo.
   5. **Subida do Bolo** (y 26 a 40, P4):
      - a cereja que quica no anel joga até o primeiro biscoito preso no bolo, e a vela que sobe e desce leva até o segundo;
-     - uma fileira de biscoitos a um pulo um do outro (com um pinguim no estreito) termina na cereja que joga para a arena;
+     - uma fileira de biscoitos a um pulo um do outro (com um pinguim no estreito) termina na cereja que joga para a arena (desde 2026-11-11, no pote de confeitos e na escadinha da chuva; ver "Momentos especiais e fases mais longas");
      - quem cai dos biscoitos cai no anel, sem perder coração, e a cereja do outro lado devolve lá para cima;
      - segredo: a casinha de biscoito no anel, com a parede rachada (três golpes) e o V3 dentro, com a dica do golpe.
   - **Arena no topo do bolo:** o baú, três Bolotas (alien, porco e abelha) e a coluna de luz.
@@ -2274,7 +2274,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina) e o da 2-1 (a cozinha alagando) |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando) e o da 2-2 (a chuva de confeitos) |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
@@ -2762,7 +2762,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 | 1-1 | a Bolota gigante rolando na Ponte Fofa (feito) |
 | 1-2 | a fuga no carrinho de mina, com o túnel desmoronando (feito) |
 | 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas (feito) |
-| 2-2 | a chuva de confeitos gigantes, que viram degraus |
+| 2-2 | a chuva de confeitos gigantes, que viram degraus (feito) |
 | 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho |
 | 3-1 | a avalanche na Encosta das Avalanches |
 | 3-2 | a linha de montagem dispara |
@@ -2849,6 +2849,18 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - todos os pulos de boia em boia de verdade, saindo da beirada como quem joga;
   - o V3 no patinho, cair na água, a torre, a bandeja, o coração e o sorvete.
 - **Fotos:** `--faisca-fase-2-1-captura` ganhou a cozinha seca, o registro, as três etapas, a cascata, o patinho, a torre com a bandeja e a cozinha alagada de cima.
+
+**2-2 Nuvens de Algodão-Doce (feito em 2026-11-11):** a fase já tinha cinco playgrounds e tarefa em cada saída, então ganhou só o momento, no fim da Subida do Bolo, no lugar da cereja que jogava do último biscoito até a arena.
+- **O pote de confeitos** (`scripts/faisca/pote_de_confeitos.gd`), no último biscoito, com a dica nova do Vovô ("confeitos": o soco, o pote virando, a chuva e os três degraus).
+  - Um soco (ou o giro) e ele pula lá para o alto, vira de boca para baixo em cima do bolo e chacoalha por uns 3 s, com o som novo `confeitos` (`python3 tools/gerar_sons.py momentos`).
+  - Chove confeito colorido no bolo inteiro: os miudinhos ficam espalhados no topo e no anel, de enfeite (uns 120; um material por cor).
+  - Os três confeitos grandes (redondos, de 4,8 m) caem um depois do outro e cravam na parede do andar de cima, com poeira, o "tum" e o controle tremendo. Ficam 1,4 m um acima do outro, no sentido do relógio, e do último se sobe na arena, entre as cerejas da cerquinha.
+  - O balão de chiclete continua podendo encurtar a subida, como antes.
+- **Testes:** o `--faisca-fase-2-2` confere:
+  - os confeitos grandes ausentes antes do pote, e que, sem eles e sem o balão, o pulo mais longo do último biscoito cai;
+  - a dica, o soco, a chuva (os grandes cravados e os miudinhos no bolo);
+  - os pulos de verdade nos três confeitos e a subida na arena.
+- **Fotos:** `--faisca-fase-2-2-captura` ganhou o pote, a chuva caindo, a escadinha de perto e de fora, e a arena coberta de confeito.
 
 ### Em aberto
 

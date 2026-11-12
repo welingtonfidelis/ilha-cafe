@@ -437,6 +437,7 @@ class BotaoA extends Control:
 ##   esteira: a faixa com as setas andando leva o Faísca; pisca: os blocos lilases se revezam e ele pula de um para o
 ##   outro; martelo: X no ar, ele desce reto com o martelinho e o pino laranja afunda; tinta: pular de lata em lata, sem
 ##   encostar na tinta rosa (3-2). registro: X na roda vermelha, que gira; a água sobe e a esponja boia junto (2-1).
+##   confeitos: X no pote rosa, que vira lá no alto e chove confeito; três confeitos grandes viram degraus (2-2).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -444,7 +445,7 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo", "registro"]
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo", "registro", "confeitos"]
 		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
 		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
 		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
@@ -585,6 +586,28 @@ class DesenhoDica extends Control:
 				draw_rect(Rect2(esponja + Vector2(-14, -3), Vector2(28, 4)), Color("5fc46a"))
 				for i in 3:
 					draw_circle(f + Vector2(-30 + i * 34, nivel + 3 + sin(tempo * 4.0 + i) * 1.5), 3, Color(1, 1, 1, 0.8))
+			"confeitos":
+				# Soca o pote rosa; ele sobe, vira de boca para baixo, chove confeito e três redondos viram a escadinha.
+				var ciclo := fmod(tempo, 3.0)
+				var bate := ciclo < 0.6 and fmod(tempo * 2.5, 1.0) < 0.35
+				var p := f + Vector2(-40 + (6.0 if bate else 0.0), 12)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(26 if bate else 20, 6), Color("ff7a22"), 7.0)
+				var sobe := clampf((ciclo - 0.6) / 0.5, 0.0, 1.0)
+				var pote := f + Vector2(-4 + sobe * 30, 26 - sobe * 46)
+				var virado := sobe >= 1.0
+				draw_rect(Rect2(pote + Vector2(-10, -12), Vector2(20, 24)), Color("ff8fc8"))
+				draw_rect(Rect2(pote + Vector2(-11, 10.0 if virado else -18.0), Vector2(22, 8)), Color("fff6fb"))
+				var cores_dos := [Color("e2304a"), Color("ffd23f"), Color("3f8fe0"), Color("4cc27a"), Color("ff8a2a")]
+				if virado and ciclo < 2.6:
+					for i in 10:
+						var queda := fmod(tempo * 60.0 + i * 13.0, 46.0)
+						draw_circle(pote + Vector2(-14 + (i * 7) % 30, 22 + queda), 3.0, cores_dos[i % cores_dos.size()])
+				# Os três degraus aparecem um depois do outro, subindo.
+				for k in 3:
+					if ciclo > 1.4 + k * 0.4:
+						var d := f + Vector2(10 + k * 18, 52 - k * 12)
+						draw_rect(Rect2(d + Vector2(-9, -3), Vector2(18, 7)), cores_dos[(k * 2) % cores_dos.size()])
 			"agarrar":
 				# A Bolota tonta (estrelinhas girando); segura Y: o Faísca gira com ela pendurada pela antena;
 				# solta: ela voa longe.
