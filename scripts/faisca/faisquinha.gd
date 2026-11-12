@@ -14,7 +14,9 @@ extends Area3D
 ## - "morador": no farol (HubFarol), sem bolha e 1,3x maior, brincando perto da casa dele, olhando e acenando para
 ##   o Faísca, dançando junto quando ele dança no mesmo andar e pulando para o lado quando ele esbarra.
 ## Perto dele (pedido da lista, item 2), quem ainda não foi salvo chama com um "piu-piu" de robô e o controle treme
-## de leve, mais rápido quanto mais perto. Já salvo em outra vez (`ja_visto`), fica transparente e não chama.
+## de leve, mais rápido quanto mais perto. Já salvo em outra vez (`ja_visto`), a bolha tem só uma moeda dentro, que
+## sai quando ela estoura, e não chama (pedido do usuário em 2026-11-12: antes era o mesmo boneco transparente, e
+## não dava para saber se era um novo).
 
 signal salvo(f: Faisquinha)
 
@@ -56,6 +58,8 @@ var _salto := 0.0
 var _empurrao := Vector3.ZERO
 var _acenando := 0.0
 var _base := Vector3.ZERO
+## A moeda girando dentro da bolha do já salvo.
+var _moeda: Node3D
 
 static var _materiais := {}
 static var _malhas := {}
@@ -75,7 +79,7 @@ func _ready() -> void:
 	add_child(cs)
 	_tempo = randf() * 6.0
 	_proxima = randf_range(1.0, 4.0)
-	corpo = boneco(cor_de(int(id)), ja_visto)
+	corpo = boneco(cor_de(int(id)))
 	add_child(corpo)
 	corpo.position.y = -0.5
 	for n in ["BracoE", "BracoD"]:
@@ -84,14 +88,14 @@ func _ready() -> void:
 		_pernas.append(corpo.get_node(n))
 	_luz_antena = OmniLight3D.new()
 	_luz_antena.light_color = Color("c6ff4a")
-	_luz_antena.light_energy = 0.4 if ja_visto else 1.1
+	_luz_antena.light_energy = 1.1
 	_luz_antena.omni_range = 2.6
 	_luz_antena.position.y = 0.97
 	corpo.add_child(_luz_antena)
 	if morador:
 		estado = "morador"
 		monitoring = false
-		# No farol (uma sala de 24 m), um pouco maiores para aparecerem de longe.
+		# No farol (uma sala de 32 m), um pouco maiores para aparecerem de longe.
 		corpo.scale = Vector3.ONE * ESCALA_MORADOR
 	else:
 		bolha = MeshInstance3D.new()
@@ -104,6 +108,25 @@ func _ready() -> void:
 		bolha.material_override = _material_bolha()
 		add_child(bolha)
 		body_entered.connect(_encostou)
+		if ja_visto:
+			# Já salvo: no lugar dele, a moeda das Bolotas (a do Board Game Bits, em pé, girando).
+			corpo.visible = false
+			_moeda = (load(Moeda.MODELO) as PackedScene).instantiate()
+			_moeda.scale = Vector3.ONE * 0.6
+			_moeda.rotation.x = PI / 2.0
+			# Um brilho dourado, para ela aparecer dourada através do lilás da bolha.
+			for mi: MeshInstance3D in _moeda.find_children("*", "MeshInstance3D", true, false):
+				var original := mi.get_active_material(0) as StandardMaterial3D
+				var ouro := original.duplicate() as StandardMaterial3D if original else StandardMaterial3D.new()
+				ouro.emission_enabled = true
+				ouro.emission = Color("ffb21a")
+				ouro.emission_energy_multiplier = 0.9
+				mi.material_override = ouro
+			var giro := Node3D.new()
+			giro.name = "MoedaNaBolha"
+			add_child(giro)
+			giro.add_child(_moeda)
+			_moeda = giro
 	_base = position
 	if dono:
 		_amarrar()
@@ -125,11 +148,15 @@ func _process(delta: float) -> void:
 		"preso":
 			corpo.position.y = -0.5 + sin(_tempo * 2.2) * 0.06
 			position.y = _base.y + sin(_tempo * 1.6) * 0.08
+			if _moeda:
+				_moeda.rotation.y += delta * 2.5
 			_balancar_bolha()
 			_pose_na_bolha()
 			_chamar_o_faisca(delta)
 		"carregado":
 			_seguir_dono()
+			if _moeda:
+				_moeda.rotation.y += delta * 2.5
 			_balancar_bolha()
 			_pose_na_bolha()
 			_chamar_o_faisca(delta)
@@ -175,7 +202,7 @@ func _amarrar() -> void:
 	cil.bottom_radius = 0.015
 	cil.height = 1.0
 	_fio.mesh = cil
-	_fio.material_override = _mat(Color("f4f5f9"), ja_visto)
+	_fio.material_override = _mat(Color("f4f5f9"), false)
 	_fio.top_level = true
 	add_child(_fio)
 	dono.derrotada.connect(func(_a: Alvo) -> void: _soltar_do_dono())
@@ -202,10 +229,14 @@ func _seguir_dono() -> void:
 func _soltar_do_dono() -> void:
 	if estado != "carregado":
 		return
-	estado = "caindo"
 	dono = null
 	if is_instance_valid(_fio):
 		_fio.queue_free()
+	if ja_visto:
+		# Só a moeda: a bolha estoura lá em cima e ela sai dali mesmo.
+		salvar()
+		return
+	estado = "caindo"
 	_estourar_bolha()
 	var chao := _chao_embaixo(global_position)
 	if is_nan(chao.x):
@@ -286,6 +317,11 @@ func salvar(quem: Jogador = null) -> void:
 	estado = "salvo"
 	set_deferred("monitoring", false)
 	_estourar_bolha()
+	if ja_visto:
+		# A bolha da moeda: estoura e pronto. A Fase solta uma moeda de verdade no lugar desta, que vai para o Faísca.
+		salvo.emit(self)
+		hide()
+		return
 	if quem:
 		quem.robo.expressao("coracao", 1.2)
 		var para := quem.global_position - global_position
@@ -522,10 +558,10 @@ static func _brilho(cor: Color, fantasma: bool) -> StandardMaterial3D:
 
 ## A bolha lilás das Bolotas: transparente, com a borda clarinha e um brilho fraco.
 func _material_bolha() -> StandardMaterial3D:
-	var chave := "bolha/%s" % ja_visto
+	var chave := "bolha"
 	if not _materiais.has(chave):
 		var m := StandardMaterial3D.new()
-		m.albedo_color = Color(0.86, 0.62, 1.0, 0.12 if ja_visto else 0.26)
+		m.albedo_color = Color(0.86, 0.62, 1.0, 0.26)
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.roughness = 0.05
 		m.metallic_specular = 1.0
@@ -534,7 +570,7 @@ func _material_bolha() -> StandardMaterial3D:
 		m.rim_tint = 0.2
 		m.emission_enabled = true
 		m.emission = Color("b48cff")
-		m.emission_energy_multiplier = 0.15 if ja_visto else 0.35
+		m.emission_energy_multiplier = 0.35
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
 		_materiais[chave] = m
 	return _materiais[chave]

@@ -46,9 +46,9 @@ var olhando := Vector2.ZERO
 ## Sem piscadas e olhadinhas sozinhas (fotos do estúdio).
 var rosto_parado := false
 var _expr := "normal"
-## O chapéu de agora (as roupinhas da Máquina de Brindes, item 4 da lista do Faísca), "" sem nenhum.
-var chapeu := ""
-var _chapeu: Node3D
+## A cor das partes laranja agora (a tinta da Máquina de Brindes, item 4 da lista do Faísca; a de fábrica é laranja).
+var cor_da_tinta := Color("ff7a22")
+var _tinta_metal := false
 var _expr_pedida := "normal"
 var _expr_resta := 0.0
 var _piscada := -1.0
@@ -150,42 +150,22 @@ func carga(v: float) -> void:
 		_carga[i].material_override = mat.led_costas if v > i / 3.0 + 0.001 else mat.led_apagado
 
 
+## Pinta as partes laranja do Faísca (as tintas da Máquina de Brindes, escolhidas na lojinha das tintas). A dourada
+## (`de_metal`) brilha como metal.
+func pintar(cor: Color, de_metal := false) -> void:
+	cor_da_tinta = cor
+	_tinta_metal = de_metal
+	# Antes do _ready (sem os materiais ainda), fica guardada e entra quando eles são feitos.
+	if not mat.has("laranja"):
+		return
+	var m: StandardMaterial3D = mat.laranja
+	m.albedo_color = cor
+	m.metallic = 0.4 if de_metal else 0.0
+	m.roughness = 0.32 if de_metal else 0.45
+
+
 ## Muda a cara da tela (ver EXPRESSOES). Com `duracao`, volta para a normal depois desse tempo.
 ## A troca vem com uma piscada; `ja` troca na hora, sem piscar.
-## O chapéu das roupinhas no osso da cabeça (os das Roupas, feitos para as cabeças do KayKit, no mesmo esqueleto):
-## o capacete do Faísca é maior e mais alto, então o chapéu vai ESCALA_CHAPEU vezes maior e AJUSTE_CHAPEU mais
-## para cima (no espaço do osso). Cada um ainda pode ter o seu ajuste em AJUSTES_CHAPEU. "" tira.
-const ESCALA_CHAPEU := 1.35
-const AJUSTE_CHAPEU := Vector3(0, 0.2, 0.02)
-## Ajuste de cada chapéu (conferido nas fotos de --faisca-brindes-captura, 2026-11-11): [escala, deslocamento].
-const AJUSTES_CHAPEU := {
-	"palhaco": [1.25, Vector3(0, -0.82, 0)],
-	"palha": [0.9, Vector3(0, -0.06, 0)],
-	"soldadinho": [1.0, Vector3(0, -0.12, 0)],
-	"mago": [0.85, Vector3(0, -0.06, 0)],
-}
-
-
-func vestir_chapeu(id: String) -> void:
-	if is_instance_valid(_chapeu):
-		_chapeu.queue_free()
-	_chapeu = null
-	chapeu = ""
-	if id == "" or esqueleto == null:
-		return
-	var modelo := Roupas.chapeu(id)
-	if modelo == null:
-		return
-	var ajuste: Array = AJUSTES_CHAPEU.get(id, [1.0, Vector3.ZERO])
-	var descanso := global_transform.affine_inverse() * esqueleto.global_transform * esqueleto.get_bone_global_rest(esqueleto.find_bone("head"))
-	var no := _no_preso("head", descanso * Transform3D(Basis.from_scale(Vector3.ONE * ESCALA_CHAPEU * float(ajuste[0])),
-			AJUSTE_CHAPEU + ajuste[1]), esqueleto)
-	no.name = "Chapeu"
-	no.add_child(modelo)
-	_chapeu = no
-	chapeu = id
-
-
 func expressao(nome: String, duracao := 0.0, ja := false) -> void:
 	_expr_resta = duracao
 	if ja:
@@ -388,6 +368,7 @@ func _criar_materiais() -> void:
 	mat.cinza = _plastico(Color("3e4352"), 0.35, 0.4)
 	mat.cinza.metallic = 0.3
 	mat.laranja = _plastico(Color("ff7a22"), 0.45, 0.5)
+	pintar(cor_da_tinta, _tinta_metal)
 	# Prata meio metálica: bem metálico, sem céu para refletir (estúdio, sala escura), fica preto.
 	mat.cromo = _plastico(Color("dfe3ec"), 0.24, 0.8)
 	mat.cromo.metallic = 0.55

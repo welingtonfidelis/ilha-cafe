@@ -1690,8 +1690,12 @@ func faisquinha(pos: Vector3, nome_dele := "") -> Faisquinha:
 	v.ja_visto = ja_achados.has(id)
 	add_child(v)
 	v.salvo.connect(func(_v: Faisquinha):
+		# O já salvo é só a bolha com a moeda: uma moeda, sem contar nem festejar (o "faisquinha_salvo" é dos novos).
+		if v.ja_visto:
+			soltar_moedas(v.global_position, 1, 0.5)
+			return
 		soltar_moedas(v.global_position, MOEDAS_POR_FAISQUINHA, 0.9)
-		if not v.ja_visto and not id in novos_faisquinhas:
+		if not id in novos_faisquinhas:
 			novos_faisquinhas.append(id)
 			achados += 1
 		faisquinha_salvo.emit(achados, faisquinhas.size()))

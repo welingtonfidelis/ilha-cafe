@@ -213,7 +213,7 @@ func soltar(id: String, destino: Callable) -> void:
 	raiz.scale = Vector3.ONE * 0.05
 	var sobe := raiz.create_tween()
 	sobe.tween_property(raiz, "global_position", meio + Vector3.UP * 1.4, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	var grande := 1.1 if Brindes.dados(id).get("tipo", "") == "roupa" else 2.0
+	var grande := 1.6 if Brindes.dados(id).get("tipo", "") == "tinta" else 2.0
 	sobe.parallel().tween_property(raiz, "scale", Vector3.ONE * grande, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Sfx.play(get_parent(), "faisquinha_salvo")
 	revelado.emit(id)

@@ -73,10 +73,10 @@ var premios_vistos: Array = []
 var chefes: Array = []
 ## Faisquinhas salvos na última fase ("1-1:3"), que chegam caindo do alto quando o Faísca volta ao farol.
 var chegando: Array = []
-## A carteira (item 4 da lista do Faísca), os brindes que já saíram da máquina e a roupinha que ele veste ("" nenhuma).
+## A carteira (item 4 da lista do Faísca), os brindes que já saíram da máquina e a tinta dele ("" a de fábrica).
 var moedas := 0
 var brindes: Array = []
-var roupa := ""
+var tinta := ""
 var _sorteio := RandomNumberGenerator.new()
 var abertura_vista := false
 var faisca: Jogador
@@ -89,6 +89,8 @@ var menu_aberto := false
 ## Botões da pausa pela chave ("continuar", "sair_fase", "ajustes", "menu", "sair"); os testes apertam por aqui.
 var botoes_pausa := {}
 var painel_ajustes: PainelAjustes
+## A lojinha das tintas (o soco no cabide do farol).
+var painel_tintas: PainelTintas
 var fade: ColorRect
 var dualsense: DualSense
 var controle: ControleFaisca
@@ -203,6 +205,12 @@ func _montar_interface() -> void:
 	painel_ajustes.fechou.connect(func() -> void:
 		_pausa.show()
 		botoes_pausa.ajustes.grab_focus.call_deferred())
+	painel_tintas = PainelTintas.new()
+	_camada.add_child(painel_tintas)
+	painel_tintas.montar(_camada)
+	painel_tintas.hide()
+	painel_tintas.escolheu.connect(pintar)
+	painel_tintas.fechou.connect(_fechar_pausa)
 	var escuro := CanvasLayer.new()
 	escuro.layer = 30
 	add_child(escuro)
@@ -330,6 +338,11 @@ func _atualizar_contador() -> void:
 
 
 func _entrada(event: InputEvent) -> void:
+	if painel_tintas.visible:
+		if event.is_action_pressed("menu") or event.is_action_pressed("ui_cancel"):
+			painel_tintas.fechar()
+			get_viewport().set_input_as_handled()
+		return
 	if painel_ajustes.visible:
 		if event.is_action_pressed("menu") or event.is_action_pressed("ui_cancel"):
 			painel_ajustes.fechar()
@@ -370,6 +383,7 @@ func _fechar_pausa() -> void:
 	menu_aberto = false
 	_pausa.hide()
 	painel_ajustes.hide()
+	painel_tintas.hide()
 	hud.visible = true
 	get_tree().paused = false
 	if _controle_antes:
@@ -377,6 +391,18 @@ func _fechar_pausa() -> void:
 		await get_tree().create_timer(0.2).timeout
 		if not busy() and not menu_aberto:
 			faisca.controle_ligado = true
+
+
+## O soco no cabide do farol: a lojinha das tintas, com o jogo parado como na pausa (fechando, volta como dela).
+func abrir_tintas() -> void:
+	if lugar != "hub" or busy() or menu_aberto or hud.fim_aberto:
+		return
+	menu_aberto = true
+	hud.visible = false
+	_controle_antes = faisca.controle_ligado
+	get_tree().paused = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	painel_tintas.abrir(tinta, brindes)
 
 
 ## Pausa > Ajustes: o painel no lugar da pausa; fechando, a pausa volta com o botão marcado.
@@ -472,7 +498,7 @@ func _montar_hub(volta_de: String) -> void:
 	hub.brindes = brindes.duplicate()
 	add_child(hub)
 	hub.maquina.pedido.connect(_pedir_brinde)
-	hub.cabide.trocar.connect(trocar_roupa)
+	hub.cabide.abrir.connect(abrir_tintas)
 	hub.estrela_pega.connect(func(_pegas: int, _total: int) -> void:
 		_juntar(ID_FAROL, hub.novas, estrelas)
 		hud.mostrar_estrelas(total_estrelas())
@@ -682,15 +708,15 @@ func sair_da_fase() -> void:
 	_festa_no_farol()
 
 
-## O soco no botão da Máquina de Brindes: paga PRECO moedas e solta um brinde novo (a figurinha vai para a estante,
-## a roupinha para a cabeça do Faísca). Sem moedas, ou já com todos, a máquina balança que não.
+## O soco no botão da Máquina de Brindes: paga PRECO moedas e solta um brinde novo (a figurinha vai para a estante;
+## a tinta voa até o Faísca e já pinta ele, e a lata vai para o cabide). Sem moedas, ou já com todos, a máquina balança que não.
 func _pedir_brinde() -> void:
 	if lugar != "hub" or not is_instance_valid(hub) or hub.maquina.ocupada:
 		return
 	var id := Brindes.sortear(brindes, _sorteio)
 	if id == "":
 		hub.maquina.negar()
-		faixa("Você já tem todos os brindes!", "As figurinhas estão na estante e as roupinhas no cabide", Color("#ffd23f"), 3.0)
+		faixa("Você já tem todos os brindes!", "As figurinhas estão na estante e as tintas no cabide", Color("#ffd23f"), 3.0)
 		return
 	if moedas < Brindes.PRECO:
 		hub.maquina.negar()
@@ -703,42 +729,33 @@ func _pedir_brinde() -> void:
 	_salvar()
 	var maquina := hub.maquina
 	var dados := Brindes.dados(id)
-	var e_roupa: bool = dados.tipo == "roupa"
+	var e_tinta: bool = dados.tipo == "tinta"
 	maquina.revelado.connect(func(_id: String) -> void:
-		faixa("Roupinha nova!" if e_roupa else "Figurinha nova!", String(dados.nome), Color("#8ff3ff"), 2.6)
+		faixa("Tinta nova!" if e_tinta else "Figurinha nova!", String(dados.nome), Color("#8ff3ff"), 2.6)
 		faisca.festa_no_controle("premio")
 		controle.piscar(Color8(255, 200, 40), 1.5), CONNECT_ONE_SHOT)
 	maquina.entregue.connect(func(_id: String) -> void:
 		if not is_instance_valid(hub):
 			return
-		if e_roupa:
-			vestir(id)
+		if e_tinta:
+			pintar(id)
 			hub.cabide.mostrar(brindes)
+			Fx.confetti(self, faisca.global_position + Vector3.UP * 1.6, 24, 2.5)
+			faisca.robo.expressao("coracao", 1.2)
 		else:
 			hub.estante.por(id), CONNECT_ONE_SHOT)
 	var destino := func() -> Vector3:
-		if e_roupa:
-			return faisca.global_position + Vector3.UP * 2.3
+		if e_tinta:
+			return faisca.global_position + Vector3.UP * 1.6
 		return hub.estante.lugar(id) if is_instance_valid(hub) else Vector3.ZERO
 	maquina.soltar(id, destino)
 
 
-## Veste a roupinha `id` (um brinde de roupa, ou "" para nenhuma) e guarda.
-func vestir(id: String) -> void:
-	roupa = id
-	faisca.robo.vestir_chapeu(Brindes.chapeu_de(id))
+## Pinta o Faísca com a tinta `id` (uma tinta da máquina, ou "" para a de fábrica) e guarda.
+func pintar(id: String) -> void:
+	tinta = id
+	faisca.robo.pintar(Brindes.cor_de(id), Brindes.metal(id))
 	_salvar()
-
-
-## O soco no cabide: a próxima roupinha das que já saíram, e depois nenhuma.
-func trocar_roupa() -> void:
-	var tem := Brindes.ids("roupa").filter(func(r: String) -> bool: return r in brindes)
-	if tem.is_empty():
-		return
-	var ordem := [""] + tem
-	vestir(ordem[(ordem.find(roupa) + 1) % ordem.size()])
-	Sfx.play(self, "faisca_agarra", -4.0, 0.1)
-	Fx.confetti(self, faisca.global_position + Vector3.UP * 2.2, 10, 1.5)
 
 
 ## Chegando no farol: a faixa dos Faisquinhas que acabaram de chegar (eles caem do alto) e a festa de cada prêmio
@@ -938,16 +955,19 @@ func carregar(dados: Dictionary) -> void:
 	premios_vistos = dados.get("premios", [])
 	chefes = dados.get("chefes", [])
 	moedas = int(dados.get("moedas", 0))
-	brindes = dados.get("brindes", [])
-	roupa = String(dados.get("roupa", ""))
+	# Até 2026-11-12 saíam chapéus no lugar das tintas: quem já tinha ganha as tintas (e volta à cor de fábrica).
+	brindes = Brindes.migrar(dados.get("brindes", []))
+	tinta = String(dados.get("tinta", ""))
+	if not tinta in brindes:
+		tinta = ""
 	if is_instance_valid(faisca) and faisca.robo:
-		faisca.robo.vestir_chapeu(Brindes.chapeu_de(roupa))
+		faisca.robo.pintar(Brindes.cor_de(tinta), Brindes.metal(tinta))
 	abertura_vista = dados.get("abertura", false)
 
 
 func dados_salvos() -> Dictionary:
 	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "chefes": chefes, "moedas": moedas,
-		"brindes": brindes, "roupa": roupa, "abertura": abertura_vista}
+		"brindes": brindes, "tinta": tinta, "abertura": abertura_vista}
 
 
 func _salvar() -> void:

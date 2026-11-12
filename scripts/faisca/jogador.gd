@@ -188,6 +188,9 @@ var tremidas_por_chao := {}
 ## Câmera guiada (o começo do item 8 da lista do Faísca, 2026-11-11): numa ZonaDeCamera, a câmera vai devagar para um
 ## ângulo fixo ({"yaw", "pitch", "distancia"}) e o analógico direito (e o mouse) não gira; vazio = a câmera solta.
 var camera_guiada: Dictionary = {}
+## A distância da câmera solta (sem zona guiada). Dentro do farol ela fica mais perto, para o braço não bater na
+## escada (HubFarol, 2026-11-12); nas fases é a de sempre.
+var distancia_camera := DISTANCIA_CAMERA
 ## A poça em que ele está pisando (item 6): os passos espirram em vez de levantar poeira, e o chão do controle é "agua".
 var na_poca: Poca
 var festas := {}
@@ -626,7 +629,7 @@ func _quina_amiga() -> void:
 func _guiar_camera(delta: float) -> void:
 	var k := 1.0 - exp(-3.0 * delta)
 	if camera_guiada.is_empty():
-		braco_camera.spring_length = lerpf(braco_camera.spring_length, DISTANCIA_CAMERA, k)
+		braco_camera.spring_length = lerpf(braco_camera.spring_length, distancia_camera, k)
 		return
 	yaw = lerp_angle(yaw, float(camera_guiada.yaw), k)
 	pitch = lerpf(pitch, float(camera_guiada.pitch), k)

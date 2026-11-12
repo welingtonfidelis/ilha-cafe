@@ -185,6 +185,26 @@ func capturar() -> void:
 	f5.salvar(j)
 	await _esperar(0.12)
 	await _foto(dir + "faisquinha_4_salvo.png")
+	# Lado a lado: à esquerda o que ainda falta salvar, à direita o já salvo em outra vez (`ja_visto`): a bolha com a moeda.
+	var lugar := n.inicio + Vector3(0, 1.6, -6)
+	var de_moeda: Faisquinha
+	for k in 2:
+		var v := Faisquinha.new()
+		v.id = "1"
+		v.ja_visto = k == 1
+		v.position = lugar + Vector3(-1.3 + 2.6 * k, 0, 0)
+		n.add_child(v)
+		if v.ja_visto:
+			de_moeda = v
+	j.teleportar(n.inicio + Vector3(0, 0, 8))
+	cam.global_position = lugar + Vector3(0, 0.4, 5.2)
+	cam.look_at(lugar)
+	await _esperar(0.6)
+	# A moeda de frente para a câmera (ela gira).
+	de_moeda.set_process(false)
+	(de_moeda.get_node("MoedaNaBolha") as Node3D).rotation.y = 0.35
+	await _esperar(0.1)
+	await _foto(dir + "faisquinha_5_novo_e_bolha_de_moeda.png")
 	solo.get_tree().quit()
 
 

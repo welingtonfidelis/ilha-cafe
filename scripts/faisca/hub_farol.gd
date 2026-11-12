@@ -15,7 +15,7 @@ extends Fase
 ## andar); com 20, o trenzinho de brinquedo roda em volta do eixo no térreo, com dois Faisquinhas de passageiros;
 ## com 30, o farolete do topo acende e os fachos giram pela torre. Antes disso, uma placa mostra quantos faltam.
 ## No térreo ficam também a Máquina de Brindes (a sudoeste), a estante das figurinhas (na parede a noroeste) e o
-## cabide das roupinhas do Faísca (ao norte), do item 4 da lista (2026-11-11).
+## cabide das tintas do Faísca (ao norte), do item 4 da lista (2026-11-11; chapéus até 2026-11-12).
 ## O FaiscaJogo preenche `portas` antes de pôr o hub na árvore e escuta `porta_escolhida`. A porta "saida" (que
 ## voltava para a ilha) não é mais usada desde que o menu principal separou os dois jogos (2026-11-10).
 ## Ângulos em graus, como os das portas: 0 norte (-Z), 90 leste (+X), 180 sul, 270 oeste.
@@ -23,7 +23,11 @@ extends Fase
 signal porta_escolhida(id: String)
 signal saiu
 
-const RAIO := 12.0
+## O raio de dentro. Era 12 até 2026-11-12, quando o usuário pediu o farol mais largo por dentro: perto da galeria
+## dos prêmios (máquina, estante e cabide), a câmera atrás do Faísca entrava na escada e era empurrada. A escada
+## ficou onde estava, e o que fica encostado na parede (galeria, elevador, placas, vagas dos moradores) foi junto
+## com ela, 4 m para fora.
+const RAIO := 16.0
 ## Altura do piso de cada andar: térreo, 2º, 3º e topo.
 const ANDARES := [0.0, 7.0, 14.0, 21.0]
 ## Altura da parede, até o começo do domo.
@@ -39,25 +43,28 @@ const ESCADA_COMECO := 285.0
 const LANCE := 150.0
 const PATAMAR := 30.0
 const DEGRAUS := 35
+## A distância da câmera dentro do farol e na galeria do térreo (ver _aproximar_camera); lá fora ela é 7,5.
+const CAMERA_DENTRO := 6.0
+const CAMERA_GALERIA := 4.8
 ## Altura da murinha que se vê, e da parede invisível nas beiradas (o pulo com os jatos chega a uns 2,5 m).
 const MURINHA := 1.0
 const PAREDE_INVISIVEL := 3.2
 ## O vão do elevador: no meio a sudeste (entre as portas e longe dos patamares), largo ELEVADOR_ABERTURA graus.
 const ELEVADOR_GRAUS := 135.0
 const ELEVADOR_ABERTURA := 24.0
-const ELEVADOR_RAIO := 9.9
+const ELEVADOR_RAIO := 13.9
 ## O trilho do trenzinho, em volta do eixo no térreo.
 const TREM_RAIO := 3.2
 const TREM_VELOCIDADE := 0.25
 ## Onde ficam as placas dos prêmios que faltam (graus, raio, andar).
-const PLACAS := {"elevador": [118.0, 7.6, 0], "trem": [180.0, 5.6, 0], "farolete": [55.0, 9.6, 3]}
+const PLACAS := {"elevador": [118.0, 11.6, 0], "trem": [180.0, 5.6, 0], "farolete": [55.0, 13.6, 3]}
 const PEDE := {"elevador": 10, "trem": 20, "farolete": 30}
 ## O modelo do troféu de cada chefe.
 const MODELOS_DOS_CHEFES := {"chefe-1": ChefeBolotao.MODELO, "chefe-2": ChefeChef.MODELO, "chefe-3": ChefePinguim.MODELO}
 ## Os móveis dos brindes no térreo (graus, raio).
-const MAQUINA := [225.0, 9.4]
-const ESTANTE := [325.0, 11.25]
-const CABIDE := [354.0, 10.2]
+const MAQUINA := [225.0, 13.4]
+const ESTANTE := [325.0, 15.25]
+const CABIDE := [354.0, 15.0]
 const MADEIRA := Color("c98b55")
 const MADEIRA_CLARA := Color("dca46c")
 const CREME := Color("f3ead8")
@@ -97,7 +104,9 @@ var chefes: Array = []
 var brindes: Array = []
 var maquina: MaquinaDeBrindes
 var estante: EstanteDeFigurinhas
-var cabide: CabideDeRoupas
+var cabide: CabideDeTintas
+## As paredes invisíveis das murinhas, juntas num corpo só na CAMADA_LIMITE (ver _murinha).
+var _limite: SurfaceTool
 var trem: Array[AnimatableBody3D] = []
 var farolete: Node3D
 ## Estrelas Grandes já devolvidas (ids das fases): acendem as constelações.
@@ -115,8 +124,10 @@ func _montar() -> void:
 	inicio = Vector3(0, 0.1, RAIO - 3.5)
 	_sala()
 	_eixo_e_lampada()
+	_limite = _malha()
 	_escada()
 	_sacadas()
+	_solido(_limite, CAMADA_LIMITE)
 	_teto()
 	_elevador()
 	if "trem" in premios:
@@ -436,12 +447,15 @@ func _sacadas() -> void:
 
 
 ## Murinha entre os raios `r1` e `r2`, de `a` a `b` graus, em cima de um piso que vai de `piso_a` a `piso_b`:
-## creme com a borda laranja e, só de colisão, a parede invisível até PAREDE_INVISIVEL acima do piso.
+## creme com a borda laranja e, só de colisão, a parede invisível até PAREDE_INVISIVEL acima do piso. A parte que
+## se vê é sólida para tudo; a de cima, invisível, fica na CAMADA_LIMITE (desde 2026-11-12): o Faísca esbarra nela,
+## e o braço da câmera não (antes, ela empurrava a câmera para perto dele em volta da escada).
 func _murinha(creme: SurfaceTool, laranja: SurfaceTool, colisao: SurfaceTool, r1: float, r2: float, a: float, b: float,
 		piso_a: float, piso_b: float) -> void:
 	_bloco(creme, r1, r2, a, b, piso_a + MURINHA, piso_b + MURINHA, MURINHA + 0.7)
 	_bloco(laranja, r1 - 0.04, r2 + 0.04, a, b, piso_a + MURINHA + 0.1, piso_b + MURINHA + 0.1, 0.14)
-	_bloco(colisao, r1, r2, a, b, piso_a + PAREDE_INVISIVEL, piso_b + PAREDE_INVISIVEL, PAREDE_INVISIVEL + 0.6)
+	_bloco(colisao, r1, r2, a, b, piso_a + MURINHA + 0.24, piso_b + MURINHA + 0.24, MURINHA + 0.84)
+	_bloco(_limite, r1, r2, a, b, piso_a + PAREDE_INVISIVEL, piso_b + PAREDE_INVISIVEL, PAREDE_INVISIVEL - MURINHA - 0.24)
 
 
 ## Bloco curvo (um pedaço de anel entre os raios `r1` e `r2`, de `a` a `b` graus), com o topo indo em linha
@@ -499,9 +513,12 @@ func _pintar(st: SurfaceTool, cor: Color) -> void:
 	add_child(mi)
 
 
-## Colisão com a forma exata dos blocos (dos dois lados, para não atravessar vindo de baixo).
-func _solido(st: SurfaceTool) -> void:
+## Colisão com a forma exata dos blocos (dos dois lados, para não atravessar vindo de baixo), na `camada` (a 1 é a
+## de tudo; a CAMADA_LIMITE só o Faísca enxerga).
+func _solido(st: SurfaceTool, camada := 1) -> void:
 	var corpo := StaticBody3D.new()
+	corpo.collision_layer = camada
+	corpo.collision_mask = 0
 	add_child(corpo)
 	var cs := CollisionShape3D.new()
 	var forma := st.commit().create_trimesh_shape()
@@ -608,7 +625,7 @@ func vagas_do_andar(andar: int) -> Array:
 	if andar > 0:
 		patamar = comeco_do_lance(andar - 1) + LANCE + PATAMAR * 0.5
 	var vagas := []
-	for r in [10.0, 8.7]:
+	for r in [14.0, 12.7]:
 		for k in 24:
 			var g := 7.5 + k * 15.0
 			if longe.any(func(a: float) -> bool: return absf(angle_difference(deg_to_rad(g), deg_to_rad(a))) < deg_to_rad(14.0)):
@@ -675,7 +692,7 @@ func _moveis_dos_brindes() -> void:
 	estante.name = "Estante"
 	_no_terreo(estante, ESTANTE)
 	estante.mostrar(brindes)
-	cabide = CabideDeRoupas.new()
+	cabide = CabideDeTintas.new()
 	cabide.name = "Cabide"
 	_no_terreo(cabide, CABIDE)
 	cabide.mostrar(brindes)
@@ -922,6 +939,25 @@ func _physics_process(delta: float) -> void:
 	_tempo_hub += delta
 	if not trem.is_empty():
 		_mover_trem(_tempo_hub)
+	_aproximar_camera()
+
+
+## A câmera mais perto dentro da torre (pedido do usuário em 2026-11-12: perto da galeria dos prêmios, ela era empurrada
+## pela escada): CAMERA_DENTRO em todo o farol e CAMERA_GALERIA no térreo, do lado de fora da escada, onde ficam a
+## máquina, a estante e o cabide. O giro continua livre.
+func _aproximar_camera() -> void:
+	var j := get_tree().get_first_node_in_group("jogador") as Jogador
+	if j == null:
+		return
+	var p := j.global_position
+	var na_galeria := p.y < ANDARES[1] - 3.0 and Vector2(p.x, p.z).length() > SACADA + 0.5
+	j.distancia_camera = CAMERA_GALERIA if na_galeria else CAMERA_DENTRO
+
+
+func _exit_tree() -> void:
+	var j := get_tree().get_first_node_in_group("jogador") as Jogador
+	if j:
+		j.distancia_camera = Jogador.DISTANCIA_CAMERA
 
 
 func _process(delta: float) -> void:
@@ -952,7 +988,7 @@ func _montar_ceu_e_luz() -> void:
 			luz.light_energy = 1.2
 			luz.omni_range = 13.0
 			luz.shadow_enabled = k == 0 and j == 0
-			luz.position = ponto(45.0 + 180.0 * j + 90.0 * k, 9.0, ANDARES[k] + 5.0)
+			luz.position = ponto(45.0 + 180.0 * j + 90.0 * k, 13.0, ANDARES[k] + 5.0)
 			add_child(luz)
 
 
@@ -1263,7 +1299,7 @@ class ElevadorFarol:
 	extends AnimatableBody3D
 
 	## Do meio da torre até a borda de dentro da plataforma, e o tamanho dela (ao longo do raio e do anel).
-	const DENTRO := 8.2
+	const DENTRO := 12.2
 	const FUNDO := 3.4
 	const LARGURA := 3.0
 	const PARADA := 2.6

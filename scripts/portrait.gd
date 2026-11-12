@@ -25,6 +25,8 @@ var _stage: Node3D
 var _models := {}
 var _players := {}
 var _cheering := false
+## Girando devagar, em radianos por segundo (a prévia da lojinha das tintas do Faísca); 0 fica parado.
+var girando := 0.0
 
 
 func _init(side := Vector2(220, 240)) -> void:
@@ -94,6 +96,18 @@ func show_character(char_key: String) -> void:
 	_camera.position = Vector3(0, f[0], f[1])
 	_camera.look_at(Vector3(0, f[2], 0))
 	_animate()
+
+
+func _process(delta: float) -> void:
+	if girando != 0.0 and _stage:
+		_stage.rotation.y += girando * delta
+
+
+## Pinta o Faísca do retrato (a prova da lojinha das tintas).
+func pintar_faisca(cor: Color, de_metal := false) -> void:
+	var robo := _models.get("faisca") as Robo
+	if robo:
+		robo.pintar(cor, de_metal)
 
 
 ## Dando tchau (cartão marcado) ou parado respirando.

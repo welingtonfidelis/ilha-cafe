@@ -1,10 +1,11 @@
-class_name CabideDeRoupas
+class_name CabideDeTintas
 extends StaticBody3D
-## O cabide das roupinhas do Faísca no térreo do farol (item 4 da lista dele, 2026-11-11): um pé de madeira com seis
-## ganchos no alto, cada um com uma roupinha que já saiu da Máquina de Brindes (as outras ficam vazias). O soco nele
-## (fica no grupo dos alvos) pede a próxima roupinha (`trocar`): o FaiscaJogo veste a seguinte, ou nenhuma.
+## O cabide das tintas do Faísca no térreo do farol (item 4 da lista dele, 2026-11-11): um pé de madeira com seis
+## ganchos no alto, cada um com a lata de uma tinta que já saiu da Máquina de Brindes (os outros ficam vazios). O soco
+## nele (fica no grupo dos alvos) abre a lojinha das tintas (`abrir`, PainelTintas), onde se escolhe a cor com a
+## prévia. Até 2026-11-12 eram chapéus, trocados um a cada soco (o usuário achou que não ficou legal).
 
-signal trocar
+signal abrir
 
 var derrotado := false
 var raio_golpe := 0.6
@@ -53,7 +54,7 @@ func _ready() -> void:
 	bola.material_override = _mat(Color("ff7a22"))
 	bola.position.y = 2.55
 	_corpo.add_child(bola)
-	var ids := Brindes.ids("roupa")
+	var ids := Brindes.ids("tinta")
 	for i in ids.size():
 		var a := TAU * i / ids.size()
 		var gancho := Node3D.new()
@@ -77,26 +78,25 @@ func _process(delta: float) -> void:
 	_imune -= delta
 
 
-## Mostra no gancho de cada uma as roupinhas que já saíram.
+## Mostra no gancho de cada uma as latas das tintas que já saíram.
 func mostrar(ja_tem: Array) -> void:
 	for id in _ganchos:
 		var g: Node3D = _ganchos[id]
-		var atual := g.get_node_or_null("Roupa")
+		var atual := g.get_node_or_null("Lata")
 		if id in ja_tem and atual == null:
-			var chapeu := Brindes.centrado(Roupas.chapeu(Brindes.chapeu_de(id)), true)
-			if chapeu:
-				chapeu.name = "Roupa"
-				# Pendurado: a base do chapéu um pouco abaixo da ponta do gancho, em 0,55x.
-				chapeu.position.y = -0.12
-				chapeu.scale = Vector3.ONE * 0.55
-				g.add_child(chapeu)
+			var l := Brindes.lata(Brindes.cor_de(id), Brindes.metal(id))
+			l.name = "Lata"
+			# Pendurada pela alça na ponta do gancho, menor (a lata tem 0,5 m).
+			l.scale *= 0.5
+			l.position.y = -0.3
+			g.add_child(l)
 		elif not id in ja_tem and atual:
 			atual.queue_free()
 
 
-func tem_roupa(id: String) -> bool:
+func tem_tinta(id: String) -> bool:
 	var g: Node3D = _ganchos.get(id)
-	return g != null and g.get_node_or_null("Roupa") != null
+	return g != null and g.get_node_or_null("Lata") != null
 
 
 func receber_golpe(_dano: int, de: Vector3, _forca := 6.0, _tipo := "") -> bool:
@@ -108,8 +108,7 @@ func receber_golpe(_dano: int, de: Vector3, _forca := 6.0, _tipo := "") -> bool:
 	tw.tween_property(_corpo, "rotation:z", -0.12 * lado, 0.07)
 	tw.tween_property(_corpo, "rotation:z", 0.06 * lado, 0.1)
 	tw.tween_property(_corpo, "rotation:z", 0.0, 0.12)
-	_corpo.rotation.y += PI / 3.0
-	trocar.emit()
+	abrir.emit()
 	return true
 
 

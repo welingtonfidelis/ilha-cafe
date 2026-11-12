@@ -1229,15 +1229,21 @@ A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
 
 **Dentro do farol:**
 - A ilha inteira fica pausada e escondida: os filhos do `main`, menos a interface, a música e a Parte 2, ficam com `PROCESS_MODE_DISABLED`, o que tira a colisão. O `WorldEnvironment` da ilha sai da árvore até a volta.
-- **O hub** é uma torre redonda de 12 m de raio e 27 m de parede, com o domo em cima (versão de 2026-10-29, pedido do usuário: "podemos usar uma rampa ou escada dentro do farol pra subir os níveis e entrar nas fases seguintes?"). Tem:
+- **O hub** é uma torre redonda de 16 m de raio (12 m até 2026-11-12; ver "Farol mais largo por dentro", logo abaixo) e 27 m de parede, com o domo em cima (versão de 2026-10-29, pedido do usuário: "podemos usar uma rampa ou escada dentro do farol pra subir os níveis e entrar nas fases seguintes?"). Tem:
   - **quatro andares:** o térreo (0 m), o 2º (7 m), o 3º (14 m) e o topo (21 m). Os de cima são sacadas de madeira que vão da parede até 7,5 m do meio, com murinha creme e borda laranja na beira; o meio fica aberto, e dá para ver a torre inteira de baixo;
   - **a escada em espiral** no vão do meio, entre 4,5 e 7,5 m do eixo. São três lances de 35 degraus, cada um girando 150°, e cada lance termina num patamar de 30° colado na sacada de cima (por ali se entra nela). O primeiro sai do térreo a oeste-noroeste, longe das portas, e sobe pelo norte; os patamares ficam a leste (2º andar e topo) e a oeste (3º). Por baixo dos degraus, a colisão é uma rampa lisa que passa no meio de cada degrau, para o Faísca subir sem tropeçar;
-  - **murinhas** dos dois lados da escada e na beira das sacadas (menos no patamar), com uma parede invisível de 3,2 m em cima. O pulo com os jatos chega a uns 2,5 m, então o Faísca não cai no vão;
+  - **murinhas** dos dois lados da escada e na beira das sacadas (menos no patamar), com uma parede invisível de 3,2 m em cima. O pulo com os jatos chega a uns 2,5 m, então o Faísca não cai no vão. Desde 2026-11-12 a parte invisível fica na `CAMADA_LIMITE`: o Faísca esbarra nela e a câmera não;
   - **as 8 estrelinhas do farol** na escada: 4 no primeiro lance e 2 em cada um dos outros. Elas contam como "farol", com os mesmos nomes de antes (0 a 7), e as campanhas salvas continuam valendo;
   - o eixo listrado no meio, do chão até o topo, com a lâmpada ciano e o telhado vermelho em cima;
   - um tapete de faixas no térreo, uma faixa laranja e 4 janelas em cada andar;
   - o teto escuro com as constelações, uma para cada fase de 1-1 a 3-3.
 - **A colisão da parede** fica 35 cm para dentro da parede que se vê. Assim o braço da câmera, raspando de lado numa sacada, para antes dela; senão a câmera ia para fora da torre e um lado da tela ficava azul-escuro.
+- **Farol mais largo por dentro** (pedido do usuário em 2026-11-12: "tem muitos problemas de câmera quando chego perto da galeria de prêmios pela câmera empurrada pela escada"):
+  - **o porquê:** o primeiro lance da escada sobe justamente por cima da estante (325°) e do cabide (354°). De frente para eles, a câmera (a 7,5 m) ficava atrás do Faísca, dentro da escada, e o braço batia nos degraus e, mais ainda, nas paredes invisíveis de 3,2 m em cima das murinhas, que estavam na mesma camada de tudo;
+  - **o raio** foi de 12 para 16 m. A escada ficou onde estava, e o que fica encostado na parede foi junto com ela, 4 m para fora: a máquina (13,4 m), a estante (15,25 m), o cabide (15 m, mais perto da parede que antes, porque fica embaixo da parte mais alta do lance), o elevador (`ElevadorFarol.DENTRO` 12,2 m), as placas dos prêmios, as luzes e as vagas dos moradores. As sacadas vão de 7,5 m até a parede, agora com 8,5 m;
+  - **as paredes invisíveis** das murinhas foram para a `CAMADA_LIMITE` (só o Faísca esbarra; a parte que se vê continua sólida para tudo);
+  - **a câmera mais perto dentro da torre** (`Jogador.distancia_camera`, que o `HubFarol._aproximar_camera` muda a cada quadro): 6 m em todo o farol e 4,8 m no térreo, do lado de fora da escada (a galeria). O giro continua livre. Saindo do farol, volta aos 7,5 m;
+  - **o teste:** o `--faisca-jogo` põe o Faísca de frente para a máquina, a estante e o cabide, a 1,6 m e a 2,6 m, e confere que o braço da câmera fica esticado. Antes do cabide ir para 15 m, ele ainda batia a 2,6 m do cabide (4,3 de 4,8 m).
 - **As portas** (as fases do mapa abaixo, com os nomes e números de lá; mudam quando cada fase for planejada):
   - térreo: a 1-1 a oeste, os Túneis do Morro (pedem 30) a leste e a saída para a ilha ao sul;
   - 2º andar: Cozinha Gigante (60) ao sul, Nuvens de Algodão-Doce (90) a oeste e Quarto de Brinquedos (120) ao norte;
@@ -2269,7 +2275,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 1 | **Faisquinhas para resgatar:** os vaga-lumes viram robozinhos presos em bolhas das Bolotas, 6 por fase (os 3 de hoje e mais 3 em lugares difíceis). No farol eles aparecem brincando, acenando e dançando junto, e cada grupo abre uma coisa nova (10 consertam o elevador do farol, 20 abrem a sala de brinquedos, 30 acendem o farolete do topo) | M/G | feito em 2026-11-11 (a sala de brinquedos virou o trenzinho do térreo) |
 | 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
 | 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
-| 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11 |
+| 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11; em 2026-11-12 os chapéus viraram tintas, escolhidas numa lojinha com prévia no soco do cabide |
 | 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | os três feitos em 2026-11-11: o Bolotão Fofão (andar 1), o Chef Bolotão (andar 2) e o Pinguinzão do Gelo (andar 3) |
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
@@ -2279,6 +2285,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
 | 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
+| 14 | **Perder todos os corações** (pedido do usuário em 2026-11-12): nas fases, volta ao último posto, ou ao começo se ainda não acendeu nenhum; no chefe, a luta recomeça do zero | P | anotado em 2026-11-12. Nas fases isso já acontece (o "curto": faísca, fumacinha e volta ao último posto com os 3 corações). No chefe, hoje o Faísca volta ao começo da arena com os 3 corações e o chefe continua machucado: falta recomeçar a luta (o chefe com os corações cheios e a arena como no começo) |
 
 **Ordem sugerida:**
 - primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
@@ -2314,7 +2321,7 @@ Pedido do usuário: "comeca", depois da lista acima, pelos itens 1 e 2. O vaga-l
 **O que acontece com ele:**
 - **Preso:** fica numa bolha lilás das Bolotas, flutuando, com os bracinhos empurrando a bolha. Encostar estoura a bolha. Ele pula duas vezes, acena e sobe girando para o farol, com o som novo `faisquinha_salvo`.
 - **Na Bolota:** o 5 vai numa bolha amarrada por um fio em cima de uma Bolota que anda e não dá para encostar. Vencida a Bolota, a bolha estoura e ele cai no chão embaixo (ou onde a Bolota estava, se embaixo não tiver chão). Fica pulando e acenando até o Faísca encostar.
-- **Já salvo em outra vez:** transparente, como antes.
+- **Já salvo em outra vez:** desde 2026-11-12, só a bolha com uma moeda dourada dentro, girando (pedido do usuário). Estourar dá uma moeda, sem contar como Faisquinha, sem o tema do resgate e sem festa no controle. O da Bolota, vencida ela, estoura lá em cima e a moeda sai dali. Até então era o mesmo boneco transparente, e não dava para saber se era um novo (ver "Em aberto").
 
 **O chamado (item 2).** Quem ainda está preso, a menos de 14 m, chama com um "piu-piu!" de robozinho (`faisquinha_chama`, gerado no `tools/gerar_sons.py`, que agora aceita o grupo: `python3 tools/gerar_sons.py faisquinhas`). A menos de 9 m, o controle dá tremidinhas no motor fraco (`Jogador.tremidinha`), mais rápidas quanto mais perto. Respeitam a vibração dos Ajustes.
 
@@ -2324,7 +2331,7 @@ Pedido do usuário: "comeca", depois da lista acima, pelos itens 1 e 2. O vaga-l
 - Na pausa, uma linha com a estrelinha, o Faisquinha e a Estrela Grande, cada um com o número. Na fase é "pegas/total"; no farol é o jogo todo (estrelinhas, "salvos/42" e "Estrelas Grandes/8").
 - Na porta de cada fase, 6 cabecinhas: brancas com a tela e a luz da antena se salvos, cinza se não.
 
-**No farol (`HubFarol`).** Cada Faisquinha salvo mora no andar do mundo de onde veio: os da 1-x no térreo, os da 2-x no 2º andar e os da 3-x no 3º. As vagas ficam de 15 em 15 graus, em dois anéis, longe das portas, do elevador, das placas, da entrada e do patamar da escada. No farol eles são 1,3x maiores (a sala tem 24 m e, do tamanho das fases, quase não apareciam). Lá eles:
+**No farol (`HubFarol`).** Cada Faisquinha salvo mora no andar do mundo de onde veio: os da 1-x no térreo, os da 2-x no 2º andar e os da 3-x no 3º. As vagas ficam de 15 em 15 graus, em dois anéis, longe das portas, do elevador, das placas, da entrada e do patamar da escada. No farol eles são 1,3x maiores (a sala tinha 24 m de largura, hoje 32 m, e do tamanho das fases quase não apareciam). Lá eles:
 - ficam perto de casa e de vez em quando dão um pulinho, um giro ou um aceno;
 - olham e acenam quando o Faísca chega perto;
 - dançam junto quando ele dança, todos os do mesmo andar;
@@ -2423,17 +2430,15 @@ Pedido do usuário: "Pode seguir pra proxima etapa", depois do DualSense. Como o
 - **Pedir:** o soco no botão pede (ela fica no grupo dos alvos, como o baú). Sem moedas ou já com tudo, ela balança que não e a placa pisca, com a faixa "Faltam N moedas" ou "Você já tem todos os brindes!".
 - **Pagando 25:**
   - a máquina chacoalha;
-  - a cápsula sai pela boca e rola, abre com confete e o brinde sobe girando ("Figurinha nova!" ou "Roupinha nova!", com o nome);
-  - depois voa para a vaga da estante ou para a cabeça do Faísca.
-- **O sorteio** (`Brindes.sortear`): nunca repete. A 1ª é uma figurinha e a 2ª uma roupinha, para a criança ver as duas coisas logo.
+  - a cápsula sai pela boca e rola, abre com confete e o brinde sobe girando ("Figurinha nova!" ou "Tinta nova!", com o nome);
+  - depois voa para a vaga da estante, ou até o Faísca, que fica pintado com a tinta nova (e a lata vai para o cabide).
+- **O sorteio** (`Brindes.sortear`): nunca repete. A 1ª é uma figurinha e a 2ª uma tinta, para a criança ver as duas coisas logo.
 
 **Os 18 brindes** (`scripts/faisca/brindes.gd`):
 - **12 figurinhas** para a estante (`estante_de_figurinhas.gd`, na parede a noroeste, duas prateleiras de 6): os 11 monstros da turma das Bolotas, mexendo na animação de parado, e um Faisquinha dourado. A que falta é uma cápsula cinza com "?".
-- **6 roupinhas** (chapéus da lojinha da ilha): palha, mago, palhaço, urso, duende e soldadinho. A coroa ficou de fora, por ser a do Necromante, com caveira.
-  - **No Faísca:** vão no osso da cabeça (`Robo.vestir_chapeu`), 1,35x maiores e mais altos que nas crianças, com o ajuste de cada um conferido nas fotos (`Robo.AJUSTES_CHAPEU`).
-  - **Trocar:** a nova ele já veste. O cabide ao norte (`cabide_de_roupas.gd`) mostra as que saíram, e o soco nele troca para a próxima e depois para nenhuma.
+- **6 tintas** para as partes laranja do Faísca: azul, verde, roxo, rosa, vermelho e dourado (a dourada brilha como metal). Até 2026-11-12 eram 6 chapéus da lojinha da ilha; ver "Tintas no lugar das roupinhas", logo abaixo.
 
-**Save:** `moedas`, `brindes` e `roupa`.
+**Save:** `moedas`, `brindes` e `tinta` (até 2026-11-12, `roupa`).
 
 **Testes:**
 - `--faisca-moedas`:
@@ -2442,9 +2447,23 @@ Pedido do usuário: "Pode seguir pra proxima etapa", depois do DualSense. Como o
   - o Faisquinha dando 5 e o baú dando 20.
 - `--faisca-jogo`:
   - o soco de verdade no botão sem moedas;
-  - a figurinha na estante e a roupinha na cabeça;
-  - o cabide trocando, o save e "já tem todos".
-- Fotos: `--faisca-brindes-captura`, com a máquina, a cápsula aberta, a estante com o cabide e o Faísca com cada chapéu.
+  - a figurinha na estante e a tinta pintando o Faísca;
+  - a lojinha das tintas, o save, os chapéus de antes virando tintas e "já tem todos".
+- Fotos: `--faisca-brindes-captura`, com a máquina, a cápsula aberta, a estante com o cabide, o cabide de perto, a lojinha (uma tinta marcada e uma trancada) e o Faísca com cada tinta.
+
+### Tintas no lugar das roupinhas (2026-11-12)
+
+Pedido do usuário: "o modo de trocar chapéu não ficou legal, talvez ganhar tintas pra trocar a cor do faisca seja mais interessante. e a cor precisa ser trocada a partir de um tipo de lojinha (com preview) igual das crianças na ilha (pode manter abrir essa lojinha dando soco no cabide no farol)".
+
+- **As tintas** (`Brindes`, tipo "tinta"): as seis da Máquina de Brindes ficam no lugar dos seis chapéus, e a de fábrica (laranja, `Brindes.COR_ORIGINAL`) está sempre lá. Pintar troca a cor do material laranja do robô (`Robo.pintar`): a placa do peito, as orelhas, o friso da tela, as mãos e as pontas dos pés.
+- **A lata** (`Brindes.lata`): o balde de metal do KayKit RPG Tools Bits (`assets/faisca/tintas/`), com a tinta em cima e dois escorridos. É o brinde que sai da cápsula e o que fica pendurado em cada gancho do cabide (`cabide_de_tintas.gd`, antes `cabide_de_roupas.gd`).
+- **A lojinha das tintas** (`painel_tintas.gd`), aberta pelo soco no cabide, no molde do guarda-roupa da ilha:
+  - à esquerda, o Faísca de verdade num retrato (`Portrait`), girando devagar, que já prova a tinta do cartão marcado;
+  - à direita, os sete cartões, cada um com a lata desenhada na cor; o da tinta em uso tem a borda e o visto verdes;
+  - as que ainda não saíram têm cadeado: dá para marcar e ver no Faísca, mas o A nega e mostra a cápsula com "Essa sai na Máquina de Brindes!";
+  - o A pinta e o Faísca dá tchau no retrato, e a lojinha continua aberta para provar outras; B, Voltar ou o botão de menu fecham;
+  - com ela aberta, o jogo fica parado como na pausa, e o controle volta um instante depois de fechar.
+- **Saves de antes:** quem tinha chapéus ganha as tintas no lugar (`Brindes.migrar`, na mesma ordem: palha → azul, mago → verde, palhaço → roxo, urso → rosa, duende → vermelho, soldadinho → dourado) e fica com a cor de fábrica. O save do PC tinha o de duende e o de palha, que viram o vermelho e o azul.
 
 ### Chefe do andar 1: o Bolotão Fofão (item 5 da lista, feito em 2026-11-11)
 
@@ -2906,6 +2925,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 
 ### Em aberto
 
+- **Faisquinha já salvo parecido demais com o novo** (relato do usuário em 2026-11-12: "pego os mesmos mini faiscas e a contagem cresce", até 6 de 6, "mesmo não achando os últimos 3"). A conta estava certa: o save do PC tinha na 1-1 os três de antes ("0", "1" e "2", os antigos vaga-lumes) e, nessa partida, contaram o "3", o "4" e o "5", os três que entraram na fase em 2026-11-11 (dois nos bolsos e o da Bolota-cogumelo). O já salvo é só o mesmo boneco com 40% de transparência, na mesma bolha lilás um pouco mais apagada, e sozinho, de longe, quase não se nota . O `--faisca-jogo` agora confere o caso (com "0", "1" e "2" salvos, as três bolhas dão uma moeda cada e não contam, e um novo conta). Resolvido no mesmo dia, a pedido do usuário: o já salvo virou uma bolha com uma moeda dentro (ver "O que acontece com ele", nos Faisquinhas).
 - Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
 - Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
 - Se o Faísca pode dirigir o kart.
