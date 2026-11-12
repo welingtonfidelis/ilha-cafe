@@ -5,10 +5,10 @@ extends SceneTree
 ## as camadas dos bolos da 2-2, a neve no pico da 3-1.
 ## Fica fora o que não se vê: as faces viradas para baixo, as que têm algo sólido logo na frente (escondidas dentro de
 ## outra peça) e as de material igual (a mesma cor nas duas, que não pisca). O desenho só de sombra também fica fora.
-## Uso: godot --headless --path . -s res://tools/revisor_piscadas.gd [-- 1-1 1-2 2-1 2-2 2-3 3-1 3-2]
+## Uso: godot --headless --path . -s res://tools/revisor_piscadas.gd [-- 1-1 1-2 2-1 2-2 2-3 3-1 3-2 3-3]
 ## Sem nomes, revisa todas as fases do Faísca. Sai com código 1 se achar alguma.
 
-const NIVEIS := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "chefe-1", "chefe-2", "chefe-3"]
+const NIVEIS := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3", "chefe-1", "chefe-2", "chefe-3"]
 const DIST := 0.002
 const AREA_MIN := 0.05
 
@@ -38,6 +38,7 @@ func _revisar(id: String) -> int:
 		"2-3": nivel = Fase23.new()
 		"3-1": nivel = Fase31.new()
 		"3-2": nivel = Fase32.new()
+		"3-3": nivel = Fase33.new()
 		"chefe-1": nivel = Chefe1.new()
 		"chefe-2": nivel = Chefe2.new()
 		"chefe-3": nivel = Chefe3.new()

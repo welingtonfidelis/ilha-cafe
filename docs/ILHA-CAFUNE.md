@@ -1673,7 +1673,7 @@ Toda fase do Faísca segue este padrão. O documento ilustrado está em `docs/le
 - `maquete-2-3-quarto-de-brinquedos.html`, uma fase de chão (https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V).
 - `maquete-3-1-pico-gelado.html`, a primeira já no tamanho maior, com cinco playgrounds (https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4).
 - `maquete-3-2-fabrica-de-blocos.html`, fase de chão com esteiras, blocos-pisca e o Martelinho de Apito (https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh); aprovada pelo usuário em 2026-10-31 ("continua, ficou bom") e construída no mesmo dia.
-- `maquete-3-3-moinhos-do-vento.html`, fase de céu com faixas de vento e a Pipa (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd); feita em 2026-11-10, esperando aprovação.
+- `maquete-3-3-moinhos-do-vento.html`, fase de céu com faixas de vento e a Pipa (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd); feita em 2026-11-10, aprovada e construída em 2026-11-12.
 
 As páginas carregam a three.js do jsDelivr, então precisam de internet. A pasta tem `.gdignore`.
 
@@ -2230,7 +2230,7 @@ O pedido: "consegue criar um revisor ou script que teste os itens que deveriam t
   - Nenhum deles deixa o Faísca entrar inteiro numa peça.
 - **Testes:** depois das colisões novas, `--faisca-fase`, `--faisca-fase-1-2`, `--faisca-fase-2-1`, `--faisca-fase-2-2` e `--faisca-fase-2-3` passaram. A ilha foi regenerada (`tools/gerar_ilha.gd`), e a cena só mudou nas peças acima e nos `unique_id`.
 
-### Fase 3-3: Moinhos do Vento (maquete em 2026-11-10, esperando aprovação)
+### Fase 3-3: Moinhos do Vento (maquete em 2026-11-10, aprovada e construída em 2026-11-12)
 
 Depois da separação dos jogos, o usuário pediu para seguir ("vamos seguir") nas próximas etapas. A primeira de peso era dar um final ao jogo do Faísca: a porta da nave pede 8 Estrelas Grandes e só havia 7 fases, então faltam a 3-3 e a fase da nave. A maquete da 3-3 veio antes, como nas anteriores: `docs/level-design/maquete-3-3-moinhos-do-vento.html`, também como artifact privado (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd).
 
@@ -2252,6 +2252,30 @@ Depois da separação dos jogos, o usuário pediu para seguir ("vamos seguir") n
 - **Viagens:** o balão de ar quente (campina para as ilhas), uma nuvem soprada pelo vento (ilhas para a fazenda), o teleférico que vai e volta (fazenda para os moinhos) e a ponte de tábuas até a sacada de baixo do Moinho Gigante.
 - **Bolotas da turma:** abelhas e morcegos (que voam) nas ilhas e nos moinhos, o porco disparando pelo pasto, e cogumelos, pinguins, aliens e um ciclope.
 - **Depois da 3-3:** a fase da nave Aspiratrão, com o Rei Bolotão e o final da história, para o jogo do Faísca ter fim.
+
+**Como ficou no jogo** (2026-11-12, pedido do usuário: "Acho que podemos seguir pra fase 3-3, aprovado sua maquete"; `scripts/faisca/fases/fase_3_3.gd`, `Fase33`). O esqueleto é o da maquete, nos mesmos lugares da 3-1 (a campina onde fica o lago, a fazenda onde fica a vila). O que mudou e o que é novo:
+- **O vento** (`FaixaDeVento`): uma área em caixa de `de` até `ate`, com o volume clarinho, os riscos brancos correndo (um MultiMesh) e as birutas laranja e brancas. A cada quadro ela sopra no Faísca (`Jogador.soprar`). Flutuando dentro dela, a velocidade dele vai para a do vento mais 45% do analógico, e o tempo de voo não acaba; sem flutuar, é só um empurrãozinho. Medido no teste: por cima do riacho, com o vento, ele pousa a 34 m de onde pulou; sem vento, a 12 m. Contra o vento, ele fica parado no ar.
+  - **rajadas** (`rajada`): sopram 2,6 s e param 2,4 s; um segundo antes de voltar, as birutas se agitam (o aviso).
+- **As colunas de vento** (`ColunaDeVento`): a grade escura com o aro laranja, o tubo de ar e as fitas subindo em espiral. Com a pipa, sobem a 7 m/s até `topo_y` e lá seguram o Faísca como uma mola (sem isso, o embalo levava 1,5 m acima); sem a pipa, ele desce devagar. As das janelas começam desligadas e sobem quando ligam.
+- **A Pipa** (`Pipa`): girando na porta do celeiro da fazenda. Pega, vale até o fim da fase (`Jogador.pipa`, que o `tirar_poderes` desliga). Enquanto ele voa com ela, a pipa aparece lá em cima, presa pelo fio.
+- **As peças de soco** (no grupo dos alvos, como o registro da 2-1): o `CataVento`, que gira, e o `Ferrolho`, que abre (os freios dos moinhos e as janelas do Moinho Gigante). Os golpes medem do pé do alvo, então o ferrolho fica na altura de onde o Faísca bate (no alto da coluna, ou no degrau).
+- **A argola-sino** (`ArgolaSino`): o aro laranja de pé no meio de uma faixa, com o sino amarelo (o do Holiday Bits) em cima; atravessar faz tocar e o aro fica dourado.
+- **O moinho de gôndolas** (`MoinhoDeGondolas`): feito por código, porque o moinho do Medieval Hexagon, no tamanho da roda (7 m de raio), teria 16 m de largura e não caberia nas ilhas. Torre creme, telhado colorido, quatro varas com velas e quatro gôndolas de tábua sempre niveladas, que levam o Faísca. Travado até o freio; destravado, gira a 0,3 rad/s. No ponto mais perto, a gôndola passa a uns 12 m da ilha seguinte, mais alta que ela, e de lá se desce flutuando (o teste faz o pulo).
+  - **armadilha:** as gôndolas são movidas pelo moinho, então ficam sem `sync_to_physics` (como o trem do farol) e são reposicionadas a cada quadro, mesmo paradas. Movidas só de vez em quando (no começo), a física guardava uma velocidade velha e enorme, e quem pulasse de uma gôndola de moinho travado saía voando (no teste, ele foi parar a 5 km de altura).
+- **O Moinho Gigante:** a torre de pedra até 30 m e a de madeira até 40 m, a sacada de baixo (com a murinha, menos onde chega a rampa) e a do topo (a arena), segurada por pilares de 30 em 30 graus. O telhado vermelho vai até 54 m, com o brilho do marco saindo do bico, e as pás gigantes ficam viradas para o sul. Os moinhos do Medieval Hexagon (`assets/faisca/moinhos/`) aparecem pequenos: o moinho amarelo da campina (mini-marco) e os das nuvens de enfeite. A torre de vigia, o fardo, a cerca e as nuvens também são desse pacote.
+- **A escada** (no lugar do alçapão da maquete): três trechos de seis degraus por fora da torre, debaixo da arena, e entre um trecho e o outro o degrau é alto demais. No fim de cada trecho, o soco no ferrolho da janela liga a coluna do vão (a pipa leva até o trecho seguinte), e a terceira janela acorda o vendaval. Quem cai da escada cai na sacada de baixo.
+- **O vendaval** (o momento especial, item 9; `Vendaval`): a terceira janela acorda o moinho. As pás disparam e um redemoinho de riscos brancos envolve a torre, com fardos de feno e folhas girando, o uivo do vento (`vendaval`) e o controle tremendo. Ele leva o Faísca voando: primeiro para fora (sem cruzar os pilares), depois uma volta e um quarto em espiral, subindo até 45 m, a 16,6 m do eixo (por fora da arena e por dentro das velas), e por fim pousando na arena, longe do baú. Leva uns 6,5 s, com o controle desligado, e passa por sete estrelinhas no caminho. Depois, o último degrau chama o vendaval de novo (para quem cair).
+- **Os bolsos:** o Faisquinha 3 no celeirinho da campina; o V1 (Faisquinha 0) na ilhota, por uma faixa mais fraca que desce, e um fardo que quica de volta (a mola, força 23); o V2 (1) no caibro do telhado do celeiro, pela coluna de trás; o V3 (2) na ilhota atrás do terceiro moinho. O Faisquinha 4 está na salinha da parede rachada, em -150 graus na sacada de baixo, entre dois pilares (a parede na escala 0,85, na largura da salinha). O 5 vai no porco da fazenda. Os corações ficam no monte dos fardos, no paiol e na salinha.
+- **O riacho da campina:** a ilha de baixo é o leito, de areia, a 1,2 m. As duas margens de grama são pedaços do círculo cortados na linha do riacho (`_margem`), e a água transparente só molha (o "poca"; `molhou` conta). Há pedras para sair dos dois lados. Só os topos de grama ganham o desenho e a vegetação (`leva_desenho` com a marca "grama").
+- **Viagens:** o balão de ar quente (tipo novo "balao" na `Carona`), a nuvem soprada (travada até as três argolas) e o teleférico (a "cabine", travado até os três cata-ventos dos silos, que volta também). A rampa de tábuas leva da última ilha do corredor à sacada de baixo.
+- **Dicas novas, com figura** (`hud.gd`): "vento", "argola", "pipa", "catavento", "freio" e "janela".
+- **Sons novos** (`gerar_sons.py vento`): o "vento" (o fiu) e o "vendaval" (o uivo, que repete sem emenda).
+- **Números:** 130 estrelinhas soltas (175 com as das Bolotas), 4 postos, 6 Faisquinhas, 3 corações, 15 Bolotas, 8 faixas de vento e 9 colunas.
+- **A porta no farol:** `assets/faisca/portas/fase_3_3.jpg`, a campina com o balão e o moinho atrás (a foto `porta` do `--faisca-fase-3-3-captura`).
+- **Testes:**
+  - `--faisca-fase-3-3`: 43 pontos. Confere as contagens, o brilho à vista das entradas, o vento que leva (e o voo sem vento, e contra o vento), a água, os cata-ventos e o portão de feno, o balão, as argolas e a nuvem, o V1 e o fardo, a coluna sem e com a pipa, os silos, o V2, o teleférico, o freio e a gôndola (com o pulo até a ilha seguinte), as rajadas, as janelas e as colunas da escada, a queda na sacada, a parede rachada, o vendaval (de novo também) e o baú;
+  - fotos no `--faisca-fase-3-3-captura`;
+  - a 3-3 entrou também no `--faisca-faisquinhas`, no `--faisca-mundo` e nos dois revisores (física e piscadas, que dão 0).
 
 ### Lista de melhorias e novidades do Faísca (2026-11-11)
 
@@ -2287,12 +2311,13 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos), o da 2-3 (a luz do quarto apagando), o da 3-1 (a avalanche) e o da 3-2 (a linha de montagem disparada); falta o da 3-3, quando ela for construída |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | feito em 2026-11-11 e 2026-11-12: o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos), o da 2-3 (a luz do quarto apagando), o da 3-1 (a avalanche), o da 3-2 (a linha de montagem disparada) e o da 3-3 (o vendaval) |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
-| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
+| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; a 3-3 construída em 2026-11-12; falta a nave (propor antes) |
 | 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
 | 14 | **Perder todos os corações** (pedido do usuário em 2026-11-12): nas fases, volta ao último posto, ou ao começo se ainda não acendeu nenhum; no chefe, a luta recomeça do zero | P | anotado em 2026-11-12. Nas fases isso já acontece (o "curto": faísca, fumacinha e volta ao último posto com os 3 corações). No chefe, hoje o Faísca volta ao começo da arena com os 3 corações e o chefe continua machucado: falta recomeçar a luta (o chefe com os corações cheios e a arena como no começo) |
+| 15 | **O chefe de cada andar abre com as fases do andar** (pedido do usuário em 2026-11-12: "os chefes de cada nível do farol desbloqueiam quando o jogador passa todas as fases do nível"): hoje a porta do chefe pede um número de Estrelas Grandes no total (2, 5 e 7); vai pedir as Estrelas Grandes das fases daquele andar. Com a 3-3 pronta, o Pinguinzão pediria as três do mundo 3 (hoje pede 7 no total, dá para abrir sem a 3-3) | P | anotado em 2026-11-12, para depois |
 
 **Ordem sugerida:**
 - primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
@@ -2786,7 +2811,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 - fase por fase, um momento especial em cada uma;
 - na 1-1, na 1-2 e na 2-1, o momento vira o quinto playground (o trecho novo que deixa a fase mais longa), e cada saída passa a pedir uma tarefa;
 - a revisão da 2-1 entra junto com ela;
-- depois, a 3-3 (a maquete espera aprovação) e a nave final com o Rei Bolotão (proposta antes de construir).
+- depois, a 3-3 (aprovada e construída em 2026-11-12, com o vendaval) e a nave final com o Rei Bolotão (proposta antes de construir).
 
 | Fase | Momento especial |
 |---|---|
@@ -2797,7 +2822,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 | 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho (feito) |
 | 3-1 | a avalanche na Encosta das Avalanches (feito) |
 | 3-2 | a linha de montagem dispara (feito) |
-| 3-3 | o vendaval (quando for construída) |
+| 3-3 | o vendaval que leva o Faísca voando em volta do Moinho Gigante até o topo (feito) |
 
 **1-1 Pulinhos nas Nuvens (feito em 2026-11-11):**
 - **A Ponte Fofa, o playground 4 novo** (no lugar da plataforma que ia do Jardim até a torre; a Subida virou o 5):

@@ -204,6 +204,13 @@ var no_ioio := false
 ## Tem a Luva de Neve (3-1) e está em pé no gelo agora.
 var luva_de_neve := false
 var no_gelo := false
+## Tem a Pipa (3-3): flutuando numa coluna de vento, ela leva para o alto.
+var pipa := false
+## O vento que sopra nele agora (as faixas e colunas de vento da 3-3 chamam `soprar` a cada quadro de física; vale o
+## do quadro anterior). Flutuando dentro do vento, ele é levado e o voo não acaba; sem flutuar, só um empurrãozinho.
+var vento := Vector3.ZERO
+var _vento_proximo := Vector3.ZERO
+var _pipa_visual: Node3D
 ## Tem o Martelinho de Apito (3-2) e está descendo na pancada agora.
 var martelinho := false
 var martelando := false
@@ -298,6 +305,7 @@ func _ready() -> void:
 	_montar_balao()
 	_montar_ioio()
 	_montar_martelo()
+	_montar_pipa()
 	_som_laser = AudioStreamPlayer.new()
 	var zumbido := Sfx.stream("faisca_laser").duplicate() as AudioStreamWAV
 	zumbido.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -408,6 +416,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	vento = _vento_proximo
+	_vento_proximo = Vector3.ZERO
 	_olhar_com_analogico(delta)
 	_guiar_camera(delta)
 	camera_pivo.rotation.y = yaw
@@ -449,10 +459,16 @@ func _physics_process(delta: float) -> void:
 		andar = dir * 0.55
 
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z)
+	var vento_h := Vector3(vento.x, 0.0, vento.z)
 	if no_gelo and no_chao:
 		horizontal = horizontal.lerp(andar * velocidade, 1.0 - exp(-ACELERACAO_GELO * delta))
+	elif flutuando and vento != Vector3.ZERO:
+		# Flutuando no vento: ele leva (o analógico ainda ajuda um pouco, e contra o vento não passa).
+		horizontal = horizontal.lerp(vento_h + andar * velocidade * 0.45, 1.0 - exp(-3.5 * delta))
 	else:
 		horizontal = _acelerar(horizontal, andar * velocidade, no_chao, delta)
+		# Sem flutuar, o vento só empurra um pouquinho (no chão, quase nada).
+		horizontal += vento_h * (0.06 if no_chao else 0.35) * delta
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 
@@ -509,12 +525,14 @@ func _physics_process(delta: float) -> void:
 			_cortou_pulo = true
 		if pode_flutuar:
 			flutuando = true
-			_flutuar_restante -= delta
+			# Dentro do vento o voo não acaba (sai dele e volta a contar).
+			if vento == Vector3.ZERO:
+				_flutuar_restante -= delta
 			if not _impulso_usado:
 				_impulso_usado = true
 				velocity.y = maxf(velocity.y, impulso_laser)
 				Sfx.play(self, "faisca_laser_liga", 0.0, 0.05)
-			velocity.y = lerpf(velocity.y, 0.4, 1.0 - exp(-12.0 * delta))
+			velocity.y = lerpf(velocity.y, 0.4 + vento.y, 1.0 - exp((-12.0 if vento.y == 0.0 else -4.0) * delta))
 		else:
 			var g := gravidade * (gravidade_queda if velocity.y < 0.0 else 1.0)
 			# Só na subida: na descida, segurando, quem segura o Faísca é o laser (e o pulo longo não pode crescer).
@@ -565,6 +583,7 @@ func _physics_process(delta: float) -> void:
 	_corpo_vivo(delta)
 	_passos(delta)
 	_atualizar_lasers()
+	_atualizar_pipa(delta)
 	_atualizar_sombra()
 	_atualizar_animacao()
 
@@ -1108,7 +1127,38 @@ func tirar_poderes() -> void:
 	ioio = false
 	luva_de_neve = false
 	martelinho = false
+	pipa = false
 	_parar_pancada()
+
+
+# --- Vento e Pipa (3-3) ---------------------------------------------------------------
+
+## Uma faixa ou coluna de vento soprando nele neste quadro (somam, se forem várias).
+func soprar(v: Vector3) -> void:
+	_vento_proximo += v
+
+
+## A pipa laranja e branca, com a rabiola de lacinhos e o fio até a mão: aparece lá em cima quando ele voa com ela.
+func _montar_pipa() -> void:
+	_pipa_visual = Node3D.new()
+	_pipa_visual.name = "Pipa"
+	_pipa_visual.top_level = true
+	_pipa_visual.visible = false
+	add_child(_pipa_visual)
+	for p in Pipa.desenho():
+		_pipa_visual.add_child(p)
+
+
+func _atualizar_pipa(delta: float) -> void:
+	var mostra := pipa and flutuando
+	_pipa_visual.visible = mostra
+	if not mostra:
+		return
+	var atras := visual.global_basis.z
+	var alvo := global_position + Vector3.UP * 4.2 + atras * 1.2
+	_pipa_visual.global_position = _pipa_visual.global_position.lerp(alvo, 1.0 - exp(-10.0 * delta)) \
+			if _pipa_visual.global_position.distance_to(alvo) < 4.0 else alvo
+	_pipa_visual.rotation = Vector3(0.25, visual.global_rotation.y + PI, sin(Time.get_ticks_msec() / 260.0) * 0.18)
 
 
 # --- Martelinho de Apito (3-2) --------------------------------------------------------

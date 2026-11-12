@@ -10,7 +10,7 @@ extends RefCounted
 ## - a Bolota perto da dancinha para, dança junto, solta coraçõezinhos e não machuca; no fim, aplaude e volta a seguir.
 ## Uso: godot --headless --path . -- --faisca-mundo
 
-const FASES := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2"]
+const FASES := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3"]
 
 var solo: Node
 var j: Jogador

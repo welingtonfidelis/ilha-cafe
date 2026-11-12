@@ -244,7 +244,9 @@ func _moradores_e_premios() -> bool:
 			and (hub.get_node("Placa_elevador/Numero") as Label3D).text == "%d/10" % um) and ok
 	j.abrir_pausa()
 	await _esperar_real(0.2)
-	ok = _conferir("a pausa no farol conta as estrelinhas, os Faisquinhas e as Estrelas Grandes", j.contador_pausa.faisquinhas.text == "%d/42" % um
+	# Seis Faisquinhas por fase pronta (a conta cresce quando uma fase nova fica pronta: 48 com a 3-3).
+	var prontas := FaiscaJogo.FASES.filter(func(fs: Dictionary) -> bool: return fs.cena != "" and fs.tipo in ["ceu", "chao"]).size()
+	ok = _conferir("a pausa no farol conta as estrelinhas, os Faisquinhas e as Estrelas Grandes", j.contador_pausa.faisquinhas.text == "%d/%d" % [um, prontas * FaiscaJogo.FAISQUINHAS_POR_FASE]
 			and j.contador_pausa.grandes.text == "%d/8" % j.grandes.size() and j.contador_pausa.estrelas.text == str(j.total_estrelas()),
 			"(%s, %s, %s)" % [j.contador_pausa.estrelas.text, j.contador_pausa.faisquinhas.text, j.contador_pausa.grandes.text]) and ok
 	j.botoes_pausa.continuar.pressed.emit()

@@ -38,7 +38,8 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/fase_3_1.gd", "imagem": "res://assets/faisca/portas/fase_3_1.jpg"},
 	{"id": "3-2", "nome": "Fábrica de Blocos", "tipo": "chao", "pede": 180, "andar": 2, "lado": 90,
 		"cena": "res://scripts/faisca/fases/fase_3_2.gd", "imagem": "res://assets/faisca/portas/fase_3_2.jpg"},
-	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180, "cena": "", "imagem": ""},
+	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180,
+		"cena": "res://scripts/faisca/fases/fase_3_3.gd", "imagem": "res://assets/faisca/portas/fase_3_3.jpg"},
 	# Os chefes de cada andar (item 5 da lista do Faísca): a porta abre com as Estrelas Grandes do mundo; vencido, ele
 	# conta em `chefes`, não nas Estrelas Grandes (a nave continua pedindo 8).
 	{"id": "chefe-1", "nome": "Bolotão Fofão", "tipo": "chefe", "pede": 0, "pede_grandes": 2, "andar": 0, "lado": 30,

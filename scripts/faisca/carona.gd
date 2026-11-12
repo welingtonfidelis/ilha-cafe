@@ -14,6 +14,7 @@ extends AnimatableBody3D
 ## esqui azul, pendurada no cabo, com encosto atrás e grade dos lados). Na 3-2 (2026-10-31) vieram o "palete" (o
 ## palete laranja pendurado no gancho da ponte rolante), a "empilhadeira" (o Faísca vai no palete do garfo) e o
 ## "montacarga" (o elevador laranja que leva de volta quem caiu no chão da fábrica, que sobe reto e usa `giro_fixo`).
+## Na 3-3 (2026-11-12) veio o "balao" (o balão de ar quente: o cesto de vime com o balão vermelho em cima).
 
 signal saiu
 signal chegou
@@ -73,6 +74,8 @@ func _ready() -> void:
 			_montar_empilhadeira()
 		"montacarga":
 			_montar_montacarga()
+		"balao":
+			_montar_balao()
 		_:
 			_montar_nuvem()
 	_area = Area3D.new()
@@ -293,6 +296,46 @@ func _montar_cadeirinha() -> void:
 	_caixa(Vector3(3.4, 0.15, 0.15), Vector3(0, 4.9, -1.45), ferro, true)
 	_caixa(Vector3(0.12, 2.4, 0.12), Vector3(0, 6.1, -1.45), ferro, false)
 	_caixa(Vector3(1.0, 0.35, 0.5), Vector3(0, 7.4, -1.45), ferro, false)
+
+
+## Balão de ar quente: o cesto de vime (chão e grade baixa dos quatro lados, aberto atrás para entrar), as quatro cordas
+## e o balão vermelho com a faixa amarela lá em cima (só enfeite: o Faísca não esbarra nele).
+func _montar_balao() -> void:
+	var vime := _material(Color("b07a45"))
+	var vime_escuro := _material(Color("8a5a36"))
+	var vermelho := _material(Color("e94f4f"))
+	var amarelo := _material(Color("ffd23f"))
+	var corda := _material(Color("3a3150"))
+	_caixa(Vector3(3.6, 0.3, 3.6), Vector3(0, -0.15, 0), vime, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.18, 0.8, 3.6), Vector3(lado * 1.71, 0.4, 0), vime_escuro, true)
+	_caixa(Vector3(3.6, 0.8, 0.18), Vector3(0, 0.4, 1.71), vime_escuro, true)
+	for x in [-1.0, 1.0]:
+		for z in [-1.0, 1.0]:
+			_caixa(Vector3(0.06, 4.2, 0.06), Vector3(x * 1.6, 2.5, z * 1.6), corda, false)
+	var bola := MeshInstance3D.new()
+	bola.mesh = Forma.superelipsoide(Vector3(3.6, 4.2, 3.6), 1.0, 1.0)
+	bola.material_override = vermelho
+	bola.position.y = 8.6
+	add_child(Fase.so_enfeite(bola))
+	var faixa := MeshInstance3D.new()
+	var toro := TorusMesh.new()
+	toro.inner_radius = 3.35
+	toro.outer_radius = 3.75
+	toro.rings = 48
+	faixa.mesh = toro
+	faixa.material_override = amarelo
+	faixa.position.y = 8.2
+	add_child(Fase.so_enfeite(faixa))
+	var boca := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 1.6
+	cone.bottom_radius = 1.0
+	cone.height = 1.2
+	boca.mesh = cone
+	boca.material_override = vermelho
+	boca.position.y = 4.9
+	add_child(Fase.so_enfeite(boca))
 
 
 ## Palete laranja pendurado no gancho da ponte rolante: chão com grade baixa dos lados, aberto na frente e atrás, e as

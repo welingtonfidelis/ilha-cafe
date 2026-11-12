@@ -747,6 +747,21 @@ def make_momentos():
     sfx("alarme", fade_edges(sirene, 20), -4)
 
 
+def make_vento():
+    """O vento da 3-3 Moinhos do Vento (2026-11-12): o "vento" é o "fiu" curto de ar passando (o cata-vento girando,
+    a coluna ligando, o moinho destravando); o "vendaval" é o uivo do redemoinho em volta do Moinho Gigante, que
+    repete sem emenda (o tamanho fecha os ciclos): o rumor grave, o chiado subindo e descendo e um assobio."""
+    random.seed(33)
+    dur = 0.9
+    sopro = sweep_lowpass(highpass(noise(dur), 300), 900, 2600)
+    sfx("vento", fade_edges(envelope(sopro, 0.25, 0.6), 30), -6)
+    dur = 2.0
+    rumor = am(sweep_lowpass(noise(dur), 160, 240), 1.0, 0.3)
+    chiado = am(lowpass(highpass(noise(dur), 700), 2400), 0.5, 0.45)
+    assobio = osc(520, 520, dur, "sine", vibrato=0.08, vib_rate=1.0)
+    sfx_loop("vendaval", mix(dur, (rumor, 0, 0.9), (chiado, 0, 0.55), (assobio, 0, 0.12)), -5)
+
+
 def make_musica_faisca():
     """Os temas do Faísca (item 7 da lista do Faísca, 2026-11-11): um por mundo, o do farol e o dos chefes, e as duas
     vinhetas (o Faisquinha resgatado e a Estrela Grande)."""
@@ -855,6 +870,6 @@ if __name__ == "__main__":
     # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
     grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
               "faisquinhas": make_faisquinhas, "brindes": make_brindes, "mundo": make_mundo,
-              "musica_faisca": make_musica_faisca, "momentos": make_momentos}
+              "musica_faisca": make_musica_faisca, "momentos": make_momentos, "vento": make_vento}
     for nome in (sys.argv[1:] or list(grupos)):
         grupos[nome]()

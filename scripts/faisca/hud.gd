@@ -438,6 +438,10 @@ class BotaoA extends Control:
 ##   outro; martelo: X no ar, ele desce reto com o martelinho e o pino laranja afunda; tinta: pular de lata em lata, sem
 ##   encostar na tinta rosa (3-2). registro: X na roda vermelha, que gira; a água sobe e a esponja boia junto (2-1).
 ##   confeitos: X no pote rosa, que vira lá no alto e chove confeito; três confeitos grandes viram degraus (2-2).
+##   vento: A segurado, o Faísca flutua dentro dos riscos do vento e é levado por cima do vão; argola: no vento, ele
+##   passa por dentro do aro laranja e o sino toca; pipa: A segurado em cima da grade, a pipa abre e a coluna leva para
+##   cima; catavento: X no cata-vento parado, que gira; freio e janela: X no ferrolho laranja, que abre e solta o vento
+##   (3-3).
 class DesenhoDica extends Control:
 	var qual := ""
 
@@ -445,7 +449,7 @@ class DesenhoDica extends Control:
 		var tempo := Time.get_ticks_msec() / 1000.0
 		var enche := fmod(tempo, 1.6) / 1.2
 		var b := Vector2(52, size.y * 0.42)
-		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo", "registro", "confeitos"]
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo", "registro", "confeitos", "catavento", "freio", "janela"]
 		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
 		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
 		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
@@ -723,6 +727,66 @@ class DesenhoDica extends Control:
 					for i in 5:
 						var a := TAU * i / 5.0 + tempo
 						draw_line(sino + Vector2(cos(a), sin(a)) * 22, sino + Vector2(cos(a), sin(a)) * 30, Color("ffd23f"), 3.0)
+			"vento", "argola":
+				# A: o Faísca flutua dentro dos riscos brancos do vento, que o levam de uma beira à outra por cima do vão
+				# (na argola, ele passa pelo aro laranja e o sino toca).
+				var ciclo := fmod(tempo, 2.2) / 2.2
+				draw_rect(Rect2(f + Vector2(-52, 38), Vector2(22, 12)), Color("8fd36a"))
+				draw_rect(Rect2(f + Vector2(30, 38), Vector2(22, 12)), Color("8fd36a"))
+				for i in 6:
+					var x := -46.0 + fmod(i * 17.0 + tempo * 60.0, 80.0)
+					var y := -18.0 + (i % 3) * 14.0
+					draw_line(f + Vector2(x, y), f + Vector2(x + 16, y), Color(1, 1, 1, 0.9), 3.0)
+				if qual == "argola":
+					var passou := ciclo > 0.5
+					draw_arc(f + Vector2(0, -6), 22, 0, TAU, 28, Color("ffd23f") if passou else Color("ff7a22"), 5.0, true)
+					draw_colored_polygon(PackedVector2Array([f + Vector2(-6, -34), f + Vector2(6, -34), f + Vector2(9, -26), f + Vector2(-9, -26)]), Color("ffd23f"))
+				var p := f + Vector2(lerpf(-40, 40, ciclo), -6 + sin(ciclo * PI) * -6)
+				_faisca(p)
+				for lado in [-6.0, 6.0]:
+					draw_line(p + Vector2(lado, 22), p + Vector2(lado, 40), Color("8ff3ff"), 4.0)
+			"pipa":
+				# A: em cima da grade escura com o aro laranja, a pipa abre e as fitas levam o Faísca para cima.
+				var ciclo := fmod(tempo, 2.0) / 2.0
+				draw_rect(Rect2(f + Vector2(-26, 44), Vector2(52, 8)), Color("55607a"))
+				draw_rect(Rect2(f + Vector2(-30, 42), Vector2(60, 4)), Color("ff7a22"))
+				for i in 4:
+					var y := 40.0 - fmod(i * 22.0 + tempo * 50.0, 88.0)
+					draw_line(f + Vector2(-16 + i * 11, y), f + Vector2(-16 + i * 11, y - 10), Color(1, 1, 1, 0.9), 3.0)
+				var p := f + Vector2(0, 20 - 52 * ciclo)
+				_faisca(p)
+				var k := p + Vector2(22, -40)
+				draw_line(p + Vector2(8, -6), k + Vector2(0, 12), Color("3a3150"), 2.0)
+				draw_colored_polygon(PackedVector2Array([k + Vector2(0, -14), k + Vector2(10, -2), k + Vector2(0, 14), k + Vector2(-10, -2)]), Color("ff7a22"))
+				draw_colored_polygon(PackedVector2Array([k + Vector2(0, -14), k + Vector2(10, -2), k + Vector2(-10, -2)]), Color("fff8ee"))
+			"catavento":
+				# X: o soco no cata-vento parado, que começa a girar.
+				var ciclo := fmod(tempo, 1.6)
+				var gira := ciclo > 0.6
+				var c := f + Vector2(24, -14)
+				draw_line(c, c + Vector2(0, 58), Color("2b2140"), 4.0)
+				var ang := tempo * 9.0 if gira else 0.0
+				for i in 4:
+					var a := ang + i * PI / 2.0
+					var d := Vector2(cos(a), sin(a))
+					var lado := Vector2(-d.y, d.x)
+					draw_colored_polygon(PackedVector2Array([c, c + d * 22, c + d * 22 + lado * 12]), Color("ff7a22") if i % 2 == 0 else Color("fff8ee"))
+				draw_circle(c, 5, Color("ffd23f"))
+				_faisca(f + Vector2(-26, 24))
+			"freio", "janela":
+				# X: o soco no ferrolho laranja (no alto, do lado da coluna de vento), que abre e solta o vento.
+				var ciclo := fmod(tempo, 1.6)
+				var abre := ciclo > 0.6
+				var placa := Rect2(f + Vector2(6, -30), Vector2(36, 36))
+				draw_rect(placa, Color("3a3150"))
+				draw_set_transform(placa.get_center(), -PI / 2.0 if abre else 0.0, Vector2.ONE)
+				draw_rect(Rect2(Vector2(-16, -5), Vector2(32, 10)), Color("ff7a22"))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				if abre:
+					for i in 3:
+						var y := 30.0 - fmod(i * 18.0 + tempo * 60.0, 54.0)
+						draw_line(f + Vector2(-44 + i * 10, y), f + Vector2(-44 + i * 10, y - 10), Color(1, 1, 1, 0.9), 3.0)
+				_faisca(f + Vector2(-26, 10))
 			"pisca":
 				# Os dois blocos lilases se revezam (o da esquerda pisca antes de sumir) e o Faísca pula para o outro.
 				var ciclo := fmod(tempo, 2.4)
