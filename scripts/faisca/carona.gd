@@ -15,6 +15,8 @@ extends AnimatableBody3D
 ## palete laranja pendurado no gancho da ponte rolante), a "empilhadeira" (o Faísca vai no palete do garfo) e o
 ## "montacarga" (o elevador laranja que leva de volta quem caiu no chão da fábrica, que sobe reto e usa `giro_fixo`).
 ## Na 3-3 (2026-11-12) veio o "balao" (o balão de ar quente: o cesto de vime com o balão vermelho em cima).
+## Na nave (2026-11-12) veio a "capsula" (a cápsula cor-de-rosa do tubo pneumático: o piso redondo com a casca de vidro
+## aberta na frente e atrás; o tubo de vidro por onde ela passa é da fase).
 
 signal saiu
 signal chegou
@@ -76,6 +78,8 @@ func _ready() -> void:
 			_montar_montacarga()
 		"balao":
 			_montar_balao()
+		"capsula":
+			_montar_capsula()
 		_:
 			_montar_nuvem()
 	_area = Area3D.new()
@@ -387,6 +391,46 @@ func _montar_montacarga() -> void:
 	_caixa(Vector3(3.4, 0.4, 3.4), Vector3(0, -0.2, 0), laranja, true)
 	for lado in [-1.0, 1.0]:
 		_caixa(Vector3(0.15, 0.7, 3.4), Vector3(lado * 1.62, 0.35, 0), laranja, true)
+
+
+## Cápsula do tubo pneumático: piso redondo rosa com a beira de ferro, os dois arcos laranja por cima e a casca de vidro
+## dos lados (aberta na frente e atrás, para entrar e sair andando).
+func _montar_capsula() -> void:
+	var rosa := _material(Color("ff8fd0"))
+	var ferro := _material(Color("3a3150"))
+	var laranja := _material(Color("ff7a22"))
+	_caixa(Vector3(3.6, 0.4, 3.6), Vector3(0, -0.2, 0), rosa, true)
+	_caixa(Vector3(3.8, 0.2, 3.8), Vector3(0, -0.45, 0), ferro, false)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.6, 3.6), Vector3(lado * 1.72, 0.3, 0), rosa, true)
+	var vidro := StandardMaterial3D.new()
+	vidro.albedo_color = Color(1.0, 0.7, 0.9, 0.22)
+	vidro.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	vidro.cull_mode = BaseMaterial3D.CULL_DISABLED
+	vidro.roughness = 0.05
+	var casca := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = 1.9
+	c.bottom_radius = 1.9
+	c.height = 3.4
+	c.cap_top = false
+	c.cap_bottom = false
+	casca.mesh = c
+	casca.material_override = vidro
+	casca.rotation.x = PI / 2.0
+	casca.position = Vector3(0, 1.5, 0)
+	casca.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(Fase.so_enfeite(casca))
+	for z in [-1.5, 1.5]:
+		var arco := MeshInstance3D.new()
+		var t := TorusMesh.new()
+		t.inner_radius = 1.85
+		t.outer_radius = 2.05
+		arco.mesh = t
+		arco.material_override = laranja
+		arco.rotation.x = PI / 2.0
+		arco.position = Vector3(0, 1.5, z)
+		add_child(Fase.so_enfeite(arco))
 
 
 ## Corda fininha (sem colisão, enfeite que se atravessa) de `de` até `ate`.

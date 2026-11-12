@@ -223,6 +223,7 @@ func rodar() -> void:
 	ok = await _moradores_e_premios() and ok
 	ok = await _brindes() and ok
 	ok = await _chefe() and ok
+	ok = await _nave() and ok
 	ok = await _faisquinhas_de_novo() and ok
 	ok = await _novo_jogo() and ok
 	FaiscaSave.apagar()
@@ -244,8 +245,8 @@ func _moradores_e_premios() -> bool:
 			and (hub.get_node("Placa_elevador/Numero") as Label3D).text == "%d/10" % um) and ok
 	j.abrir_pausa()
 	await _esperar_real(0.2)
-	# Seis Faisquinhas por fase pronta (a conta cresce quando uma fase nova fica pronta: 48 com a 3-3).
-	var prontas := FaiscaJogo.FASES.filter(func(fs: Dictionary) -> bool: return fs.cena != "" and fs.tipo in ["ceu", "chao"]).size()
+	# Seis Faisquinhas por fase pronta (a conta cresce quando uma fase nova fica pronta: 54 com a 3-3 e a nave).
+	var prontas := FaiscaJogo.FASES.filter(func(fs: Dictionary) -> bool: return fs.cena != "" and fs.tipo in ["ceu", "chao", "nave"]).size()
 	ok = _conferir("a pausa no farol conta as estrelinhas, os Faisquinhas e as Estrelas Grandes", j.contador_pausa.faisquinhas.text == "%d/%d" % [um, prontas * FaiscaJogo.FAISQUINHAS_POR_FASE]
 			and j.contador_pausa.grandes.text == "%d/8" % j.grandes.size() and j.contador_pausa.estrelas.text == str(j.total_estrelas()),
 			"(%s, %s, %s)" % [j.contador_pausa.estrelas.text, j.contador_pausa.faisquinhas.text, j.contador_pausa.grandes.text]) and ok
@@ -516,6 +517,50 @@ func _chefe() -> bool:
 	f._invencivel = 0.0
 	j.chefes.clear()
 	j.grandes = antes
+	return ok
+
+
+## A nave (a fase final): com as 8 Estrelas Grandes a porta do topo abre e leva à nave (o tema dela); na Sala do Trono, a luta
+## começa com o tema dos chefes e os corações do Rei; vencido o Rei, a cena da estrelinha e o final lá fora levam de volta ao
+## farol, com a porta da nave dourada e o "final" no save.
+func _nave() -> bool:
+	var ok := true
+	var antes := j.grandes.duplicate()
+	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3"]
+	await _refazer_hub()
+	var porta: Node3D = j.hub.portas_nos["nave"]
+	ok = _conferir("com as 8 Estrelas Grandes, a porta da nave abre, com a foto e os 6 Faisquinhas", porta.dados.aberta and porta.dados.feita
+			and porta._quadro_mat.albedo_texture != null and int(porta.dados.total_faisquinhas) == 6 and not porta.dados.grande) and ok
+	j.entrar_fase("nave")
+	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy() and j.nivel is FaseNave, 12.0)
+	var nave := j.nivel as FaseNave
+	ok = _conferir("a porta leva à Nave Aspiratrão, com o tema da nave", nave != null and j.musica_nome == "nave") and ok
+	if nave == null:
+		j.grandes = antes
+		return false
+	nave.rapido = true
+	f._invencivel = 999.0
+	f.teleportar(nave.entrada_do_trono + Vector3.UP * 0.2)
+	await _ate(func() -> bool: return nave.chefe.fase == 1, 6.0)
+	ok = _conferir("na Sala do Trono, a luta começa com o tema dos chefes e os 3 corações do Rei", nave.chefe.fase == 1 and j.musica_nome == "chefe"
+			and j.hud.chefe_restam() == 3 and j.faixa_titulo_texto() == "Rei Bolotão!" and f.ioio and f.pipa and not f.martelinho) and ok
+	nave.chefe._proxima_fase()
+	nave.chefe._proxima_fase()
+	nave.chefe._proxima_fase()
+	await _ate(func() -> bool: return nave.vencida, 3.0)
+	ok = _conferir("vencido o Rei, a pausa fica fechada durante a cena", nave.vencida and not j.pode_pausar()) and ok
+	await _ate(func() -> bool: return j.lugar == "final", 15.0)
+	ok = _conferir("a cena da estrelinha pede o final, e o final lá fora começa com o tema dele", j.lugar == "final" and j.musica_nome == "final"
+			and j.final_visto and bool(FaiscaSave.ler().get("final", false))) and ok
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 20.0)
+	await _esperar(0.3)
+	ok = _conferir("depois do Fim, o Faísca volta ao farol, na frente da porta da nave, agora dourada", j.lugar == "hub" and f.controle_ligado
+			and f.visible and f.camera.current and j.hub.portas_nos["nave"].dados.grande and f.gravidade > 20.0
+			and f.global_position.distance_to(j.hub.portas_nos["nave"].global_position) < 8.0) and ok
+	f._invencivel = 0.0
+	j.final_visto = false
+	j.grandes = antes
+	j._salvar()
 	return ok
 
 

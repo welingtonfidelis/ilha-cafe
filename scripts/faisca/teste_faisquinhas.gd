@@ -9,7 +9,7 @@ extends RefCounted
 ## - encostar salva (conta e some subindo); vencer a Bolota solta o 5 num chão firme, e encostar nele salva.
 ## Uso: godot --headless --path . -- --faisca-faisquinhas
 
-const FASES := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3"]
+const FASES := ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3", "nave"]
 
 var solo: Node
 var j: Jogador
@@ -52,6 +52,8 @@ static func nova_fase(id: String) -> Fase:
 			return Fase32.new()
 		"3-3":
 			return Fase33.new()
+		"nave":
+			return FaseNave.new()
 	return null
 
 

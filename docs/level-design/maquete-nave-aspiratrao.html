@@ -1,0 +1,1054 @@
+<title>Rascunho da Nave Aspiratrão</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: maquete 3D no topo, botões das partes logo abaixo e a ficha da escolhida (o mesmo das maquetes 2-2 a 3-3);
+   a ficha do Rei Bolotão ganha os botões das três fases da luta, que mudam a arena na maquete. */
+:root {
+  --bg: #f1eefa;
+  --card: #ffffff;
+  --ink: #1f1a3d;
+  --muted: #5b5480;
+  --line: #d8d0ee;
+  --orange: #f26b1d;
+  --roxo: #7b4fd6;
+  --chip: #e7e1f7;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #120f22; --card: #1c1834; --ink: #efeaff; --muted: #a79fcc; --line: #332c57;
+    --orange: #ff8a45; --roxo: #b89bff; --chip: #262046; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #120f22; --card: #1c1834; --ink: #efeaff; --muted: #a79fcc; --line: #332c57;
+  --orange: #ff8a45; --roxo: #b89bff; --chip: #262046; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1rem; line-height: 1.55; margin: 0; }
+.pagina {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+  display: grid; gap: 16px;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); font-weight: 800; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+.rotulo { font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.topo { display: grid; gap: 6px; }
+.topo p.lede { max-width: 74ch; color: var(--muted); }
+.numeros { display: flex; flex-wrap: wrap; gap: 8px; }
+.numeros span { font-family: var(--font-data); font-size: 0.8rem; background: var(--chip); border-radius: 999px; padding: 4px 10px; font-variant-numeric: tabular-nums; }
+
+.palco { position: relative; border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; background: #241b45; }
+#cena { display: block; width: 100%; height: min(70vh, 640px); min-height: 360px; touch-action: none; }
+.dica-palco {
+  position: absolute; left: 10px; bottom: 10px;
+  font-size: 0.78rem; background: rgba(20, 16, 40, 0.82); color: #fff;
+  padding: 5px 10px; border-radius: 8px; pointer-events: none;
+}
+.legenda {
+  position: absolute; right: 10px; top: 10px;
+  background: rgba(255, 255, 255, 0.92); color: #1f1a3d;
+  border-radius: 10px; padding: 8px 10px; font-size: 0.78rem; line-height: 1.5;
+  display: grid; gap: 1px; max-width: 46%;
+}
+.legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.25); }
+.legenda .so-largo { display: block; }
+@media (max-width: 640px) { .legenda .so-largo { display: none; } .legenda { font-size: 0.72rem; } }
+
+.botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.botoes button, .alternar button, .fases button {
+  font: 700 0.92rem var(--font-body);
+  border: 2px solid var(--ink); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer;
+}
+.botoes button[aria-pressed="true"], .fases button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.botoes button.viagem { border-style: dashed; }
+.botoes button.chefe { border-color: var(--roxo); color: var(--roxo); }
+.botoes button.chefe[aria-pressed="true"] { background: var(--roxo); color: var(--card); }
+.botoes button:focus-visible, .alternar button:focus-visible, .fases button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.alternar { display: flex; flex-wrap: wrap; gap: 8px; }
+.alternar button { font-weight: 400; font-size: 0.85rem; border-width: 1px; }
+.alternar button[aria-pressed="true"] { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+
+.ficha { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.ficha .medida { font-family: var(--font-data); font-size: 0.8rem; color: var(--muted); }
+.ficha p { max-width: 74ch; }
+.ficha .grupo { display: grid; gap: 4px; }
+.ficha ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 74ch; }
+.fases { display: flex; flex-wrap: wrap; gap: 8px; }
+.fase-texto { border-left: 4px solid var(--roxo); padding-left: 12px; display: grid; gap: 6px; }
+
+.principios { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.principio { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.principio p { font-size: 0.95rem; color: var(--muted); }
+.rodape { color: var(--muted); font-size: 0.9rem; max-width: 80ch; }
+</style>
+<main class="pagina">
+  <header class="topo">
+    <p class="rotulo">Ilha Cafuné · Faísca · rascunho em blocos (greybox) · a última fase, no topo do farol</p>
+    <h1>Nave Aspiratrão, em playgrounds</h1>
+    <p class="lede">A fase final: dentro da nave do Rei Bolotão, que paira em cima do farol. O Faísca entra sugado pelo bocal do aspirador e sobe pela nave em espiral, em volta do Tanque de Estrelas, por cinco playgrounds que repetem os poderes de cada mundo (cada um tem a cápsula do poder dele). No meio, a gravidade desliga. No alto, na Sala do Trono, a luta com o Rei Bolotão, que termina sem golpe: com luz. Arraste para girar, use a roda ou dois dedos para aproximar, e os botões para ir a cada parte.</p>
+    <div class="numeros" id="numeros"></div>
+  </header>
+
+  <div class="palco">
+    <canvas id="cena" aria-label="Maquete 3D da fase final Nave Aspiratrão em playgrounds"></canvas>
+    <div class="legenda" aria-hidden="true">
+      <span><i style="background:#fff1c9"></i>trilha creme (caminho)</span>
+      <span><i style="background:#f26b1d"></i>escotilha de saída, lâmpada, ferrolho, argola</span>
+      <span><i style="background:#29c4e6"></i>bolso para explorar</span>
+      <span class="so-largo"><i style="background:#ffd23f"></i>Tanque de Estrelas (o marco)</span>
+      <span class="so-largo"><i style="background:#ff8fd0"></i>cápsula de poder</span>
+      <span class="so-largo"><i style="background:#c9b8f0"></i>piso da nave (firme); viagem é o tracejado branco</span>
+      <span class="so-largo"><i style="background:#9b5de5"></i>Bolota</span>
+      <span class="so-largo"><i style="background:#9be15d"></i>Faisquinha</span>
+      <span class="so-largo"><i style="background:#3fd0ee"></i>posto</span>
+    </div>
+    <div class="dica-palco">arraste para girar · roda ou pinça para aproximar</div>
+  </div>
+
+  <nav class="botoes" id="botoes" aria-label="Ir para uma parte da fase"></nav>
+  <div class="alternar">
+    <button type="button" id="b-nomes" aria-pressed="true">Nomes</button>
+    <button type="button" id="b-casco" aria-pressed="true">Casco da nave</button>
+    <button type="button" id="b-rota" aria-pressed="false">Rota principal (só para o autor)</button>
+    <button type="button" id="b-vista" aria-pressed="false">Linhas de vista até o Tanque</button>
+    <button type="button" id="b-gira" aria-pressed="false">Câmera girando sozinha</button>
+  </div>
+
+  <article class="ficha" id="ficha" aria-live="polite"></article>
+
+  <section class="principios" aria-label="O que esta fase traz">
+    <div class="principio"><h3>Os mundos de novo</h3><p>Cada playground repete o que o Faísca aprendeu num mundo, como as fases finais do Astro Bot: o laser e as molas no hangar, o chiclete e o ioiô no depósito, o martelinho nas máquinas, a luva e a pipa na estufa, e tudo junto no corredor do trono.</p></div>
+    <div class="principio"><h3>Cápsulas de poder</h3><p>Os poderes ficam nas fases deles, então a nave tem uma cápsula rosa para cada um, na entrada do playground onde ele serve. A criança vê a figura do poder na cápsula antes de pegar, e o Vovô mostra de novo como usa.</p></div>
+    <div class="principio"><h3>Sem gravidade</h3><p>O momento especial: os três pinos da Sala de Máquinas param os motores e o gerador de gravidade. Tudo flutua (caixas, Bolotas, estrelinhas), o pulo vai alto e devagar, e a saída lá no teto só se alcança pulando de caixa em caixa no ar.</p></div>
+    <div class="principio"><h3>Um final com luz</h3><p>A luta tem três fases. Nas duas primeiras, o Rei fica tonto e leva os socos, como os outros chefes. Na última, as luzes apagam e ele chora de medo do escuro: o Faísca acende as quatro lâmpadas com o laser, e a luta acaba sem golpe. Depois vem a cena da estrelinha de bolso.</p></div>
+  </section>
+
+  <p class="rodape">Rascunho em blocos, sem arte. As medidas seguem o Faísca de hoje: pulo de uns 2,2 m, voo de uns 11 m, mola de uns 5,6 m. No jogo, os módulos brancos com faixa laranja, as plataformas de pouso, os containers, o dropship e os tubos de plantas vêm do Space Base Bits do KayKit; os cristais roxos e o baú, do Resource Bits; os pistões e as esteiras, da Fábrica de Blocos; os sinos, do Holiday Bits. As paredes e o casco roxos da nave são feitos por código, como o Aspiratrão da abertura. A maquete anterior é a dos <a href="https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd">Moinhos do Vento</a>, já construída no jogo.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- partes: câmera, alvo e ficha ----------
+  var PARTES = {
+    geral: { botao: "Visão geral", nome: "Visão geral", medida: "5 playgrounds + a Sala do Trono · 4 viagens · uns 14 min para uma criança",
+      alvo: [0, 24, 0], cam: [-130, 135, 185],
+      texto: "Por dentro, a nave é um disco enorme e oco, de paredes roxas e luzinhas amarelas. No meio, o Tanque de Estrelas: um cilindro de vidro do fundo até o teto, cheio das estrelas roubadas, que brilha e se vê de qualquer lugar (o marco). Os cinco playgrounds ficam em volta dele e sobem em espiral: o hangar embaixo, ao sul; o depósito a oeste; as máquinas ao norte; a estufa a nordeste; o corredor do trono a leste. A Sala do Trono fica no topo, em cima do tanque, debaixo da cúpula de vidro. Lá embaixo, o fundo da nave é um campo de força lilás: quem cai volta no último posto, como nas nuvens." },
+    p1: { botao: "1 Hangar do Bocal", nome: "1 · Hangar do Bocal", medida: "apresenta · 2 a 3 min · chão firme · mundo 1 (laser e molas) · P0",
+      alvo: [0, 2, 86], cam: [56, 44, 150],
+      texto: "O Faísca entra sugado pelo bocal do aspirador: sobe girando por um tubo e salta no meio do hangar (a entrada, no lugar da descida do céu). O hangar tem plataformas de pouso pretas e laranja em alturas diferentes, uma esteira levando potes de estrelas e o dropship parado (o mini-marco). Tarefa: as três luzes de pouso estão apagadas; flutuando em cima de cada uma, o laser acende, e com as três a escotilha da parede abre. As molas amarelas levam às plataformas mais altas.",
+      bolsos: ["O labirinto de containers, com estrelinhas e o Faisquinha 3 no meio.", "O alto do dropship, pelas molas, com o coração."],
+      bolotas: "Duas: um alien dormindo perto do bocal e um ciclope no meio das plataformas." },
+    p2: { botao: "2 Depósito de Estrelas", nome: "2 · Depósito de Estrelas", medida: "desenvolve · 3 min · subida em três andares · mundo 2 (chiclete e ioiô) · P1",
+      alvo: [-82, 16, 20], cam: [-150, 44, 80],
+      texto: "Uma sala redonda e alta, com três prateleiras em volta da parede (a 8, 16 e 24 m), cheias de potes gigantes de vidro com estrelas dentro. Na entrada, a cápsula do Balão de Chiclete; mais acima, a do Ioiô. Bolhas de chiclete cor-de-rosa quicam o Faísca, o balão leva de uma prateleira à outra, e as argolas laranja do ioiô puxam por cima dos vãos. Tarefa: em cada prateleira, um pote tem a tampa com o ferrolho laranja; um soco abre, e as estrelas saem num jorro e voam pelo tubo até o Tanque. Com os três, a escotilha do teto abre.",
+      bolsos: ["Atrás do pote do alto, um nicho na parede com o V1 (só pelo ioiô).", "Coração no fundo de um pote vazio (o chiclete leva até a boca)."],
+      bolotas: "Três: uma abelha voando no meio da sala, um porco na prateleira de baixo e um cogumelo na do meio." },
+    p3: { botao: "3 Sala de Máquinas", nome: "3 · Sala de Máquinas", medida: "reviravolta · 3 min · o momento especial · mundo 3 (martelinho) · P2",
+      alvo: [-60, 30, -66], cam: [-128, 72, -12],
+      texto: "Três motores grandes batem os pistões no ritmo, esteiras levam caixotes e blocos-pisca atravessam um vão. No meio gira o gerador de gravidade, um anel roxo enorme. Na entrada, a cápsula do Martelinho de Apito. Tarefa: um pino laranja em cima de cada motor; a pancada do martelinho afunda o pino e o motor para. Com os três, vem o momento especial: o gerador para, a sirene toca e tudo flutua. Caixas, Bolotas tontas e estrelinhas sobem devagar, o pulo do Faísca vai alto e lento, e a escotilha do teto (24 m acima) se alcança pulando de caixa em caixa no ar. Passando por ela, a gravidade volta.",
+      bolsos: ["Em cima do anel do gerador, o V2, que só se alcança sem gravidade.", "Atrás do terceiro motor, uma salinha de ferramentas com estrelinhas."],
+      bolotas: "Três: uma de capacete (soco não adianta; o martelinho resolve), um alien e um porco que dispara pela esteira." },
+    p4: { botao: "4 Estufa Gelada", nome: "4 · Estufa Gelada", medida: "desenvolve · 3 min · gelo e vento · mundo 3 (luva e pipa) · P3",
+      alvo: [54, 38, -64], cam: [118, 78, -10],
+      texto: "A estufa da nave: tubos de vidro altos com plantas dentro, em fileiras, e a metade fria, de chão de gelo que escorrega, com bonecos de neve que as Bolotas fizeram. Na entrada, a cápsula da Luva de Neve; no meio, a da Pipa. Tarefa: três sinos laranja no alto dos tubos de plantas, longe demais para um soco; a bola de neve da luva acerta, e com os três a porta do corredor abre. As grades de ventilação são colunas de vento: com a pipa, levam aos caminhos de cima.",
+      bolsos: ["No alto do tubo de plantas maior, pela coluna de vento, o V3.", "Coração dentro do iglu da parte gelada."],
+      bolotas: "Duas: um pinguim deslizando no gelo e um fantasma no meio das plantas (só a bola de neve acerta)." },
+    p5: { botao: "5 Corredor do Trono", nome: "5 · Corredor do Trono", medida: "o fim · 3 min · tudo junto · P4",
+      alvo: [76, 42, 22], cam: [12, 76, -6],
+      texto: "Um corredor comprido em curva, com janelas grandes para o céu da noite (dá para ver o farol lá embaixo). Plataformas que andam por cima dos vãos, faixas de vento da ventilação e barreiras de luz que giram e empurram (sem tirar coração). Três guardas de capacete carregam as chaves-coroa. Tarefa: vencer os três guardas; cada chave voa sozinha até a porta, e com as três a porta do trono abre e o elevador sobe até a Sala do Trono.",
+      bolsos: ["Uma cabine de pilotagem ao lado, com o coração e o Faisquinha 4."],
+      bolotas: "Cinco: os três guardas de capacete (com as chaves) e duas abelhas nas janelas. O Faisquinha 5 vai pendurado num dos guardas." },
+    rei: { botao: "Rei Bolotão", chefe: true, nome: "Sala do Trono · o Rei Bolotão", medida: "a luta final · 3 fases · uns 4 min",
+      alvo: [0, 57, 0], cam: [36, 80, 52],
+      texto: "A Sala do Trono fica no topo, debaixo da cúpula de vidro: um piso redondo de 24 m de raio, com o vidro do Tanque de Estrelas no meio (as estrelas brilham por baixo dos pés), quatro postes de lâmpada apagados e o bocal do aspirador gigante descendo do teto. O Rei Bolotão é uma Bolota roxa enorme (uns 8 m), de um olho só, com a coroa dourada torta por cima de uma touca de dormir azul com pompom, a capa roxa de estrelinhas e o cetro-aspirador na mão. Ele voa num trono que é um disco voador pequenininho. Encostar nele tira um coração; os corações dele (três) aparecem no alto da tela, como nos outros chefes.",
+      fases: [
+        { titulo: "Fase 1 · Trono voador", texto: "Ele voa em círculos no trono, lá no alto, e joga potes de estrelas onde o Faísca está (o alvo rosa aparece no chão antes). O pote estoura e solta estrelinhas (dá para pegar). As argolas laranja do ioiô aparecem em volta: com o golpe no ar perto delas, o Faísca sobe de argola em argola até o trono e dá um soco no botão vermelho. O trono engasga, cai, e o Rei fica tonto: três socos." },
+        { titulo: "Fase 2 · O aspirador", texto: "Ele pega o cetro-aspirador e liga: o vento puxa tudo para ele (o Faísca, caixas e Bolotinhas), com os riscos brancos mostrando para onde vai. Atrás dos pilares, o puxão não pega. As três grades do chão viram colunas de vento: com a pipa, levam aos três filtros lá em cima, e um soco no ferrolho de cada um entope o aspirador. Com os três, o aspirador engasga, estoura numa nuvem de poeira e o Rei fica tonto: três socos." },
+        { titulo: "Fase 3 · O apagão", texto: "A poeira apaga as luzes da nave: a sala fica escura, só com o brilho do tanque embaixo. O Rei treme, se enrola na capa e sai rolando sem ver para onde, chorando “Tá escuro!” (encostar ainda tira coração). Os quatro postes de lâmpada brilham fraquinho: flutuando em cima de cada um, o laser acende. A cada lâmpada acesa ele se acalma um pouco e rola mais devagar. Com as quatro acesas, ele para, senta e chora: a luta acaba sem golpe. Vem a cena: ele só queria uma luzinha para dormir, o Faísca dá a estrelinha de bolso, o tanque abre e as estrelas voltam para o céu." }
+      ] },
+    viagens: { botao: "Viagens", viagem: true, nome: "Viagens entre os playgrounds", medida: "10 a 20 s cada · sem risco",
+      alvo: [0, 24, 0], cam: [10, 230, 60],
+      texto: "Entre um playground e outro, uma viagem curta, sempre esperando o Faísca subir: a cápsula do tubo pneumático leva do hangar ao depósito (o tubo de vidro faz curva pelo lado de fora do tanque); o monta-carga sobe do alto do depósito até a Sala de Máquinas; o carrinho no trilho do teto leva das máquinas à estufa; e uma ponte de luz se forma da estufa até o corredor do trono quando a porta abre. O monta-carga e o carrinho levam de volta também (atalho)." }
+  };
+  var ORDEM = ["geral", "p1", "p2", "p3", "p4", "p5", "rei", "viagens"];
+
+  // ---------- cena ----------
+  var canvas = document.getElementById("cena");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var cena = new THREE.Scene();
+  var FUNDO = new THREE.Color("#241b45");
+  cena.background = FUNDO;
+  cena.fog = new THREE.Fog(FUNDO, 380, 900);
+  var camera = new THREE.PerspectiveCamera(50, 1, 0.5, 2500);
+  var controles = new THREE.OrbitControls(camera, canvas);
+  controles.enableDamping = true;
+  controles.minDistance = 8;
+  controles.maxDistance = 650;
+
+  var hemi = new THREE.HemisphereLight(0xfff4ff, 0x4a3a8a, 1.0);
+  cena.add(hemi);
+  var sol = new THREE.DirectionalLight(0xffffff, 0.5);
+  sol.position.set(80, 160, 60);
+  cena.add(sol);
+
+  var materiais = {};
+  function mat(cor, extra) {
+    var chave = cor + JSON.stringify(extra || {});
+    if (!materiais[chave]) {
+      var m = new THREE.MeshLambertMaterial({ color: cor });
+      if (extra) Object.keys(extra).forEach(function (k) { m[k] = extra[k]; });
+      materiais[chave] = m;
+    }
+    return materiais[chave];
+  }
+  function malha(geo, material, x, y, z, pai) {
+    var m = new THREE.Mesh(geo, material);
+    m.position.set(x || 0, y || 0, z || 0);
+    (pai || cena).add(m);
+    return m;
+  }
+  function contorno(m, cor) { m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: cor || 0x2a1d55 }))); return m; }
+
+  var animados = [], rotulos = [], vistas = [], rota = [], casco = [];
+  var estrelas = 0, bolotas = 0, coracoes = 0;
+
+  var COR = { bolota: 0x9b5de5, estrela: 0xffd23f, vagalume: 0x9be15d, posto: 0x3fd0ee, laranja: 0xf26b1d, bolso: 0x29c4e6,
+    coracao: 0xff4d6d, creme: 0xfff1c9, piso: 0xc9b8f0, borda: 0x5b3fa0, baixo: 0x3c2a6e, branco: 0xf4f2fa, capsula: 0xff8fd0, gelo: 0xbfe8ff };
+
+  // ---------- peças ----------
+  // Piso da nave: uma placa lilás de borda roxa escura, com a parte de baixo funda (plataforma no oco da nave).
+  function piso(x, y, z, lx, lz, giro, fundo) {
+    var g = new THREE.Group();
+    var f = fundo || 1.6;
+    var topo = new THREE.Mesh(new THREE.BoxGeometry(lx, f, lz), mat(COR.piso));
+    topo.position.y = -f / 2;
+    contorno(topo, COR.borda);
+    var baixo = new THREE.Mesh(new THREE.BoxGeometry(lx * 0.9, 2.4, lz * 0.9), mat(COR.baixo));
+    baixo.position.y = -f - 1.2;
+    g.add(topo, baixo);
+    g.position.set(x, y, z);
+    g.rotation.y = giro || 0;
+    cena.add(g);
+    return g;
+  }
+  function pisoRedondo(x, y, z, r, cor) {
+    var g = new THREE.Group();
+    var topo = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1.4, 48), mat(cor || COR.piso));
+    topo.position.y = -0.7;
+    var borda = new THREE.Mesh(new THREE.TorusGeometry(r, 0.28, 6, 64), mat(COR.borda));
+    borda.rotation.x = Math.PI / 2;
+    borda.position.y = -0.05;
+    var baixo = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.9, r * 0.5, 4, 48), mat(COR.baixo));
+    baixo.position.y = -3.4;
+    g.add(topo, borda, baixo);
+    g.position.set(x, y, z);
+    cena.add(g);
+    return g;
+  }
+  function caixa(x, y, z, lx, ly, lz, cor, giro) {
+    var m = malha(new THREE.BoxGeometry(lx, ly, lz), mat(cor), x, y + ly / 2, z);
+    m.rotation.y = giro || 0;
+    return contorno(m);
+  }
+  // Plataforma de pouso do Space Base: octógono preto com a beira laranja e a cruz de luzinhas.
+  function plataformaDePouso(x, y, z, r) {
+    var g = new THREE.Group();
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.05, 0.8, 8), mat(0x2b2b38));
+    base.position.y = -0.4;
+    var beira = new THREE.Mesh(new THREE.TorusGeometry(r * 1.02, 0.22, 4, 8), mat(COR.laranja));
+    beira.rotation.x = Math.PI / 2;
+    beira.rotation.z = Math.PI / 8;
+    var pe = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.3, r * 0.4, Math.max(y, 0.01), 8), mat(0x55607a));
+    pe.position.y = -Math.max(y, 0.01) / 2 - 0.8;
+    g.add(base, beira);
+    if (y > 0.5) g.add(pe);
+    g.position.set(x, y, z);
+    cena.add(g);
+    return g;
+  }
+  // Lâmpada da tarefa (as luzes de pouso e os postes da arena): poste escuro e a cúpula; acesa, brilha amarela.
+  var lampadas = [];
+  function lampada(x, y, z, alto, acesa) {
+    var h = alto || 3.2;
+    malha(new THREE.CylinderGeometry(0.18, 0.25, h, 10), mat(0x2b2140), x, y + h / 2, z);
+    var cupula = malha(new THREE.SphereGeometry(0.75, 16, 12), new THREE.MeshBasicMaterial({ color: acesa ? 0xffe066 : 0x6a5f96 }), x, y + h + 0.5, z);
+    var halo = brilho(x, y + h + 0.5, z, 0xffe066, 7, false);
+    halo.visible = !!acesa;
+    var l = { cupula: cupula, halo: halo };
+    lampadas.push(l);
+    return l;
+  }
+  function acender(l, on) { l.cupula.material.color.set(on ? 0xffe066 : 0x6a5f96); l.halo.visible = on; }
+  // Ferrolho laranja (a trava que o soco abre).
+  function ferrolho(x, y, z, giro) {
+    var g = new THREE.Group();
+    var placa = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.3, 0.16), mat(0x3a3150));
+    var trava = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.26, 0.2), mat(COR.laranja));
+    trava.position.z = 0.15;
+    g.add(placa, trava);
+    g.position.set(x, y, z);
+    g.rotation.y = giro || 0;
+    cena.add(g);
+    g.add(brilho(0, 0, 0, 0xff9a52, 3.2, true));
+    return g;
+  }
+  // Argola do ioiô: aro laranja de pé, girando de leve.
+  function argola(x, y, z, giro) {
+    var a = malha(new THREE.TorusGeometry(1.2, 0.18, 10, 28), mat(COR.laranja), x, y, z);
+    a.rotation.y = giro || 0;
+    animados.push(function (t) { a.rotation.y = (giro || 0) + Math.sin(t + x) * 0.3; });
+    return a;
+  }
+  // Cápsula de poder: um tubo de vidro rosa em pé com a figura do poder girando dentro.
+  function capsula(x, y, z, nome, cor) {
+    malha(new THREE.CylinderGeometry(1.4, 1.6, 0.6, 20), mat(0x3a3150), x, y + 0.3, z);
+    malha(new THREE.CylinderGeometry(1.3, 1.3, 3.2, 20, 1, true), new THREE.MeshLambertMaterial({ color: COR.capsula, transparent: true, opacity: 0.35, side: THREE.DoubleSide }), x, y + 2.2, z);
+    var fig = malha(new THREE.OctahedronGeometry(0.7), mat(cor || COR.laranja), x, y + 2.2, z);
+    animados.push(function (t) { fig.rotation.y = t * 1.5; fig.position.y = y + 2.2 + Math.sin(t * 2 + x) * 0.2; });
+    brilho(x, y + 2.2, z, COR.capsula, 6, true);
+    rotulo(nome, x, y + 5.2, z, "poder");
+  }
+  // Pote gigante de estrelas: cilindro de vidro com estrelinhas amarelas dentro e a tampa (com o ferrolho, na tarefa).
+  function pote(x, y, z, r, alto, comTrava) {
+    malha(new THREE.CylinderGeometry(r, r, alto, 24, 1, true), new THREE.MeshLambertMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.32, side: THREE.DoubleSide }), x, y + alto / 2, z);
+    malha(new THREE.CylinderGeometry(r * 1.06, r * 1.06, 0.6, 24), mat(comTrava ? COR.laranja : 0x8a7bc0), x, y + alto + 0.3, z);
+    for (var i = 0; i < 6; i++) {
+      var s = malha(new THREE.OctahedronGeometry(0.45), new THREE.MeshBasicMaterial({ color: 0xffd23f }), x + Math.cos(i * 1.7) * r * 0.5, y + 0.8 + (i * 1.3) % (alto - 1.2), z + Math.sin(i * 2.3) * r * 0.5);
+      (function (s, i) { animados.push(function (t) { s.rotation.y = t * 1.2 + i; }); })(s, i);
+    }
+    if (comTrava) ferrolho(x, y + alto + 1.0, z + r * 1.08, 0);
+  }
+  // Motor com pistão batendo e o pino laranja em cima (a tarefa do martelinho).
+  function motor(x, y, z) {
+    caixa(x, y, z, 7, 6, 7, 0x8a7bc0);
+    var pistao = malha(new THREE.CylinderGeometry(1.2, 1.2, 5, 16), mat(0xc6ccd8), x + 4.6, y + 4, z);
+    animados.push(function (t) { pistao.position.y = y + 3 + Math.abs(Math.sin(t * 2.2 + x)) * 3; });
+    malha(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 12), mat(COR.laranja), x, y + 6.6, z);
+    brilho(x, y + 6.8, z, 0xff9a52, 3.2, true);
+  }
+  // Esteira: faixa escura com setas claras andando.
+  function esteira(a, b, largura) {
+    var va = new THREE.Vector3(a[0], a[1], a[2]), vb = new THREE.Vector3(b[0], b[1], b[2]);
+    var comp = va.distanceTo(vb);
+    var m = malha(new THREE.BoxGeometry(largura || 3, 0.3, comp), mat(0x3a3150), (a[0] + b[0]) / 2, a[1] + 0.15, (a[2] + b[2]) / 2);
+    m.lookAt(vb.x, a[1] + 0.15, vb.z);
+    var dir = vb.clone().sub(va).normalize();
+    for (var i = 0; i < Math.round(comp / 3); i++) {
+      var s = malha(new THREE.ConeGeometry(0.45, 0.9, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }), 0, a[1] + 0.4, 0);
+      s.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      s.userData.k = i / Math.round(comp / 3);
+      (function (s) { animados.push(function (t) { var k = (s.userData.k + t * 0.12) % 1; s.position.copy(va).lerp(vb, k); s.position.y = a[1] + 0.45; }); })(s);
+    }
+  }
+  // Coluna de vento: grade escura com aro laranja e fitas subindo (com a pipa, leva para o alto).
+  function colunaVento(x, y0, z, y1) {
+    malha(new THREE.CylinderGeometry(1.7, 1.7, 0.2, 20), mat(0x55607a), x, y0 + 0.1, z);
+    malha(new THREE.TorusGeometry(1.75, 0.16, 6, 24), mat(COR.laranja), x, y0 + 0.2, z).rotation.x = Math.PI / 2;
+    var alt = y1 - y0;
+    malha(new THREE.CylinderGeometry(1.6, 1.6, alt, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xd8f3ff, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }), x, y0 + alt / 2, z);
+    for (var i = 0; i < 6; i++) {
+      var f = malha(new THREE.BoxGeometry(0.1, 1.1, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }), x, y0, z);
+      f.userData = { a: i * Math.PI / 3, off: i / 6 };
+      (function (f) { animados.push(function (t) { var k = (f.userData.off + t * 0.35) % 1, a = f.userData.a + t * 2; f.position.set(x + Math.cos(a) * 1.1, y0 + k * alt, z + Math.sin(a) * 1.1); }); })(f);
+    }
+  }
+  // Sino laranja no alto (a luva acerta).
+  function sino(x, y, z) {
+    malha(new THREE.BoxGeometry(2.6, 0.22, 0.22), mat(0x3a3150), x, y + 3.4, z);
+    var s = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.8, 1.2, 14, 1, true), mat(COR.laranja, { side: THREE.DoubleSide }));
+    s.position.set(x, y + 2.6, z);
+    cena.add(s);
+    animados.push(function (t) { s.rotation.z = Math.sin(t * 2 + x) * 0.15; });
+  }
+  // Tubo de plantas (eco module): base branca, vidro e as plantas verdes dentro.
+  function tuboDePlantas(x, y, z, alto, r) {
+    var rr = r || 3;
+    malha(new THREE.CylinderGeometry(rr * 1.15, rr * 1.25, 1.2, 20), mat(COR.branco), x, y + 0.6, z);
+    malha(new THREE.CylinderGeometry(rr, rr, alto, 20, 1, true), new THREE.MeshLambertMaterial({ color: 0xcfeee0, transparent: true, opacity: 0.28, side: THREE.DoubleSide }), x, y + 1.2 + alto / 2, z);
+    for (var i = 0; i < 4; i++) malha(new THREE.SphereGeometry(rr * 0.45, 10, 8), mat(i % 2 ? 0x4cc27a : 0x2f9e5c), x + Math.cos(i * 1.6) * rr * 0.35, y + 2 + i * alto / 5, z + Math.sin(i * 1.6) * rr * 0.35);
+    malha(new THREE.CylinderGeometry(rr * 1.1, rr * 1.1, 0.6, 20), mat(COR.branco), x, y + 1.2 + alto + 0.3, z);
+  }
+  // Barreira de luz que gira (empurra sem tirar coração).
+  function barreira(x, y, z, raio) {
+    malha(new THREE.CylinderGeometry(0.6, 0.6, 1.2, 12), mat(0x3a3150), x, y + 0.6, z);
+    var barra = malha(new THREE.BoxGeometry(raio * 2, 0.4, 0.4), new THREE.MeshBasicMaterial({ color: 0x8ff3ff }), x, y + 1.4, z);
+    animados.push(function (t) { barra.rotation.y = t * 1.1 + x; });
+  }
+  // Janela grande para o céu da noite (no casco).
+  function janela(x, y, z, giro, l, h) {
+    var j = malha(new THREE.PlaneGeometry(l, h), new THREE.MeshBasicMaterial({ color: 0x0b1030, side: THREE.DoubleSide }), x, y, z);
+    j.rotation.y = giro;
+    var m = malha(new THREE.PlaneGeometry(l + 0.8, h + 0.8), mat(0x5b3fa0, { side: THREE.DoubleSide }), 0, 0, -0.05, j);
+    for (var i = 0; i < 8; i++) malha(new THREE.SphereGeometry(0.12, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), (Math.sin(i * 7.1) * 0.45) * l, (Math.cos(i * 3.7) * 0.45) * h, 0.05, j);
+    return m;
+  }
+  function trilha(pontos, largura) {
+    var c = curva(pontos), n = Math.max(20, Math.round(c.getLength() / 1.2));
+    var pos = [], idx = [];
+    for (var i = 0; i <= n; i++) {
+      var p = c.getPointAt(i / n), tg = c.getTangentAt(i / n);
+      var lx = -tg.z, lz = tg.x, l = Math.hypot(lx, lz) || 1;
+      lx = lx / l * largura / 2; lz = lz / l * largura / 2;
+      pos.push(p.x + lx, p.y + 0.08, p.z + lz, p.x - lx, p.y + 0.08, p.z - lz);
+      if (i < n) { var a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    cena.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: COR.creme, side: THREE.DoubleSide })));
+  }
+  function escotilha(x, y, z, giro) {
+    var g = new THREE.Group();
+    var aro = new THREE.Mesh(new THREE.TorusGeometry(2.8, 0.45, 10, 32), mat(COR.laranja));
+    var porta = new THREE.Mesh(new THREE.CircleGeometry(2.4, 24), mat(0x3a3150, { side: THREE.DoubleSide }));
+    g.add(aro, porta);
+    g.position.set(x, y + 3, z);
+    g.rotation.y = giro || 0;
+    cena.add(g);
+    return g;
+  }
+  function bolota(x, y, z, cor) {
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(0.95, 20, 14), mat(cor || COR.bolota));
+    corpo.position.y = 0.95;
+    var olho = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), mat(0xffffff));
+    olho.position.set(0, 1.15, 0.78);
+    var pupila = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), mat(0x1b1530));
+    pupila.position.set(0, 1.15, 1.08);
+    var haste = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 6), mat(0x3d2e5c));
+    haste.position.y = 2.1;
+    var bola = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), mat(0xff5a6e));
+    bola.position.y = 2.35;
+    g.add(corpo, olho, pupila, haste, bola);
+    g.position.set(x, y, z);
+    g.rotation.y = (x * 7 + z * 3) % 6.28;
+    cena.add(g);
+    bolotas++;
+    animados.push(function (t) { corpo.scale.y = 1 + Math.sin(t * 4 + x) * 0.04; });
+    return g;
+  }
+  function guarda(x, y, z) {
+    var g = bolota(x, y, z);
+    var capacete = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xc6ccd8));
+    capacete.position.y = 1.2;
+    g.add(capacete);
+    var chave = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.12, 8, 16), mat(0xffd23f));
+    chave.position.set(1.2, 1.2, 0);
+    g.add(chave);
+    return g;
+  }
+  var formaEstrela = (function () {
+    var s = new THREE.Shape();
+    for (var i = 0; i < 10; i++) {
+      var a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 === 0 ? 1 : 0.45;
+      if (i === 0) s.moveTo(Math.cos(a) * r, Math.sin(a) * r); else s.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    s.closePath();
+    return s;
+  })();
+  var geoEstrelinha = new THREE.ExtrudeGeometry(formaEstrela, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 1 });
+  geoEstrelinha.center();
+  function estrelinha(x, y, z) {
+    var m = malha(geoEstrelinha, mat(COR.estrela, { emissive: new THREE.Color(0x8a6400) }), x, y, z);
+    m.scale.setScalar(0.5);
+    var fase = (x + z) % 6;
+    animados.push(function (t) { m.rotation.y = t * 1.6 + fase; });
+    estrelas++;
+  }
+  function roda(x, y, z, r, n) { for (var i = 0; i < n; i++) { var a = i * Math.PI * 2 / n; estrelinha(x + Math.cos(a) * r, y, z + Math.sin(a) * r); } }
+  function fila(pontos) { pontos.forEach(function (p) { estrelinha(p[0], p[1], p[2]); }); }
+  var texBrilho = (function () {
+    var c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    var k = c.getContext("2d");
+    var g = k.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(255,255,255,0.45)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    k.fillStyle = g; k.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  function brilho(x, y, z, cor, tamanho, pulsa, atravessa) {
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texBrilho, color: cor, transparent: true, depthWrite: false, depthTest: !atravessa, blending: THREE.AdditiveBlending }));
+    s.position.set(x, y, z);
+    s.scale.setScalar(tamanho);
+    cena.add(s);
+    if (pulsa) animados.push(function (t) { s.material.opacity = 0.55 + 0.45 * Math.sin(t * 3 + x); });
+    return s;
+  }
+  function faisquinha(x, y, z, atravessa) {
+    malha(new THREE.SphereGeometry(0.62, 16, 12), new THREE.MeshLambertMaterial({ color: 0xd9b8ff, transparent: true, opacity: 0.35 }), x, y, z);
+    malha(new THREE.SphereGeometry(0.3, 14, 10), new THREE.MeshBasicMaterial({ color: COR.vagalume }), x, y, z);
+    brilho(x, y, z, COR.vagalume, 5, true, atravessa);
+  }
+  function posto(x, y, z, nome) {
+    malha(new THREE.CylinderGeometry(0.12, 0.12, 4, 8), mat(0x2b2140), x, y + 2, z);
+    var forma = new THREE.Shape(); forma.moveTo(0, 0); forma.lineTo(2.2, -0.7); forma.lineTo(0, -1.4); forma.closePath();
+    var bandeira = malha(new THREE.ShapeGeometry(forma), mat(COR.posto, { side: THREE.DoubleSide }), x + 0.1, y + 4, z);
+    animados.push(function (t) { bandeira.rotation.y = Math.sin(t * 2 + x) * 0.35; });
+    rotulo(nome, x, y + 5.4, z, "posto");
+  }
+  var formaCoracao = (function () {
+    var s = new THREE.Shape();
+    s.moveTo(0, -0.9);
+    s.bezierCurveTo(-1.2, 0, -0.9, 1, 0, 0.45);
+    s.bezierCurveTo(0.9, 1, 1.2, 0, 0, -0.9);
+    return s;
+  })();
+  function coracao(x, y, z) {
+    var geo = new THREE.ExtrudeGeometry(formaCoracao, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.08, bevelSegments: 2 });
+    geo.center();
+    var m = malha(geo, mat(COR.coracao, { emissive: new THREE.Color(0x5a0a1a) }), x, y, z);
+    m.scale.setScalar(0.8);
+    animados.push(function (t) { m.rotation.y = t * 1.2; m.position.y = y + Math.sin(t * 2) * 0.2; });
+    coracoes++;
+  }
+  function faisca(x, y, z) {
+    var sombra = malha(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0x1d1640, transparent: true, opacity: 0.4 }), x, y + 0.06, z);
+    sombra.rotation.x = -Math.PI / 2;
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12), mat(0xffffff));
+    corpo.scale.y = 1.2; corpo.position.y = 0.95;
+    var cabeca = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.95, 1.0), mat(0xffffff));
+    cabeca.position.y = 1.75;
+    var visor = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.1), mat(0x141622));
+    visor.position.set(0, 1.72, -0.52);
+    var placa = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.1), mat(COR.laranja));
+    placa.position.set(0, 1.05, -0.47);
+    g.add(corpo, cabeca, visor, placa);
+    g.position.set(x, y, z);
+    g.rotation.y = Math.PI * 0.8;
+    cena.add(g);
+    rotulo("Faísca (2,2 m)", x, y + 3.4, z, "pequeno");
+  }
+  function tracejado(pontos, cor) {
+    var c = curva(pontos);
+    var linha = new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(160)), new THREE.LineDashedMaterial({ color: cor, dashSize: 2.4, gapSize: 1.6 }));
+    linha.computeLineDistances();
+    cena.add(linha);
+    return linha;
+  }
+  function curva(pontos) { return new THREE.CatmullRomCurve3(pontos.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); })); }
+  function pontilhado(pontos, cor, raio, passo) {
+    var c = curva(pontos), n = Math.max(1, Math.round(c.getLength() / (passo || 1.4))), lista = [];
+    var geo = new THREE.SphereGeometry(raio || 0.28, 8, 6), m = new THREE.MeshBasicMaterial({ color: cor });
+    for (var i = 0; i <= n; i++) { var p = c.getPointAt(i / n); lista.push(malha(geo, m, p.x, p.y, p.z)); }
+    return lista;
+  }
+  function rotulo(texto, x, y, z, tipo) {
+    var c = document.createElement("canvas");
+    var k = c.getContext("2d");
+    var tam = tipo === "pequeno" || tipo === "posto" ? 34 : 44;
+    k.font = "700 " + tam + "px 'Baloo 2', 'Trebuchet MS', sans-serif";
+    var w = Math.ceil(k.measureText(texto).width) + 40, h = tam + 26;
+    c.width = w; c.height = h;
+    k.font = "700 " + tam + "px 'Baloo 2', 'Trebuchet MS', sans-serif";
+    var fundo = { bolso: "rgba(18,120,150,0.92)", posto: "rgba(20,120,150,0.88)", dica: "rgba(255,255,255,0.95)", viagem: "rgba(255,255,255,0.95)", poder: "rgba(214,72,150,0.92)", chefe: "rgba(123,79,214,0.95)" }[tipo] || "rgba(31,26,61,0.9)";
+    k.fillStyle = fundo;
+    var r = h / 2;
+    k.beginPath(); k.moveTo(r, 0); k.lineTo(w - r, 0); k.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2); k.lineTo(r, h); k.arc(r, r, r, Math.PI / 2, Math.PI * 1.5); k.fill();
+    k.fillStyle = tipo === "dica" || tipo === "viagem" ? "#1f1a3d" : "#ffffff";
+    k.textBaseline = "middle";
+    k.fillText(texto, 20, h / 2 + 2);
+    var tex = new THREE.CanvasTexture(c);
+    var fixo = !(tipo === "pequeno" || tipo === "posto");
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true, sizeAttenuation: !fixo }));
+    var alto = tipo === "bolso" || tipo === "dica" || tipo === "viagem" || tipo === "poder" ? 0.034 : 0.042;
+    if (fixo) s.scale.set(alto * w / h, alto, 1); else s.scale.set(w * 0.034, h * 0.034, 1);
+    s.position.set(x, y, z);
+    s.renderOrder = 10;
+    cena.add(s);
+    rotulos.push(s);
+    return s;
+  }
+  function viajante(construir, pontos, vel) {
+    var g = construir();
+    var c = curva(pontos);
+    animados.push(function (t) {
+      var k = 0.5 - 0.5 * Math.cos(t * (vel || 0.5));
+      var p = c.getPointAt(k), tg = c.getTangentAt(k);
+      g.position.copy(p);
+      g.rotation.y = Math.atan2(tg.x, tg.z);
+    });
+  }
+
+  // ================= O CASCO E O MARCO: o Tanque de Estrelas =================
+  // O disco da nave por dentro: o fundo (campo de força lilás) e o anel da parede com as luzinhas amarelas.
+  var fundo = malha(new THREE.CylinderGeometry(132, 132, 0.6, 72), new THREE.MeshBasicMaterial({ color: 0x9a7bff, transparent: true, opacity: 0.25 }), 0, -30, 0);
+  casco.push(fundo);
+  var grade = new THREE.GridHelper(260, 26, 0xb89bff, 0x6a52b8);
+  grade.position.y = -29.6;
+  cena.add(grade);
+  casco.push(grade);
+  var parede = malha(new THREE.CylinderGeometry(124, 132, 96, 72, 1, true), new THREE.MeshLambertMaterial({ color: 0x5b3fa0, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }), 0, 18, 0);
+  casco.push(parede);
+  for (var i = 0; i < 48; i++) {
+    var a = i * Math.PI * 2 / 48;
+    var lz = malha(new THREE.SphereGeometry(0.9, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd86a }), Math.cos(a) * 127, -6, Math.sin(a) * 127);
+    casco.push(lz);
+  }
+  var cupula = malha(new THREE.SphereGeometry(30, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xbfe0ff, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }), 0, 52, 0);
+  casco.push(cupula);
+  // O Tanque de Estrelas: o cilindro de vidro do fundo até a Sala do Trono, com as estrelas roubadas girando dentro.
+  malha(new THREE.CylinderGeometry(9, 9, 82, 32, 1, true), new THREE.MeshLambertMaterial({ color: 0xfff1b0, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }), 0, 10, 0);
+  for (var b = 0; b < 6; b++) malha(new THREE.TorusGeometry(9.1, 0.35, 8, 48), mat(COR.laranja), 0, -24 + b * 14, 0).rotation.x = Math.PI / 2;
+  var tanque = new THREE.Group();
+  cena.add(tanque);
+  for (var s = 0; s < 70; s++) {
+    var e = malha(new THREE.OctahedronGeometry(0.6), new THREE.MeshBasicMaterial({ color: 0xffe066 }), Math.cos(s * 2.4) * (2 + (s % 7)), -28 + (s * 1.13) % 78, Math.sin(s * 2.4) * (2 + (s % 7)), tanque);
+  }
+  animados.push(function (t) { tanque.rotation.y = t * 0.25; });
+  brilho(0, 20, 0, 0xffe066, 36, true);
+  rotulo("Tanque de Estrelas (o marco)", 0, 30, 0);
+
+  // ================= 1 · HANGAR DO BOCAL =================
+  piso(0, 0, 88, 60, 46);
+  faisca(0, 0, 104);
+  // O bocal do aspirador: o funil no chão por onde o Faísca chega.
+  malha(new THREE.CylinderGeometry(4.5, 2.4, 3, 24, 1, true), mat(0x7b4fd6, { side: THREE.DoubleSide }), 0, -1.4, 108);
+  malha(new THREE.TorusGeometry(4.5, 0.4, 8, 32), mat(COR.laranja), 0, 0.1, 108).rotation.x = Math.PI / 2;
+  rotulo("o Faísca chega sugado pelo bocal", 0, 7, 110, "dica");
+  plataformaDePouso(-16, 2.5, 80, 5);
+  plataformaDePouso(0, 5, 74, 5);
+  plataformaDePouso(16, 2.5, 80, 5);
+  [[-16, 2.5, 80], [0, 5, 74], [16, 2.5, 80]].forEach(function (p) { lampada(p[0], p[1], p[2] - 2.8, 2.6, false); estrelinha(p[0], p[1] + 1.4, p[2] + 2); });
+  rotulo("três luzes de pouso: o laser acende", 0, 15, 72, "dica");
+  [[-8, 0, 90], [8, 0, 90], [24, 0, 92]].forEach(function (p) {
+    var m = malha(new THREE.CylinderGeometry(0.8, 0.8, 0.6, 16), mat(0xffd23f), p[0], 0.3, p[2]);
+  });
+  rotulo("molas", 8, 3.5, 90, "pequeno");
+  esteira([-26, 0, 98], [26, 0, 98], 3.4);
+  for (var k = 0; k < 4; k++) pote(-18 + k * 12, 0.3, 98, 0.9, 1.8, false);
+  // O dropship (mini-marco) e o coração no alto dele.
+  caixa(18, 0, 104, 9, 4.5, 6, COR.branco, 0.3);
+  caixa(18, 4.5, 104, 5, 1.6, 4, COR.laranja, 0.3);
+  coracao(18, 7.6, 104);
+  rotulo("mini-marco: o dropship", 18, 12, 104);
+  // Bolso: o labirinto de containers, com o Faisquinha 3.
+  [[-24, 102, 0], [-24, 94, 0], [-18, 108, 1.57], [-12, 102, 0]].forEach(function (c) { caixa(c[0], 0, c[1], 3, 3, 7, 0xd94f3d, c[2]); });
+  faisquinha(-18, 1.5, 100);
+  roda(-18, 1.2, 100, 1.4, 4);
+  rotulo("bolso: containers (Faisquinha 3)", -18, 7, 100, "bolso");
+  bolota(-4, 0, 110); bolota(8, 0, 80, 0xff8a2a);
+  trilha([[0, 0, 104], [0, 0, 92], [-14, 0, 86], [-26, 0, 82]], 3.2);
+  fila([[0, 1.2, 100], [0, 1.2, 95], [-6, 1.2, 89], [-20, 1.2, 84], [-8, 6.2, 74], [8, 6.2, 74]]);
+  escotilha(-30, 0, 82, Math.PI / 2);
+  rotulo("1 · Hangar do Bocal", 0, 22, 88);
+
+  // viagem 1: a cápsula do tubo pneumático, do hangar ao depósito (o tubo faz curva por fora do tanque)
+  var tubo1 = [[-31, 2, 82], [-48, 3, 76], [-62, 6, 56], [-70, 9, 38]];
+  (function () {
+    var c = curva(tubo1);
+    cena.add(new THREE.Mesh(new THREE.TubeGeometry(c, 48, 2.2, 14, false), new THREE.MeshLambertMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })));
+  })();
+  viajante(function () { var g = new THREE.Group(); var cap = new THREE.Mesh(new THREE.SphereGeometry(1.8, 16, 10), mat(COR.capsula)); cap.scale.z = 1.4; g.add(cap); cena.add(g); return g; }, tubo1, 0.5);
+  rotulo("viagem: tubo pneumático", -52, 14, 66, "viagem");
+
+  // ================= 2 · DEPÓSITO DE ESTRELAS =================
+  var D = [-82, 8, 20];
+  pisoRedondo(D[0], D[1], D[2], 22);
+  posto(-70, 8, 34, "P1");
+  capsula(-72, 8, 30, "cápsula: Balão de Chiclete", 0xff8fd0);
+  // As prateleiras do meio e de cima: arcos planos em volta da parede (a de baixo é o piso), com os potes gigantes.
+  // Os ângulos são no chão, contados do leste (+x) para o sul (+z).
+  function prateleira(y, a0, a1) {
+    var r0 = 16, r1 = 22, p0 = -a1 * Math.PI / 180, p1 = -a0 * Math.PI / 180;
+    var s = new THREE.Shape();
+    s.moveTo(Math.cos(p0) * r1, Math.sin(p0) * r1);
+    s.absarc(0, 0, r1, p0, p1, false);
+    s.lineTo(Math.cos(p1) * r0, Math.sin(p1) * r0);
+    s.absarc(0, 0, r0, p1, p0, true);
+    s.closePath();
+    var m = malha(new THREE.ExtrudeGeometry(s, { depth: 1.2, bevelEnabled: false, curveSegments: 40 }), mat(COR.piso), D[0], y - 1.2, D[2]);
+    m.rotation.x = -Math.PI / 2;
+    contorno(m, COR.borda);
+  }
+  prateleira(16, 95, 275);
+  prateleira(24, 200, 345);
+  [[D[0] - 14, 8, D[2] - 8, true], [D[0] + 6, 8, D[2] - 16, false], [D[0] - 18, 16, D[2] + 6, true], [D[0] - 4, 16, D[2] - 19, false], [D[0] + 16, 24, D[2] - 10, true], [D[0] - 16, 24, D[2] - 12, false]].forEach(function (p) { pote(p[0], p[1], p[2], 2.6, 7, p[3]); });
+  rotulo("três potes com o ferrolho: o soco abre", D[0], 40, D[2] - 6, "dica");
+  // As bolhas de chiclete que quicam e as argolas do ioiô.
+  [[D[0] + 8, 9, D[2] + 4], [D[0] - 2, 12, D[2] + 10]].forEach(function (p) { malha(new THREE.SphereGeometry(2, 16, 12), new THREE.MeshLambertMaterial({ color: 0xff9fd0, transparent: true, opacity: 0.7 }), p[0], p[1], p[2]); });
+  capsula(D[0] - 8, 16, D[2] + 16, "cápsula: Ioiô", 0x4aa8ff);
+  [[D[0] - 12, 21, D[2] - 4], [D[0] + 4, 27, D[2] + 4], [D[0] + 12, 29, D[2] - 4]].forEach(function (p) { argola(p[0], p[1], p[2], 0.5); });
+  // Bolso: o nicho atrás do pote do alto, com o V1.
+  faisquinha(D[0] + 20, 27, D[2] - 14);
+  rotulo("bolso: nicho (V1, pelo ioiô)", D[0] + 20, 33, D[2] - 14, "bolso");
+  coracao(D[0] - 4, 17.6, D[2] - 19);
+  bolota(D[0] + 4, 13, D[2] + 4, 0xffd23f); bolota(D[0] - 6, 8, D[2] + 8, 0xff8fb0); bolota(D[0] - 18, 16, D[2] + 2, 0xa7d36a);
+  fila([[-72, 9.2, 26], [D[0] + 8, 12, D[2] + 4], [D[0] - 2, 15, D[2] + 10], [D[0] - 12, 23, D[2] - 4], [D[0] + 4, 29, D[2] + 4]]);
+  roda(D[0], 9.4, D[2], 6, 6);
+  escotilha(D[0], 32, D[2], 0).rotation.x = Math.PI / 2;
+  rotulo("2 · Depósito de Estrelas", D[0], 46, D[2]);
+
+  // viagem 2: o monta-carga do alto do depósito até as máquinas
+  var mc = [[D[0] + 4, 33, D[2] - 16], [-70, 30, -30], [-66, 26, -46]];
+  tracejado(mc, 0xffffff);
+  viajante(function () { var g = new THREE.Group(); var p = new THREE.Mesh(new THREE.BoxGeometry(4, 0.4, 4), mat(COR.laranja)); g.add(p); cena.add(g); return g; }, mc, 0.45);
+  rotulo("viagem: monta-carga (vai e volta)", -76, 40, -18, "viagem");
+
+  // ================= 3 · SALA DE MÁQUINAS =================
+  var M = [-60, 26, -66];
+  piso(M[0], M[1], M[2], 54, 42, 0.3);
+  posto(-66, 26, -48, "P2");
+  capsula(-56, 26, -46, "cápsula: Martelinho", 0xffd23f);
+  [[M[0] - 16, M[2] - 8], [M[0], M[2] - 14], [M[0] + 16, M[2] - 8]].forEach(function (p) { motor(p[0], M[1], p[1]); estrelinha(p[0], M[1] + 9, p[1]); });
+  rotulo("três pinos: a pancada do martelinho para o motor", M[0], 44, M[2] - 12, "dica");
+  esteira([M[0] - 22, M[1], M[2] + 8], [M[0] + 22, M[1], M[2] + 8], 3.4);
+  // O gerador de gravidade: o anel roxo enorme girando, com o V2 em cima.
+  var gerador = malha(new THREE.TorusGeometry(8, 1.1, 12, 48), mat(0x7b4fd6), M[0], M[1] + 11, M[2] + 2);
+  animados.push(function (t) { gerador.rotation.y = t * 0.8; });
+  brilho(M[0], M[1] + 11, M[2] + 2, 0xb89bff, 18, true);
+  faisquinha(M[0], M[1] + 20.6, M[2] + 2);
+  rotulo("bolso: em cima do gerador (V2, sem gravidade)", M[0], M[1] + 26, M[2] + 2, "bolso");
+  // Sem gravidade: as caixas flutuando (o caminho até a escotilha do teto).
+  var flutuando = [];
+  [[M[0] + 6, 32, M[2] + 12], [M[0] - 4, 36, M[2] + 14], [M[0] - 14, 40, M[2] + 8], [M[0] - 6, 44, M[2] + 2], [M[0] + 4, 47, M[2] - 4]].forEach(function (p, i) {
+    var c = caixa(p[0], p[1], p[2], 3, 3, 3, 0xc8955a, i);
+    flutuando.push([c, p[1], i]);
+  });
+  animados.push(function (t) { flutuando.forEach(function (f) { f[0].position.y = f[1] + 1.5 + Math.sin(t * 0.9 + f[2]) * 0.6; f[0].rotation.y = t * 0.2 + f[2]; }); });
+  rotulo("sem gravidade: de caixa em caixa até o teto", M[0] + 4, 56, M[2] + 10, "dica");
+  escotilha(M[0] + 6, 49, M[2] - 8, 0).rotation.x = Math.PI / 2;
+  guarda(M[0] + 8, M[1], M[2] + 2); bolota(M[0] - 10, M[1], M[2] + 12, 0xff8fb0); bolota(M[0] + 18, M[1], M[2] + 12);
+  caixa(M[0] + 22, M[1], M[2] - 16, 6, 4, 6, 0x8a7bc0);
+  roda(M[0] + 22, M[1] + 5, M[2] - 16, 1.6, 4);
+  fila([[-64, 27.2, -50], [M[0] - 8, 27.2, M[2] + 4], [M[0] + 8, 27.2, M[2] + 8], [M[0] - 4, 38, M[2] + 14], [M[0] - 6, 46, M[2] + 2]]);
+  rotulo("3 · Sala de Máquinas", M[0], 62, M[2]);
+
+  // viagem 3: o carrinho no trilho do teto, das máquinas à estufa
+  var tr = [[M[0] + 6, 50, M[2] - 8], [-20, 54, -86], [20, 50, -84], [42, 40, -70]];
+  tracejado(tr, 0xffffff);
+  viajante(function () { var g = new THREE.Group(); var p = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.2, 3.6), mat(0xe94f4f)); g.add(p); cena.add(g); return g; }, tr, 0.4);
+  rotulo("viagem: carrinho no trilho do teto", 0, 62, -86, "viagem");
+
+  // ================= 4 · ESTUFA GELADA =================
+  var E = [54, 34, -64];
+  piso(E[0], E[1], E[2], 50, 40, -0.4);
+  posto(42, 34, -70, "P3");
+  capsula(46, 34, -60, "cápsula: Luva de Neve", 0x4aa8ff);
+  capsula(62, 34, -52, "cápsula: Pipa", COR.laranja);
+  [[E[0] - 10, E[2] - 10, 12], [E[0] + 2, E[2] - 14, 14], [E[0] + 14, E[2] - 8, 12], [E[0] + 8, E[2] + 6, 18]].forEach(function (p, i) {
+    tuboDePlantas(p[0], E[1], p[1], p[2], 3);
+    if (i < 3) sino(p[0], E[1] + p[2], p[1]);
+  });
+  rotulo("três sinos no alto dos tubos: a bola de neve da luva", E[0] + 2, 56, E[2] - 12, "dica");
+  // A metade fria: chão de gelo e o iglu com o coração.
+  var gelo = malha(new THREE.BoxGeometry(20, 0.2, 16), mat(COR.gelo), E[0] - 12, E[1] + 0.1, E[2] + 10);
+  gelo.rotation.y = -0.4;
+  malha(new THREE.SphereGeometry(3.4, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xf4fbff), E[0] - 16, E[1], E[2] + 14);
+  coracao(E[0] - 16, E[1] + 1.4, E[2] + 14);
+  colunaVento(E[0] + 4, E[1], E[2] + 2, E[1] + 20);
+  faisquinha(E[0] + 8, E[1] + 21.6, E[2] + 6);
+  rotulo("bolso: no alto do tubo maior (V3, pela coluna com a pipa)", E[0] + 8, E[1] + 27, E[2] + 6, "bolso");
+  bolota(E[0] - 8, E[1], E[2] + 8, 0x9fd0ff); bolota(E[0] + 6, E[1], E[2] - 4, 0xf4f4ff);
+  fila([[44, 35.2, -66], [E[0] - 4, 35.2, E[2] - 4], [E[0] + 6, 35.2, E[2] + 2], [E[0] + 4, 44, E[2] + 2], [E[0] + 4, 50, E[2] + 2]]);
+  rotulo("4 · Estufa Gelada", E[0], 62, E[2]);
+
+  // viagem 4: a ponte de luz da estufa até o corredor
+  (function () {
+    var pts = [[E[0] + 22, E[1] + 1, E[2] + 8], [74, 37, -36], [82, 40, -18]];
+    var c = curva(pts);
+    cena.add(new THREE.Mesh(new THREE.TubeGeometry(c, 40, 0.7, 6, false), new THREE.MeshBasicMaterial({ color: 0x8ff3ff, transparent: true, opacity: 0.55 })));
+  })();
+  rotulo("viagem: ponte de luz", 76, 46, -34, "viagem");
+
+  // ================= 5 · CORREDOR DO TRONO =================
+  // O corredor em curva (por dentro do casco), com janelas grandes para o céu da noite.
+  var corredor = [];
+  for (var c = 0; c < 7; c++) {
+    var ang = -0.22 + c * 0.18;
+    var px = Math.cos(ang) * 86, pz = Math.sin(ang) * 86;
+    var y = 40 + c * 0.6;
+    if (c === 2 || c === 4) {
+      // Os vãos: plataforma que anda por cima.
+      var mv = caixa(px, y - 0.4, pz, 5, 0.6, 5, COR.laranja);
+      (function (mv, px, pz, ang) { animados.push(function (t) { var k = Math.sin(t * 0.8 + ang * 3) * 3; mv.position.x = px + Math.cos(ang + Math.PI / 2) * k; mv.position.z = pz + Math.sin(ang + Math.PI / 2) * k; }); })(mv, px, pz, ang);
+    } else {
+      piso(px, y, pz, 12, 15, -ang);
+    }
+    corredor.push([px, y, pz, ang]);
+    janela(Math.cos(ang) * 104, y + 8, Math.sin(ang) * 104, -ang + Math.PI / 2, 12, 9);
+  }
+  posto(corredor[0][0], corredor[0][1], corredor[0][2] - 3, "P4");
+  barreira(corredor[1][0], corredor[1][1], corredor[1][2], 4.5);
+  barreira(corredor[5][0], corredor[5][1], corredor[5][2], 4.5);
+  [corredor[1], corredor[3], corredor[5]].forEach(function (p) { guarda(p[0] + 2, p[1], p[2]); });
+  rotulo("três guardas de capacete com as chaves-coroa", corredor[3][0], 54, corredor[3][2], "dica");
+  bolota(corredor[3][0] + 6, corredor[3][1] + 6, corredor[3][2], 0xffd23f); bolota(corredor[6][0] + 6, corredor[6][1] + 6, corredor[6][2], 0xffd23f);
+  // A cabine de pilotagem ao lado (o coração e o Faisquinha 4).
+  caixa(corredor[4][0] + 10, corredor[4][1], corredor[4][2] + 6, 8, 4, 8, COR.branco);
+  coracao(corredor[4][0] + 10, corredor[4][1] + 5.4, corredor[4][2] + 6);
+  faisquinha(corredor[4][0] + 13, corredor[4][1] + 1.6, corredor[4][2] + 6);
+  rotulo("bolso: a cabine de pilotagem (Faisquinha 4)", corredor[4][0] + 10, corredor[4][1] + 9, corredor[4][2] + 6, "bolso");
+  corredor.forEach(function (p) { estrelinha(p[0], p[1] + 1.4, p[2]); });
+  escotilha(corredor[6][0] - 6, corredor[6][1], corredor[6][2] + 2, Math.PI / 2);
+  rotulo("5 · Corredor do Trono", 92, 60, 6);
+
+  // ================= SALA DO TRONO: o Rei Bolotão =================
+  var T = [0, 52, 0];
+  pisoRedondo(T[0], T[1], T[2], 24);
+  malha(new THREE.CylinderGeometry(9, 9, 0.2, 32), new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0.55 }), 0, T[1] + 0.05, 0);
+  // O elevador que chega do corredor e a porta.
+  tracejado([[corredor[6][0] - 6, corredor[6][1] + 1, corredor[6][2] + 2], [40, 50, 10], [24, T[1] + 1, 4]], 0xffffff);
+  rotulo("elevador até a Sala do Trono", 36, 60, 10, "viagem");
+  // Os quatro postes de lâmpada (apagados até a fase 3).
+  var postes = [];
+  [[16, 0], [0, 16], [-16, 0], [0, -16]].forEach(function (p) { postes.push(lampada(p[0], T[1], p[1], 4.2, false)); });
+  // O bocal do aspirador gigante, descendo do teto.
+  var mangueira = malha(new THREE.CylinderGeometry(2.4, 3.6, 14, 20, 1, true), mat(0x7b4fd6, { side: THREE.DoubleSide }), -10, T[1] + 18, -10);
+  // As argolas do ioiô (fase 1), as colunas e os filtros (fase 2).
+  var argolasRei = [], colunasRei = [], filtros = [];
+  [[12, 8, 10], [-6, 11, 14], [-14, 14, -2], [2, 16, -12]].forEach(function (p) { argolasRei.push(argola(p[0], T[1] + p[1], p[2], 0.4)); });
+  // O Rei Bolotão: Bolota roxa enorme de um olho só, a coroa torta por cima da touca de dormir, a capa e o cetro.
+  var rei = new THREE.Group();
+  (function () {
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(3.8, 28, 20), mat(0x8a4fe0));
+    corpo.position.y = 3.8;
+    var olho = new THREE.Mesh(new THREE.SphereGeometry(1.4, 18, 12), mat(0xffffff));
+    olho.position.set(0, 4.6, 3.1);
+    var pupila = new THREE.Mesh(new THREE.SphereGeometry(0.62, 14, 10), mat(0x1b1530));
+    pupila.position.set(0, 4.6, 4.25);
+    var touca = new THREE.Mesh(new THREE.ConeGeometry(2.6, 4.2, 20), mat(0x4a7de0));
+    touca.position.set(0.6, 8.4, -0.4);
+    touca.rotation.z = -0.5;
+    var pompom = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 8), mat(0xffffff));
+    pompom.position.set(2.6, 9.6, -0.4);
+    var coroa = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.0, 1.2, 8, 1, true), mat(0xffd23f, { side: THREE.DoubleSide }));
+    coroa.position.set(-0.4, 7.4, 0.2);
+    coroa.rotation.z = 0.25;
+    for (var i = 0; i < 8; i++) {
+      var ponta = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.8, 6), mat(0xffd23f));
+      var a = i * Math.PI / 4;
+      ponta.position.set(Math.cos(a) * 2.1, 0.9, Math.sin(a) * 2.1);
+      coroa.add(ponta);
+    }
+    var capa = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 4.8, 5.4, 24, 1, true, Math.PI * 0.6, Math.PI * 0.8), mat(0x5b2fa0, { side: THREE.DoubleSide }));
+    capa.position.set(0, 3.2, -0.6);
+    for (var k = 0; k < 10; k++) {
+      var est = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), new THREE.MeshBasicMaterial({ color: 0xffd23f }));
+      var ak = Math.PI * 0.62 + k * 0.08;
+      est.position.set(Math.sin(ak) * 4.4, 1.4 + (k % 4) * 1.1, Math.cos(ak) * 4.4 - 0.6);
+      capa.add(est);
+    }
+    var cetro = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 7, 8), mat(0x3a3150));
+    cetro.position.set(4.6, 3.6, 1.2);
+    cetro.rotation.z = 0.2;
+    var bico = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.3, 1.6, 12), mat(0x7b4fd6));
+    bico.position.set(5.3, 7.0, 1.2);
+    var trono = new THREE.Mesh(new THREE.CylinderGeometry(4.6, 3.4, 1.2, 24), mat(0xc6ccd8));
+    trono.position.y = -0.2;
+    var cupulaTrono = new THREE.Mesh(new THREE.TorusGeometry(4.6, 0.4, 8, 32), mat(0xffd86a));
+    cupulaTrono.rotation.x = Math.PI / 2;
+    cupulaTrono.position.y = 0.2;
+    var botao = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.4, 14), mat(0xe8333f));
+    botao.position.set(0, 0.6, -3.6);
+    rei.add(corpo, olho, pupila, touca, pompom, coroa, capa, cetro, bico, trono, cupulaTrono, botao);
+    rei.userData = { trono: [trono, cupulaTrono, botao], capa: capa };
+  })();
+  rei.position.set(0, T[1] + 6, 0);
+  cena.add(rei);
+  var rotuloRei = rotulo("o Rei Bolotão (uns 8 m)", 0, T[1] + 22, 0, "chefe");
+  // Fase da luta mostrada na maquete: 1 trono voador, 2 aspirador, 3 apagão.
+  var faseLuta = 1;
+  var puxao = [];
+  for (var pz2 = 0; pz2 < 14; pz2++) {
+    var r2 = malha(new THREE.BoxGeometry(0.1, 0.1, 2.4), new THREE.MeshBasicMaterial({ color: 0xffffff }), 0, 0, 0);
+    r2.userData = { a: pz2 * 0.45, off: pz2 / 14 };
+    r2.visible = false;
+    puxao.push(r2);
+  }
+  [[14, 6], [-12, 12], [6, -16]].forEach(function (p) {
+    var x0 = p[0], z0 = p[1];
+    colunasRei.push([x0, z0]);
+    colunaVento(x0, T[1], z0, T[1] + 14);
+    filtros.push(ferrolho(x0 * 0.82, T[1] + 15, z0 * 0.82, Math.atan2(x0, z0)));
+  });
+  function mostrarFase(f) {
+    faseLuta = f;
+    argolasRei.forEach(function (a) { a.visible = f === 1; });
+    filtros.forEach(function (m) { m.visible = f === 2; });
+    puxao.forEach(function (r) { r.visible = f === 2; });
+    rei.userData.trono.forEach(function (m) { m.visible = f === 1; });
+    rei.userData.capa.scale.set(f === 3 ? 1.25 : 1, f === 3 ? 1.4 : 1, f === 3 ? 1.25 : 1);
+    var escuro = f === 3;
+    hemi.intensity = escuro ? 0.18 : 1.0;
+    sol.intensity = escuro ? 0.05 : 0.5;
+    postes.forEach(function (l, i) { acender(l, escuro ? i < 2 : false); });
+    cena.background.set(escuro ? 0x0d0a1c : 0x241b45);
+  }
+  animados.push(function (t) {
+    if (faseLuta === 1) {
+      rei.position.set(Math.cos(t * 0.4) * 10, T[1] + 10 + Math.sin(t * 1.2) * 0.8, Math.sin(t * 0.4) * 10);
+      rei.rotation.y = -t * 0.4;
+    } else if (faseLuta === 2) {
+      rei.position.set(-6, T[1] + 0.2, -6);
+      rei.rotation.y = Math.PI * 0.25;
+      puxao.forEach(function (r) {
+        var k = (r.userData.off + t * 0.4) % 1, a = r.userData.a;
+        r.position.set(-6 + Math.cos(a) * (20 * (1 - k) + 3), T[1] + 2 + (r.userData.off * 6) % 5, -6 + Math.sin(a) * (20 * (1 - k) + 3));
+        r.lookAt(-6, r.position.y, -6);
+      });
+    } else {
+      rei.position.set(Math.cos(t * 0.7) * 8, T[1] + 0.2, Math.sin(t * 0.9) * 8);
+      rei.rotation.y = t * 3;
+    }
+    rotuloRei.position.set(rei.position.x, rei.position.y + 13, rei.position.z);
+  });
+  rotulo("Sala do Trono (arena)", 0, T[1] + 32, 0);
+
+  // ---------- linhas de autor (escondidas) ----------
+  var pontosRota = [[0, 0.6, 104], [0, 0.6, 92], [0, 5.6, 74], [-26, 0.6, 82], [-31, 2, 82], [-62, 6, 56], [-70, 8.6, 34], [D[0] + 8, 12, D[2] + 4],
+    [D[0] - 12, 21, D[2] - 4], [D[0] + 4, 27, D[2] + 4], [D[0] + 4, 33, D[2] - 16], [-66, 26.6, -46], [M[0], 26.6, M[2] - 10], [M[0] - 4, 38, M[2] + 14],
+    [M[0] + 6, 49, M[2] - 8], [20, 50, -84], [42, 34.6, -70], [E[0] + 2, 46, E[2] - 14], [E[0] + 22, 35, E[2] + 8], [82, 40.6, -18]];
+  corredor.forEach(function (p) { pontosRota.push([p[0], p[1] + 0.6, p[2]]); });
+  pontosRota.push([24, T[1] + 1, 4], [0, T[1] + 0.6, 12]);
+  rota = pontilhado(pontosRota, COR.laranja, 0.35, 2.4);
+  rota.forEach(function (m) { m.visible = false; });
+  var comprimentoRota = Math.round(curva(pontosRota).getLength());
+  vistas = [tracejado([[0, 2.5, 104], [0, 20, 0]], 0xffffff), tracejado([[-70, 10, 34], [0, 20, 0]], 0xffffff), tracejado([[-66, 28, -46], [0, 30, 0]], 0xffffff),
+    tracejado([[42, 36, -70], [0, 34, 0]], 0xffffff), tracejado([[corredor[0][0], corredor[0][1] + 2, corredor[0][2]], [0, 40, 0]], 0xffffff)];
+  vistas.forEach(function (v) { v.visible = false; });
+
+  // ---------- números ----------
+  var numeros = document.getElementById("numeros");
+  [["playgrounds", "5 + a Sala do Trono"], ["viagens", 4], ["rota principal", "~" + comprimentoRota + " m"], ["estrelinhas", "~140 (" + estrelas + " na maquete)"],["Faisquinhas", 6], ["postos", "P0 + 4"], ["Bolotas", bolotas], ["corações extras", coracoes], ["cápsulas de poder", 5]].forEach(function (n) {
+    var s = document.createElement("span");
+    s.textContent = n[0] + ": " + n[1];
+    numeros.appendChild(s);
+  });
+
+  // ---------- câmera, botões e ficha ----------
+  var voo = null;
+  function irPara(chave) {
+    var t = PARTES[chave];
+    voo = { de: camera.position.clone(), deAlvo: controles.target.clone(), para: new THREE.Vector3().fromArray(t.cam), paraAlvo: new THREE.Vector3().fromArray(t.alvo), t0: performance.now() };
+    var ficha = document.getElementById("ficha");
+    ficha.innerHTML = "";
+    var h = document.createElement("h2"); h.textContent = t.nome;
+    var m = document.createElement("p"); m.className = "medida"; m.textContent = t.medida;
+    var p = document.createElement("p"); p.textContent = t.texto;
+    ficha.append(h, m, p);
+    function grupo(titulo, itens) {
+      var d = document.createElement("div"); d.className = "grupo";
+      var hh = document.createElement("h3"); hh.textContent = titulo;
+      var ul = document.createElement("ul");
+      itens.forEach(function (item) { var li = document.createElement("li"); li.textContent = item; ul.appendChild(li); });
+      d.append(hh, ul);
+      ficha.appendChild(d);
+    }
+    if (t.bolsos) grupo("Bolsos para explorar", t.bolsos);
+    if (t.bolotas) grupo("Bolotas", [t.bolotas]);
+    if (t.fases) {
+      var titulo = document.createElement("h3"); titulo.textContent = "A luta, em três fases (os botões mudam a arena na maquete)";
+      var nav = document.createElement("div"); nav.className = "fases";
+      var texto = document.createElement("div"); texto.className = "fase-texto";
+      t.fases.forEach(function (f, i) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = f.titulo;
+        b.setAttribute("aria-pressed", i + 1 === faseLuta ? "true" : "false");
+        b.addEventListener("click", function () {
+          mostrarFase(i + 1);
+          nav.querySelectorAll("button").forEach(function (x, j) { x.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+          texto.innerHTML = "";
+          var hh = document.createElement("h3"); hh.textContent = f.titulo;
+          var pp = document.createElement("p"); pp.textContent = f.texto;
+          texto.append(hh, pp);
+        });
+        nav.appendChild(b);
+      });
+      var f0 = t.fases[faseLuta - 1];
+      var hh = document.createElement("h3"); hh.textContent = f0.titulo;
+      var pp = document.createElement("p"); pp.textContent = f0.texto;
+      texto.append(hh, pp);
+      ficha.append(titulo, nav, texto);
+    } else if (faseLuta === 3) {
+      mostrarFase(1);
+    }
+    document.querySelectorAll("#botoes button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.parte === chave ? "true" : "false"); });
+    // Numa parte, os nomes das outras partes ficam apagadinhos (no geral e nas viagens, todos acesos).
+    var todos = chave === "geral" || chave === "viagens";
+    rotulos.forEach(function (r) { r.material.opacity = todos || r.position.distanceTo(voo.paraAlvo) < 60 ? 1 : 0.15; });
+  }
+  var botoes = document.getElementById("botoes");
+  ORDEM.forEach(function (chave) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = PARTES[chave].botao;
+    b.dataset.parte = chave;
+    if (PARTES[chave].viagem) b.className = "viagem";
+    if (PARTES[chave].chefe) b.className = "chefe";
+    b.addEventListener("click", function () { irPara(chave); });
+    botoes.appendChild(b);
+  });
+  function alternar(id, aoMudar) {
+    var b = document.getElementById(id);
+    b.addEventListener("click", function () {
+      var ligado = b.getAttribute("aria-pressed") !== "true";
+      b.setAttribute("aria-pressed", ligado ? "true" : "false");
+      aoMudar(ligado);
+    });
+  }
+  alternar("b-nomes", function (on) { rotulos.forEach(function (r) { r.visible = on; }); });
+  alternar("b-casco", function (on) { casco.forEach(function (m) { m.visible = on; }); });
+  alternar("b-rota", function (on) { rota.forEach(function (m) { m.visible = on; }); });
+  alternar("b-vista", function (on) { vistas.forEach(function (v) { v.visible = on; }); });
+  alternar("b-gira", function (on) { controles.autoRotate = on; controles.autoRotateSpeed = 0.6; });
+
+  mostrarFase(1);
+  var inicio = (location.hash || "").replace("#", "");
+  if (!PARTES[inicio]) inicio = "geral";
+  camera.position.fromArray(PARTES[inicio].cam);
+  controles.target.fromArray(PARTES[inicio].alvo);
+  irPara(inicio);
+  voo = null;
+  window.addEventListener("hashchange", function () {
+    var chave = (location.hash || "").replace("#", "");
+    if (PARTES[chave]) irPara(chave);
+  });
+
+  function ajustar() {
+    var w = canvas.clientWidth, h = canvas.clientHeight, pr = renderer.getPixelRatio();
+    if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  }
+  var reduzir = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var t0 = performance.now();
+  function quadro(agora) {
+    ajustar();
+    var t = (agora - t0) / 1000;
+    if (!reduzir) animados.forEach(function (f) { f(t); });
+    if (voo) {
+      var k = Math.min((agora - voo.t0) / 900, 1);
+      var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      camera.position.lerpVectors(voo.de, voo.para, e);
+      controles.target.lerpVectors(voo.deAlvo, voo.paraAlvo, e);
+      if (k >= 1) voo = null;
+    }
+    controles.update();
+    renderer.render(cena, camera);
+    requestAnimationFrame(quadro);
+  }
+  requestAnimationFrame(quadro);
+})();
+</script>

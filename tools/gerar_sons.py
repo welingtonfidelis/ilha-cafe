@@ -865,11 +865,61 @@ def make_musica_faisca():
     f.salvar("vinheta_estrela", -4.0)
 
 
+def make_nave():
+    """A Nave Aspiratrão, a fase final do Faísca (2026-11-12): o "sem_gravidade" (o gerador desligando: um tom que desce
+    devagar, balançando, com um chiado de ar), o "aspirador" (o cetro do Rei ligando: o ronco subindo e o chiado da
+    sucção) e o "choro" (o Rei chorando no escuro: três soluços que descem). Os temas: o da "nave" (mi menor,
+    misterioso sem assustar: sininho em arpejo, pad e a quadrada no meio) e o do "final" (dó maior, a festa no farol
+    com o céu aceso de novo)."""
+    random.seed(52)
+    tom = osc(620, 140, 1.6, "sine", vibrato=0.06, vib_rate=5.0)
+    ar = sweep_lowpass(highpass(noise(1.6), 400), 2400, 500)
+    sfx("sem_gravidade", fade_edges(mix(1.6, (envelope(tom, 0.02, 1.5), 0, 0.8), (envelope(ar, 0.3, 1.2), 0, 0.35)), 30), -5)
+    ronco = am(sweep_lowpass(noise(1.4), 180, 900), 18, 0.3)
+    chiado = sweep_lowpass(highpass(noise(1.4), 900), 1500, 4500)
+    sfx("aspirador", fade_edges(mix(1.4, (envelope(ronco, 0.2, 1.1), 0, 0.7), (envelope(chiado, 0.4, 0.9), 0, 0.35)), 40), -6)
+    solucos = [(envelope(osc(520 - k * 60, 380 - k * 60, 0.32, "triangle", vibrato=0.05, vib_rate=9.0), 0.02, 0.28), k * 0.42, 0.6) for k in range(3)]
+    sfx("choro", fade_edges(mix(1.4, *solucos), 20), -6)
+
+    oito = [0, .5, 1, 1.5, 2, 2.5, 3, 3.5]
+    # A nave: mi menor, 112 bpm, sininho em arpejo, pad, a quadrada na melodia e o chimbal.
+    f = Faixa(112, 16)
+    acordes = ["Em", "C", "G", "D", "Em", "C", "Am", "B", "C", "D", "Bm", "Em", "Am", "C", "D", "B"]
+    f.melodia("quadrada", "E5:1 G5:1 B5:1.5 A5:.5  G5:1 E5:1 C5:2  D5:1 G5:1 B5:1 D6:1  A5:2 F#5:2  "
+              "E5:.5 F#5:.5 G5:1 B5:1 E6:1  E6:1 D6:.5 C6:.5 G5:2  C6:1 B5:1 A5:1 E5:1  D#5:2 F#5:1 B5:1  "
+              "C6:1.5 B5:.5 G5:2  D6:1.5 C6:.5 A5:2  B5:1 F#5:1 D5:1 F#5:1  E5:3 -:1  "
+              "A5:1 C6:1 E6:1 C6:1  G5:1 C6:1 E6:2  F#5:1 A5:1 D6:1 A5:1  B5:2 D#6:1 F#6:1", 0.22)
+    f.acordes("sino", acordes, [(0, .5, 0), (.5, .5, 1), (1, .5, 2), (1.5, .5, "oitava"), (2, .5, 2), (2.5, .5, 1), (3, .5, 0), (3.5, .5, 1)],
+              0.08, oitava=5)
+    f.acordes("pad", acordes, [(0, 4, "todas")], 0.1)
+    f.baixo("baixo", acordes, [(0, 1.5, "raiz"), (1.5, .5, "raiz"), (2, 1.5, "quinta"), (3.5, .5, "oitava")], 0.28)
+    f.batida("bumbo", [0, 2.5], 0.3)
+    f.batida("chimbal", oito, 0.07)
+    f.batida("palma", [1, 3], 0.1)
+    f.salvar("nave")
+
+    # O final: dó maior, 100 bpm, o tema do farol em festa: caixinha, flauta, metais no fim, bumbo e palmas.
+    f = Faixa(100, 8)
+    acordes = ["C", "Am", "F", "G", "C", "Em", "F", "G"]
+    f.melodia("flauta", "E5:1.5 D5:.5 C5:1 G5:1  A5:1.5 G5:.5 E5:2  F5:1 A5:1 C6:1 A5:1  G5:3 -:1  "
+              "E5:1 G5:1 C6:1.5 B5:.5  B5:1.5 G5:.5 E5:2  A5:1 G5:1 F5:1 A5:1  G5:2 B5:1 D6:1", 0.3)
+    f.melodia("sino", "-:16 C6:2 E6:2 G6:2 E6:2 F6:2 A6:2 G6:4", 0.12)
+    f.acordes("caixinha", acordes, [(0, .5, 0), (.5, .5, 1), (1, .5, 2), (1.5, .5, "oitava"), (2, .5, 2), (2.5, .5, 1), (3, .5, 0), (3.5, .5, 1)],
+              0.1, oitava=5)
+    f.acordes("metais", acordes, [(0, 1.5, "todas"), (2.5, 1, "todas")], 0.06)
+    f.baixo("baixo", acordes, [(0, 1.5, "raiz"), (2, 1.5, "quinta")], 0.24)
+    f.batida("bumbo", [0, 2], 0.32)
+    f.batida("palma", [1, 3], 0.16)
+    f.batida("chocalho", oito, 0.05)
+    f.salvar("final")
+
+
 if __name__ == "__main__":
     import sys
     # Com nomes (python3 tools/gerar_sons.py faisquinhas), gera só esses grupos e não mexe nos outros arquivos.
     grupos = {"sfx": make_sfx, "musica": make_music, "faisca": make_faisca, "neve": make_neve, "fabrica": make_fabrica,
               "faisquinhas": make_faisquinhas, "brindes": make_brindes, "mundo": make_mundo,
-              "musica_faisca": make_musica_faisca, "momentos": make_momentos, "vento": make_vento}
+              "musica_faisca": make_musica_faisca, "momentos": make_momentos, "vento": make_vento,
+              "nave": make_nave}
     for nome in (sys.argv[1:] or list(grupos)):
         grupos[nome]()

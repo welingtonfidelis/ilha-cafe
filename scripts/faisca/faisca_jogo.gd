@@ -48,7 +48,9 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/chefe_2.gd", "imagem": "res://assets/faisca/portas/chefe_2.jpg"},
 	{"id": "chefe-3", "nome": "Pinguinzão do Gelo", "tipo": "chefe", "pede": 0, "pede_grandes": 7, "andar": 2, "lado": 315,
 		"cena": "res://scripts/faisca/fases/chefe_3.gd", "imagem": "res://assets/faisca/portas/chefe_3.jpg"},
-	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270, "cena": "", "imagem": ""},
+	# A fase final (2026-11-12): por dentro da nave, com o Rei Bolotão no topo; vencida, o final lá fora (`_final_da_nave`).
+	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270,
+		"cena": "res://scripts/faisca/fases/fase_nave.gd", "imagem": "res://assets/faisca/portas/nave.jpg"},
 ]
 ## As estrelinhas da escada do farol também contam.
 const ID_FAROL := "farol"
@@ -81,6 +83,8 @@ var brindes: Array = []
 var tinta := ""
 var _sorteio := RandomNumberGenerator.new()
 var abertura_vista := false
+## Já viu o final (a nave vencida e as estrelas de volta no céu).
+var final_visto := false
 var faisca: Jogador
 var hud: Hud
 var hub: HubFarol
@@ -422,7 +426,7 @@ func _atualizar_contador() -> void:
 
 ## O jogo todo no contador `c` (o do farol na pausa e o da tela de início).
 func _contar_o_jogo(c: Dictionary) -> void:
-	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "" and f.tipo in ["ceu", "chao"]).size()
+	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "" and f.tipo in ["ceu", "chao", "nave"]).size()
 	var com_estrela := FASES.filter(func(f: Dictionary) -> bool: return f.tipo in ["ceu", "chao"]).size()
 	c.estrelas.text = str(total_estrelas())
 	c.faisquinhas.text = "%d/%d" % [total_faisquinhas(), feitas * FAISQUINHAS_POR_FASE]
@@ -464,7 +468,9 @@ func _entrada(event: InputEvent) -> void:
 
 
 func pode_pausar() -> bool:
-	return not busy() and lugar in ["hub", "fase"] and not hud.fim_aberto
+	# Na cena do fim da nave (o Rei vencido), a pausa espera: sair da fase no meio da cena quebrava o final.
+	var na_cena_da_nave: bool = lugar == "fase" and is_instance_valid(nivel) and nivel.get("vencida") == true
+	return not busy() and lugar in ["hub", "fase"] and not hud.fim_aberto and not na_cena_da_nave
 
 
 func abrir_pausa() -> void:
@@ -678,8 +684,8 @@ func _montar_hub(volta_de: String) -> void:
 		var falta := maxi(pede_grandes - grandes.size(), 0) if pede_grandes > 0 else maxi(int(f.pede) - total, 0)
 		hub.portas.append({"id": f.id, "nome": f.nome, "tipo": f.tipo, "andar": f.andar, "lado": f.lado, "pede": f.pede,
 			"pede_grandes": pede_grandes, "falta": falta, "aberta": falta == 0, "feita": f.cena != "", "imagem": f.imagem,
-			"grande": f.id in grandes or f.id in chefes, "achados": (faisquinhas.get(f.id, []) as Array).size(),
-			"total_faisquinhas": 0 if f.tipo in ["chefe", "nave"] else FAISQUINHAS_POR_FASE})
+			"grande": f.id in grandes or f.id in chefes or (f.id == "nave" and final_visto), "achados": (faisquinhas.get(f.id, []) as Array).size(),
+			"total_faisquinhas": 0 if f.tipo == "chefe" else FAISQUINHAS_POR_FASE})
 		for n in faisquinhas.get(f.id, []):
 			hub.moradores_dados.append({"fase": f.id, "id": str(n), "andar": int(f.andar), "chegando": "%s:%s" % [f.id, n] in chegando})
 	chegando.clear()
@@ -754,11 +760,17 @@ func entrar_fase(id: String) -> void:
 		hud.mostrar_moedas(moedas))
 	if nivel.has_signal("faixa_pedida"):
 		nivel.faixa_pedida.connect(func(titulo: String, sub: String) -> void: faixa(titulo, sub, Color("#ffd23f"), 3.0))
+	# A nave: o tema dos chefes quando a luta com o Rei começa, e o final quando ele ganha a estrelinha de bolso.
+	if nivel.has_signal("luta_comecou"):
+		nivel.luta_comecou.connect(func() -> void: tocar_musica("chefe"))
+	if nivel.has_signal("final_pedido"):
+		nivel.final_pedido.connect(_final_da_nave)
 	hud.esconder_chefe()
 	# Os chefes (Chefe1, Chefe2...): os corações deles no alto da tela, um por fase.
 	var chefe: Node = nivel.get("chefe")
+	var nome_do_chefe: String = nivel.get("nome_do_chefe") if nivel.get("nome_do_chefe") != null else dados.nome
 	if chefe and chefe.has_signal("fase_mudou"):
-		chefe.fase_mudou.connect(func(f: int) -> void: hud.mostrar_chefe(dados.nome, 4 - f))
+		chefe.fase_mudou.connect(func(f: int) -> void: hud.mostrar_chefe(nome_do_chefe, 4 - f))
 	faisca.limite_queda = nivel.limite_queda
 	faisca.pode_recomecar = true
 	faisca.tirar_poderes()
@@ -803,6 +815,8 @@ func musica_da_fase(id: String) -> String:
 	var f := _fase(id)
 	if String(f.get("tipo", "")) == "chefe":
 		return "chefe"
+	if String(f.get("tipo", "")) == "nave":
+		return "nave"
 	return "mundo_%d" % clampi(int(f.get("andar", 0)) + 1, 1, 3)
 
 
@@ -1154,6 +1168,187 @@ func _sugar_estrelas(cena: Node3D, nave: Aspiratrao, cam: Camera3D, ceu: Procedu
 		ida.tween_callback(e.queue_free)
 
 
+# --- o final -----------------------------------------------------------------------------
+
+## A nave vencida (o Rei ganhou a estrelinha de bolso, FaseNave): lá fora, à noite, as estrelas saem do bocal do
+## Aspiratrão e voltam para o céu, com fogos em cima do farol; depois, a festa na porta do farol (o Faísca, o Rei
+## pequenininho com a estrelinha e as Bolotas dançando), a frase da história ("Às vezes falta só um convite") e o "Fim!".
+## Termina no farol, de volta ao jogo (dá para continuar juntando o que faltou).
+func _final_da_nave() -> void:
+	if _em_cena:
+		return
+	_em_cena = true
+	_trocando = true
+	final_visto = true
+	_salvar()
+	var t := 0.35 if rapido else 1.0
+	faisca.controle_ligado = false
+	await _escurecer(1.0, 0.6 * t)
+	hud.esconder_chefe()
+	if is_instance_valid(nivel):
+		nivel.queue_free()
+	nivel = null
+	lugar = "final"
+	hud.visible = false
+	faisca.tirar_poderes()
+	_esconder_faisca()
+	tocar_musica("final")
+	var cena := Node3D.new()
+	cena.name = "Final"
+	add_child(cena)
+	var ceu := _noite(cena)
+	ceu.sky_cover_modulate = Color(1, 1, 1, 0.0)
+	_mar(cena)
+	var farol := FarolIlha.new()
+	cena.add_child(farol)
+	farol.aberto = true
+	farol.atualizar()
+	var porta := farol.porta()
+	var para_praia := -FarolIlha.DIRECAO
+	var lado := Vector3(para_praia.z, 0, -para_praia.x)
+	var cam := Camera3D.new()
+	cam.fov = 58.0
+	cena.add_child(cam)
+	cam.make_current()
+	cam.global_position = porta + para_praia * 34.0 + lado * 8.0 + Vector3.UP * 4.0
+	cam.look_at(farol.global_position + Vector3.UP * 30.0)
+	var nave := Aspiratrao.new()
+	nave.name = "Aspiratrao"
+	nave.scale = Vector3.ONE * 1.4
+	cena.add_child(nave)
+	nave.global_position = farol.global_position + Vector3.UP * 44.0 - para_praia * 10.0
+	await _escurecer(0.0, 0.8 * t)
+	# 1. As estrelas saem do bocal e voltam para o céu.
+	_devolver_estrelas(cena, nave, cam, ceu, t)
+	faixa("As estrelas voltaram pro céu!", "O céu da Ilha Cafuné acendeu de novo", Color("#ffd23f"), 3.6 * t)
+	await get_tree().create_timer(4.0 * t).timeout
+	# 2. Os fogos em cima do farol.
+	for k in 6:
+		var onde := farol.global_position + Vector3.UP * randf_range(30.0, 46.0) + lado * randf_range(-18.0, 18.0) - para_praia * randf_range(-6.0, 6.0)
+		Fx.confetti(cena, onde, 50, 7.0)
+		Sfx.play(self, "estouro", -2.0, 0.1)
+		faisca.festa_no_controle("premio")
+		await get_tree().create_timer(0.45 * t).timeout
+	await get_tree().create_timer(1.2 * t).timeout
+	# 3. A festa na porta do farol.
+	await _escurecer(1.0, 0.4 * t)
+	nave.queue_free()
+	_festa_do_final(cena, porta, para_praia, lado)
+	_mostrar_faisca()
+	faisca.controle_ligado = false
+	faisca.limite_queda = -1000.0
+	faisca.teleportar(porta + para_praia * 4.0 + Vector3.UP * 0.1)
+	cam.global_position = porta + para_praia * 15.0 + lado * 4.0 + Vector3.UP * 4.0
+	cam.look_at(porta + para_praia * 4.0 + Vector3.UP * 1.6)
+	cam.make_current()
+	var olhar := cam.global_position - faisca.global_position
+	faisca.visual.rotation.y = atan2(olhar.x, olhar.z)
+	faisca.robo.animar("festa/Cheering", 0.2)
+	faisca.robo.expressao("feliz", 8.0)
+	await _escurecer(0.0, 0.5 * t)
+	faixa("Às vezes falta só um convite.", "O Rei e as Bolotas vieram pra festa no farol", Color("#8ff3ff"), 4.2 * t)
+	await get_tree().create_timer(4.6 * t).timeout
+	faixa("Fim!", "Obrigado por jogar Faísca e o Céu Apagado", Color("#ffd23f"), 3.6 * t)
+	await get_tree().create_timer(4.0 * t).timeout
+	await _escurecer(1.0, 0.6 * t)
+	cena.queue_free()
+	fase_atual = "nave"
+	_montar_hub("nave")
+	lugar = "hub"
+	hud.visible = true
+	faisca.robo.animar("geral/Idle_A", 0.1)
+	faisca.vida = Jogador.VIDA_MAX
+	hud.mostrar_vida(faisca.vida)
+	_salvar()
+	await _escurecer(0.0, 0.6 * t)
+	_em_cena = false
+	_trocando = false
+	faisca.controle_ligado = true
+
+
+## Estrelinhas saem do bocal da nave e voam para o céu, e as estrelas pintadas no céu voltam (o contrário da abertura).
+func _devolver_estrelas(cena: Node3D, nave: Aspiratrao, cam: Camera3D, ceu: ProceduralSkyMaterial, t: float) -> void:
+	create_tween().tween_property(ceu, "sky_cover_modulate:a", 0.95, 3.5 * t)
+	var brilho := StandardMaterial3D.new()
+	brilho.albedo_color = Color("fff1a8")
+	brilho.emission_enabled = true
+	brilho.emission = Color("ffd23f")
+	brilho.emission_energy_multiplier = 3.0
+	var frente := -cam.global_basis.z
+	var lado := cam.global_basis.x
+	for k in 30:
+		var e := MeshInstance3D.new()
+		e.mesh = Forma.estrela(0.9, 0.4, 0.3)
+		e.material_override = brilho
+		cena.add_child(e)
+		var de := nave.bocal.global_position
+		var ate := cam.global_position + frente * randf_range(50, 80) + lado * randf_range(-50, 50) + Vector3.UP * randf_range(10, 40)
+		e.global_position = de
+		e.scale = Vector3.ONE * 0.05
+		var ida := e.create_tween()
+		ida.tween_interval(randf() * 1.6 * t)
+		ida.tween_method(func(k2: float) -> void:
+			e.global_position = de.lerp(ate, k2) + Vector3.UP * sin(k2 * PI) * 6.0
+			e.scale = Vector3.ONE * (minf(k2 * 4.0, 1.0) * (1.0 - maxf(k2 - 0.8, 0.0) * 4.0) + 0.02),
+			0.0, 1.0, 2.0 * t)
+		ida.tween_callback(e.queue_free)
+
+
+## A festa na porta do farol: o Rei pequenininho (o mesmo jeito do chefe: a coroa torta, a touca e a capa) segurando a
+## estrelinha de bolso, e as Bolotas dançando em meia-roda atrás do Faísca.
+func _festa_do_final(cena: Node3D, porta: Vector3, para_praia: Vector3, lado: Vector3) -> void:
+	var meio := porta + para_praia * 4.0
+	var rei := Node3D.new()
+	cena.add_child(rei)
+	rei.global_position = meio + lado * 3.4 + Vector3.UP * 0.05
+	rei.rotation.y = atan2(para_praia.x, para_praia.z)
+	var corpo: Node3D = load(BolotaMonstro.ALIEN).instantiate()
+	corpo.scale = Vector3.ONE * 1.4
+	rei.add_child(corpo)
+	for parte in ChefeRei.enfeites(1.4 / ChefeRei.ESCALA):
+		if parte.name == "Cetro":
+			continue
+		rei.add_child(parte)
+	var estrela := MeshInstance3D.new()
+	estrela.mesh = Forma.estrela(0.35, 0.15, 0.14)
+	var ouro := StandardMaterial3D.new()
+	ouro.albedo_color = Color("fff1a8")
+	ouro.emission_enabled = true
+	ouro.emission = Color("ffd23f")
+	ouro.emission_energy_multiplier = 3.0
+	estrela.material_override = ouro
+	estrela.position = Vector3(0.9, 1.5, 0.7)
+	rei.add_child(estrela)
+	var luz := OmniLight3D.new()
+	luz.light_color = Color("ffd86a")
+	luz.light_energy = 1.6
+	luz.omni_range = 4.0
+	estrela.add_child(luz)
+	_dancar(corpo)
+	var turma := ["Alien", "Mushroom", "Pig", "Penguin", "Cactus", "Bee"]
+	for k in turma.size():
+		var b: Node3D = load(BolotaMonstro.PASTA + turma[k] + ".gltf").instantiate()
+		b.scale = Vector3.ONE * BolotaMonstro.ESCALA
+		cena.add_child(b)
+		var a := lerpf(-1.1, 1.1, k / float(turma.size() - 1))
+		var atras := -para_praia.rotated(Vector3.UP, a)
+		b.global_position = meio + atras * 3.6 + Vector3.UP * (1.2 if turma[k] == "Bee" else 0.05)
+		b.rotation.y = atan2(-atras.x, -atras.z)
+		_dancar(b)
+
+
+func _dancar(modelo: Node3D) -> void:
+	var achados := modelo.find_children("*", "AnimationPlayer", true, false)
+	if achados.is_empty():
+		return
+	var ap := achados[0] as AnimationPlayer
+	for nome in ["Dance", "Flying", "Yes"]:
+		if ap.has_animation(nome):
+			ap.get_animation(nome).loop_mode = Animation.LOOP_LINEAR
+			ap.play(nome)
+			return
+
+
 # --- save --------------------------------------------------------------------------------
 
 func carregar(dados: Dictionary) -> void:
@@ -1172,11 +1367,12 @@ func carregar(dados: Dictionary) -> void:
 	if is_instance_valid(faisca) and faisca.robo:
 		faisca.robo.pintar(Brindes.cor_de(tinta), Brindes.metal(tinta))
 	abertura_vista = dados.get("abertura", false)
+	final_visto = dados.get("final", false)
 
 
 func dados_salvos() -> Dictionary:
 	return {"estrelas": estrelas, "grandes": grandes, "faisquinhas": faisquinhas, "premios": premios_vistos, "chefes": chefes, "moedas": moedas,
-		"brindes": brindes, "tinta": tinta, "abertura": abertura_vista}
+		"brindes": brindes, "tinta": tinta, "abertura": abertura_vista, "final": final_visto}
 
 
 func _salvar() -> void:
