@@ -1006,7 +1006,14 @@ O pedido: "vamos reviver o projeto, ficou estranho termos o jogo de tiro contra 
 - **O jogo do Faísca** (`scenes/faisca.tscn`, `scripts/faisca/faisca_jogo.gd`, `FaiscaJogo`) ficou com o que era da `Parte2` (que saiu) sobre o farol e as fases:
   - **Abertura, na primeira vez:** de noite, no mar, sem a ilha. O mesmo `FarolIlha` numa ilhota, o céu da noite do `Ending` com as estrelas pintadas, a nave passando e sugando as estrelas, a lâmpada acendendo e o Faísca saindo pela porta. Termina no térreo do farol com a faixa "Faísca e o Céu Apagado".
   - **Hub e fases** como antes (`FaiscaJogo.FASES`), menos a porta do sul, que voltava para a ilha: o hub não tem mais saída.
-  - **Pausa própria** (Start ou Esc): Continuar, Sair da fase (só numa fase), Menu principal e Sair do jogo. Não abre durante a tela de fim, a abertura nem as trocas de lugar.
+  - **Pausa própria** (Start ou Esc): Continuar, Sair da fase (só numa fase), Ajustes, Novo jogo (desde 2026-11-12), Menu principal e Sair do jogo. Não abre durante a tela de fim, a abertura nem as trocas de lugar.
+  - **Novo jogo** (pedido do usuário em 2026-11-12: "o jogador consegue iniciar um novo jogo do faisca como temos pra ilha cafuné?"), como a "Nova campanha" da ilha:
+    - **a tela de início:** quem já tem jogo salvo entra vendo o térreo do farol parado atrás e um painel com "Faísca e o Céu Apagado", o resumo do jogo (as figuras da pausa: estrelinhas, Faisquinhas, Estrelas Grandes e moedas) e Continuar (marcado), Novo jogo e Menu principal. B e Start não fazem nada nela. Sem jogo salvo, entra direto na abertura, como antes;
+    - **na pausa:** o botão Novo jogo, depois dos Ajustes;
+    - **a confirmação**, a mesma para os dois: o brilho do "novo", o aviso do que será apagado (estrelinhas, Estrelas Grandes, Faisquinhas, moedas, figurinhas, tintas e chefes vencidos), a linha das figuras zeradas e "Sim, começar do zero" ou Voltar. O Voltar vem marcado, para um A sem querer não apagar, e volta para onde estava; B e Start também voltam;
+    - **zerar** (`FaiscaJogo.novo_jogo`) acontece sem recarregar a cena: desmonta o farol ou a fase, grava um save zerado e devolve o Faísca com os 3 corações, sem poder e na cor de fábrica. Depois a abertura da nave toca de novo e termina no farol. Os Ajustes ficam como estão;
+    - **o save zerado não é apagado:** sem o arquivo, o `FaiscaSave.migrar` traria de volta a Parte 2 guardada na campanha da ilha. O menu principal mostra "Começar" para um save sem progresso (`FaiscaSave.tem_progresso`);
+    - **o teste** (`--faisca-jogo`): a pausa e a tela de início, a confirmação e o Voltar, tudo zerado com a abertura de novo, o Continuar e o save que fica. Fotos `j04b_novo_jogo_confirmar` e `j04c_tela_de_inicio` no `--faisca-jogo-captura`.
   - **Save próprio** (`scripts/faisca/faisca_save.gd`, `user://faisca.json`): estrelinhas por fase e da escada, Estrelas Grandes, vaga-lumes e se a abertura passou. **Migração:** quem jogou a Parte 2 dentro da ilha (campanha versão 3, chave "parte2") ganha esse progresso uma vez; o menu principal faz isso ao abrir, antes de a ilha salvar a campanha sem a chave.
 - **A ilha só de tiro:**
   - o farol da ponta sudeste ficou de enfeite, de cadeado (encostar mostra "O farol está fechado"), e o vovô ainda fala dele;
@@ -2751,6 +2758,11 @@ Ideia do usuário: "colocar texturas no solo ao invés do chao cru, tanto pro fa
   - das poças e do caminho creme.
 - As miudezas não balançam, e a luz usa as normais delas (o shader ganhou o modo `rigido`, com aspereza, metal e brilho de cada uma).
 - Sem tela (os testes), não é montada; o `--faisca-mundo` liga para conferir (`VegetacaoDaFase.nos_testes`). Para isso, a vegetação guarda uma amostra de onde pôs cada tipo, já que sem tela o Godot não guarda as posições do MultiMesh.
+- **A tela preta ao entrar na fase** (relato do usuário em 2026-11-12: "na primeira fase do jogo, a tela fica preta por um período longo enquanto o som do laser dos pés do faísca toca, depois de alguns segundos a tela mostra o faísca chegado. é um loading?"):
+  - **a causa:** para dar a cor do chão a cada tufo de grama, a vegetação lia a malha da peça com `surface_get_arrays` a cada tufo. Com tela, isso busca a malha de volta na placa de vídeo e espera por ela; sem tela, nos testes, é barato, e por isso não aparecia. Na 1-1 são uns 9 mil tufos: medido no Mac com janela, o primeiro quadro da fase levava 7,6 s, e sem a vegetação, 30 ms. Enquanto isso, o Faísca já descia com o laser ligado (o som) e a tela não clareava;
+  - **o conserto:** os dados de cada malha são lidos uma vez só e guardados durante a montagem (`VegetacaoDaFase._dados_da_malha`). O primeiro quadro da 1-1 foi para 0,46 s (2-2 e 3-1, uns 0,6 s);
+  - **a entrada na fase** (`FaiscaJogo._esperar_a_fase_assentar`) passa pelos primeiros quadros, os mais pesados (a vegetação, o mundo que reage e os shaders compilando), com a tela ainda escura e o Faísca parado lá no alto, e só depois clareia e ele desce. Medido no Mac, da porta até a tela clara: 9,2 s antes, 1,6 s agora; o pouso, de 11,8 s para 4,4 s, com a descida inteira à vista;
+  - para medir, com janela: `tools/medir_entrada.gd` (da porta até o pouso, quadro a quadro) e `tools/medir_montagem.gd` (o `_ready` e os primeiros quadros de uma fase, tirando partes: `sem-vegetacao`, `sem-textura`, `sem-sombra`, `sem-shader`).
 - **Testes:** o `--faisca-mundo` confere, em cada fase:
   - que a turma do mundo nasce no chão;
   - que, das quase 10 mil amostras, nenhuma fica embaixo de outra coisa, no gelo, numa poça ou em cima do que se usa;

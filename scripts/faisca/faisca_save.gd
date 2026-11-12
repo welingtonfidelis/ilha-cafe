@@ -38,6 +38,17 @@ static func gravar(dados: Dictionary) -> void:
 		f.store_string(JSON.stringify(dados, "\t"))
 
 
+## Se o save tem algum progresso (a abertura vista, estrelinhas, Estrelas Grandes ou moedas). O do "Novo jogo" é um
+## arquivo zerado, sem nada disso (ele fica para o `migrar` não trazer de volta a Parte 2 da ilha).
+static func tem_progresso(dados: Dictionary) -> bool:
+	if dados.get("abertura", false) or not (dados.get("grandes", []) as Array).is_empty() or int(dados.get("moedas", 0)) > 0:
+		return true
+	for id in dados.get("estrelas", {}):
+		if not (dados.estrelas[id] as Array).is_empty():
+			return true
+	return false
+
+
 static func apagar() -> void:
 	if existe():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

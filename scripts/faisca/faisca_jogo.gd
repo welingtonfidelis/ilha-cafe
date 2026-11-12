@@ -8,10 +8,11 @@ extends Node3D
 ## - o hub (HubFarol), as portas e as fases, com a descida do céu e a tela de fim;
 ## - as estrelinhas, as Estrelas Grandes e os Faisquinhas salvos de cada fase, no save próprio (FaiscaSave);
 ## - os Faisquinhas morando no farol e os prêmios que eles abrem (PREMIOS: o elevador, o trenzinho e o farolete);
-## - a pausa (Start ou Esc): continuar, sair da fase, os Ajustes (PainelAjustes), voltar ao menu principal e sair do
-##   jogo;
+## - a tela de início (quem já tem jogo salvo: continuar, novo jogo ou voltar ao menu principal) e a pausa (Start ou
+##   Esc): continuar, sair da fase, os Ajustes (PainelAjustes), novo jogo, voltar ao menu principal e sair do jogo. O
+##   novo jogo pede confirmação, como a "Nova campanha" da ilha;
 ## - o DualSense (nó DualSense com o perfil ControleFaisca): gatilhos, barra de luz, LEDs e as tremidinhas de festa;
-## - as moedas (a carteira) e a Máquina de Brindes do farol: as figurinhas da estante e as roupinhas do Faísca.
+## - as moedas (a carteira) e a Máquina de Brindes do farol: as figurinhas da estante e as tintas do Faísca.
 ## As portas abrem com o total de estrelinhas (cada uma conta uma vez, para sempre).
 ## Testes: --faisca-jogo (confere, ver teste_faisca_jogo.gd), --faisca-jogo-captura e --faisca-farol-captura (fotos,
 ## precisam de janela).
@@ -88,6 +89,15 @@ var rapido := false
 var menu_aberto := false
 ## Botões da pausa pela chave ("continuar", "sair_fase", "ajustes", "menu", "sair"); os testes apertam por aqui.
 var botoes_pausa := {}
+## A tela de início e a confirmação do novo jogo (os testes apertam pelas chaves: "continuar", "novo", "menu";
+## "sim", "voltar").
+var botoes_inicio := {}
+var botoes_confirmar := {}
+var tela_inicio: Control
+var tela_confirmar: Control
+var contador_inicio := {}
+## Para onde a confirmação volta ("inicio" ou "pausa").
+var _confirmar_volta := ""
 var painel_ajustes: PainelAjustes
 ## A lojinha das tintas (o soco no cabide do farol).
 var painel_tintas: PainelTintas
@@ -147,7 +157,7 @@ func _ready() -> void:
 		_teste = TesteFaiscaJogo.new(self)
 		_teste.capturar_brindes()
 	elif abertura_vista:
-		comecar_no_farol()
+		abrir_inicio()
 	else:
 		abertura()
 
@@ -198,6 +208,12 @@ func _montar_interface() -> void:
 	_pausa = _montar_pausa()
 	_camada.add_child(_pausa)
 	_pausa.hide()
+	tela_inicio = _montar_inicio()
+	_camada.add_child(tela_inicio)
+	tela_inicio.hide()
+	tela_confirmar = _montar_confirmar()
+	_camada.add_child(tela_confirmar)
+	tela_confirmar.hide()
 	painel_ajustes = PainelAjustes.new()
 	_camada.add_child(painel_ajustes)
 	painel_ajustes.montar(_camada)
@@ -277,10 +293,10 @@ func _montar_pausa() -> Control:
 	titulo.add_theme_font_size_override("font_size", 34)
 	titulo.add_theme_color_override("font_color", MenuKit.GOLD)
 	caixa.add_child(titulo)
-	caixa.add_child(_montar_contador())
+	caixa.add_child(_montar_contador(contador_pausa))
 	for spec in [["continuar", "Continuar", "continuar", _fechar_pausa], ["sair_fase", "Sair da fase", "casa", _sair_da_fase_pela_pausa],
-			["ajustes", "Ajustes", "ajustes", abrir_ajustes], ["menu", "Menu principal", "voltar", _ir_ao_menu],
-			["sair", "Sair do jogo", "sair", _sair_do_jogo]]:
+			["ajustes", "Ajustes", "ajustes", abrir_ajustes], ["novo", "Novo jogo", "nova", func() -> void: _pedir_novo_jogo("pausa")],
+			["menu", "Menu principal", "voltar", _ir_ao_menu], ["sair", "Sair do jogo", "sair", _sair_do_jogo]]:
 		var b := MenuKit.icon_button(spec[1], spec[2], _camada, 340)
 		b.pressed.connect(spec[3])
 		caixa.add_child(b)
@@ -288,8 +304,78 @@ func _montar_pausa() -> Control:
 	return tela
 
 
-## Uma linha com três figuras e o número do lado de cada uma: a estrelinha, o Faisquinha e a Estrela Grande.
-func _montar_contador() -> HBoxContainer:
+## Uma tela escura por cima do jogo com um painel no meio e o título (a da pausa, a do início e a da confirmação).
+func _tela_com_painel(texto: String) -> Array:
+	var tela := Control.new()
+	tela.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var fundo := ColorRect.new()
+	fundo.color = Color(0, 0, 0, 0.45)
+	fundo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tela.add_child(fundo)
+	var centro := CenterContainer.new()
+	centro.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tela.add_child(centro)
+	var painel := PanelContainer.new()
+	painel.add_theme_stylebox_override("panel", MenuKit.panel_style())
+	centro.add_child(painel)
+	var caixa := VBoxContainer.new()
+	caixa.add_theme_constant_override("separation", 14)
+	painel.add_child(caixa)
+	var titulo := Label.new()
+	titulo.text = texto
+	titulo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	titulo.add_theme_font_size_override("font_size", 34)
+	titulo.add_theme_color_override("font_color", MenuKit.GOLD)
+	caixa.add_child(titulo)
+	return [tela, caixa]
+
+
+## A tela de início (2026-11-12, pedido do usuário: "o jogador consegue iniciar um novo jogo do faisca como temos pra
+## ilha cafuné?"): quem já tem jogo salvo entra vendo o farol parado atrás, o resumo do jogo (as mesmas figuras da
+## pausa) e Continuar, Novo jogo e Menu principal. Sem jogo salvo, entra direto (a abertura).
+func _montar_inicio() -> Control:
+	var partes := _tela_com_painel("Faísca e o Céu Apagado")
+	var caixa: VBoxContainer = partes[1]
+	caixa.add_child(_montar_contador(contador_inicio))
+	for spec in [["continuar", "Continuar", "continuar", _continuar_do_inicio], ["novo", "Novo jogo", "nova", func() -> void: _pedir_novo_jogo("inicio")],
+			["menu", "Menu principal", "voltar", _ir_ao_menu]]:
+		var b := MenuKit.icon_button(spec[1], spec[2], _camada, 340)
+		b.pressed.connect(spec[3])
+		caixa.add_child(b)
+		botoes_inicio[spec[0]] = b
+	return partes[0]
+
+
+## A confirmação do novo jogo: o brilho do "novo", o que vai ser apagado (com as figuras) e as duas escolhas.
+func _montar_confirmar() -> Control:
+	var partes := _tela_com_painel("Novo jogo")
+	var caixa: VBoxContainer = partes[1]
+	var icone := MenuIcon.new("nova", MenuKit.ICON_COLORS.nova, 64)
+	icone.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	caixa.add_child(icone)
+	var texto := Label.new()
+	texto.text = "Começar do zero? As estrelinhas, as Estrelas Grandes, os Faisquinhas, as moedas, as figurinhas, as tintas e os chefes vencidos serão apagados."
+	texto.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	texto.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	texto.custom_minimum_size = Vector2(420, 0)
+	texto.add_theme_font_size_override("font_size", 20)
+	caixa.add_child(texto)
+	var figuras := _montar_contador({})
+	caixa.add_child(figuras)
+	for l in figuras.get_children():
+		if l is Label:
+			(l as Label).text = "0"
+	for spec in [["sim", "Sim, começar do zero", "nova", novo_jogo], ["voltar", "Voltar", "voltar", _voltar_da_confirmacao]]:
+		var b := MenuKit.icon_button(spec[1], spec[2], _camada, 340)
+		b.pressed.connect(spec[3])
+		caixa.add_child(b)
+		botoes_confirmar[spec[0]] = b
+	return partes[0]
+
+
+## Uma linha com quatro figuras e o número do lado de cada uma: a estrelinha, o Faisquinha, a Estrela Grande e a moeda.
+## Os números (e as figuras, com "_icone") ficam em `destino`.
+func _montar_contador(destino: Dictionary) -> HBoxContainer:
 	var linha := HBoxContainer.new()
 	linha.alignment = BoxContainer.ALIGNMENT_CENTER
 	linha.add_theme_constant_override("separation", 10)
@@ -312,8 +398,8 @@ func _montar_contador() -> HBoxContainer:
 		numero.add_theme_color_override("font_outline_color", Color("2b2140"))
 		numero.add_theme_constant_override("outline_size", 8)
 		linha.add_child(numero)
-		contador_pausa[qual] = numero
-		contador_pausa[qual + "_icone"] = icone
+		destino[qual] = numero
+		destino[qual + "_icone"] = icone
 		if qual != "moedas":
 			var vao := Control.new()
 			vao.custom_minimum_size = Vector2(18, 0)
@@ -323,21 +409,38 @@ func _montar_contador() -> HBoxContainer:
 
 ## Na fase: o que tem nela (pegas/total); no farol: o jogo todo.
 func _atualizar_contador() -> void:
-	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "" and f.tipo in ["ceu", "chao"]).size()
-	var com_estrela := FASES.filter(func(f: Dictionary) -> bool: return f.tipo in ["ceu", "chao"]).size()
-	if lugar == "fase" and is_instance_valid(nivel):
-		contador_pausa.estrelas.text = "%d/%d" % [nivel.pegas, nivel.total_estrelas()]
-		contador_pausa.faisquinhas.text = "%d/%d" % [nivel.achados, nivel.faisquinhas.size()]
-		contador_pausa.grandes.text = "%d/1" % (1 if fase_atual in grandes else 0)
-	else:
-		contador_pausa.estrelas.text = str(total_estrelas())
-		contador_pausa.faisquinhas.text = "%d/%d" % [total_faisquinhas(), feitas * FAISQUINHAS_POR_FASE]
-		contador_pausa.grandes.text = "%d/%d" % [grandes.size(), com_estrela]
+	if not (lugar == "fase" and is_instance_valid(nivel)):
+		_contar_o_jogo(contador_pausa)
+		return
+	contador_pausa.estrelas.text = "%d/%d" % [nivel.pegas, nivel.total_estrelas()]
+	contador_pausa.faisquinhas.text = "%d/%d" % [nivel.achados, nivel.faisquinhas.size()]
+	contador_pausa.grandes.text = "%d/1" % (1 if fase_atual in grandes else 0)
 	(contador_pausa.grandes_icone as Control).custom_minimum_size = Vector2(46, 46)
 	contador_pausa.moedas.text = str(moedas)
 
 
+## O jogo todo no contador `c` (o do farol na pausa e o da tela de início).
+func _contar_o_jogo(c: Dictionary) -> void:
+	var feitas := FASES.filter(func(f: Dictionary) -> bool: return f.cena != "" and f.tipo in ["ceu", "chao"]).size()
+	var com_estrela := FASES.filter(func(f: Dictionary) -> bool: return f.tipo in ["ceu", "chao"]).size()
+	c.estrelas.text = str(total_estrelas())
+	c.faisquinhas.text = "%d/%d" % [total_faisquinhas(), feitas * FAISQUINHAS_POR_FASE]
+	c.grandes.text = "%d/%d" % [grandes.size(), com_estrela]
+	(c.grandes_icone as Control).custom_minimum_size = Vector2(46, 46)
+	c.moedas.text = str(moedas)
+
+
 func _entrada(event: InputEvent) -> void:
+	if tela_confirmar.visible:
+		if event.is_action_pressed("menu") or event.is_action_pressed("ui_cancel"):
+			_voltar_da_confirmacao()
+			get_viewport().set_input_as_handled()
+		return
+	if tela_inicio.visible:
+		# Na tela de início, o B e o Start não fazem nada (ela só sai por uma das escolhas).
+		if event.is_action_pressed("menu") or event.is_action_pressed("ui_cancel"):
+			get_viewport().set_input_as_handled()
+		return
 	if painel_tintas.visible:
 		if event.is_action_pressed("menu") or event.is_action_pressed("ui_cancel"):
 			painel_tintas.fechar()
@@ -384,6 +487,7 @@ func _fechar_pausa() -> void:
 	_pausa.hide()
 	painel_ajustes.hide()
 	painel_tintas.hide()
+	tela_confirmar.hide()
 	hud.visible = true
 	get_tree().paused = false
 	if _controle_antes:
@@ -457,6 +561,94 @@ func _mostrar_faisca() -> void:
 	faisca.visible = true
 	faisca.process_mode = Node.PROCESS_MODE_INHERIT
 	faisca.camera.make_current()
+
+
+## Quem já tem jogo salvo: o farol monta atrás, parado, e a tela de início aparece por cima.
+func abrir_inicio() -> void:
+	_trocando = true
+	fade.modulate.a = 1.0
+	_montar_hub("")
+	lugar = "hub"
+	hud.visible = false
+	await _escurecer(0.0, 0.6)
+	_trocando = false
+	menu_aberto = true
+	get_tree().paused = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_contar_o_jogo(contador_inicio)
+	tela_inicio.show()
+	botoes_inicio.continuar.grab_focus.call_deferred()
+
+
+## Continuar: a tela some e o jogo segue no térreo do farol (o controle volta um instante depois, para o A que
+## confirmou não virar pulo).
+func _continuar_do_inicio() -> void:
+	tela_inicio.hide()
+	menu_aberto = false
+	get_tree().paused = false
+	hud.visible = true
+	faisca.controle_ligado = false
+	await get_tree().create_timer(0.2).timeout
+	if not busy() and not menu_aberto:
+		faisca.controle_ligado = true
+	_festa_no_farol()
+
+
+## Novo jogo (da tela de início ou da pausa): a confirmação, com o "Voltar" marcado (para um A sem querer não apagar).
+func _pedir_novo_jogo(de: String) -> void:
+	_confirmar_volta = de
+	tela_inicio.hide()
+	_pausa.hide()
+	tela_confirmar.show()
+	botoes_confirmar.voltar.grab_focus.call_deferred()
+
+
+func _voltar_da_confirmacao() -> void:
+	tela_confirmar.hide()
+	if _confirmar_volta == "inicio":
+		tela_inicio.show()
+		botoes_inicio.novo.grab_focus.call_deferred()
+	else:
+		_pausa.show()
+		botoes_pausa.novo.grab_focus.call_deferred()
+
+
+## Começa do zero, sem recarregar a cena: grava um save zerado (não apaga o arquivo: sem ele, o FaiscaSave.migrar
+## traria de volta a Parte 2 guardada na campanha da ilha), desmonta o farol ou a fase, devolve o Faísca como no
+## começo (3 corações, sem poder, a cor de fábrica) e toca a abertura de novo. Os Ajustes ficam como estão.
+func novo_jogo() -> void:
+	tela_confirmar.hide()
+	tela_inicio.hide()
+	_pausa.hide()
+	painel_ajustes.hide()
+	painel_tintas.hide()
+	menu_aberto = false
+	get_tree().paused = false
+	_trocando = true
+	faisca.controle_ligado = false
+	await _escurecer(1.0, 0.4)
+	hud.esconder_fim()
+	hud.esconder_chefe()
+	if is_instance_valid(nivel):
+		nivel.queue_free()
+	nivel = null
+	if is_instance_valid(hub):
+		hub.queue_free()
+	hub = null
+	carregar({})
+	chegando.clear()
+	fase_atual = ""
+	_salvar()
+	faisca.tirar_poderes()
+	faisca.vida = Jogador.VIDA_MAX
+	hud.mostrar_vida(faisca.vida)
+	faisca.camera_guiada = {}
+	faisca.distancia_camera = Jogador.DISTANCIA_CAMERA
+	_esconder_faisca()
+	tocar_musica("farol")
+	lugar = ""
+	_trocando = false
+	abertura()
 
 
 ## Quem já viu a abertura começa direto no térreo do farol.
@@ -577,9 +769,25 @@ func entrar_fase(id: String) -> void:
 	faisca.yaw = 0.0
 	faisca.pitch = -0.32
 	faisca.visual.rotation.y = PI
+	await _esperar_a_fase_assentar()
 	_escurecer(0.0, 0.5)
 	await _comecar_fase()
 	_trocando = false
+
+
+## Os primeiros quadros de uma fase são os mais pesados: a vegetação e o mundo que reage montam depois do primeiro
+## quadro de física, e os shaders compilam quando a fase aparece. Passa por eles com a tela ainda escura e o Faísca
+## parado lá no alto (a câmera já olhando o começo), para ele descer com a fase pronta. Antes a tela clareava no meio
+## disso: ficava preta, só com o som do laser dos pés, e ele aparecia já no chão (relato do usuário em 2026-11-12).
+func _esperar_a_fase_assentar() -> void:
+	faisca.teleportar(nivel.inicio + Vector3(0, 7, 0))
+	faisca.set_physics_process(false)
+	for k in 4:
+		await get_tree().physics_frame
+		faisca.acompanhar_camera(1.0 / 60.0)
+	for k in 2:
+		await get_tree().process_frame
+	faisca.set_physics_process(true)
 
 
 # --- a música (item 7) ---------------------------------------------------------------------

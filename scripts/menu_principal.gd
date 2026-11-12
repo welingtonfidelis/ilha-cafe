@@ -251,7 +251,7 @@ func _atualizar_progresso() -> void:
 	for id in dados.get("estrelas", {}):
 		n += (dados.estrelas[id] as Array).size()
 	var grandes := (dados.get("grandes", []) as Array).size()
-	faisca.text = "Começar" if dados.is_empty() else "%d %s · %d %s" % [n, "estrelinha" if n == 1 else "estrelinhas",
+	faisca.text = "Começar" if not FaiscaSave.tem_progresso(dados) else "%d %s · %d %s" % [n, "estrelinha" if n == 1 else "estrelinhas",
 			grandes, "Estrela Grande" if grandes == 1 else "Estrelas Grandes"]
 
 

@@ -60,6 +60,10 @@ var amostra: Array = []
 var _materiais := {}
 var _malhas := {}
 var _imagens := {}
+## Os dados de cada malha (por "id/superfície"), lidos uma vez só. Com tela, `surface_get_arrays` busca a malha de
+## volta na placa de vídeo e espera por ela: chamado a cada tufo, a montagem da 1-1 levava uns 7 s com a tela
+## preta (relato do usuário em 2026-11-12); sem tela (os testes) ela é barata, e isso não aparecia.
+var _arrays := {}
 
 
 ## Monta tudo nas `pecas` ([MeshInstance3D, desenho]) da `fase`. Devolve quantas peças pôs.
@@ -153,6 +157,8 @@ func montar(fase: Fase, pecas: Array) -> int:
 			if nos_testes:
 				for k in mini(lista.size(), 6):
 					amostra.append([tipo, (lista[k][0] as Transform3D).origin])
+	_arrays.clear()
+	_imagens.clear()
 	return total
 
 
@@ -165,12 +171,20 @@ func _process(_delta: float) -> void:
 			(_materiais[tipo] as ShaderMaterial).set_shader_parameter("jogador", j.global_position)
 
 
+## Os arrays da superfície `s` da malha, guardados na primeira leitura (ver `_arrays`).
+func _dados_da_malha(malha: Mesh, s: int) -> Array:
+	var chave := "%d/%d" % [malha.get_instance_id(), s]
+	if not _arrays.has(chave):
+		_arrays[chave] = malha.surface_get_arrays(s)
+	return _arrays[chave]
+
+
 ## As faces de cima (viradas para o céu) da peça, no mundo: [a, b, c, área, índices dos vértices, superfície].
 func _faces_de_cima(mi: MeshInstance3D) -> Array:
 	var faces := []
 	var t := mi.global_transform
 	for s in mi.mesh.get_surface_count():
-		var arrays := mi.mesh.surface_get_arrays(s)
+		var arrays := _dados_da_malha(mi.mesh, s)
 		var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
 		var n := idx.size() if not idx.is_empty() else verts.size()
@@ -214,7 +228,7 @@ func _cor_do_chao(mi: MeshInstance3D, tri: Array, u: float, v: float) -> Color:
 		if img.is_compressed():
 			img.decompress()
 		_imagens[textura] = img
-	var uvs: PackedVector2Array = mi.mesh.surface_get_arrays(int(tri[5]))[Mesh.ARRAY_TEX_UV]
+	var uvs: PackedVector2Array = _dados_da_malha(mi.mesh, int(tri[5]))[Mesh.ARRAY_TEX_UV]
 	var ids: Array = tri[4]
 	if uvs.is_empty():
 		return base

@@ -10,8 +10,11 @@ extends RefCounted
 ##                           levando o Faísca até o 2º andar, com as cancelas), 20 (o trenzinho) e 30 (o farolete);
 ##                           as moedas e a Máquina de Brindes (o soco no botão, sem e com moedas, a figurinha na
 ##                           estante, a tinta pintando o Faísca, a lojinha das tintas no soco do cabide (a prévia, a
-##                           trancada, a de fábrica, o B), o save, os chapéus de antes virando tintas e "já tem todos")
-##   --faisca-jogo-captura   fotos da abertura, do hub, da pausa e da 1-1 em tools/capturas/faisca/jogo/
+##                           trancada, a de fábrica, o B), o save, os chapéus de antes virando tintas e "já tem todos";
+##                           o novo jogo pela pausa e pela tela de início (a confirmação, o Voltar, tudo zerado e a
+##                           abertura de novo)
+##   --faisca-jogo-captura   fotos da abertura, do hub, da pausa, do novo jogo, da tela de início e da 1-1 em
+##                           tools/capturas/faisca/jogo/
 ## Veio da parte do farol e das fases do antigo teste --parte2 do main.gd.
 
 var j: FaiscaJogo
@@ -221,6 +224,7 @@ func rodar() -> void:
 	ok = await _brindes() and ok
 	ok = await _chefe() and ok
 	ok = await _faisquinhas_de_novo() and ok
+	ok = await _novo_jogo() and ok
 	FaiscaSave.apagar()
 	print("FAISCA-JOGO OK" if ok else "FAISCA-JOGO COM FALHAS")
 	j.get_tree().quit(0 if ok else 1)
@@ -566,6 +570,92 @@ func _faisquinhas_de_novo() -> bool:
 	return ok
 
 
+## O novo jogo (pedido do usuário em 2026-11-12, como a "Nova campanha" da ilha): pela pausa e pela tela de início,
+## com a confirmação e o Voltar; zerado, a abertura toca de novo, e o save zerado fica (para o `migrar` não trazer de
+## volta a Parte 2 da ilha). O menu principal mostra "Começar" para um save sem progresso.
+func _novo_jogo() -> bool:
+	var ok := true
+	# Com progresso de mentira: estrelinhas, uma Estrela Grande, Faisquinhas, moedas, brindes e a tinta.
+	j.estrelas["1-1"] = ["0", "1", "2"]
+	j.grandes = ["1-1"]
+	j.faisquinhas = {"1-1": ["0", "3"]}
+	j.moedas = 40
+	j.brindes = ["fig_alien", "tinta_rosa"]
+	j.pintar("tinta_rosa")
+	# Pela pausa: o botão, a confirmação com o Voltar marcado, e o Voltar devolve a pausa sem apagar nada.
+	j.abrir_pausa()
+	await _esperar_real(0.2)
+	ok = _conferir("a pausa tem Novo jogo", j.botoes_pausa.novo.is_visible_in_tree()) and ok
+	j.botoes_pausa.novo.pressed.emit()
+	await _esperar_real(0.2)
+	ok = _conferir("Novo jogo pede confirmação, com o Voltar marcado", j.tela_confirmar.visible and not j._pausa.visible
+			and j.get_viewport().gui_get_focus_owner() == j.botoes_confirmar.voltar) and ok
+	j.botoes_confirmar.voltar.pressed.emit()
+	await _esperar_real(0.2)
+	ok = _conferir("o Voltar da confirmação volta para a pausa, sem apagar nada", j._pausa.visible and not j.tela_confirmar.visible
+			and j.total_estrelas() > 0 and j.moedas == 40) and ok
+	# Sim: zera e a abertura toca de novo, terminando no farol.
+	j.botoes_pausa.novo.pressed.emit()
+	await _esperar_real(0.2)
+	var viu_nave := [false]
+	j.botoes_confirmar.sim.pressed.emit()
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 40000:
+		await j.get_tree().physics_frame
+		var cena := j.get_node_or_null("Abertura")
+		viu_nave[0] = viu_nave[0] or (cena != null and cena.get_node_or_null("Aspiratrao") != null)
+		if j.lugar == "hub" and not j.busy():
+			break
+	await _esperar(0.3)
+	var salvo := FaiscaSave.ler()
+	ok = _conferir("pela pausa: tudo zerado, a abertura de novo e o Faísca de volta no farol, na cor de fábrica", viu_nave[0]
+			and j.lugar == "hub" and j.total_estrelas() == 0 and j.grandes.is_empty() and j.faisquinhas.is_empty() and j.moedas == 0
+			and j.brindes.is_empty() and j.tinta == "" and f.robo.cor_da_tinta == Brindes.COR_ORIGINAL and f.controle_ligado
+			and not j.get_tree().paused, "(nave %s, %s, %d estrelinhas)" % [viu_nave[0], j.lugar, j.total_estrelas()]) and ok
+	ok = _conferir("o save zerado fica (o migrar não traz a Parte 2 de volta) e o menu principal mostra Começar",
+			FaiscaSave.existe() and not FaiscaSave.migrar() and (salvo.get("moedas", -1) as int) == 0
+			and (salvo.get("faisquinhas", {"x": 1}) as Dictionary).is_empty()
+			and not FaiscaSave.tem_progresso({"estrelas": {}, "grandes": [], "moedas": 0, "abertura": false})
+			and FaiscaSave.tem_progresso({"estrelas": {"1-1": ["0"]}})) and ok
+	# Pela tela de início: com jogo salvo, ela abre por cima do farol parado.
+	j.estrelas["1-1"] = ["0"]
+	j.moedas = 5
+	j._salvar()
+	j.hub.queue_free()
+	j.hub = null
+	await _esperar(0.1)
+	j.abrir_inicio()
+	await _ate(func() -> bool: return j.tela_inicio.visible, 4.0)
+	await _esperar_real(0.2)
+	ok = _conferir("a tela de início abre por cima do farol, com o jogo parado, o resumo e o Continuar marcado", j.tela_inicio.visible
+			and j.get_tree().paused and is_instance_valid(j.hub) and j.contador_inicio.moedas.text == "5"
+			and j.get_viewport().gui_get_focus_owner() == j.botoes_inicio.continuar) and ok
+	j.botoes_inicio.continuar.pressed.emit()
+	await _esperar_real(0.5)
+	ok = _conferir("Continuar: a tela some e o jogo segue no farol, com o controle", not j.tela_inicio.visible and not j.get_tree().paused
+			and j.lugar == "hub" and f.controle_ligado and j.total_estrelas() == 1) and ok
+	j.hub.queue_free()
+	j.hub = null
+	await _esperar(0.1)
+	j.abrir_inicio()
+	await _ate(func() -> bool: return j.tela_inicio.visible, 4.0)
+	await _esperar_real(0.2)
+	j.botoes_inicio.novo.pressed.emit()
+	await _esperar_real(0.2)
+	j.botoes_confirmar.voltar.pressed.emit()
+	await _esperar_real(0.2)
+	ok = _conferir("na tela de início, o Voltar da confirmação volta para ela, com o Novo jogo marcado", j.tela_inicio.visible
+			and j.get_viewport().gui_get_focus_owner() == j.botoes_inicio.novo and j.total_estrelas() == 1) and ok
+	j.botoes_inicio.novo.pressed.emit()
+	await _esperar_real(0.2)
+	j.botoes_confirmar.sim.pressed.emit()
+	await _ate(func() -> bool: return j.lugar == "abertura", 4.0)
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 40.0)
+	ok = _conferir("pela tela de início: zerado e a abertura de novo", j.lugar == "hub" and j.total_estrelas() == 0 and j.moedas == 0
+			and not j.tela_inicio.visible and not j.get_tree().paused) and ok
+	return ok
+
+
 ## Quem jogou a Parte 2 dentro da ilha (campanha versão 3) ganha o progresso no save do Faísca, uma vez só.
 func _migracao() -> bool:
 	var campanha := SaveGame.path
@@ -606,8 +696,26 @@ func capturar() -> void:
 	j.abrir_pausa()
 	await _esperar_real(0.5)
 	await _foto("j04_pausa")
+	# A confirmação do novo jogo (e o Voltar).
+	j.botoes_pausa.novo.pressed.emit()
+	await _esperar_real(0.4)
+	await _foto("j04b_novo_jogo_confirmar")
+	j.botoes_confirmar.voltar.pressed.emit()
+	await _esperar_real(0.2)
 	j.botoes_pausa.continuar.pressed.emit()
 	await _esperar_real(0.4)
+	# A tela de início de quem já tem jogo salvo, por cima do farol parado.
+	j.estrelas["1-1"] = ["0", "1", "2", "3", "4"]
+	j.moedas = 12
+	j.hub.queue_free()
+	j.hub = null
+	await _esperar(0.1)
+	j.abrir_inicio()
+	await _ate(func() -> bool: return j.tela_inicio.visible, 4.0)
+	await _esperar_real(0.6)
+	await _foto("j04c_tela_de_inicio")
+	j.botoes_inicio.continuar.pressed.emit()
+	await _esperar_real(0.5)
 	var porta11: Node3D = j.hub.portas_nos["1-1"]
 	await _faisca_em(porta11.global_position + porta11.global_basis.z * 0.9 + Vector3.UP * 0.1, 0.1)
 	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy(), 8.0)
