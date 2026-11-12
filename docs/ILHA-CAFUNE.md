@@ -2274,7 +2274,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos) e o da 2-3 (a luz do quarto apagando) |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos), o da 2-3 (a luz do quarto apagando) e o da 3-1 (a avalanche) |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
@@ -2764,7 +2764,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 | 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas (feito) |
 | 2-2 | a chuva de confeitos gigantes, que viram degraus (feito) |
 | 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho (feito) |
-| 3-1 | a avalanche na Encosta das Avalanches |
+| 3-1 | a avalanche na Encosta das Avalanches (feito) |
 | 3-2 | a linha de montagem dispara |
 | 3-3 | o vendaval (quando for construída) |
 
@@ -2870,6 +2870,22 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - com as três alavancas e a ponte levadiça no lugar, a tecla volta, é dia de novo e os brinquedos apagam.
 - **Testes:** o `--faisca-fase-2-3` confere a luz apagando na chegada, os nove brinquedos acendendo um por um, e a luz voltando com a ponte.
 - **Fotos:** `--faisca-fase-2-3-captura` ganhou a lava no escuro de dentro e de cima, e o interruptor.
+
+**3-1 Pico Gelado (feito em 2026-11-11):** a fase também já tinha cinco playgrounds e tarefas. A avalanche ficou na saída da Encosta das Avalanches: o trecho do anel do pico entre a chegada da ponte de gelo (-26°) e a neve fofa, que antes era só um caminho a pé (`scripts/faisca/avalanche.gd`).
+- **A avalanche grande:** chegando no anel, ela despenca pela parede do pico no setor todo, com o ronco (`rolar`) e o controle tremendo forte. É só de ver: não pega ninguém.
+- **As calhas:** depois dela, duas calhas (em -40° e -62°) soltam neve no ritmo, uma a cada 5 s, a segunda meio ciclo atrás.
+  - Cada calha é uma faixa lisa de neve na parede, com a cornija lá no alto (as primeiras eram lombadas empilhadas e pareciam prateleiras de subir).
+  - Antes de cada onda vem o aviso: bolinhas de neve escorregando, o ronco e uma tremidinha.
+  - A onda desce a parede, atravessa o anel em 1 s e cai da beira.
+  - Quem ela pega vira uma bola de neve um instante e volta ao abrigo de antes, sem perder coração.
+- **Os abrigos:** três (em -30°, -51° e -73°), cada um com um boneco de neve encostado na parede, de escudo. Do lado de fora, o boneco ficava entre a câmera e o Faísca.
+- **O P4** mudou para o último abrigo, depois da avalanche. A neve fofa e a dica dela foram uns graus adiante (-78°).
+- **A câmera:** de lado, de fora do anel, olhando para a parede; o Faísca anda da esquerda para a direita e a neve desce de frente. São duas zonas, cada uma olhando para o meio do seu trecho, e a primeira começa depois do arco de saída da Encosta, que tapava a vista.
+- **Testes:** o `--faisca-fase-3-1` confere:
+  - a avalanche grande na chegada;
+  - parado na calha, a onda pega e ele volta ao abrigo sem perder coração;
+  - a travessia de verdade: esperando cada onda passar e correndo com o analógico conforme a câmera, de abrigo em abrigo até o P4, sem ser pego.
+- **Fotos:** `--faisca-fase-3-1-captura` ganhou a avalanche grande, a onda no anel e as calhas de fora.
 
 ### Em aberto
 

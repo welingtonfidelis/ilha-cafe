@@ -345,10 +345,70 @@ func _encosta() -> bool:
 	var raio := Vector2(j.global_position.x, j.global_position.z).length()
 	ok = m._conferir("a ponte de gelo leva da última plataforma até o anel do pico, sem pular", j.is_on_floor() and absf(j.global_position.y - 30.0) < 0.3
 			and raio < 25.5, "(%.1f m do meio)" % raio) and ok
+	ok = await _avalanche() and ok
 	j.teleportar(n.postos[3].global_position + Vector3(0, 0.1, 1.0))
 	await m._esperar(0.4)
 	ok = m._conferir("o P4 acende no anel do pico", n.postos[3].acendido) and ok
 	return ok
+
+
+## A avalanche (item 9 da lista, 2026-11-11): a grande na chegada ao anel, a onda que pega quem está parado na calha e a
+## travessia de verdade, esperando cada onda passar, de abrigo em abrigo até o P4.
+func _avalanche() -> bool:
+	var ok := true
+	var av := n.avalanche
+	await m._esperar(0.5)
+	ok = m._conferir("chegando no anel, a avalanche grande despenca pela parede do pico", av.comecada) and ok
+	await m._esperar(2.5)
+	j.vida = Jogador.VIDA_MAX
+	var antes := av.vezes_que_pegou
+	await _ate(func() -> bool: return av.onda_da_calha(0) > 0.05 and av.onda_da_calha(0) < 0.25, 12.0)
+	j.teleportar(n.no_pico(-40, 22.0, 30.1))
+	await m._esperar(2.2)
+	ok = m._conferir("parado na calha, a onda pega: vira bola de neve e volta ao abrigo de antes, sem perder coração",
+			av.vezes_que_pegou == antes + 1 and j.vida == Jogador.VIDA_MAX and j.global_position.distance_to(av.abrigos[0]) < 1.5,
+			"(pegou %d, vida %d, %.1f m do abrigo)" % [av.vezes_que_pegou - antes, j.vida, j.global_position.distance_to(av.abrigos[0])]) and ok
+	antes = av.vezes_que_pegou
+	var chegou := true
+	for k in 2:
+		j.teleportar(av.abrigos[k] + Vector3.UP * 0.1)
+		await m._esperar(0.3)
+		# Espera a onda desta calha passar do anel e corre até o próximo abrigo.
+		await _ate(func() -> bool: return av.onda_da_calha(k) > 0.88, 12.0)
+		chegou = await _correr_ate(av.abrigos[k + 1], 4.0) and chegou
+	await m._esperar(0.6)
+	ok = m._conferir("esperando cada onda passar, atravessa as duas calhas de abrigo em abrigo até o P4", chegou
+			and av.vezes_que_pegou == antes and n.postos[3].acendido, "(pegou %d)" % (av.vezes_que_pegou - antes)) and ok
+	return ok
+
+
+## Espera `cond` ficar verdade (até `segundos`).
+func _ate(cond: Callable, segundos: float) -> void:
+	var t := 0.0
+	while t < segundos and not cond.call():
+		await m.get_tree().physics_frame
+		t += 1.0 / Engine.physics_ticks_per_second
+
+
+## Corre até `alvo` pelo chão, com o analógico empurrado conforme a câmera (como quem vê a tela). Devolve se chegou.
+func _correr_ate(alvo: Vector3, segundos: float) -> bool:
+	var t := 0.0
+	var chegou := false
+	while t < segundos:
+		var d := Vector3(alvo.x - j.global_position.x, 0, alvo.z - j.global_position.z)
+		if d.length() < 0.7:
+			chegou = true
+			break
+		d = d.normalized()
+		var base := j.camera_pivo.global_transform.basis
+		var frente := Vector3(-base.z.x, 0.0, -base.z.z).normalized()
+		var direita := Vector3(base.x.x, 0.0, base.x.z).normalized()
+		j.forcar_direcao = Vector2(d.dot(direita), -d.dot(frente))
+		await m.get_tree().physics_frame
+		t += 1.0 / Engine.physics_ticks_per_second
+	j.forcar_direcao = Vector2.ZERO
+	await m._esperar(0.2)
+	return chegou
 
 
 ## Playground 5: a neve fofa, as saliências, o pingente que cai, a porta de gelo e o sino dela, a gruta e a volta.
@@ -569,6 +629,15 @@ func capturar() -> void:
 	var g0 := n.no_pico(70, 40, 22) + Vector3(-1.5, 0.1, -1.5)
 	var para_g1 := n.no_pico(46, 38, 25) - g0
 	await _foto_em(g0, atan2(-para_g1.x, -para_g1.z), 0.15, "fase_3_1/04b_encosta_de_dentro")
+	# A avalanche: chegando no anel, a grande despenca (com a câmera de lado); depois a onda da calha atravessa o anel.
+	j.teleportar(n.no_pico(-26, 23.0, 30.1))
+	await m._esperar(0.9)
+	await _foto_de_cima(n.no_pico(-44, 44, 38), n.no_pico(-48, 19, 34), "fase_3_1/04c_avalanche_grande")
+	await _ate(func() -> bool: return n.avalanche.onda_da_calha(0) > 0.5 and n.avalanche.onda_da_calha(0) < 0.6, 14.0)
+	j.teleportar(n.avalanche.abrigos[1] + Vector3.UP * 0.1)
+	await _foto_de_cima(n.no_pico(-50, 40, 36), n.no_pico(-44, 20, 31), "fase_3_1/04d_onda_na_calha")
+	await _ate(func() -> bool: return n.avalanche.onda_da_calha(1) > 0.3 and n.avalanche.onda_da_calha(1) < 0.4, 14.0)
+	await _foto_de_cima(n.no_pico(-48, 46, 48), n.no_pico(-52, 18, 31), "fase_3_1/04e_avalanche_de_fora")
 	await _foto_de_cima(Vector3(-50, 64, 40), Vector3(0, 36, 0), "fase_3_1/05_subida_do_pico")
 	await _foto_em(n.no_pico(-30, 23, 30.1), 0.9, 0.2, "fase_3_1/05b_anel_do_pico")
 	var degrau := n.no_pico(-194, n.raio_do_pico(44.6) + 3.0, 44.7)

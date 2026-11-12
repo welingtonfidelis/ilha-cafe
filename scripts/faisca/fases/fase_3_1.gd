@@ -17,12 +17,16 @@ extends Fase
 ##   viagem: a cadeirinha de esqui (leva de volta também)
 ##   4 Encosta das Avalanches (y 22 a 31, de nordeste a leste do pico): três cachoeiras cortam o caminho, e o sino de
 ##     cada uma congela a água numa rampa de gelo; bolas de neve rolando; coração na caverna atrás da segunda (P3)
-##   ponte de gelo até o anel do pico
+##   ponte de gelo até o anel do pico, e a avalanche (o momento especial, item 9, 2026-11-11): chegando no anel, a
+##     avalanche grande despenca pela parede; depois duas calhas soltam neve no ritmo pelo anel até o P4, com bonecos
+##     de neve de abrigo (quem a neve pega vira bola de neve e volta ao abrigo, sem perder coração)
 ##   5 Subida do Pico (y 30 a 46): monte de neve fofa, saliências de neve e pingentes lilases que caem, subindo pela
 ##     parede até a porta de gelo do cume, que abre com o último sino; V3 na gruta rachada do anel (P4)
 ##   Arena no cume (46 m): o baú e três Bolotas, dentro de um muro de gelo
 
 const NEVE_PASTA := "res://assets/faisca/neve/"
+## A avalanche do anel (o momento especial), para os testes.
+var avalanche: Avalanche
 const DOCES := "res://assets/faisca/doces/"
 const NEVE := [Color("f4f8ff"), Color("c9dff2"), Color("9aa7bf")]
 const PEDRA := [Color("b9c3d6"), Color("7d879e"), Color("8f99ae")]
@@ -871,14 +875,17 @@ func _encosta_das_avalanches() -> void:
 func _subida_do_pico() -> void:
 	var entrada := no_pico(-26, 23.0, TOPO_PE)
 	playground("5 · Subida do Pico", Vector3(0, 38, 0), 24.0, entrada)
-	posto(no_pico(-34, 23.5, TOPO_PE))
-	trilha_creme([no_pico(-26, 22.0, TOPO_PE), no_pico(-40, 22.0, TOPO_PE), no_pico(-54, 22.0, TOPO_PE), no_pico(-62, 21.5, TOPO_PE)])
+	_avalanche_no_anel()
+	# O P4 fica depois da avalanche, no último abrigo.
+	posto(no_pico(-73, 23.5, TOPO_PE))
+	trilha_creme([no_pico(-26, 22.0, TOPO_PE), no_pico(-40, 22.0, TOPO_PE), no_pico(-54, 22.0, TOPO_PE), no_pico(-68, 22.0, TOPO_PE),
+		no_pico(-76, 21.5, TOPO_PE)])
 	for a in [-38.0, -48.0, -58.0]:
 		estrelinha(no_pico(a, 22.0, TOPO_PE + 1.0))
-	ponto_de_dica(no_pico(-50, 22.5, TOPO_PE + 0.5), 3.0, "quicar")
+	ponto_de_dica(no_pico(-76, 22.5, TOPO_PE + 0.5), 2.6, "quicar")
 	bolota(no_pico(-100, 22.5, TOPO_PE), false, "ciclope")
 
-	neve_fofa(no_pico(-66, 21.0, TOPO_PE + 0.3), 2.0, 18.0)
+	neve_fofa(no_pico(-78, 21.0, TOPO_PE + 0.3), 2.0, 18.0)
 	# Saliências (S) e pingentes (P) subindo pela parede: [graus, altura, tipo].
 	var degraus := [[-80.0, 33.6, "S"], [-97.0, 35.2, "S"], [-114.0, 36.8, "P"], [-130.0, 38.4, "P"], [-146.0, 40.0, "S"],
 		[-162.0, 41.6, "P"], [-178.0, 43.2, "S"], [-194.0, 44.6, "D"]]
@@ -908,8 +915,37 @@ func _subida_do_pico() -> void:
 	_gruta_secreta(no_pico(-125, RAIO_BASE_CIMA + 2.2, TOPO_PE), deg_to_rad(-125.0))
 	ponto_de_dica(no_pico(-112, 22.5, TOPO_PE + 0.5), 3.0, "golpe")
 	coracao(no_pico(-82, 23.0, TOPO_PE + 1.2))
-	for spec in [["snowball_pile", -44.0, 24.0], ["present_C_blue", -110.0, 24.6], ["snowman_A", -170.0, 23.6], ["snowball_pile", -210.0, 23.0]]:
+	for spec in [["present_C_blue", -110.0, 24.6], ["snowman_A", -170.0, 23.6], ["snowball_pile", -210.0, 23.0]]:
 		neve(spec[0], no_pico(spec[1], spec[2], TOPO_PE), deg_to_rad(spec[1]), 2.0 if spec[0] != "snowman_A" else 1.5)
+
+
+## A avalanche (o momento especial, item 9 da lista, 2026-11-11), no anel entre a chegada da ponte de gelo (-26°) e o P4
+## (-73°): as calhas em -40° e -62°, e os abrigos (um boneco de neve encostado na parede, de escudo) em -30°, -51° e -73°.
+## A câmera fica de lado, de fora do anel, olhando para a parede: o Faísca anda da esquerda para a direita da tela e a
+## neve desce de frente.
+func _avalanche_no_anel() -> void:
+	avalanche = Avalanche.new()
+	avalanche.calhas = [-40.0, -62.0]
+	for a in [-30.0, -51.0, -73.0]:
+		avalanche.abrigos.append(no_pico(a, 21.5, TOPO_PE))
+		# Do lado da parede (de onde a neve vem): do lado de fora, ele ficava entre a câmera e o Faísca.
+		neve("snowman_A", no_pico(a, RAIO_BASE_CIMA + 1.8, TOPO_PE), deg_to_rad(a) + PI, 1.3)
+	avalanche.setor = Vector2(-32.0, -70.0)
+	avalanche.gatilho = no_pico(-26, 22.5, TOPO_PE + 1.5)
+	avalanche.raio_dentro = RAIO_BASE_CIMA
+	avalanche.raio_fora = RAIO_PE
+	avalanche.topo_anel = TOPO_PE
+	avalanche.raio_cume = RAIO_CUME
+	avalanche.topo_cume = TOPO_CUME
+	add_child(avalanche)
+	for a in [-51.0, -73.0]:
+		estrelinha(no_pico(a, 21.5, TOPO_PE + 1.2))
+	# Duas zonas de câmera (a primeira começa depois do arco de saída da Encosta, que tapava a vista), cada uma olhando
+	# para o meio do trecho dela; elas se encostam, e os ângulos diferentes deixam a passagem de uma para a outra limpa.
+	for spec in [[Vector3(15.3, TOPO_PE + 2.0, 16.3), Vector3(11.6, 6, 11.4), -46.0], [Vector3(9.1, TOPO_PE + 2.0, 20.15), Vector3(10.8, 6, 10.5), -67.0]]:
+		var meio := deg_to_rad(spec[2])
+		var fora := Vector3(cos(meio), 0, -sin(meio))
+		zona_de_camera(spec[0], spec[1], atan2(fora.x, fora.z), -0.28, 13.0)
 
 
 ## O muro de gelo de 2,6 m em volta do cume, com o vão da porta em `porta_graus` (a porta de gelo fecha o vão).
