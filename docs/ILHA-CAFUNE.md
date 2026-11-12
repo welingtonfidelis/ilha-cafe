@@ -2274,7 +2274,7 @@ Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jog
 | 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
 | 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
 | 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
-| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando) e o da 2-2 (a chuva de confeitos) |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | em andamento desde 2026-11-11: feitos o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos) e o da 2-3 (a luz do quarto apagando) |
 | 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
 | 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
 | 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; faltam a 3-3 e a nave |
@@ -2763,7 +2763,7 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
 | 1-2 | a fuga no carrinho de mina, com o túnel desmoronando (feito) |
 | 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas (feito) |
 | 2-2 | a chuva de confeitos gigantes, que viram degraus (feito) |
-| 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho |
+| 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho (feito) |
 | 3-1 | a avalanche na Encosta das Avalanches |
 | 3-2 | a linha de montagem dispara |
 | 3-3 | o vendaval (quando for construída) |
@@ -2861,6 +2861,15 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - a dica, o soco, a chuva (os grandes cravados e os miudinhos no bolo);
   - os pulos de verdade nos três confeitos e a subida na arena.
 - **Fotos:** `--faisca-fase-2-2-captura` ganhou o pote, a chuva caindo, a escadinha de perto e de fora, e a arena coberta de confeito.
+
+**2-3 Quarto de Brinquedos (feito em 2026-11-11):** como a 2-2, já tinha cinco playgrounds e tarefas, e ganhou só o momento, no playground 4 (O Chão É Lava).
+- **A luz do quarto apaga** quando o P3 acende, na chegada do carrinho de corda (uma vez só, e não depois da ponte abaixada):
+  - o interruptor gigante na parede leste (a placa, a tecla e a luzinha laranja que se vê no escuro) desliga com um "tlec" (som novo `interruptor`);
+  - o quarto fica de noite: fundo e luz azuis, o sol virando luar, a janela escura com a lua, e 22 estrelinhas de colar nas paredes norte e leste brilhando verde-claro;
+  - a lava continua brilhando, e os nove brinquedos que brilham no escuro (estrela, bola e cubinho, nas seis almofadas e em cima das três cartas) acendem um por um na ordem do caminho, cada um com um "plim" (som novo `brilha`) e uma luz colorida em volta;
+  - com as três alavancas e a ponte levadiça no lugar, a tecla volta, é dia de novo e os brinquedos apagam.
+- **Testes:** o `--faisca-fase-2-3` confere a luz apagando na chegada, os nove brinquedos acendendo um por um, e a luz voltando com a ponte.
+- **Fotos:** `--faisca-fase-2-3-captura` ganhou a lava no escuro de dentro e de cima, e o interruptor.
 
 ### Em aberto
 

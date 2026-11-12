@@ -710,7 +710,7 @@ class Faixa:
 def make_momentos():
     """Sons dos momentos especiais das fases (item 9 da lista do Faísca, 2026-11-11). O "rolar" é o ronco da Bolota
     gigante descendo a Ponte Fofa: um rumor grave que repete sem emenda (o tamanho fecha os ciclos), com uns
-    "tum" de quique. A "enchente" é a água correndo na cozinha alagando da 2-1; "confeitos", o pote chacoalhando na 2-2."""
+    "tum" de quique. A "enchente" é a água correndo na cozinha alagando da 2-1; "confeitos", o pote chacoalhando na 2-2; "interruptor" e "brilha", a luz do quarto apagando na 2-3."""
     random.seed(90)
     dur = 1.0
     ronco = sweep_lowpass(noise(dur), 180, 260)
@@ -735,6 +735,12 @@ def make_momentos():
         tiques.append((tique, t, random.uniform(0.15, 0.45)))
     tins = [(envelope(osc(random.uniform(1800, 3200), random.uniform(1700, 3000), 0.12, "sine"), 0.002, 0.09), random.uniform(0.1, dur - 0.2), 0.18) for _ in range(22)]
     sfx("confeitos", fade_edges(mix(dur, *tiques, *tins), 40), -5)
+    # A luz do quarto apagando na 2-3: o clique grave do interruptor gigante (dois estalos, o "tlec") e o "plim" de
+    # cada brinquedo que brilha no escuro acendendo.
+    estalo = lambda f: envelope(mix(0.06, (highpass(noise(0.06), 1200), 0, 0.6), (osc(f, f * 0.6, 0.06, "sine"), 0, 0.8)), 0.001, 0.04)
+    sfx("interruptor", mix(0.2, (estalo(420), 0.0, 1.0), (estalo(300), 0.07, 0.8)), -3)
+    plim = mix(0.6, (envelope(osc(1320, 1320, 0.6, "sine"), 0.004, 0.45), 0, 0.7), (envelope(osc(1980, 1980, 0.4, "sine"), 0.004, 0.3), 0, 0.3))
+    sfx("brilha", plim, -6)
 
 
 def make_musica_faisca():

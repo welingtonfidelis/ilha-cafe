@@ -201,6 +201,22 @@ func _lava() -> bool:
 	j.teleportar(p3.global_position + Vector3(0, 0.1, 1.2))
 	await m._esperar(0.4)
 	ok = m._conferir("o P3 acende na primeira almofada", p3.acendido) and ok
+	# O momento especial (item 9, 2026-11-11): chegando, a luz do quarto apaga e os brinquedos que brilham acendem um
+	# por um, mostrando o caminho.
+	await m._esperar(1.0)
+	ok = m._conferir("chegando no tapete, o interruptor desliga e a luz do quarto apaga", n.escuro
+			and n._ambiente.ambient_light_energy < 0.45 and n._sol.light_energy < 0.8, "(luz %.2f)" % n._ambiente.ambient_light_energy) and ok
+	var em_ordem := true
+	var antes := 0
+	for i in int(5.0 * Engine.physics_ticks_per_second):
+		await m.get_tree().physics_frame
+		var agora := n.brinquedos_acesos()
+		if agora < antes:
+			em_ordem = false
+		antes = agora
+	ok = m._conferir("os nove brinquedos que brilham acendem um por um, pelo caminho das almofadas e cartas",
+			n.brinquedos_acesos() == 9 and em_ordem and n.brinquedos_que_brilham.all(func(b: Node3D) -> bool:
+				return (b.get_child(1) as OmniLight3D).light_energy > 0.9), "(%d acesos)" % n.brinquedos_acesos()) and ok
 	j.vida = Jogador.VIDA_MAX
 	j.teleportar(Vector3(50, 0.3, -40))
 	await m._esperar(0.6)
@@ -235,6 +251,9 @@ func _lava() -> bool:
 	ok = m._conferir("um soco em cada uma das três alavancas", n.alavancas.all(func(a: Alavanca) -> bool: return a.puxada_ja)) and ok
 	await m._esperar(2.4)
 	ok = m._conferir("e a ponte levadiça abaixa até a última almofada", n.ponte.no_lugar()) and ok
+	await m._esperar(1.8)
+	ok = m._conferir("com a ponte no lugar, a luz do quarto volta e os brinquedos apagam", not n.escuro and n.brinquedos_acesos() == 0
+			and n._ambiente.ambient_light_energy > 0.6, "(luz %.2f)" % n._ambiente.ambient_light_energy) and ok
 	return ok
 
 
@@ -394,7 +413,14 @@ func capturar() -> void:
 	await _foto_de_cima(Vector3(-10, 44, -20), Vector3(-14, 14, -64), "fase_2_3/03_escrivaninha")
 	await _foto_em(Vector3(-32, 12.1, -53), 0.3, -0.05, "fase_2_3/03b_escrivaninha_de_dentro")
 	await _foto_de_cima(Vector3(76, 40, 22), Vector3(40, 2, -18), "fase_2_3/04_chao_e_lava")
+	# A luz do quarto apagando (o momento especial): chegando na primeira almofada, o P3 acende e o quarto escurece.
 	await _foto_em(Vector3(40, 1.9, -38), PI, -0.15, "fase_2_3/04b_lava_de_dentro")
+	await m._esperar(5.0)
+	await _foto_em(Vector3(40, 1.9, -38), PI, -0.12, "fase_2_3/04c_luz_apagada")
+	await _foto_de_cima(Vector3(76, 40, 22), Vector3(40, 2, -18), "fase_2_3/04d_lava_no_escuro")
+	await _foto_em(Vector3(43, 1.9, -6), -PI / 2.0 + 0.2, 0.15, "fase_2_3/04e_interruptor")
+	n.acender_luz()
+	await m._esperar(2.0)
 	await _foto_de_cima(Vector3(40, 46, 30), Vector3(10, 8, -8), "fase_2_3/05_castelo")
 	await _foto_em(Vector3(18, 0.1, 2), 0.0, 0.0, "fase_2_3/05b_patio")
 	await _foto_em(Vector3(14, 0.1, 13), 0.0, -0.05, "fase_2_3/05c_bloco_rachado")

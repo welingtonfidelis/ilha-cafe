@@ -16,7 +16,9 @@ extends Fase
 ##     carrinho; V2 na prateleira alta; o topo do abajur (P2)
 ##   viagem: o carrinho de corda, pela pista laranja
 ##   4 O Chão É Lava (a leste): almofadas, cartas que viram e dados que rolam; as três alavancas abaixam a ponte
-##     levadiça do castelo (P3)
+##     levadiça do castelo (P3). O momento especial (item 9, 2026-11-11): chegando, o interruptor da parede desliga e a
+##     luz do quarto apaga; a lava brilha, e nove brinquedos que brilham no escuro acendem um por um mostrando o caminho
+##     pelas almofadas e cartas. Com a ponte levadiça abaixada, a luz volta
 ##   5 Subida do Castelo: o dado do pátio vira degrau até a muralha, e o ioiô puxa até o alto da torre; V3 no bloco
 ##     rachado da muralha de fora (P4)
 ##   Arena no alto da torre (22 m): o baú e três Bolotas
@@ -32,6 +34,18 @@ const BLOCOS := [Color("e94f4f"), Color("3f8fe0"), Color("ffc93a"), Color("4cc27
 ## O tapete de lava: de x 28 a 64 e de z -50 a 14 (a faixa de 4 m do lado do castelo é chão firme).
 const LAVA_CENTRO := Vector3(46, 0, -18)
 const LAVA_TAMANHO := Vector2(36, 64)
+
+## A luz do quarto apagando (o momento especial do playground 4).
+var escuro := false
+var brinquedos_que_brilham: Array[Node3D] = []
+var _ambiente: Environment
+var _sol: DirectionalLight3D
+var _janela: StandardMaterial3D
+var _lua: MeshInstance3D
+var _adesivos: StandardMaterial3D
+var _tecla: Node3D
+var _ja_apagou := false
+const TECLA_LIGADA := 0.35
 
 var trem: Carona
 var aviao: Carona
@@ -195,6 +209,23 @@ func _quarto() -> void:
 	janela.material_override = luz
 	janela.position = Vector3(44, 34, -MEIA_SALA + 0.05)
 	add_child(janela)
+	_janela = luz
+	# A lua, que aparece na janela quando a luz do quarto apaga.
+	_lua = MeshInstance3D.new()
+	var bola := SphereMesh.new()
+	bola.radius = 3.6
+	bola.height = 0.6
+	_lua.mesh = bola
+	var mat_lua := StandardMaterial3D.new()
+	mat_lua.albedo_color = Color("fff6c8")
+	mat_lua.emission_enabled = true
+	mat_lua.emission = Color("fff3b0")
+	mat_lua.emission_energy_multiplier = 1.6
+	_lua.material_override = mat_lua
+	_lua.rotation.x = PI / 2.0
+	_lua.position = Vector3(54, 40, -MEIA_SALA + 0.4)
+	_lua.visible = false
+	add_child(so_enfeite(_lua))
 	do_quarto("bed_double_A", Vector3(64, 0, 56), PI, Vector3(9.0, 8.0, 14.0))
 	do_quarto("armchair", Vector3(-70, 0, 64), 0.6, 7.0)
 	do_quarto("rug_oval_A", Vector3(-62, 0, 52), 0.3, Vector3(6.0, 1.0, 6.0), false)
@@ -559,7 +590,8 @@ func _chao_e_lava() -> void:
 	for i in almofadas.size():
 		do_quarto("pillow_A" if i % 2 == 0 else "pillow_B", almofadas[i] + Vector3.UP * 0.9, 0.0, 9.0)
 		estrelinha(almofadas[i] + Vector3(1.6, 2.9, 0))
-	posto(almofadas[0] + Vector3(-1.0, 1.8, 0.5))
+	var p3 := posto(almofadas[0] + Vector3(-1.0, 1.8, 0.5))
+	p3.aceso.connect(func(_p: Posto) -> void: _chegou_na_lava())
 	ponto_de_dica(almofadas[1] + Vector3(0, 2.4, 0), 3.0, "alavanca")
 	carta(Vector3(40, 0.6, -31.5), "card_hearts_ace", 0.0)
 	carta(Vector3(61, 0.6, -14.5), "card_spades_king", 1.3)
@@ -588,11 +620,178 @@ func _chao_e_lava() -> void:
 		add_child(a)
 		a.puxada.connect(_alavanca_puxada)
 		alavancas.append(a)
+	_luz_do_quarto(almofadas)
 
 
 func _alavanca_puxada(_a: Alavanca) -> void:
 	if alavancas.all(func(x: Alavanca) -> bool: return x.puxada_ja):
 		ponte.abaixar()
+		# Com a ponte no lugar, a luz do quarto volta.
+		get_tree().create_timer(1.6).timeout.connect(acender_luz)
+
+
+## O momento especial do playground 4 (item 9 da lista, 2026-11-11): o interruptor gigante na parede leste, as
+## estrelinhas que brilham no escuro coladas nas paredes e os nove brinquedos que brilham no caminho (nas seis
+## almofadas e em cima das três cartas). De dia ficam apagados.
+func _luz_do_quarto(almofadas: Array) -> void:
+	# O interruptor: a placa branca na parede e a tecla, que vira para baixo quando desliga.
+	var placa := MeshInstance3D.new()
+	var caixa := BoxMesh.new()
+	caixa.size = Vector3(0.5, 10.0, 7.0)
+	placa.mesh = caixa
+	placa.material_override = _material(Color("f7f4ec"))
+	placa.position = Vector3(MEIA_SALA - 0.2, 15.0, -20.0)
+	add_child(so_enfeite(placa))
+	_tecla = Node3D.new()
+	_tecla.position = Vector3(MEIA_SALA - 0.6, 15.0, -20.0)
+	_tecla.rotation.z = TECLA_LIGADA
+	add_child(so_enfeite(_tecla))
+	var tecla := MeshInstance3D.new()
+	tecla.mesh = Forma.caixa_redonda(Vector3(1.0, 4.2, 3.2), 0.3)
+	tecla.material_override = _material(Color("dedbd2"))
+	_tecla.add_child(tecla)
+	# A luzinha laranja do interruptor, que se vê no escuro (como nos de verdade).
+	var luzinha := MeshInstance3D.new()
+	var ponto := SphereMesh.new()
+	ponto.radius = 0.45
+	ponto.height = 0.5
+	luzinha.mesh = ponto
+	var laranja := StandardMaterial3D.new()
+	laranja.albedo_color = Color("ffb347")
+	laranja.emission_enabled = true
+	laranja.emission = Color("ff9a2e")
+	laranja.emission_energy_multiplier = 3.0
+	luzinha.material_override = laranja
+	luzinha.position = Vector3(MEIA_SALA - 0.5, 11.2, -20.0)
+	add_child(so_enfeite(luzinha))
+	# Estrelinhas de colar no quarto, que brilham no escuro (verde-claro), nas paredes norte e leste, lá no alto.
+	_adesivos = StandardMaterial3D.new()
+	_adesivos.albedo_color = Color("eef6d8")
+	_adesivos.emission_enabled = true
+	_adesivos.emission = Color("b8ffa8")
+	_adesivos.emission_energy_multiplier = 0.0
+	var malha_estrela := Forma.estrela(1.6, 0.7, 0.2)
+	var g := RandomNumberGenerator.new()
+	g.seed = 23
+	for i in 22:
+		var e := MeshInstance3D.new()
+		e.mesh = malha_estrela
+		e.material_override = _adesivos
+		e.scale = Vector3.ONE * g.randf_range(0.7, 1.4)
+		if i % 2 == 0:
+			e.position = Vector3(g.randf_range(-70, 70), g.randf_range(22, 54), -MEIA_SALA + 0.15)
+		else:
+			e.position = Vector3(MEIA_SALA - 0.15, g.randf_range(22, 54), g.randf_range(-74, 60))
+			e.rotation.y = -PI / 2.0
+		e.rotation.z = g.randf() * TAU
+		add_child(so_enfeite(e))
+	# Os brinquedos que brilham, na ordem do caminho: almofada, carta, almofada, almofada, carta, almofada, carta,
+	# almofada, almofada.
+	var cores := [Color("8dffb0"), Color("fff27a"), Color("8fe3ff"), Color("ff9fe0")]
+	var lugares := [almofadas[0] + Vector3(1.9, 2.6, -1.4), cartas[0].position + Vector3(0, 2.2, 0),
+		almofadas[1] + Vector3(-1.9, 2.6, -1.5), almofadas[2] + Vector3(1.9, 2.6, -1.5), cartas[1].position + Vector3(0, 2.2, 0),
+		almofadas[3] + Vector3(1.9, 2.6, 1.5), cartas[2].position + Vector3(0, 2.2, 0), almofadas[4] + Vector3(0, 2.6, -1.9),
+		almofadas[5] + Vector3(-1.5, 2.6, 1.6)]
+	for i in lugares.size():
+		var b := Node3D.new()
+		b.position = lugares[i]
+		add_child(so_enfeite(b))
+		var cor: Color = cores[i % cores.size()]
+		var mi := MeshInstance3D.new()
+		match i % 3:
+			0:
+				mi.mesh = Forma.estrela(0.75, 0.32, 0.3)
+			1:
+				var bola := SphereMesh.new()
+				bola.radius = 0.55
+				bola.height = 1.1
+				mi.mesh = bola
+			2:
+				mi.mesh = Forma.caixa_redonda(Vector3(1.0, 1.0, 1.0), 0.25)
+		var m := StandardMaterial3D.new()
+		m.albedo_color = cor.lerp(Color.WHITE, 0.4)
+		m.emission_enabled = true
+		m.emission = cor
+		m.emission_energy_multiplier = 0.3
+		mi.material_override = m
+		b.add_child(mi)
+		var luz := OmniLight3D.new()
+		luz.light_color = cor
+		luz.light_energy = 0.0
+		luz.omni_range = 8.0
+		luz.position.y = 0.3
+		b.add_child(luz)
+		var tw := mi.create_tween().set_loops()
+		tw.tween_property(mi, "rotation:y", TAU, 4.0 + i * 0.3).from(0.0)
+		brinquedos_que_brilham.append(b)
+
+
+## Chegou no tapete de lava (o P3 acendeu): o interruptor desliga e a luz do quarto apaga (uma vez só).
+func _chegou_na_lava() -> void:
+	if _ja_apagou or (ponte and ponte.abaixada):
+		return
+	_ja_apagou = true
+	get_tree().create_timer(0.7).timeout.connect(apagar_luz)
+
+
+## A luz apaga: noite azul, a lua na janela, as estrelinhas da parede brilhando, e os brinquedos acendem um por um, na
+## ordem do caminho.
+func apagar_luz() -> void:
+	if escuro:
+		return
+	escuro = true
+	Sfx.play_at(self, "interruptor", _tecla.global_position, 6.0, 0.0)
+	create_tween().tween_property(_tecla, "rotation:z", -TECLA_LIGADA, 0.15)
+	_mudar_luz(true, 1.2)
+	for i in brinquedos_que_brilham.size():
+		var b := brinquedos_que_brilham[i]
+		get_tree().create_timer(1.3 + i * 0.35).timeout.connect(func() -> void: _brilhar(b, true))
+
+
+## A luz volta (a ponte levadiça abaixou): de dia de novo, e os brinquedos apagam.
+func acender_luz() -> void:
+	if not escuro:
+		return
+	escuro = false
+	Sfx.play_at(self, "interruptor", _tecla.global_position, 6.0, 0.0)
+	create_tween().tween_property(_tecla, "rotation:z", TECLA_LIGADA, 0.15)
+	_mudar_luz(false, 1.5)
+	for b in brinquedos_que_brilham:
+		_brilhar(b, false)
+
+
+## Quantos brinquedos estão brilhando agora (para os testes).
+func brinquedos_acesos() -> int:
+	return brinquedos_que_brilham.filter(func(b: Node3D) -> bool: return b.get_meta("aceso", false)).size()
+
+
+func _brilhar(b: Node3D, sim: bool) -> void:
+	if sim and not escuro:
+		return
+	b.set_meta("aceso", sim)
+	var luz: OmniLight3D = b.get_child(1)
+	var m: StandardMaterial3D = (b.get_child(0) as MeshInstance3D).material_override
+	var tw := b.create_tween().set_parallel()
+	tw.tween_property(luz, "light_energy", 1.4 if sim else 0.0, 0.4)
+	tw.tween_property(m, "emission_energy_multiplier", 1.9 if sim else 0.3, 0.4)
+	if sim:
+		Sfx.play_at(self, "brilha", b.global_position, -4.0, 0.08)
+		Fx.confetti(self, b.global_position, 8, 1.2)
+
+
+func _mudar_luz(noite: bool, tempo: float) -> void:
+	if _ambiente == null:
+		return
+	var tw := create_tween().set_parallel()
+	tw.tween_property(_ambiente, "background_color", Color("141a33") if noite else Color("dcefff"), tempo)
+	tw.tween_property(_ambiente, "ambient_light_color", Color(0.55, 0.6, 1.0) if noite else Color("fff1dc"), tempo)
+	tw.tween_property(_ambiente, "ambient_light_energy", 0.22 if noite else 0.7, tempo)
+	tw.tween_property(_sol, "light_energy", 0.3 if noite else 1.1, tempo)
+	tw.tween_property(_sol, "light_color", Color("8fa8ff") if noite else Color("fff3dd"), tempo)
+	tw.tween_property(_janela, "albedo_color", Color("1d2a55") if noite else Color("dff3ff"), tempo)
+	tw.tween_property(_janela, "emission", Color("24346b") if noite else Color("dff3ff"), tempo)
+	tw.tween_property(_adesivos, "emission_energy_multiplier", 2.6 if noite else 0.0, tempo)
+	_lua.visible = noite
 
 
 ## O tapete de lava: vermelho e laranja, com manchas que andam devagar. Encostar é cair (volta no posto).
@@ -721,7 +920,9 @@ func _montar_ceu_e_luz() -> void:
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
+	_ambiente = env
 	var sol := DirectionalLight3D.new()
+	_sol = sol
 	sol.rotation_degrees = Vector3(-55, 20, 0)
 	sol.light_color = Color("fff3dd")
 	sol.light_energy = 1.1
