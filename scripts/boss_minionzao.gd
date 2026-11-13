@@ -156,7 +156,7 @@ func _get_dizzy(hit_wall: bool) -> void:
 	Fx.popup_text(get_parent(), global_position + Vector3.UP * 3.4 * body_scale, "tonto! dano em dobro", Color("#ffd23f"))
 	if hit_wall:
 		Sfx.play_at(get_parent(), "pancada", global_position)
-		Fx.dust(get_parent(), global_position + forward() * 1.5 + Vector3.UP)
+		Particulas.poeira(get_parent(), global_position + forward() * 1.5 + Vector3.UP, Color("b08a62"), 1.4, 12)
 	else:
 		Sfx.play_at(get_parent(), "tonto", global_position + Vector3.UP * 4.0)
 

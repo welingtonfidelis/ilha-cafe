@@ -4,6 +4,9 @@ extends RefCounted
 ##   --faisca-particulas-captura   o Faísca socando uma Bolota (o "pow!" e o puf), pegando estrelinha, pulando e pousando
 ##                                 (a poeira), girando no ar, pegando coração e dando curto, em
 ##                                 tools/capturas/faisca/particulas/ (precisa de janela)
+##   --faisca-giro-captura         os efeitos no jeito do Astro Bot (2026-11-13): a carga (o corpo acendendo azul e os
+##                                 brilhinhos rodando), a carga solta (o clarão e a onda no chão), o disco do giro forte,
+##                                 a tontura, o "zuim" do soco, o disco do giro no ar e a onda do pouso alto, na mesma pasta
 
 var m: Node
 var n: Fase
@@ -98,6 +101,89 @@ func capturar() -> void:
 	await m._foto("particulas/07_curto")
 	await m._esperar(1.6)
 	m.get_tree().quit()
+
+
+func capturar_giro() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(m.PASTA_CAPTURAS + "particulas/"))
+	m._comecar_fase()
+	await m._esperar(4.0)
+	var cam := Camera3D.new()
+	cam.fov = 55.0
+	m.add_child(cam)
+	var p := n.inicio + Vector3(0, 0.1, 0)
+	j.teleportar(p)
+	_alto(cam, p + Vector3.UP * 0.9, 6.0)
+	await m._esperar(0.6)
+	# A carga: segurando X no chão (o primeiro soco sai antes).
+	m._botao(JOY_BUTTON_X, true)
+	await _ate(func() -> bool: return j._carga > Jogador.TEMPO_CARGA * 0.7, 2.0)
+	await m._foto("particulas/08_carga")
+	await _ate(func() -> bool: return j.giro_forte > 0.0, 1.0)
+	await m._esperar(0.05)
+	await m._foto("particulas/09_carga_solta")
+	m._botao(JOY_BUTTON_X, false)
+	await m._esperar(0.3)
+	await m._foto("particulas/10_giro_forte")
+	await _ate(func() -> bool: return j.giro_forte <= 0.0, 1.5)
+	await m._esperar(0.2)
+	await m._foto("particulas/11_tontura")
+	await m._esperar(1.0)
+	# O "zuim" do soco, numa Bolota parada.
+	var bolota: Bolota = null
+	for a in n.alvos:
+		if a is Bolota and not a.derrotado and (bolota == null or a.global_position.distance_to(n.inicio) < bolota.global_position.distance_to(n.inicio)):
+			bolota = a
+	if bolota:
+		bolota.process_mode = Node.PROCESS_MODE_DISABLED
+		var fora := ((n.inicio - bolota.global_position) * Vector3(1, 0, 1)).normalized()
+		j.teleportar(bolota.global_position + fora * 1.7 + Vector3.UP * 0.1)
+		_olhar(bolota.global_position)
+		# Pela câmera do jogo (atrás e um pouco acima), como a criança vê.
+		j.camera.make_current()
+		await m._esperar(0.5)
+		j.forcar_golpe = true
+		# O _golpe_acertou ainda vale do golpe de antes: primeiro espera este começar.
+		await _ate(func() -> bool: return j.golpe_atual == 0 and not j._golpe_acertou, 0.3)
+		await _ate(func() -> bool: return j._golpe_acertou, 0.6)
+		await m._esperar(0.04)
+		await m._foto("particulas/12_zuim")
+		await _ate(func() -> bool: return j.golpe_atual < 0, 0.6)
+		j.forcar_golpe = true
+		await m._esperar(0.1)
+		j.forcar_golpe = true
+		await _ate(func() -> bool: return j.golpe_atual == 2 and j._golpe_acertou, 1.2)
+		await m._esperar(0.04)
+		await m._foto("particulas/12b_zuim_forte")
+		bolota.process_mode = Node.PROCESS_MODE_INHERIT
+		await m._esperar(1.0)
+	# O giro no ar.
+	j.teleportar(p)
+	_alto(cam, p + Vector3.UP * 1.6, 6.0)
+	await m._esperar(0.6)
+	j.forcar_pulo = true
+	await m._esperar(0.2)
+	j.forcar_pulo = false
+	j.forcar_golpe = true
+	await m._esperar(0.15)
+	await m._foto("particulas/13_giro_no_ar")
+	await m._esperar(1.2)
+	# O pouso de bem alto.
+	j.teleportar(p + Vector3.UP * 9.0)
+	_alto(cam, p + Vector3.UP * 0.5, 7.0)
+	await m._esperar(0.25)
+	await _ate(func() -> bool: return j.is_on_floor(), 4.0)
+	await m._esperar(0.12)
+	await m._foto("particulas/14_pouso_alto")
+	await m._esperar(0.6)
+	m.get_tree().quit()
+
+
+## Câmera de cima e de lado (uns 35 graus), a `longe` m de `meio`, do lado `para`.
+func _alto(cam: Camera3D, meio: Vector3, longe: float, para := Vector3.BACK) -> void:
+	var lado := para.cross(Vector3.UP).normalized()
+	cam.global_position = meio + (para.normalized() * 0.75 + lado * 0.35).normalized() * longe * 0.82 + Vector3.UP * longe * 0.57
+	cam.look_at(meio)
+	cam.make_current()
 
 
 ## Câmera de lado, a `longe` m de `meio`, do lado `para` (mais um pouco para a direita e para cima).

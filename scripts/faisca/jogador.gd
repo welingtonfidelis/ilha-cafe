@@ -107,6 +107,14 @@ const TEMPO_CARGA := 0.5
 const TEMPO_GIRO_FORTE := 1.0
 const ALCANCE_GIRO_FORTE := 2.6
 const TEMPO_TONTINHO := 0.5
+## Raio do disco brilhante do giro forte (o alcance de verdade é ALCANCE_GIRO_FORTE; o disco fica no tamanho dos braços
+## abertos, e o do giro no ar é ele menor).
+const RAIO_DISCO := 1.8
+const VOLTAS_GIRO_FORTE := 3.2
+## A paradinha do soco que pega (o "hit-stop"): o jogo anda a este tanto por um instante.
+const PARADINHA := 0.1
+## As brincadeiras da espera do Faísca (ver Espera; ele também dança).
+const BRINCADEIRAS := ["acenar", "flexoes", "abdominais", "sentar", "dancinha"]
 ## Agarrar (Y): a bolota tonta (Alvo.tonta; o usuário achou fácil demais agarrar qualquer uma) até esta distância,
 ## mais ou menos na frente, vem pela antena para a mão esquerda.
 ## Segurando Y ele gira com ela (pelo menos BALANCO_MIN, no máximo BALANCO_MAX); soltando, arremessa para onde
@@ -252,7 +260,27 @@ var _balanco := 0.0
 var _arremessando := 0.0
 var _nota := 0.0
 var _anel_carga: MeshInstance3D
-var _redemoinho: MeshInstance3D
+## O disco brilhante do giro (o forte e, menor, o do ar) e os brilhinhos da carga (Particulas.disco_do_giro e carga).
+var _disco: Node3D
+var _brilho_carga: CPUParticles3D
+var _poeira_giro := 0.0
+## As animações de espera (parado sem mexer no controle; ver Espera).
+var _espera := Espera.new(BRINCADEIRAS)
+var _espera_nota := 0.0
+## Há quanto tempo ele está parado e a espera que está tocando ("" é nenhuma).
+var parado: float:
+	get:
+		return _espera.parado
+	set(v):
+		_espera.parado = v
+var espera: String:
+	get:
+		return _espera.nome
+## A maior rapidez de queda desde que saiu do chão (a onda no chão só nos pousos de muito alto).
+var _vel_queda := 0.0
+## A câmera sacudindo (acerto, pisão, giro forte soltando): força e o relógio da sacudida.
+var _sacode := 0.0
+var _sacode_t := 0.0
 ## Sons (tools/gerar_sons.py, make_faisca; pedido do usuário em 2026-10-29): o zumbido do laser repete enquanto
 ## ele flutua; a carga e a dancinha param se ele desistir no meio.
 var _som_laser: AudioStreamPlayer
@@ -317,6 +345,8 @@ func _ready() -> void:
 	_som_laser.bus = Sfx.BUS_SFX
 	add_child(_som_laser)
 	ponto_retorno = global_position
+	_espera.comecou.connect(_ao_comecar_espera)
+	_espera.acabou.connect(_ao_acabar_espera)
 
 
 func _montar_camera() -> void:
@@ -549,6 +579,7 @@ func _physics_process(delta: float) -> void:
 		flutuando = false
 		velocity = Vector3.ZERO if _pancada_espera > 0.0 else Vector3(0, -VELOCIDADE_PANCADA, 0)
 		_pancada_espera -= delta
+	_vel_queda = minf(_vel_queda, velocity.y)
 	move_and_slide()
 	_quina_amiga()
 	no_gelo = _pisando_no_gelo()
@@ -568,6 +599,7 @@ func _physics_process(delta: float) -> void:
 		if _tempo_no_ar > 0.35:
 			Sfx.play(self, "faisca_pouso", 0.0, 0.1)
 			_pousou(_tempo_no_ar)
+		_vel_queda = 0.0
 	_tempo_no_ar = _tempo_no_ar + delta if no_ar else 0.0
 	_estava_no_ar = no_ar
 	if dir.length() > 0.1 and golpe_atual < 0 and girando <= 0.0 and giro_forte <= 0.0 and agarrada == null and _carga <= 0.0:
@@ -587,6 +619,7 @@ func _physics_process(delta: float) -> void:
 	_atualizar_lasers()
 	_atualizar_pipa(delta)
 	_atualizar_sombra()
+	_atualizar_espera(delta, entrada)
 	_atualizar_animacao()
 
 
@@ -698,6 +731,16 @@ func _seguir_camera(delta: float, entrada: Vector2) -> void:
 		yaw = lerp_angle(yaw, atras, 1.0 - exp(-CAMERA_VOLTA * delta))
 	var correndo := clampf((vel_h.length() - 4.0) / 2.5, 0.0, 1.0)
 	camera.fov = lerpf(camera.fov, lerpf(FOV, FOV_CORRENDO, correndo), 1.0 - exp(-4.0 * delta))
+	# A sacudida anda no tempo de verdade (na paradinha do soco o resto do jogo quase para).
+	var real := delta / maxf(Engine.time_scale, 0.01)
+	if _sacode > 0.0:
+		_sacode_t += real
+		_sacode = move_toward(_sacode, 0.0, real * 0.9)
+		camera.h_offset = sin(_sacode_t * 83.0) * _sacode
+		camera.v_offset = cos(_sacode_t * 71.0) * _sacode
+	elif camera.h_offset != 0.0 or camera.v_offset != 0.0:
+		camera.h_offset = 0.0
+		camera.v_offset = 0.0
 
 
 ## O corpo vivo: inclina para dentro da curva e para a frente arrancando (para trás derrapando), e o molejo de
@@ -724,6 +767,10 @@ func _pousou(tempo_no_ar: float) -> void:
 	_mola_vel = 0.0
 	_poeira(global_position, clampf(0.7 + tempo_no_ar * 0.5, 0.7, 1.5), 14)
 	_tremer_passo(clampf(1.5 + tempo_no_ar * 2.0, 1.5, 3.5))
+	# Caindo de bem alto (bem mais rápido que a descida de um pulo, uns 13 m/s): a onda no chão e uma sacudidinha.
+	if _vel_queda < -16.0:
+		Particulas.onda_no_chao(get_parent(), global_position, clampf(-_vel_queda * 0.06, 1.0, 1.8))
+		_sacudir(0.05)
 
 
 ## Nuvenzinha de poeira no chão (a fumaça clara e, no pulo e no pouso, os torrões do Kenney Particle Pack; antes eram
@@ -829,6 +876,7 @@ func teleportar(pos: Vector3) -> void:
 	golpe_atual = -1
 	girando = 0.0
 	_cam_pronta = false
+	acordar()
 
 
 ## Encostou numa Bolota (ou outra coisa que machuca) vinda de `de`: tira um coração, empurra
@@ -1355,6 +1403,13 @@ func _atualizar_golpes(delta: float, dir: Vector3) -> void:
 		_golpe_tempo += delta
 		if not _golpe_acertou and _golpe_tempo >= g.acerto:
 			_golpe_acertou = true
+			# O "zuim" do lado do braço que soca (o do meio é o esquerdo). Virado para +Z, o +X do Faísca é a mão esquerda.
+			var f := _frente()
+			var braco := visual.global_basis.x.normalized() * (1.0 if golpe_atual == 1 else -1.0)
+			var cam := get_viewport().get_camera_3d()
+			var na_tela := signf(braco.dot(cam.global_basis.x)) if cam else 1.0
+			Particulas.zuim(get_parent(), global_position + Vector3.UP * 1.05 + f * 0.45 + braco * 0.45, na_tela if na_tela != 0.0 else 1.0,
+					golpe_atual == GOLPES.size() - 1)
 			_acertar(ALCANCE_GOLPE, deg_to_rad(75.0), ALTURA_GOLPE, g.dano, g.empurrao, "soco")
 		if _golpe_tempo >= g.duracao:
 			if _golpe_guardado and golpe_atual < GOLPES.size() - 1:
@@ -1369,6 +1424,12 @@ func _atualizar_golpes(delta: float, dir: Vector3) -> void:
 		if not _giro_acertou and girando < TEMPO_GIRO - 0.1:
 			_giro_acertou = true
 			_acertar(ALCANCE_GIRO, PI, 2.4, 1, 6.0, "giro")
+		# O disco do giro no ar: menor, abrindo rápido e encolhendo no fim.
+		if giro_forte <= 0.0:
+			var t := 1.0 - girando / TEMPO_GIRO
+			_disco.visible = girando > 0.0
+			_disco.rotation.y = visual.rotation.y
+			_disco.scale = Vector3.ONE * ALCANCE_GIRO / ALCANCE_GIRO_FORTE * minf(t / 0.15, 1.0) * clampf(girando / 0.12, 0.0, 1.0)
 
 
 ## Acerta os inimigos dentro do alcance, na frente (até `angulo` para cada lado). `tipo` é "soco" ou "giro".
@@ -1397,6 +1458,12 @@ func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao:
 		Particulas.soco(get_parent(), onde)
 		_tremer(0.3, 0.6, 0.12)
 		Sfx.play(self, "faisca_acerto", 0.0, 0.1)
+		# O soco que pega para o tempo um instantinho e sacode a câmera (o forte, mais); o giro só sacode.
+		if tipo == "soco":
+			_paradinha(0.075 if dano > 1 else 0.05)
+			_sacudir(0.12 if dano > 1 else 0.06)
+		else:
+			_sacudir(0.05)
 	return acertou
 
 
@@ -1427,6 +1494,7 @@ func _pisao() -> void:
 			if alvo.receber_golpe(2, global_position + Vector3.UP * 2.0, 3.0, "pisao"):
 				Sfx.play(self, "faisca_pisao", 0.0, 0.08)
 				Particulas.soco(get_parent(), global_position + Vector3.UP * 0.3)
+				_sacudir(0.07)
 				velocity.y = forca_pulo * 0.8
 				_pulou = true
 				_cortou_pulo = true
@@ -1509,19 +1577,11 @@ func _montar_giro_forte() -> void:
 	_anel_carga.top_level = true
 	_anel_carga.visible = false
 	add_child(_anel_carga)
-	_redemoinho = MeshInstance3D.new()
-	var giro := TorusMesh.new()
-	giro.inner_radius = 1.7
-	giro.outer_radius = 2.2
-	giro.rings = 48
-	giro.ring_segments = 8
-	_redemoinho.mesh = giro
-	_redemoinho.scale = Vector3(1.0, 0.12, 1.0)
-	_redemoinho.material_override = _material_laser(Color("8ff3ff"), 0.35, 2.0)
-	_redemoinho.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_redemoinho.top_level = true
-	_redemoinho.visible = false
-	add_child(_redemoinho)
+	# Antes, um anel azul achatado; desde 2026-11-13, o disco no jeito do Astro (pedido do usuário).
+	_disco = Particulas.disco_do_giro(RAIO_DISCO)
+	_disco.position = Vector3.UP * 1.05
+	_disco.visible = false
+	add_child(_disco)
 
 
 ## Segurar X no chão: carrega (anel dourado crescendo, tremendo, cara de bravo) e, cheio, gira sozinho. Soltar
@@ -1529,19 +1589,29 @@ func _montar_giro_forte() -> void:
 func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void:
 	if giro_forte > 0.0:
 		giro_forte -= delta
-		visual.rotation.y += TAU * 2.6 * delta
+		visual.rotation.y += TAU * VOLTAS_GIRO_FORTE * delta
 		_acerto_giro_forte -= delta
 		if _acerto_giro_forte <= 0.0:
 			_acerto_giro_forte = 0.25
 			_acertar(ALCANCE_GIRO_FORTE, PI, 2.4, 1, 7.0, "giro")
-		_redemoinho.global_position = global_position + Vector3.UP * 1.1
-		_redemoinho.rotation.y += 11.0 * delta
-		_redemoinho.scale = Vector3(1.0, 0.12, 1.0) * (0.9 + 0.1 * sin(giro_forte * 40.0))
+		# O disco gira junto, pulsando, e encolhe no fim; o corpo vai apagando e solta poeirinha em volta dos pés.
+		_disco.rotation.y = visual.rotation.y
+		var fim := clampf(giro_forte / 0.15, 0.0, 1.0)
+		_disco.scale = Vector3.ONE * (0.95 + 0.05 * sin(giro_forte * 40.0)) * fim
+		robo.brilho(0.25 + 0.5 * giro_forte / TEMPO_GIRO_FORTE)
+		_poeira_giro -= delta
+		if _poeira_giro <= 0.0 and is_on_floor():
+			_poeira_giro = 0.1
+			_poeira(global_position + visual.global_basis.x * 0.5, 0.5, 4)
 		if giro_forte <= 0.0:
-			_redemoinho.visible = false
+			_disco.visible = false
+			robo.brilho(0.0)
 			_tontinho = TEMPO_TONTINHO
 			robo.expressao("tonto", 0.9)
+			Particulas.tontura(self, 0.9)
 		return
+	if _carga <= 0.0 and _brilho_carga:
+		_apagar_carga()
 	if not segurando:
 		_soltar_golpe = false
 	var pode := segurando and no_chao and not _soltar_golpe and agarrada == null and controle_ligado
@@ -1552,12 +1622,18 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 			_anel_carga.visible = false
 			visual.position = Vector3.ZERO
 			_parar_som(_som_carga)
+			_apagar_carga()
 		return
 	_parar_danca()
 	if _carga <= 0.0:
 		_som_carga = Sfx.play(self, "faisca_carga", 0.0, 0.0)
+		# No jeito do Astro: brilhinhos rodando para o corpo, que vai acendendo azul.
+		_brilho_carga = Particulas.carga(self)
 	_carga += delta
 	var cheia := minf(_carga / TEMPO_CARGA, 1.0)
+	robo.brilho(cheia)
+	if _brilho_carga:
+		_brilho_carga.rotation.y += 9.0 * delta
 	robo.animar("luta/Melee_Unarmed_Idle", 0.1)
 	robo.expressao("bravo", 0.3)
 	_anel_carga.visible = true
@@ -1572,12 +1648,42 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 		visual.position = Vector3.ZERO
 		giro_forte = TEMPO_GIRO_FORTE
 		_acerto_giro_forte = 0.0
-		_redemoinho.visible = true
+		_apagar_carga(false)
+		_disco.visible = true
+		_disco.scale = Vector3.ONE
+		_poeira_giro = 0.0
+		Particulas.carga_cheia(get_parent(), global_position + Vector3.UP * 1.0)
+		Particulas.onda_no_chao(get_parent(), global_position, ALCANCE_GIRO_FORTE)
+		_sacudir(0.12)
 		# De braços abertos, como um pião.
 		robo.tpose()
 		robo.expressao("bravo", TEMPO_GIRO_FORTE)
 		Sfx.play(self, "faisca_piao", 0.0, 0.0)
 		_tremer(0.4, 0.6, 0.2)
+
+
+## Desliga os brilhinhos da carga (os que já saíram terminam o caminho) e, com `apagar`, o brilho do corpo.
+func _apagar_carga(apagar := true) -> void:
+	if apagar:
+		robo.brilho(0.0)
+	if not is_instance_valid(_brilho_carga):
+		_brilho_carga = null
+		return
+	_brilho_carga.emitting = false
+	get_tree().create_timer(_brilho_carga.lifetime).timeout.connect(_brilho_carga.queue_free)
+	_brilho_carga = null
+
+
+## Sacode a câmera um pouquinho (`forca` em metros), no tempo de verdade (a paradinha do soco não congela a sacudida).
+func _sacudir(forca: float) -> void:
+	_sacode = maxf(_sacode, forca)
+
+
+## A paradinha do soco que pega (no jeito do Astro): o jogo todo anda devagar por `segundos` de verdade. Quem volta o
+## tempo é o próprio Engine (sem ligar no Faísca, que pode sumir no meio, trocando de fase).
+func _paradinha(segundos: float) -> void:
+	Engine.time_scale = PARADINHA
+	get_tree().create_timer(segundos, true, false, true).timeout.connect(Callable(Engine, "set").bind("time_scale", 1.0))
 
 
 ## Y: agarra a bolota mais perto pela antena e gira com ela na mão esquerda (de braços abertos, ela fica para
@@ -1879,5 +1985,65 @@ func _atualizar_animacao() -> void:
 		robo.animar("mov/Running_A", 0.15, vel_h / velocidade * 1.1)
 	elif vel_h > 0.3:
 		robo.animar("mov/Walking_A", 0.15, maxf(vel_h / 2.5, 0.6))
+	elif _espera.nome != "" and _espera.anim() != "dancinha":
+		# Os passos seguidos (sentar, deitar) emendam rápido; o resto entra misturando devagar.
+		robo.animar(_espera.anim(), 0.12 if _espera.passo > 0 else 0.3)
 	else:
 		robo.animar("geral/Idle_A", 0.2)
+
+
+# --- espera (parado sem mexer no controle) ---------------------------------------------
+
+func _atualizar_espera(delta: float, entrada: Vector2) -> void:
+	# Mexer na câmera não acorda (pedido do usuário em 2026-11-13).
+	var mexeu := not controle_ligado or entrada.length() > 0.1 or Espera.apertando_algo() \
+			or not is_on_floor() or Vector2(velocity.x, velocity.z).length() > 0.5 or golpe_atual >= 0 or girando > 0.0 \
+			or giro_forte > 0.0 or _carga > 0.0 or agarrada != null or dancando > 0.0 or _tontinho > 0.0 or no_balao or no_ioio \
+			or forcar_pulo or forcar_danca
+	_espera.atualizar(delta, mexeu)
+	if _espera.nome != "":
+		_durante_a_espera(delta)
+
+
+func _ao_comecar_espera(nome: String) -> void:
+	_espera_nota = 0.0
+	if nome == "dancinha":
+		robo.dancar(true)
+		robo.expressao("feliz", 4.0)
+
+
+func _ao_acabar_espera(nome: String, acordou: bool) -> void:
+	if nome == "dancinha":
+		robo.dancar(false)
+		robo.expressao("normal")
+	elif nome == "dormir" and acordou:
+		# Acordando, cara de surpreso. Depois da animação deste quadro (que, saindo da de festa, volta a cara para a
+		# normal).
+		robo.expressao.call_deferred("surpreso", 0.7)
+
+
+## O que vai junto de cada espera: acenando, ele vira para a câmera; dançando, solta notinhas; dormindo, fecha os olhos
+## e solta os "z".
+func _durante_a_espera(delta: float) -> void:
+	match _espera.nome:
+		"acenar":
+			var d := camera.global_position - global_position
+			visual.rotation.y = lerp_angle(visual.rotation.y, atan2(d.x, d.z), 1.0 - exp(-6.0 * delta))
+		"dancinha":
+			_espera_nota -= delta
+			if _espera_nota <= 0.0:
+				_espera_nota = 0.5
+				_soltar_nota()
+		"dormir":
+			if _espera.passo == 1:
+				if robo.expressao_atual() != "piscando":
+					robo.expressao("piscando")
+				_espera_nota -= delta
+				if _espera_nota <= 0.0:
+					_espera_nota = 1.1
+					Particulas.zzz(get_parent(), robo.ponto_da_cabeca() + Vector3.UP * 0.5, camera.global_basis.x, fmod(parado, 3.3) < 1.1)
+
+
+## Mexeram no controle (ou ele foi levado para outro lugar): a espera para na hora e o relógio volta a zero.
+func acordar() -> void:
+	_espera.acordar()

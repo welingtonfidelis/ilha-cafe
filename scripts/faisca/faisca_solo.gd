@@ -37,6 +37,11 @@ extends Node3D
 ##   --faisca-jogar-nave     a nave para jogar direto, sem o farol
 ##   --faisca-particulas-captura  1-1: fotos das partículas do Kenney (soco, Bolota, estrelinha, poeira, giro, coração e
 ##                           curto) em tools/capturas/faisca/particulas/ (ver scripts/faisca/teste_particulas.gd)
+##   --faisca-giro-captura   1-1: fotos dos efeitos no jeito do Astro Bot (carga, giro forte, tontura, zuim do soco, giro no
+##                           ar e pouso alto), na mesma pasta
+##   --faisca-espera         1-1: confere as animações de espera (olhar, brincadeiras, dormir, acordar; ver
+##                           scripts/faisca/teste_espera.gd)
+##   --faisca-espera-captura 1-1: fotos das esperas em tools/capturas/faisca/espera/
 ##   --faisca-monstro        1-1: confere os monstros do Cute Monsters Pack, as animações e a regra de cada tipo
 ##                           (ver scripts/faisca/teste_monstro.gd)
 ##   --faisca-monstro-captura   fotos de cada tipo em ação em tools/capturas/faisca/monstro/ (precisa de janela)
@@ -61,7 +66,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-fase-3-3", "--faisca-fase-3-3-captura",
-		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-monstro", "--faisca-monstro-captura",
+		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
 		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1",
 		"--faisca-chefe-2", "--faisca-chefe-2-captura", "--faisca-jogar-chefe-2",
@@ -86,6 +91,7 @@ var _teste32: TesteFase32
 var _teste33: TesteFase33
 var _teste_nave: TesteFaseNave
 var _teste_particulas: TesteParticulas
+var _teste_espera: TesteEspera
 var _teste_monstro: TesteMonstro
 var _teste_movimento: TesteMovimento
 var _teste_faisquinhas: TesteFaisquinhas
@@ -273,6 +279,15 @@ func _ready() -> void:
 	elif "--faisca-particulas-captura" in args:
 		_teste_particulas = TesteParticulas.new(self)
 		_teste_particulas.capturar()
+	elif "--faisca-giro-captura" in args:
+		_teste_particulas = TesteParticulas.new(self)
+		_teste_particulas.capturar_giro()
+	elif "--faisca-espera" in args:
+		_teste_espera = TesteEspera.new(self)
+		_teste_espera.rodar()
+	elif "--faisca-espera-captura" in args:
+		_teste_espera = TesteEspera.new(self)
+		_teste_espera.capturar()
 	elif "--faisca-chefe-1" in args:
 		testando = true
 		_teste_chefe1 = TesteChefe1.new(self)
@@ -452,7 +467,8 @@ func _rodar_teste_controle() -> void:
 	var anim_esquerdo := jogador.robo.animacao_atual()
 	await _esperar(0.02)
 	await _toque(JOY_BUTTON_X)
-	await _esperar(0.12)
+	# A paradinha de cada soco que pega (2026-11-13) atrasa o combo um pouquinho: antes eram 0,12 s.
+	await _esperar(0.2)
 	var anim_forte := jogador.robo.animacao_atual()
 	var terceiro := jogador.golpe_atual
 	await _esperar(0.4)

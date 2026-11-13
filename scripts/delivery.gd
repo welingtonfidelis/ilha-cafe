@@ -148,7 +148,7 @@ func _land(animate: bool) -> void:
 	_label.visible = true
 	if not animate:
 		return
-	Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+	Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.2, Color("b08a62"), 1.0, 8)
 	Sfx.play_at(get_parent(), "bonk", global_position, -4.0)
 	# Os balões soltam do presente e sobem sozinhos.
 	var world := get_parent()

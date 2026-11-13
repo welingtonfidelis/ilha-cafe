@@ -201,6 +201,7 @@ func _arrive() -> void:
 	var tw := create_tween()
 	tw.tween_property(visual, "position:y", 0.0, 0.9).set_ease(Tween.EASE_OUT)
 	Fx.confetti(get_parent(), global_position + Vector3.UP, 40, 5.0)
+	Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.3, Color("b08a62"), 1.6, 16)
 
 
 # --- laço --------------------------------------------------------------------
@@ -313,7 +314,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 	if phase != Phase.LUTANDO and phase != Phase.COMEMORANDO:
 		return
 	if _blocks(point, hb):
-		Fx.dust(get_parent(), point)
+		Particulas.poeira(get_parent(), point, Color("c9d1dc"), 0.6, 4)
 		Fx.popup_text(get_parent(), point + Vector3.UP * 0.4, "bloqueou!", Color("#c9d1dc"))
 		Sfx.play_at(get_parent(), "escudo", point)
 		return
@@ -413,7 +414,7 @@ func sink_away() -> void:
 	_set_hittable(false)
 	collision_mask = 0
 	collision_layer = 0
-	Fx.dust(get_parent(), global_position + Vector3.UP * 0.5)
+	Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.5, Color("b08a62"), 1.6, 16)
 	var tw := create_tween()
 	tw.tween_interval(0.3)
 	tw.tween_property(visual, "position:y", -2.8 * body_scale, 1.0).set_ease(Tween.EASE_IN)
@@ -589,4 +590,4 @@ class DangerZone:
 			arrow.position = Vector3(cos(a) * r, 9.0, sin(a) * r)
 			var tw := arrow.create_tween()
 			tw.tween_property(arrow, "position:y", 0.6, 0.18 + randf() * 0.08).set_ease(Tween.EASE_IN)
-		Fx.dust(get_parent(), global_position + Vector3.UP * 0.3)
+		Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.3, Color("b08a62"), 1.4, 12)

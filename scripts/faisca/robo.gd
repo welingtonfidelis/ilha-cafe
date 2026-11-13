@@ -26,6 +26,7 @@ const TRONCO_Y := 0.86
 ## Caras da tela (o número é a `forma` do shader). "piscando" é a normal de olhos fechados.
 const EXPRESSOES := {"normal": 0, "piscando": 0, "feliz": 1, "surpreso": 2, "bravo": 3, "dor": 4, "tonto": 5, "coracao": 6}
 const COR_LED := Color("8ff3ff")
+const BRANCO := Color("f4f5f9")
 const COR_CORACAO := Color("ff7eb6")
 ## Duração de uma piscada (fecha e abre). A troca de cara acontece no meio, de olho fechado.
 const PISCADA := 0.16
@@ -128,6 +129,12 @@ func ponta_do_pe(i: int) -> Vector3:
 	return _jatos[i].global_position
 
 
+## Onde fica a cabeça agora (o osso "head", que segue a animação: deitado, ela está lá embaixo).
+func ponto_da_cabeca() -> Vector3:
+	var osso := esqueleto.find_bone("head")
+	return (esqueleto.global_transform * esqueleto.get_bone_global_pose(osso)).origin
+
+
 func animacao_atual() -> String:
 	return _ap.current_animation if _ap else ""
 
@@ -148,6 +155,16 @@ func dancar(on: bool) -> void:
 func carga(v: float) -> void:
 	for i in _carga.size():
 		_carga[i].material_override = mat.led_costas if v > i / 3.0 + 0.001 else mat.led_apagado
+
+
+## O corpo brilhando azul (a carga do giro forte, no jeito do Astro), de 0 (apagado) a 1.
+func brilho(v: float) -> void:
+	if not mat.has("branco"):
+		return
+	# Só a emissão não aparecia no branco (já é quase branco puro): o plástico também vai ficando azulzinho.
+	mat.branco.albedo_color = BRANCO.lerp(COR_LED, v * 0.6)
+	mat.branco.emission_energy_multiplier = v * 0.7
+	mat.laranja.emission_energy_multiplier = v * 0.5
 
 
 ## Pinta as partes laranja do Faísca (as tintas da Máquina de Brindes, escolhidas na lojinha das tintas). A dourada
@@ -364,11 +381,16 @@ func _mao(osso: String, lado: float) -> void:
 
 
 func _criar_materiais() -> void:
-	mat.branco = _plastico(Color("f4f5f9"), 0.32, 0.7)
+	mat.branco = _plastico(BRANCO, 0.32, 0.7)
 	mat.cinza = _plastico(Color("3e4352"), 0.35, 0.4)
 	mat.cinza.metallic = 0.3
 	mat.laranja = _plastico(Color("ff7a22"), 0.45, 0.5)
 	pintar(cor_da_tinta, _tinta_metal)
+	# O brilho azul da carga do giro forte (brilho): a emissão já fica ligada, apagada, para não recompilar no meio do jogo.
+	for m: StandardMaterial3D in [mat.branco, mat.laranja]:
+		m.emission_enabled = true
+		m.emission = COR_LED
+		m.emission_energy_multiplier = 0.0
 	# Prata meio metálica: bem metálico, sem céu para refletir (estúdio, sala escura), fica preto.
 	mat.cromo = _plastico(Color("dfe3ec"), 0.24, 0.8)
 	mat.cromo.metallic = 0.55

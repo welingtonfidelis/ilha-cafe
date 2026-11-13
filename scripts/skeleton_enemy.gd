@@ -269,7 +269,7 @@ func _ready() -> void:
 		visual.position.y = -2.0 * _size
 		var tw := create_tween()
 		tw.tween_property(visual, "position:y", 0.0, 1.2).set_ease(Tween.EASE_OUT)
-		Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+		Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.2, Color("b08a62"), 1.6, 12)
 	elif from_crack:
 		# A animação de sair do chão tem 3,6 s: tocada 1,6x mais rápida para a onda não demorar.
 		_enter(State.ACORDANDO, "")
@@ -278,7 +278,7 @@ func _ready() -> void:
 		visual.position.y = -1.2
 		var tw := create_tween()
 		tw.tween_property(visual, "position:y", 0.0, 0.6).set_ease(Tween.EASE_OUT)
-		Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+		Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.2, Color("b08a62"), 1.2, 10)
 	elif start_awake:
 		_enter(State.ACORDANDO, "especial/Skeletons_Awaken_Floor")
 	else:
@@ -292,7 +292,7 @@ func sink_away() -> void:
 	_enter(State.AFUNDANDO, "especial/Skeletons_Death")
 	velocity = Vector3.ZERO
 	collision_mask = 0
-	Fx.dust(get_parent(), global_position + Vector3.UP * 0.3)
+	Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.3, Color("b08a62"), 1.2, 10)
 	var tw := create_tween()
 	tw.tween_interval(0.3)
 	tw.tween_property(visual, "position:y", -2.6, 0.9).set_ease(Tween.EASE_IN)
@@ -662,7 +662,7 @@ func _strike(dist: float, to_target: Vector3) -> void:
 			var forward := visual.global_basis.z
 			var center := global_position + forward * 1.8 * _size
 			Sfx.play_at(get_parent(), "pancada", center)
-			Fx.dust(get_parent(), center + Vector3.UP * 0.3)
+			Particulas.poeira(get_parent(), center + Vector3.UP * 0.3, Color("b08a62"), 1.6, 12)
 			var wave := Boss.Shockwave.new()
 			wave.target = target
 			wave.max_radius = 9.0
@@ -732,6 +732,7 @@ func _burst() -> void:
 			get_parent().add_child(dart)
 			if is_instance_valid(_muzzle):
 				Fx.muzzle_flash(_muzzle)
+				Particulas.clarao(get_parent(), _muzzle.global_position, Color("8fd8ff"), 0.6)
 			Sfx.play_at(get_parent(), "tiro", from, -6.0))
 
 
@@ -761,7 +762,7 @@ func _leap_step(_delta: float) -> void:
 	if not _hit_done:
 		_hit_done = true
 		ap.play(_anim("mov/Jump_Land"), 0.1)
-		Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+		Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.2, Color("b08a62"), 1.1, 8)
 		if is_instance_valid(target) and target.global_position.distance_to(global_position) < 1.8:
 			target.take_damage(1, global_position, name)
 	if _state_time > LEAP_TIME + config.recover:
@@ -835,7 +836,8 @@ func _vanish() -> void:
 	_set_hittable(false)
 	visual.visible = false
 	_blink_spot = Vector3.INF
-	Fx.confetti(get_parent(), global_position + Vector3.UP * 1.2, 40, 4.0)
+	# Some num círculo mágico roxo (e volta noutro, perto de quem joga).
+	Particulas.magia(get_parent(), global_position + Vector3.UP * 1.2, Color("b89bff"))
 	Sfx.play_at(get_parent(), "estouro", global_position + Vector3.UP)
 
 
@@ -860,7 +862,7 @@ func _blink_step(to_target: Vector3) -> void:
 		look.y = 0.0
 		if look.length() > 0.01:
 			visual.rotation.y = atan2(look.x, look.z)
-		Fx.confetti(get_parent(), global_position + Vector3.UP * 1.2, 40, 4.0)
+		Particulas.magia(get_parent(), global_position + Vector3.UP * 1.2, Color("b89bff"))
 		Sfx.play_at(get_parent(), "estouro", global_position + Vector3.UP)
 		_blink_cooldown = 4.5
 		_start_attack()
@@ -921,6 +923,8 @@ func _enter(new_state: State, anim_name: String, speed := 1.0) -> void:
 		_set_hittable(false)
 		if is_inside_tree():
 			Sfx.play_at(get_parent(), "remontar", global_position + Vector3.UP, -3.0)
+			# Os ossos se juntando num redemoinho.
+			Particulas.redemoinho(get_parent(), global_position + Vector3.UP * 1.0)
 	elif new_state in [State.INDO_EMBORA, State.DORMINDO, State.AFUNDANDO]:
 		_set_hittable(false)
 
@@ -941,7 +945,7 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 	if config.get("shield", false) and covered and state != State.PREPARANDO and state != State.ATACANDO and _dazed <= 0.0:
 		var from_front := visual.global_basis.z.dot((point - global_position).normalized()) > 0.2
 		if from_front:
-			Fx.dust(get_parent(), point)
+			Particulas.poeira(get_parent(), point, Color("c9d1dc"), 0.6, 4)
 			Fx.popup_text(get_parent(), point + Vector3.UP * 0.3, "bloqueou!", Color("#c9d1dc"))
 			Sfx.play_at(get_parent(), "escudo", point)
 			return

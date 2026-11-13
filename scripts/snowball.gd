@@ -82,8 +82,9 @@ func _physics_process(delta: float) -> void:
 	_fill.scale = Vector3(k, 1, k)
 	if k < 1.0:
 		return
-	Fx.dust(get_parent(), _to + Vector3.UP * 0.3)
-	Fx.confetti(get_parent(), _to + Vector3.UP * 0.4, 30, 4.0)
+	# O puf de neve.
+	Particulas.puf(get_parent(), _to + Vector3.UP * 0.4, Color("f4fbff"), 1.1, false)
+	Particulas.poeira(get_parent(), _to + Vector3.UP * 0.2, Color("e8f4ff"), 1.0, 8)
 	Sfx.play_at(get_parent(), "pancada", _to, -2.0)
 	if is_instance_valid(target):
 		var d := Vector2(target.global_position.x - _to.x, target.global_position.z - _to.z).length()

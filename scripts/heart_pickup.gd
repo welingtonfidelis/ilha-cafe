@@ -43,7 +43,7 @@ func _physics_process(delta: float) -> void:
 		var who: Player = (body as Jogador).crianca if body is Jogador else body as Player
 		if is_instance_valid(who) and who.heal(1):
 			Sfx.play(get_parent(), "coracao")
-			Fx.confetti(get_parent(), global_position + Vector3.UP, 20, 3.5)
+			Particulas.coracoes(get_parent(), global_position + Vector3.UP)
 			Fx.popup_text(get_parent(), global_position + Vector3.UP * 1.8, "+1", Color("#ff4d6d"))
 			queue_free()
 			return

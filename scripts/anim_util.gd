@@ -28,6 +28,8 @@ const LOOPING := [
 	"Cheering", "Waving", "Melee_Blocking", "Melee_Unarmed_Idle", "Melee_2H_Idle",
 	"Ranged_Magic_Spellcasting", "Sit_Chair_Idle", "Sit_Floor_Idle", "Lie_Idle", "Holding_A", "Holding_B",
 	"Holding_C", "Working_A", "Working_B", "Working_C", "Hammering", "Digging", "Fishing_Idle", "Chopping", "Melee_Blocking", "Ranged_Bow_Aiming_Idle",
+	# As flexões e os abdominais das animações de espera (2026-11-13): cada uma é uma repetição só.
+	"Push_Ups", "Sit_Ups",
 ]
 
 static var _cache := {}

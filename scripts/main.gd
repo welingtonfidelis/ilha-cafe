@@ -711,6 +711,12 @@ func _ready() -> void:
 	elif "--vozes" in args:
 		select_panel.hide()
 		_run_voices_test()
+	elif "--espera" in args:
+		select_panel.hide()
+		_run_waiting_test()
+	elif "--espera-captura" in args:
+		select_panel.hide()
+		_run_waiting_capture()
 	elif "--dualsense" in args:
 		select_panel.hide()
 		_run_dualsense_test()
@@ -1177,7 +1183,8 @@ func _physics_process(_delta: float) -> void:
 func _splash() -> void:
 	_splashing = true
 	Fx.bubble_pop(self, player.global_position + Vector3.UP * 0.8)
-	Fx.confetti(self, player.global_position + Vector3.UP * 0.8, 20, 4.0)
+	# O respingo: um puf azul-claro de água.
+	Particulas.puf(self, player.global_position + Vector3.UP * 0.8, Color("bfe8ff"), 1.2, false)
 	Sfx.play(self, "splash", 0.0, 0.0)
 	Fx.popup_text(self, player.global_position + Vector3.UP * 2.0, "Tchibum!", Color("#9fdcff"))
 	var tw := fade.create_tween()
@@ -1913,7 +1920,7 @@ func _som_de_chegada(target: Vector3) -> void:
 		return
 	_chegou_em = target
 	Sfx.play(self, "estrelinha", -2.0, 0.0)
-	Fx.confetti(self, player.global_position + Vector3.UP * 2.2, 14, 2.5)
+	Particulas.estrelinha(self, player.global_position + Vector3.UP * 2.2, 0.8)
 
 
 ## Modo Fácil (Ajustes): fora de luta, os corações voltam sozinhos, um a cada REGEN_FACIL segundos.
@@ -5728,6 +5735,107 @@ func _run_objective_test() -> void:
 	await _wait(0.2)
 	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
 	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Animações de espera do menino e da menina (Espera, pedido do usuário em 2026-11-13): parado sem mexer no controle,
+## olha em volta, brinca sozinho com os blasters guardados (acena para a câmera, flexões, abdominais, senta no chão),
+## deita e dorme soltando os "z"; mexer acorda na hora e o blaster volta para a mão. O teste adianta o relógio.
+## Uso: godot --headless --path . -- --espera
+func _run_waiting_test() -> void:
+	var all_ok := true
+	await _wait(0.5)
+	close_menus()
+	player.god_mode = true
+	await _wait(1.0)
+	all_ok = _check("parado há pouco, sem espera", player.espera_atual() == "" and player._espera_estado == "jogo",
+			"(%s, %.1f s)" % [player.espera_atual(), player.tempo_parado()]) and all_ok
+	player._espera.parado = Espera.OLHAR - 0.05
+	await _wait(0.2)
+	all_ok = _check("com %d s parado, olha em volta" % int(Espera.OLHAR), player.espera_atual() == "olhar" and player._espera_estado == "olhar",
+			"(%s)" % player.espera_atual()) and all_ok
+	await _wait_until(func() -> bool: return player.espera_atual() == "", 3.0)
+	player._espera.parado = Espera.BRINCAR - 0.05
+	await _wait(0.2)
+	var b := player.espera_atual()
+	all_ok = _check("com %d s parado, brinca sozinho com o blaster guardado" % int(Espera.BRINCAR), b in player._espera.brincadeiras
+			and not player._recoil.visible, "(%s)" % b) and all_ok
+	# Mexer na câmera (o analógico direito) não acorda.
+	var yaw_antes := player.get_yaw()
+	Input.action_press("olhar_direita")
+	await _wait(0.3)
+	Input.action_release("olhar_direita")
+	all_ok = _check("mexer na câmera não para a brincadeira", player.espera_atual() == b and absf(angle_difference(yaw_antes, player.get_yaw())) > 0.1,
+			"(%s)" % player.espera_atual()) and all_ok
+	Input.action_press("frente")
+	await _wait(0.15)
+	Input.action_release("frente")
+	all_ok = _check("andando, a brincadeira para na hora e o blaster volta para a mão", player.espera_atual() == "" and player._recoil.visible
+			and player._espera_estado == "jogo") and all_ok
+	await _wait(0.8)
+	for nome: String in player._espera.brincadeiras:
+		player.velocity = Vector3.ZERO
+		await _wait(0.3)
+		player._espera.parado = 12.0
+		player._espera.comecar(nome)
+		var total := 0.0
+		for passo: Array in Espera.PASSOS[nome]:
+			total += float(passo[1])
+		var entradas := {}
+		var t := 0.0
+		while t < total + 0.4 and player.espera_atual() == nome:
+			entradas[player._espera_estado] = true
+			await get_tree().physics_frame
+			t += get_physics_process_delta_time()
+		var esperadas: Array = Espera.PASSOS[nome].map(func(passo: Array) -> String: return Player.ESPERA_ENTRADAS[passo[0]])
+		all_ok = _check("a brincadeira \"%s\" toca as animações dela, termina e devolve o blaster" % nome,
+				esperadas.all(func(e: String) -> bool: return entradas.has(e)) and player.espera_atual() == "" and player._recoil.visible,
+				"(%s)" % ", ".join(entradas.keys())) and all_ok
+	player._espera.parado = Espera.DORMIR
+	await _wait(0.2)
+	all_ok = _check("com %d s parado, deita" % int(Espera.DORMIR), player.espera_atual() == "dormir" and player._espera_estado == "deita") and all_ok
+	await _wait(3.4)
+	var zs := player.get_parent().get_children().filter(func(c: Node) -> bool: return c is Label3D)
+	all_ok = _check("deitado, dorme e solta os \"z\"", player._espera_estado == "dormindo" and not zs.is_empty(), "(%d z)" % zs.size()) and all_ok
+	Input.action_press("pular")
+	await _wait(0.05)
+	Input.action_release("pular")
+	await _wait(0.05)
+	all_ok = _check("um botão acorda na hora", player.espera_atual() == "" and player._espera_estado == "jogo" and player._recoil.visible) and all_ok
+	player._espera.parado = 20.0
+	player.respawn(player.global_position)
+	all_ok = _check("reaparecer zera a espera", player.tempo_parado() == 0.0 and player.espera_atual() == "") and all_ok
+	print("ESPERA OK" if all_ok else "ESPERA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos das esperas do menino e da menina, de frente (precisa de janela). Uso: godot --path . -- --espera-captura
+func _run_waiting_capture() -> void:
+	await _wait(0.5)
+	close_menus()
+	player.god_mode = true
+	var fotos := [["acenar", 1.4], ["flexoes", 1.2], ["abdominais", 0.9], ["sentar", 2.5], ["dormir", 4.6]]
+	var n := 0
+	for quem: String in ["menina", "menino"]:
+		player.set_character(quem)
+		await _wait(0.6)
+		for f: Array in fotos:
+			player.velocity = Vector3.ZERO
+			player._espera.acordar()
+			await _wait(0.4)
+			var p := player.global_position
+			var frente := Vector3(sin(player.visual.rotation.y), 0, cos(player.visual.rotation.y))
+			player._espera.parado = Espera.DORMIR if f[0] == "dormir" else 12.0
+			if f[0] != "dormir":
+				player._espera.comecar(f[0])
+			await _wait(f[1])
+			# Acenando, ela vira para a câmera do jogo: a foto vem de trás da câmera.
+			if f[0] == "acenar":
+				frente = Vector3(sin(player.visual.rotation.y), 0, cos(player.visual.rotation.y))
+			var lado := frente.cross(Vector3.UP)
+			n += 1
+			await _art_shot("res://tools/capturas/espera_%02d_%s_%s.png" % [n, quem, f[0]], Vector2i(960, 720),
+					p + frente * 3.0 - lado * 1.6 + Vector3.UP * 2.6, p + Vector3.UP * 0.7, 50.0)
 	get_tree().quit()
 
 

@@ -172,6 +172,6 @@ func pop() -> void:
 		Fx.bubble_pop(get_parent(), global_position)
 		Sfx.play_at(get_parent(), "estouro", global_position)
 	else:
-		Fx.dust(get_parent(), global_position)
+		Particulas.poeira(get_parent(), global_position, Color("9a9488"), 0.6, 4)
 		Sfx.play_at(get_parent(), "ventosa", global_position)
 	queue_free()

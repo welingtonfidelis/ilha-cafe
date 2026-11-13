@@ -124,7 +124,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 			_hop_timer = HOP_EVERY
 			_hopping = true
 			velocity.y = HOP_SPEED
-			Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+			Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.2, Color("b08a62"), 1.4, 12)
 
 
 func _top() -> Dictionary:

@@ -63,7 +63,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 				hide_alert()
 				shockwave(global_position + forward() * 2.0, WAVE_RADIUS, WAVE_SPEED)
 				Sfx.play_at(get_parent(), "pancada", global_position)
-				Fx.dust(get_parent(), global_position + forward() * 2.0)
+				Particulas.poeira(get_parent(), global_position + forward() * 2.0, Color("b08a62"), 1.4, 12)
 				if is_instance_valid(target):
 					target.shake(0.35)
 			if _move_time >= SLAM_END:

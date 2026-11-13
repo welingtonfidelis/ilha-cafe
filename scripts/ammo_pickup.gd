@@ -50,7 +50,7 @@ func _physics_process(delta: float) -> void:
 		_hidden_time -= delta
 		if _hidden_time <= 0.0:
 			_visual.visible = true
-			Fx.confetti(get_parent(), global_position + Vector3.UP * 0.6, 12, 2.5)
+			Particulas.estrelinha(get_parent(), global_position + Vector3.UP * 0.6, 0.7)
 		return
 	_time += delta
 	_visual.rotation.y += delta * 1.2

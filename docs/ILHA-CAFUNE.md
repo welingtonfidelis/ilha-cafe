@@ -2330,7 +2330,7 @@ Pedido do usuário depois de construir a 3-3: "vamos planeja a ultima fase, talv
 
 ### Partículas do Kenney no Faísca (2026-11-13)
 
-O próximo passo depois do merge na main, combinado em 2026-11-11, era testar o Kenney Particle Pack. O usuário perguntou onde usar e liberou o download ("Pode baixar"): `kenney_particle-pack.zip`, versão 1.1, CC0, com uns 15 MB. Ele está em `Projects/others/kenney-particle-pack`, com as 80 imagens de 512 x 512. As 32 escolhidas ficam em `assets/fx/kenney/`, junto com a licença.
+O próximo passo depois do merge na main, combinado em 2026-11-11, era testar o Kenney Particle Pack. O usuário perguntou onde usar e liberou o download ("Pode baixar"): `kenney_particle-pack.zip`, versão 1.1, CC0, com uns 15 MB. Ele está em `Projects/others/kenney-particle-pack`, com as 80 imagens de 512 x 512. As escolhidas ficam em `assets/fx/kenney/`, junto com a licença: eram 31, e o giro no jeito do Astro (seção seguinte) trouxe mais 3 (`slash_04`, `circle_03` e `light_01`).
 - **O pacote:** 18 tipos, entre eles fumaça, faísca (raios elétricos), estrela, coração e estrela de "símbolo", círculo mágico, espiral, rastro, poeira, clarão de tiro e estouros pontudos ("queimado", que aqui vira o "pow!"). Fogo e chama ficam de fora, pelo tema infantil.
 - **A classe `Particulas`** (`scripts/particulas.gd`): cada efeito são jatos de `CPUParticles3D` com quadradinhos virados para a câmera, coloridos por código.
   - As formas (estrela, faísca, coração, pow, fumaça) cobrem o fundo em vez de somar luz: somando, o branco sumia contra o céu claro das fases de dia.
@@ -2348,7 +2348,54 @@ O próximo passo depois do merge na main, combinado em 2026-11-11, era testar o 
   - os poderes (o balão, o ioiô, a luva, o martelinho, a pipa e as cápsulas da nave) e o Faisquinha saindo da bolha: o círculo mágico na cor de cada um;
   - o vendaval da 3-3 e o aspirador do Rei: redemoinhos.
 - **Fotos no jogo:** `--faisca-particulas-captura` (`teste_particulas.gd`) tira fotos dentro da 1-1, com uma câmera de lado: o soco, a Bolota estourando, a estrelinha, a poeira do pouso, o giro, o coração e o curto. As fotos ficam em `tools/capturas/faisca/particulas/`. A bateria do Faísca passou inteira depois da troca.
-- **Na Ilha Cafuné:** ainda não. A ideia é o clarão dos blasters, as faíscas no acerto, o esqueleto remontando com redemoinho, os fogos e os balões.
+- **Na Ilha Cafuné** (pedido do usuário no mesmo dia: "no outro jogo, ilha cafune, vamos colocar os efeitos que se encaixam também"):
+  - o clarão na boca dos blasters, na cor da arma, e no tiro dos esqueletos;
+  - o dardo acertando: o confete continua (é a marca da Ilha), com um "pow!" pequeno junto, maior no acerto na cabeça; no golpe de perto também;
+  - o tiro no cenário, o escudo que bloqueia e a ventosa estourando: uma poeirinha cinza no lugar das bolinhas;
+  - a poeira de terra dos esqueletos e dos chefes saindo do chão, afundando, pousando e batendo no chão (e na entrega do balão);
+  - o esqueleto que some e reaparece: o círculo mágico roxo;
+  - o esqueleto acordando: um redemoinho dos ossos se juntando;
+  - o coração pego: os coraçõezinhos; a munição voltando e chegar no objetivo: as estrelinhas;
+  - o respingo do mar: um puf azul-claro; a bola de neve acertando: um puf branco;
+  - a granada de confete: o confete continua, com uma nuvem branca grande junto;
+  - os fogos de artifício (`Fx._burst`, também na festa e na copa de kart): o clarão e as estrelas na cor do fogo;
+  - o veículo voltando para a vaga: um círculo mágico azul.
+
+  O confete das festas, dos prêmios, dos esqueletos indo embora de balão e dos chefes vencidos ficou como estava.
+
+### Giro, soco e espera no jeito do Astro (2026-11-13)
+
+Pedido: "analisa esse video, nota os efeitos de giro, golpes, movimentaçao do astro bot. Gostaria de algo mais fluido nesse estilo no nosso faisca", com um vídeo do Astro Bot no YouTube, e "animaçoes pro faisca e o menino e menina na ilha quando eles ficam algum tempo sem movimento/interaçao do jogador".
+
+- **O que o vídeo mostra:**
+  - o Astro carregando o giro acende o corpo de azul, com brilhinhos rodando para dentro;
+  - soltando, gira com um disco claro na cintura (miolo branco, borda azul) e riscos em meia-lua;
+  - os socos têm uma paradinha no acerto e faíscas brancas pequenas.
+- **No Faísca** (`jogador.gd`, `robo.gd` e efeitos novos na `Particulas`):
+  - **carga do giro forte:** o corpo vai ficando azul (`Robo.brilho`: o branco tinge e a emissão acende; só a emissão não aparecia no plástico quase branco), com brilhinhos vindo de longe e rodando para o corpo (`Particulas.carga`). O anel dourado do alcance continua no chão;
+  - **soltando:** um clarão azul (`carga_cheia`), a onda no chão com a poeira saindo em roda (`onda_no_chao`) e uma sacudida na câmera;
+  - **girando:** o disco do Astro (`disco_do_giro`: anel claro, brilho fraquinho por dentro e dois riscos em meia-lua por cima) no lugar do anel azul achatado. Ele gira junto, pulsa e encolhe no fim. O giro ficou mais rápido (3,2 voltas por segundo; eram 2,6), com o corpo apagando e poeirinha nos pés;
+  - **tontinho depois:** quatro estrelinhas amarelas rodando em cima do capacete (`tontura`; o capacete acaba lá pelos 2,3 m);
+  - **giro no ar:** o mesmo disco, menor, abrindo e fechando rápido;
+  - **soco:** o "zuim", um risco em meia-lua do lado do braço que soca, virado para a câmera (`zuim`). Deitado na frente do punho, a câmera de trás não via: o corpo tapava. O terceiro soco sai maior e dourado;
+  - **acerto:** o soco que pega dá a paradinha do Astro, o jogo todo a 10% por 0,05 s (o forte, 0,075 s; `_paradinha`), e sacode a câmera. A sacudida anda no tempo de verdade, pelo deslocamento da câmera, sem sorteio. O giro e o pisão só sacodem;
+  - **pouso de muito alto** (caindo a mais de 16 m/s; a descida de um pulo dá uns 13): a onda no chão e uma sacudidinha;
+  - **o voo continua só com o laser,** como o usuário pediu em 2026-10-29: o jato nos pés do Astro ficou de fora.
+- **Animações de espera** (a classe `Espera`, em `scripts/espera.gd`, usada pelo Faísca e pelas crianças). Parado, sem ninguém mexer no controle:
+  - aos 5 s, olha em volta (`Idle_B`);
+  - aos 10 s e depois a cada uns 7 s, uma brincadeira sorteada, sem repetir a última: acenar virado para a câmera, flexões, abdominais, sentar no chão (senta, fica e levanta) e, só no Faísca, a dancinha de robô sem som, com as notinhas;
+  - aos 34 s deita e dorme, de olhos fechados, com os "z" azuis subindo da cabeça (`Particulas.zzz`).
+
+  Qualquer coisa acorda na hora: analógico, botão, sair do chão, levar golpe, perder o controle. Mexer na câmera (o analógico direito, as setas de olhar e o mouse) não acorda: na primeira versão acordava, e o usuário pediu "mover o analogico direito (mudar camera) nao deve parar a animaçao idle". Por isso a conta não usa o `Input.is_anything_pressed`, que conta o analógico direito como as ações "olhar_" (`Espera.apertando_algo`). Acordando do sono, o Faísca faz cara de surpreso. Teleportar e reaparecer também zeram o relógio.
+  - As flexões e os abdominais do KayKit são uma repetição só; entraram na lista de animações que repetem (`AnimUtil.LOOPING`).
+  - **No menino e na menina** (`player.gd`), a árvore de animação ganhou uma transição `espera` por cima de tudo, com uma entrada por animação. Brincando ou dormindo, os blasters ficam guardados e voltam para a mão ao acordar.
+- **Testes:**
+  - `--faisca-espera` (23 conferências) e `--espera` na Ilha (13) adiantam o relógio até perto de cada momento, e conferem que girar a câmera no meio de uma brincadeira não para ela;
+  - o `--faisca-controle` ganhou folga no combo, porque a paradinha de cada soco que pega atrasa o terceiro um pouquinho.
+- **Fotos** (com janela):
+  - `--faisca-giro-captura` (carga, carga solta, giro forte, tontura, zuim, zuim forte, giro no ar e pouso alto), em `tools/capturas/faisca/particulas/08_` a `14_`;
+  - `--faisca-espera-captura`, em `tools/capturas/faisca/espera/`;
+  - `--espera-captura` na Ilha (menina e menino), em `tools/capturas/espera_*.png`.
 
 ### Lista de melhorias e novidades do Faísca (2026-11-11)
 

@@ -211,7 +211,7 @@ func _physics_process(delta: float) -> void:
 	for v in vehicles:
 		if v != kart and is_instance_valid(v) and not v.is_home() and not is_rival(v):
 			if v.global_position.distance_to(player.global_position) > RETURN_DISTANCE:
-				Fx.confetti(game, v.global_position + Vector3.UP, 20, 3.0)
+				Particulas.magia(game, v.global_position + Vector3.UP, Color("4a90e2"))
 				v.go_home()
 	match state:
 		"a_pe":
@@ -443,7 +443,7 @@ func _send_rivals_home() -> void:
 	for r in rivals:
 		var v: Kart = r.kart
 		if is_instance_valid(v):
-			Fx.confetti(game, v.global_position + Vector3.UP, 20, 3.0)
+			Particulas.magia(game, v.global_position + Vector3.UP, Color("4a90e2"))
 			v.go_home()
 	rivals.clear()
 

@@ -49,6 +49,7 @@ func explode() -> void:
 	var world := get_parent()
 	var radius: float = Weapons.GRENADE.raio
 	Fx.confetti(world, center + Vector3.UP * 0.3, 110, 9.0)
+	Particulas.puf(world, center + Vector3.UP * 0.6, Color(0.96, 0.95, 1.0, 0.9), 2.0, false)
 	Fx.shockwave(world, center, radius)
 	Sfx.play_at(world, "granada", center)
 	if thrower is Player:

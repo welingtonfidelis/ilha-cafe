@@ -30,6 +30,12 @@ const CHARACTERS := {
 	"menina": "res://assets/characters/protagonists/Protagonist_A.glb",
 }
 const CAMERA_LENGTH := 5.5
+## Cada animação das esperas (Espera.PASSOS, sem a dancinha do Faísca) e a entrada dela na árvore de animação.
+const ESPERA_ENTRADAS := {
+	"geral/Idle_B": "olhar", "festa/Waving": "acenar", "festa/Push_Ups": "flexoes", "festa/Sit_Ups": "abdominais",
+	"festa/Sit_Floor_Down": "senta", "festa/Sit_Floor_Idle": "sentado", "festa/Sit_Floor_StandUp": "levanta",
+	"festa/Lie_Down": "deita", "festa/Lie_Idle": "dormindo",
+}
 const CAMERA_LENGTH_AIM := 3.4
 const CAMERA_LENGTH_SCOPE := 2.6
 ## Instante das animações de mira do KayKit em que o braço está estendido (medido amostrando a mão):
@@ -176,6 +182,10 @@ var _phone: Node3D
 ## Pescaria na ponta do cais (item 5 da lista de melhorias): a vara do KayKit na mão direita, os blasters guardados
 ## e o corpo na pose de pescar (Fishing_Idle). A Pescaria cuida da linha, da boia e do peixe.
 var pescando := false
+## As animações de espera (Espera): olha em volta, acena, faz flexões, abdominais, senta no chão e dorme.
+var _espera := Espera.new(["acenar", "flexoes", "abdominais", "sentar"])
+var _espera_estado := "jogo"
+var _espera_z := 0.0
 var vara: Node3D
 ## Roupinhas da lojinha (item 11 da lista de melhorias): o chapéu na cabeça e a pintura dos blasters (vazio: nenhum).
 var chapeu := ""
@@ -208,6 +218,8 @@ func _ready() -> void:
 	visual.name = "Visual"
 	visual.rotation.y = PI  # começa de costas para a câmera
 	add_child(visual)
+	_espera.comecou.connect(_ao_comecar_espera)
+	_espera.acabou.connect(_ao_acabar_espera)
 	_build_camera()
 	_build_stars()
 	hearts = max_hearts
@@ -302,9 +314,12 @@ func _install_model(new_model: Node3D) -> void:
 	AnimUtil.add_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_1H")
 	AnimUtil.add_pose("tiro", "Ranged_2H_Aiming", AIM_POSE_2H, "Pose_2H")
 	AnimUtil.add_mirrored_pose("tiro", "Ranged_1H_Aiming", AIM_POSE_1H, "Pose_Dual", model.find_child("Skeleton3D", true, false))
-	var ap := AnimUtil.make_player(rig, ["geral", "mov", "mov2", "tiro", "luta", "ferramentas"])
+	var ap := AnimUtil.make_player(rig, ["geral", "mov", "mov2", "tiro", "luta", "ferramentas", "festa"])
 	anim_tree = _build_anim_tree(rig, ap)
 	_air_state = ""
+	# A árvore nova começa sem espera.
+	_espera.acordar()
+	_espera_estado = "jogo"
 	var sk: Skeleton3D = model.find_child("Skeleton3D", true, false)
 	_hand = BoneAttachment3D.new()
 	_hand.name = "MaoDireita"
@@ -353,6 +368,47 @@ func _install_model(new_model: Node3D) -> void:
 	reloading = false
 	if robo_skin:
 		_show_blasters(false)
+
+
+# --- espera (parado sem mexer no controle) ---------------------------------------------
+
+func _atualizar_espera(delta: float, control: bool, input: Vector2) -> void:
+	# Mexer na câmera não acorda (pedido do usuário em 2026-11-13).
+	var mexeu := not control or input.length() > 0.1 or Espera.apertando_algo() or not is_on_floor() \
+			or Vector2(velocity.x, velocity.z).length() > 0.5 or aiming or _aim_hold > 0.0 or in_vehicle or pescando \
+			or using_phone or dizzy or reloading or force_aim or force_fire
+	_espera.atualizar(delta, mexeu)
+	match _espera.nome:
+		"acenar":
+			# Acena para a câmera.
+			var d := camera.global_position - global_position
+			visual.rotation.y = lerp_angle(visual.rotation.y, atan2(d.x, d.z), 1.0 - exp(-6.0 * delta))
+		"dormir":
+			if _espera.passo == 1 and is_instance_valid(_head):
+				_espera_z -= delta
+				if _espera_z <= 0.0:
+					_espera_z = 1.1
+					Particulas.zzz(get_parent(), _head.global_position + Vector3.UP * 0.6, camera.global_basis.x, fmod(_espera.parado, 3.3) < 1.1)
+
+
+## Brincando ou dormindo, os blasters ficam guardados (o Faísca de fantasia já não tem).
+func _ao_comecar_espera(_nome: String) -> void:
+	_espera_z = 0.0
+	_show_blasters(false)
+
+
+func _ao_acabar_espera(_nome: String, _acordou: bool) -> void:
+	if not (robo_skin or pescando or using_phone):
+		_show_blasters(true)
+
+
+## Há quanto tempo está parado sem ninguém mexer no controle, e a espera tocando ("" é nenhuma).
+func tempo_parado() -> float:
+	return _espera.parado
+
+
+func espera_atual() -> String:
+	return _espera.nome
 
 
 func _anim(anim_name: String) -> AnimationNodeAnimation:
@@ -475,7 +531,22 @@ func _build_anim_tree(root: Node, ap: AnimationPlayer) -> AnimationTree:
 	bt.connect_node(&"estado", 0, &"golpe")
 	bt.connect_node(&"estado", 1, &"anim_tonto")
 
-	bt.connect_node(&"output", 0, &"estado")
+	# As animações de espera (Espera, 2026-11-13): o corpo todo, por cima de tudo, só com ele parado sem mexer em nada.
+	var waiting := AnimationNodeTransition.new()
+	waiting.xfade_time = 0.3
+	waiting.input_count = 1 + ESPERA_ENTRADAS.size()
+	waiting.set_input_name(0, "jogo")
+	bt.add_node(&"espera", waiting, Vector2(2000, 100))
+	bt.connect_node(&"espera", 0, &"estado")
+	var k := 1
+	for anim_name: String in ESPERA_ENTRADAS:
+		var input_name: String = ESPERA_ENTRADAS[anim_name]
+		waiting.set_input_name(k, input_name)
+		bt.add_node(StringName("anim_espera_" + input_name), _anim(anim_name), Vector2(1750, 300 + 150 * k))
+		bt.connect_node(&"espera", k, StringName("anim_espera_" + input_name))
+		k += 1
+
+	bt.connect_node(&"output", 0, &"espera")
 	tree.tree_root = bt
 	tree.active = true
 	return tree
@@ -718,6 +789,7 @@ func _physics_process(delta: float) -> void:
 		fire()
 
 	_update_invulnerability(delta)
+	_atualizar_espera(delta, control, input)
 	_update_animation(delta)
 	_update_recoil(delta)
 	_update_shake(delta)
@@ -1119,6 +1191,8 @@ func _discharge(def: Dictionary, from: Marker3D, left: bool) -> void:
 		hit_target = _shoot_ray(_spread_dir(def.espalha + dual_spread()), def, from) or hit_target
 	if is_instance_valid(from):
 		Fx.muzzle_flash(from)
+		# O clarão na boca do blaster, na cor da arma (Kenney Particle Pack, 2026-11-13).
+		Particulas.clarao(get_parent(), from.global_position, def.cor, 0.7)
 	Sfx.play(get_parent(), def.som, -3.0)
 	if hit_target:
 		rumble(0.45, 0.25, 0.12)
@@ -1159,10 +1233,14 @@ func _shoot_ray(dir: Vector3, def: Dictionary, from_muzzle: Marker3D) -> bool:
 			hb.receive_hit(damage, end)
 			hit_confirmed.emit(hb.region, damage * hb.multiplier)
 			var amount: int = (30 if hb.multiplier > 1.0 else 16) / def.tiros + 4
-			impact = func() -> void: Fx.confetti(world, end, amount, 5.0)
+			# O tamanho do "pow!" sai agora: quando o dardo chega, o esqueleto (e a caixa dele) pode já ter ido embora.
+			var pow_ := 0.9 if hb.multiplier > 1.0 else 0.6
+			impact = func() -> void:
+				Fx.confetti(world, end, amount, 5.0)
+				Particulas.soco(world, end, pow_)
 			hit_target = true
 		else:
-			impact = func() -> void: Fx.dust(world, end)
+			impact = func() -> void: Particulas.poeira(world, end, Color("9a9488"), 0.6, 4)
 	# O acerto já foi; o dardo de espuma só desenha o tiro e solta o confete (ou a poeira) quando chega.
 	if is_instance_valid(from_muzzle):
 		Fx.foam_dart(world, from_muzzle.global_position, end, def.cor, impact)
@@ -1333,6 +1411,7 @@ func _melee_strike() -> int:
 		hb.receive_hit(Weapons.MELEE.dano, point)
 		hit_confirmed.emit(hb.region, Weapons.MELEE.dano * hb.multiplier)
 		Fx.confetti(world, point, 22, 5.0)
+		Particulas.soco(world, point, 0.8)
 	for node in world.get_children():
 		if (node is Projectile and node.kind == Projectile.Kind.BOLHA) or node is BossMestre.ShieldBubble:
 			if (node as Node3D).global_position.distance_to(center) < Weapons.MELEE.raio + 0.8:
@@ -1467,6 +1546,7 @@ func _become_dizzy() -> void:
 func respawn(at: Vector3) -> void:
 	global_position = at
 	velocity = Vector3.ZERO
+	_espera.acordar()
 	_knockback = Vector3.ZERO
 	hearts = max_hearts
 	dizzy = false
@@ -1562,6 +1642,10 @@ func _update_animation(delta: float) -> void:
 	var want := 1.0 if (aiming or _aim_hold > 0.0) else 0.0
 	_aim_amount = move_toward(_aim_amount, want, delta * 8.0)
 	anim_tree.set("parameters/mira/blend_amount", _aim_amount)
+	var waiting: String = "jogo" if _espera.nome == "" else ESPERA_ENTRADAS.get(_espera.anim(), "jogo")
+	if waiting != _espera_estado:
+		_espera_estado = waiting
+		anim_tree.set("parameters/espera/transition_request", waiting)
 
 
 ## Aponta a câmera para um ponto do mundo (usado pela captura automática).

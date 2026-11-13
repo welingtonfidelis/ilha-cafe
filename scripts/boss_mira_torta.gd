@@ -71,7 +71,7 @@ func _fight(delta: float, to_target: Vector3, dist: float) -> void:
 		Move.PULANDO:
 			if _move_time > 0.2 and is_on_floor():
 				move(Vector3.ZERO)
-				Fx.dust(get_parent(), global_position + Vector3.UP * 0.2)
+				Particulas.poeira(get_parent(), global_position + Vector3.UP * 0.2, Color("b08a62"), 1.3, 10)
 				_move = Move.POUSO
 				_move_time = 0.0
 

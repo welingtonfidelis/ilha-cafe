@@ -309,6 +309,8 @@ static func firework(parent: Node, from: Vector3, height: float, color: Color) -
 
 
 static func _burst(parent: Node, pos: Vector3, color: Color) -> void:
+	# O clarão e as estrelas do Kenney Particle Pack por cima das bolinhas de sempre (2026-11-13).
+	Particulas.fogos(parent, pos, color)
 	var p := CPUParticles3D.new()
 	p.one_shot = true
 	p.emitting = false
