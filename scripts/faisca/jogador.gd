@@ -110,7 +110,9 @@ const TEMPO_TONTINHO := 0.5
 ## Raio do disco brilhante do giro forte (o alcance de verdade é ALCANCE_GIRO_FORTE; o disco fica no tamanho dos braços
 ## abertos, e o do giro no ar é ele menor).
 const RAIO_DISCO := 1.8
-const VOLTAS_GIRO_FORTE := 3.2
+## Voltas por segundo do giro forte no meio (ele acelera no começo e freia no fim) e voltas do giro no ar.
+const VOLTAS_GIRO_FORTE := 3.4
+const VOLTAS_GIRO := 1.25
 ## A paradinha do soco que pega (o "hit-stop"): o jogo anda a este tanto por um instante.
 const PARADINHA := 0.1
 ## As brincadeiras da espera do Faísca (ver Espera; ele também dança).
@@ -263,6 +265,11 @@ var _anel_carga: MeshInstance3D
 ## O disco brilhante do giro (o forte e, menor, o do ar) e os brilhinhos da carga (Particulas.disco_do_giro e carga).
 var _disco: Node3D
 var _brilho_carga: CPUParticles3D
+## Os rastros de luz das duas mãos no giro (Rastro), se estão ligados, e a rapidez da volta do corpo (rad/s).
+var _rastros: Array[Rastro] = []
+var _rastros_ligados := false
+var _vel_volta := 0.0
+var _volta_antes := 0.0
 var _poeira_giro := 0.0
 ## As animações de espera (parado sem mexer no controle; ver Espera).
 var _espera := Espera.new(BRINCADEIRAS)
@@ -537,7 +544,10 @@ func _physics_process(delta: float) -> void:
 			velocity.y = lerpf(velocity.y, SUBIDA_BALAO, 1.0 - exp(-4.0 * delta))
 		else:
 			_estourar_balao()
-	elif _memoria_pulo > 0.0 and _coiote > 0.0:
+	# O pulo nunca diminui uma subida mais rápida que ele: a tampa e a mola lançam do chão, e no mesmo quadro ele
+	# ainda contava como no chão (o "coiote" voltava a valer); apertando o pulo logo depois, o pulo de 10,5 m/s
+	# trocava o lançamento de 22 m/s e ele não chegava (achado num teste da 2-1 que falhava de vez em quando).
+	elif _memoria_pulo > 0.0 and _coiote > 0.0 and velocity.y < forca_pulo:
 		velocity.y = forca_pulo
 		Sfx.play(self, "faisca_pulo", 0.0, 0.08)
 		# Agacha um instante e estica subindo (só o desenho: o pulo sai na hora).
@@ -619,6 +629,7 @@ func _physics_process(delta: float) -> void:
 	_atualizar_lasers()
 	_atualizar_pipa(delta)
 	_atualizar_sombra()
+	_atualizar_rastros(delta)
 	_atualizar_espera(delta, entrada)
 	_atualizar_animacao()
 
@@ -877,6 +888,12 @@ func teleportar(pos: Vector3) -> void:
 	girando = 0.0
 	_cam_pronta = false
 	acordar()
+	if giro_forte <= 0.0:
+		robo.girar(false)
+		_disco.visible = false
+		_ligar_rastros(false)
+		for r in _rastros:
+			r.forca = 0.0
 
 
 ## Encostou numa Bolota (ou outra coisa que machuca) vinda de `de`: tira um coração, empurra
@@ -1327,7 +1344,9 @@ func _golpear(no_chao: bool, dir: Vector3) -> void:
 			velocity.y = maxf(velocity.y, 3.0)
 			robo.expressao("bravo", 0.6)
 			Sfx.play(self, "faisca_giro", 0.0, 0.08)
-			Particulas.giro(self)
+			# O pião no ar: a mesma pose e os rastros do giro forte (a espiral clarinha de antes ficou de fora).
+			robo.girar(true)
+			_ligar_rastros(true)
 			if luva_de_neve:
 				jogar_bola_de_neve()
 		return
@@ -1419,17 +1438,28 @@ func _atualizar_golpes(delta: float, dir: Vector3) -> void:
 				_golpe_guardado = false
 				_combo_janela = 0.3
 	if girando > 0.0:
+		# Uma volta e um quarto, rápida no começo e freando no fim (antes, uma volta na mesma rapidez).
+		var p0 := 1.0 - girando / TEMPO_GIRO
 		girando -= delta
-		visual.rotation.y += TAU / TEMPO_GIRO * delta
+		var p1 := 1.0 - maxf(girando, 0.0) / TEMPO_GIRO
+		visual.rotation.y += TAU * VOLTAS_GIRO * (_saida(p1) - _saida(p0))
 		if not _giro_acertou and girando < TEMPO_GIRO - 0.1:
 			_giro_acertou = true
 			_acertar(ALCANCE_GIRO, PI, 2.4, 1, 6.0, "giro")
-		# O disco do giro no ar: menor, abrindo rápido e encolhendo no fim.
+		# O disco do giro no ar: menor, acendendo rápido e apagando no fim.
 		if giro_forte <= 0.0:
-			var t := 1.0 - girando / TEMPO_GIRO
-			_disco.visible = girando > 0.0
 			_disco.rotation.y = visual.rotation.y
-			_disco.scale = Vector3.ONE * ALCANCE_GIRO / ALCANCE_GIRO_FORTE * minf(t / 0.15, 1.0) * clampf(girando / 0.12, 0.0, 1.0)
+			_disco.scale = Vector3.ONE * ALCANCE_GIRO / ALCANCE_GIRO_FORTE
+			Particulas.disco_aceso(_disco, smoothstep(0.0, 0.12, p1) * (1.0 - smoothstep(0.6, 1.0, p1)))
+		if girando <= 0.0 and giro_forte <= 0.0:
+			_disco.visible = false
+			robo.girar(false)
+			_ligar_rastros(false)
+
+
+## A volta do giro no ar até `p` (0 a 1): sai rápida e freia no fim.
+static func _saida(p: float) -> float:
+	return 1.0 - pow(1.0 - clampf(p, 0.0, 1.0), 2.4)
 
 
 ## Acerta os inimigos dentro do alcance, na frente (até `angulo` para cada lado). `tipo` é "soco" ou "giro".
@@ -1459,11 +1489,10 @@ func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao:
 		_tremer(0.3, 0.6, 0.12)
 		Sfx.play(self, "faisca_acerto", 0.0, 0.1)
 		# O soco que pega para o tempo um instantinho e sacode a câmera (o forte, mais); o giro só sacode.
+		# O giro não sacode (acertando a cada 0,25 s, a câmera tremia o tempo todo).
 		if tipo == "soco":
 			_paradinha(0.075 if dano > 1 else 0.05)
 			_sacudir(0.12 if dano > 1 else 0.06)
-		else:
-			_sacudir(0.05)
 	return acertou
 
 
@@ -1582,6 +1611,12 @@ func _montar_giro_forte() -> void:
 	_disco.position = Vector3.UP * 1.05
 	_disco.visible = false
 	add_child(_disco)
+	for osso in ["hand.l", "hand.r"]:
+		var r := Rastro.new()
+		r.alvo = func() -> Vector3: return robo.ponto_do_osso(osso)
+		r.centro = func() -> Vector3: return global_position
+		add_child(r)
+		_rastros.append(r)
 
 
 ## Segurar X no chão: carrega (anel dourado crescendo, tremendo, cara de bravo) e, cheio, gira sozinho. Soltar
@@ -1589,15 +1624,18 @@ func _montar_giro_forte() -> void:
 func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void:
 	if giro_forte > 0.0:
 		giro_forte -= delta
-		visual.rotation.y += TAU * VOLTAS_GIRO_FORTE * delta
+		# A volta acelera logo no começo (saindo da torcida da carga) e vai freando no fim, até o tontinho; antes era
+		# a mesma rapidez do começo ao fim, e o corpo parava seco.
+		var p := 1.0 - giro_forte / TEMPO_GIRO_FORTE
+		var rapidez := lerpf(0.55, 1.0, smoothstep(0.0, 0.12, p)) * (1.0 - 0.8 * smoothstep(0.6, 1.0, p))
+		visual.rotation.y += TAU * VOLTAS_GIRO_FORTE * rapidez * delta
 		_acerto_giro_forte -= delta
 		if _acerto_giro_forte <= 0.0:
 			_acerto_giro_forte = 0.25
 			_acertar(ALCANCE_GIRO_FORTE, PI, 2.4, 1, 7.0, "giro")
-		# O disco gira junto, pulsando, e encolhe no fim; o corpo vai apagando e solta poeirinha em volta dos pés.
+		# O disco gira junto e acende e apaga devagar; o corpo vai apagando e solta poeirinha em volta dos pés.
 		_disco.rotation.y = visual.rotation.y
-		var fim := clampf(giro_forte / 0.15, 0.0, 1.0)
-		_disco.scale = Vector3.ONE * (0.95 + 0.05 * sin(giro_forte * 40.0)) * fim
+		Particulas.disco_aceso(_disco, smoothstep(0.0, 0.08, p) * (1.0 - smoothstep(0.7, 1.0, p)))
 		robo.brilho(0.25 + 0.5 * giro_forte / TEMPO_GIRO_FORTE)
 		_poeira_giro -= delta
 		if _poeira_giro <= 0.0 and is_on_floor():
@@ -1606,6 +1644,8 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 		if giro_forte <= 0.0:
 			_disco.visible = false
 			robo.brilho(0.0)
+			robo.girar(false)
+			_ligar_rastros(false)
 			_tontinho = TEMPO_TONTINHO
 			robo.expressao("tonto", 0.9)
 			Particulas.tontura(self, 0.9)
@@ -1621,6 +1661,7 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 			_carga = 0.0
 			_anel_carga.visible = false
 			visual.position = Vector3.ZERO
+			robo.rotation.y = 0.0
 			_parar_som(_som_carga)
 			_apagar_carga()
 		return
@@ -1639,7 +1680,9 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 	_anel_carga.visible = true
 	_anel_carga.global_position = global_position + Vector3.UP * 0.05
 	_anel_carga.scale = Vector3(0.25 + 0.75 * cheia, 0.15, 0.25 + 0.75 * cheia)
-	visual.position = Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0)) * 0.025 * cheia
+	# A preparação do Astro: o corpo torce para o lado contrário da volta (como quem arma um pião), tremendo de leve.
+	robo.rotation.y = -0.9 * cheia * cheia * (3.0 - 2.0 * cheia)
+	visual.position = Vector3(sin(_carga * 95.0), 0.0, cos(_carga * 83.0)) * 0.02 * cheia
 	if _carga >= TEMPO_CARGA:
 		_carga = 0.0
 		_segurando_golpe = 0.0
@@ -1649,17 +1692,39 @@ func _atualizar_giro_forte(delta: float, no_chao: bool, segurando: bool) -> void
 		giro_forte = TEMPO_GIRO_FORTE
 		_acerto_giro_forte = 0.0
 		_apagar_carga(false)
-		_disco.visible = true
+		# A torcida da carga passa para o Visual (o corpo fica onde estava) e dali a volta sai para o outro lado.
+		visual.rotation.y += robo.rotation.y
+		robo.rotation.y = 0.0
 		_disco.scale = Vector3.ONE
+		Particulas.disco_aceso(_disco, 0.0)
 		_poeira_giro = 0.0
 		Particulas.carga_cheia(get_parent(), global_position + Vector3.UP * 1.0)
 		Particulas.onda_no_chao(get_parent(), global_position, ALCANCE_GIRO_FORTE)
 		_sacudir(0.12)
-		# De braços abertos, como um pião.
-		robo.tpose()
+		# De braços abertos, como um pião (a pose entra misturando; antes era a T-pose, seca), com os rastros nas mãos.
+		robo.girar(true)
+		_ligar_rastros(true)
 		robo.expressao("bravo", TEMPO_GIRO_FORTE)
 		Sfx.play(self, "faisca_piao", 0.0, 0.0)
 		_tremer(0.4, 0.6, 0.2)
+
+
+## Liga ou desliga os rastros de luz das mãos (desligados, somem rápido).
+func _ligar_rastros(on: bool) -> void:
+	_rastros_ligados = on
+
+
+## O arco de cada rastro cobre o que a mão andou nos últimos 0,13 s (pela rapidez da volta do corpo): girando rápido,
+## uma meia-lua comprida; freando, vai encurtando. Acende rápido e apaga um pouco mais devagar.
+func _atualizar_rastros(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	var volta := angle_difference(_volta_antes, visual.rotation.y) / delta
+	_volta_antes = visual.rotation.y
+	_vel_volta = lerpf(_vel_volta, volta, 1.0 - exp(-25.0 * delta))
+	for r in _rastros:
+		r.forca = move_toward(r.forca, 1.0 if _rastros_ligados else 0.0, delta * (12.0 if _rastros_ligados else 6.0))
+		r.varrido = clampf(_vel_volta * 0.13, -3.6, 3.6)
 
 
 ## Desliga os brilhinhos da carga (os que já saíram terminam o caminho) e, com `apagar`, o brilho do corpo.

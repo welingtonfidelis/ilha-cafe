@@ -2381,6 +2381,19 @@ Pedido: "analisa esse video, nota os efeitos de giro, golpes, movimentaçao do a
   - **acerto:** o soco que pega dá a paradinha do Astro, o jogo todo a 10% por 0,05 s (o forte, 0,075 s; `_paradinha`), e sacode a câmera. A sacudida anda no tempo de verdade, pelo deslocamento da câmera, sem sorteio. O giro e o pisão só sacodem;
   - **pouso de muito alto** (caindo a mais de 16 m/s; a descida de um pulo dá uns 13): a onda no chão e uma sacudidinha;
   - **o voo continua só com o laser,** como o usuário pediu em 2026-10-29: o jato nos pés do Astro ficou de fora.
+- **Segunda versão do giro** (no mesmo dia, depois de jogar: "o efeito/açao de girar ainda está estranha, nao tá bonito e fluido como o astro bot"). O que deixava duro: o corpo entrava na T-pose de uma vez, a volta tinha a mesma rapidez do começo ao fim e os riscos do disco eram figuras paradas rodando junto. Agora:
+  - **pose de pião** (`Robo.girar` e `_pose_de_giro`, no mesmo jeito da dancinha): braços abertos como cata-vento, arrastados pela volta, punhos fechados, peito para trás, queixo erguido e joelhos dobrados juntos. Entra misturando em uns 0,1 s e sai em 0,2 s, e vale também no giro no ar;
+  - **preparação:** na carga, o corpo torce para o lado contrário da volta, como quem arma um pião, e treme de leve (antes era um sorteio a cada quadro);
+  - **volta com embalo:** o giro forte sai a 55% e acelera em 0,12 s até 3,4 voltas por segundo, depois freia até 20% antes da tontura. O giro no ar dá uma volta e um quarto, rápido no começo e freando;
+  - **rastros de luz nas mãos** (`Rastro`, em `scripts/faisca/rastro.gd`): um arco azul com o miolo quase branco atrás de cada mão, do tamanho do que ela andou nos últimos 0,13 s. O arco é calculado a cada quadro, girando a mão de agora para trás em volta do eixo do corpo. Guardando as posições de verdade, com a tela lenta sobravam 2 ou 3 pontos e virava um borrão;
+  - **o disco** ficou só com o anel e o brilho de dentro, e acende e apaga pela transparência, sem encolher de repente. A câmera não sacode mais a cada acerto do giro.
+  - **Fotos quadro a quadro pela câmera do jogo:** `--faisca-giro-quadros`, em `tools/capturas/faisca/giro/`.
+  - O "agarrar e girar a Bolota" ainda usa a T-pose, porque a Bolota fica pendurada na mão pela conta dela.
+- **Conserto que saiu junto: o pulo cortava o lançamento.**
+  - A tampa da 2-1 (e a mola) lança do chão, mas no mesmo quadro o Faísca ainda contava como no chão, e o tempo de tolerância do pulo voltava a valer.
+  - Apertando o pulo logo depois, o pulo de 10,5 m/s trocava o lançamento de 22 m/s, e ele não chegava à prateleira. Uma criança apertando o pulo na hora do lançamento perdia o impulso.
+  - Agora o pulo nunca diminui uma subida mais rápida que ele.
+  - Achado porque o `--faisca-fase-2-1` falhava de vez em quando; um teste com marcas mostrou a subida caindo de 20 para 10,5 m/s num quadro.
 - **Animações de espera** (a classe `Espera`, em `scripts/espera.gd`, usada pelo Faísca e pelas crianças). Parado, sem ninguém mexer no controle:
   - aos 5 s, olha em volta (`Idle_B`);
   - aos 10 s e depois a cada uns 7 s, uma brincadeira sorteada, sem repetir a última: acenar virado para a câmera, flexões, abdominais, sentar no chão (senta, fica e levanta) e, só no Faísca, a dancinha de robô sem som, com as notinhas;

@@ -265,23 +265,28 @@ static func onda_no_chao(pai: Node, pos: Vector3, raio: float, cor := Color(0.85
 		"roda": true, "tamanho": 0.9, "somar": false, "cor": Color(0.96, 0.93, 0.86, 0.8), "cresce": 1.7, "anel": Vector2(0.25, 0.4)})
 
 
-## O disco do giro forte (no jeito do Astro): um anel claro na cintura, com um brilho fraquinho por dentro e dois riscos
-## em meia-lua por cima. Fica com quem chamou, que mostra e gira (Jogador._atualizar_giro_forte).
+## O disco do giro (no jeito do Astro): um anel claro na cintura, com um brilho fraquinho por dentro. Os riscos em
+## meia-lua de antes (figuras paradas rodando junto) deram lugar aos rastros de luz das mãos (Rastro). Fica com quem
+## chamou, que mostra, gira e esmaece (disco_aceso).
 static func disco_do_giro(raio: float) -> Node3D:
 	var d := Node3D.new()
 	d.name = "DiscoDoGiro"
-	var dentro := plano("light_01", raio * 2.0, Color(0.6, 0.95, 1.0, 0.3), 0)
+	var dentro := plano("light_01", raio * 2.0, Color(0.6, 0.95, 1.0, 0.28), 0)
 	dentro.position.y = -0.02
+	dentro.set_meta("alfa", 0.28)
 	d.add_child(dentro)
-	d.add_child(plano("circle_03", raio * 2.2, Color(0.78, 0.97, 1.0, 0.85), 1))
-	var risco := plano("twirl_02", raio * 2.0, Color(1.0, 1.0, 1.0, 0.95), 2)
-	risco.position.y = 0.03
-	d.add_child(risco)
-	var outro := plano("twirl_01", raio * 1.7, Color("8ff3ff"), 3)
-	outro.position.y = 0.05
-	outro.rotation.y = PI
-	d.add_child(outro)
+	var anel := plano("circle_03", raio * 2.2, Color(0.78, 0.97, 1.0, 0.7), 1)
+	anel.set_meta("alfa", 0.7)
+	d.add_child(anel)
 	return d
+
+
+## Acende o disco do giro de 0 (apagado) a 1, mexendo na transparência (encolher de repente parecia um defeito).
+static func disco_aceso(d: Node3D, k: float) -> void:
+	d.visible = k > 0.01
+	for c in d.get_children():
+		var m := (c as MeshInstance3D).material_override as StandardMaterial3D
+		m.albedo_color.a = float(c.get_meta("alfa", 1.0)) * k
 
 
 ## Tontinho depois do giro forte: quatro estrelinhas amarelas rodando em cima da cabeça (o capacete do Faísca acaba

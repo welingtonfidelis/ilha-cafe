@@ -64,6 +64,10 @@ var _dancando := false
 var _mao_fechada := 0.0
 var _danca := 0.0
 var _danca_t := 0.0
+## Pião (o giro forte e o giro no ar): a pose entra e sai misturando por cima da animação (antes, a T-pose entrava seca).
+var _girando := false
+var _giro := 0.0
+var _giro_t := 0.0
 
 
 func _ready() -> void:
@@ -131,8 +135,7 @@ func ponta_do_pe(i: int) -> Vector3:
 
 ## Onde fica a cabeça agora (o osso "head", que segue a animação: deitado, ela está lá embaixo).
 func ponto_da_cabeca() -> Vector3:
-	var osso := esqueleto.find_bone("head")
-	return (esqueleto.global_transform * esqueleto.get_bone_global_pose(osso)).origin
+	return ponto_do_osso("head")
 
 
 func animacao_atual() -> String:
@@ -149,6 +152,18 @@ func dancar(on: bool) -> void:
 	if on and not _dancando:
 		_danca_t = 0.0
 	_dancando = on
+
+
+## Liga e desliga a pose de pião (ela entra rápido e sai devagar).
+func girar(on: bool) -> void:
+	if on and not _girando:
+		_giro_t = 0.0
+	_girando = on
+
+
+## Onde fica o osso `nome` agora (segue a animação).
+func ponto_do_osso(nome: String) -> Vector3:
+	return (esqueleto.global_transform * esqueleto.get_bone_global_pose(esqueleto.find_bone(nome))).origin
 
 
 ## Quanto voo ainda resta (0 a 1): os três LEDs das costas apagam um a um enquanto ele flutua.
@@ -222,7 +237,7 @@ func _process(delta: float) -> void:
 		esqueleto.set_bone_pose_position(quadril, Vector3(descanso.x, pos.y, descanso.z))
 	# Mão fechada nos golpes e na comemoração.
 	_mao_fechada -= delta
-	var fechado: bool = anim.begins_with("luta/") or anim == "festa/Cheering" or _mao_fechada > 0.0
+	var fechado: bool = anim.begins_with("luta/") or anim == "festa/Cheering" or _mao_fechada > 0.0 or _giro > 0.3
 	_punho = move_toward(_punho, 1.0 if fechado else PUNHO_SOLTO, delta * 10.0)
 	for d in _dedos:
 		d[0].basis = Basis(d[1], lerpf(d[2], d[3], _punho))
@@ -230,6 +245,10 @@ func _process(delta: float) -> void:
 	if _danca > 0.0:
 		_danca_t += delta
 		_pose_de_danca(_danca_t, _danca)
+	_giro = move_toward(_giro, 1.0 if _girando else 0.0, delta * (9.0 if _girando else 4.5))
+	if _giro > 0.0:
+		_giro_t += delta
+		_pose_de_giro(_giro_t, _giro * _giro * (3.0 - 2.0 * _giro))
 	_rosto(delta)
 	if _jatos.size() > 0 and _jatos[0].visible:
 		mat.jato.emission_energy_multiplier = 3.0 + randf() * 1.5
@@ -271,6 +290,37 @@ func _pose_de_danca(t: float, peso: float) -> void:
 		giros["upperleg" + s] = Basis(Vector3.RIGHT, -0.45 * desce)
 		giros["lowerleg" + s] = Basis(Vector3.RIGHT, 0.45 * desce)
 		giros["foot" + s] = Basis.IDENTITY
+	_aplicar_giros(giros, peso)
+	var quadril := esqueleto.find_bone("hips")
+	esqueleto.set_bone_pose_position(quadril, esqueleto.get_bone_pose_position(quadril) + Vector3.DOWN * 0.045 * desce * peso)
+
+
+## O pião do Astro: braços abertos como cata-vento (o Faísca gira para a esquerda, então o braço esquerdo vai um pouco
+## para a frente e o direito para trás, arrastados pela volta), punhos fechados, peito um pouco para trás com o queixo
+## erguido e os joelhos dobrados juntos, quase flutuando. Um balanço pequeno no peito deixa vivo.
+func _pose_de_giro(t: float, peso: float) -> void:
+	var balanco := sin(t * 11.0)
+	var giros := {}
+	giros["hips"] = Basis.IDENTITY
+	giros["spine"] = Basis(Vector3.RIGHT, -0.08)
+	giros["chest"] = giros["spine"] * Basis(Vector3.BACK, 0.05 * balanco)
+	giros["head"] = giros["chest"] * Basis(Vector3.RIGHT, -0.14)
+	for l in [1.0, -1.0]:
+		var s := ".l" if l > 0.0 else ".r"
+		var braco := Vector3(l * 0.95, -0.1 + 0.03 * balanco * l, 0.28 * l).normalized()
+		var mao := Vector3(l * 0.9, 0.02, 0.42 * l).normalized()
+		giros["upperarm" + s] = Basis(Quaternion(Vector3(l, 0, 0), braco))
+		giros["lowerarm" + s] = Basis(Quaternion(Vector3(l, 0, 0), mao))
+		giros["wrist" + s] = giros["lowerarm" + s]
+		giros["hand" + s] = giros["lowerarm" + s]
+		giros["upperleg" + s] = Basis(Vector3.RIGHT, -0.4)
+		giros["lowerleg" + s] = Basis(Vector3.RIGHT, 0.7)
+		giros["foot" + s] = Basis(Vector3.RIGHT, -0.2)
+	_aplicar_giros(giros, peso)
+
+
+## Põe nos ossos os giros pedidos (cada um no espaço do robô, a partir da T-pose), misturando com a animação por `peso`.
+func _aplicar_giros(giros: Dictionary, peso: float) -> void:
 	var globais := {}
 	for nome: String in ["hips", "spine", "chest", "head", "upperarm.l", "lowerarm.l", "wrist.l", "hand.l", "upperarm.r",
 			"lowerarm.r", "wrist.r", "hand.r", "upperleg.l", "lowerleg.l", "foot.l", "upperleg.r", "lowerleg.r", "foot.r"]:
@@ -281,8 +331,6 @@ func _pose_de_danca(t: float, peso: float) -> void:
 		var base_pai: Basis = globais[pai] if globais.has(pai) else esqueleto.get_bone_global_rest(pai).basis.orthonormalized()
 		var local := (base_pai.inverse() * desejado).get_rotation_quaternion()
 		esqueleto.set_bone_pose_rotation(i, esqueleto.get_bone_pose_rotation(i).slerp(local, peso))
-	var quadril := esqueleto.find_bone("hips")
-	esqueleto.set_bone_pose_position(quadril, esqueleto.get_bone_pose_position(quadril) + Vector3.DOWN * 0.045 * desce * peso)
 
 
 ## Piscadas, a volta para a cara normal e as olhadinhas para os lados quando está parado.

@@ -178,6 +178,49 @@ func capturar_giro() -> void:
 	m.get_tree().quit()
 
 
+## Quadro a quadro do giro pela câmera do jogo (a carga com a torcida, a volta acelerando e freando, os rastros das
+## mãos e o giro no ar), em tools/capturas/faisca/giro/. Uso: godot --path . -- --faisca-giro-quadros
+func capturar_giro_quadros() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(m.PASTA_CAPTURAS + "giro/"))
+	m._comecar_fase()
+	await m._esperar(4.0)
+	var p := n.inicio + Vector3(0, 0.1, 0)
+	j.teleportar(p)
+	j.visual.rotation.y = j.yaw + PI
+	j.camera.make_current()
+	await m._esperar(0.8)
+	m._botao(JOY_BUTTON_X, true)
+	# A carga começa uns 0,3 s depois de apertar (o primeiro soco sai antes).
+	await _ate(func() -> bool: return j._carga > 0.0, 1.0)
+	var quadros := [["01_carga", 0.15], ["02_carga_torcendo", 0.4]]
+	for q: Array in quadros:
+		await _ate(func() -> bool: return j._carga >= float(q[1]) or j.giro_forte > 0.0, 1.0)
+		await m._foto("giro/" + q[0])
+	await _ate(func() -> bool: return j.giro_forte > 0.0, 1.0)
+	m._botao(JOY_BUTTON_X, false)
+	var marcas := [0.04, 0.12, 0.22, 0.36, 0.52, 0.7, 0.86, 0.97]
+	for k in marcas.size():
+		await _ate(func() -> bool: return Jogador.TEMPO_GIRO_FORTE - j.giro_forte >= marcas[k] or j.giro_forte <= 0.0, 1.5)
+		await m._foto("giro/%02d_giro_%03d" % [k + 3, int(marcas[k] * 100)])
+	await _ate(func() -> bool: return j.giro_forte <= 0.0, 1.5)
+	await m._esperar(0.1)
+	await m._foto("giro/11_fim")
+	await m._esperar(0.3)
+	await m._foto("giro/12_tontinho")
+	await m._esperar(1.2)
+	# O giro no ar.
+	j.forcar_pulo = true
+	await m._esperar(0.22)
+	j.forcar_pulo = false
+	j.forcar_golpe = true
+	await _ate(func() -> bool: return j.girando > 0.0, 0.3)
+	for k in 4:
+		await m._esperar(0.08)
+		await m._foto("giro/%02d_no_ar" % (13 + k))
+	await m._esperar(0.8)
+	m.get_tree().quit()
+
+
 ## Câmera de cima e de lado (uns 35 graus), a `longe` m de `meio`, do lado `para`.
 func _alto(cam: Camera3D, meio: Vector3, longe: float, para := Vector3.BACK) -> void:
 	var lado := para.cross(Vector3.UP).normalized()
