@@ -1,7 +1,7 @@
 class_name Ajustes
 extends RefCounted
 ## Ajustes de quem joga, valendo para os dois jogos (item 1 da lista de melhorias, escolhido pelo usuário em
-## 2026-11-10): volume da música e dos efeitos, rapidez da câmera, câmera invertida (para cima e para baixo),
+## 2026-11-10): volume da música e dos efeitos, rapidez e distância da câmera, câmera invertida (para cima e para baixo),
 ## vibração do controle e o Modo Fácil (item 3 da lista, para os menores). O Modo Fácil vale para os dois jogos:
 ## na ilha, corações que voltam sozinhos fora de luta, mais tempo piscando depois de um golpe, esqueletos mais lentos
 ## e com mais tempo no "!", guardiões com menos vida e mira mais ajudada; no Faísca, cair não tira coração e as
@@ -15,12 +15,20 @@ const PASSOS := 10
 const CAMERA_MIN := 1
 const CAMERA_MAX := 9
 const CAMERA_PADRAO := 5
+## A distância da câmera (2026-11-13: o usuário achou estranha a câmera mais perto no Faísca e pediu a de antes como a
+## de sempre, com a opção no menu) vai de 1 (bem perto) a 5 (bem longe); 3 é a de sempre (7,5 m atrás do Faísca, 5,5 m
+## atrás das crianças da ilha) e cada passo muda uns 14%.
+const DISTANCIA_MIN := 1
+const DISTANCIA_MAX := 5
+const DISTANCIA_PADRAO := 3
+const NOMES_DISTANCIA := ["", "Bem perto", "Perto", "Normal", "Longe", "Bem longe"]
 
 static var path := "user://ajustes.json"
 static var enabled := true
 static var musica := PASSOS
 static var efeitos := PASSOS
 static var camera := CAMERA_PADRAO
+static var distancia := DISTANCIA_PADRAO
 static var inverter := false
 static var vibracao := true
 static var facil := false
@@ -42,6 +50,7 @@ static func carregar(testando: bool) -> void:
 			musica = clampi(int(dados.get("musica", PASSOS)), 0, PASSOS)
 			efeitos = clampi(int(dados.get("efeitos", PASSOS)), 0, PASSOS)
 			camera = clampi(int(dados.get("camera", CAMERA_PADRAO)), CAMERA_MIN, CAMERA_MAX)
+			distancia = clampi(int(dados.get("distancia", DISTANCIA_PADRAO)), DISTANCIA_MIN, DISTANCIA_MAX)
 			inverter = bool(dados.get("inverter", false))
 			vibracao = bool(dados.get("vibracao", true))
 			facil = bool(dados.get("facil", false))
@@ -54,7 +63,7 @@ static func salvar() -> void:
 		return
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"musica": musica, "efeitos": efeitos, "camera": camera, "inverter": inverter,
+		f.store_string(JSON.stringify({"musica": musica, "efeitos": efeitos, "camera": camera, "distancia": distancia, "inverter": inverter,
 			"vibracao": vibracao, "facil": facil, "vozes": vozes}, "\t"))
 
 
@@ -63,6 +72,7 @@ static func padrao() -> void:
 	musica = PASSOS
 	efeitos = PASSOS
 	camera = CAMERA_PADRAO
+	distancia = DISTANCIA_PADRAO
 	inverter = false
 	vibracao = true
 	facil = false
@@ -73,6 +83,11 @@ static func padrao() -> void:
 ## Quanto a câmera gira em relação à de sempre (de 0,5 a 2 vezes).
 static func rapidez_camera() -> float:
 	return pow(2.0, float(camera - CAMERA_PADRAO) / 4.0)
+
+
+## Quanto a câmera fica longe em relação à de sempre (de uns 0,72 a 1,28 vezes).
+static func distancia_camera() -> float:
+	return 1.0 + 0.14 * float(distancia - DISTANCIA_PADRAO)
 
 
 ## Sinal do olhar para cima e para baixo: -1 com a câmera invertida.

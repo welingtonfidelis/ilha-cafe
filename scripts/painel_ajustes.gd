@@ -1,7 +1,8 @@
 class_name PainelAjustes
 extends CenterContainer
 ## Tela de Ajustes (item 1 da lista de melhorias, 2026-11-10), a mesma no menu principal, na pausa da ilha e na
-## pausa do Faísca: uma linha por ajuste, com o ícone colorido, o nome, uma barra grossa (música, efeitos e câmera;
+## pausa do Faísca: uma linha por ajuste, com o ícone colorido, o nome, uma barra grossa (música, efeitos, câmera e
+## distância da câmera;
 ## o direcional para os lados muda, para cima e para baixo troca de linha) ou uma chave de Sim e Não (câmera
 ## invertida, vibração e Modo Fácil), e o Voltar. Cada mudança vale na hora: a música abaixa enquanto se mexe, os efeitos
 ## tocam um som de amostra e a vibração treme um pouquinho ao ligar. Fechar grava (Ajustes.salvar). Quem abre
@@ -14,6 +15,7 @@ const LINHAS := [
 	["musica", "Música", "musica", 0, Ajustes.PASSOS],
 	["efeitos", "Efeitos", "som", 0, Ajustes.PASSOS],
 	["camera", "Câmera", "camera", Ajustes.CAMERA_MIN, Ajustes.CAMERA_MAX],
+	["distancia", "Distância", "binoculo", Ajustes.DISTANCIA_MIN, Ajustes.DISTANCIA_MAX],
 	["inverter", "Câmera invertida", "inverter"],
 	["vibracao", "Vibração", "vibracao"],
 	["facil", "Modo fácil", "facil"],
@@ -103,7 +105,8 @@ func _linha(spec: Array) -> PanelContainer:
 	nome.add_theme_font_size_override("font_size", 22)
 	fila.add_child(nome)
 	var valor := Label.new()
-	valor.custom_minimum_size = Vector2(70, 0)
+	# Largo o bastante para "Bem longe" (a distância da câmera mostra o nome do passo).
+	valor.custom_minimum_size = Vector2(112, 0)
 	valor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	valor.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	valor.add_theme_font_size_override("font_size", 20)
@@ -153,6 +156,7 @@ func _ler() -> void:
 	(controles.musica as HSlider).value = Ajustes.musica
 	(controles.efeitos as HSlider).value = Ajustes.efeitos
 	(controles.camera as HSlider).value = Ajustes.camera
+	(controles.distancia as HSlider).value = Ajustes.distancia
 	(controles.inverter as CheckButton).button_pressed = Ajustes.inverter
 	(controles.vibracao as CheckButton).button_pressed = Ajustes.vibracao
 	(controles.facil as CheckButton).button_pressed = Ajustes.facil
@@ -172,6 +176,8 @@ func _mudou(valor: float, chave: String) -> void:
 			Sfx.aplicar_volumes()
 		"camera":
 			Ajustes.camera = int(valor)
+		"distancia":
+			Ajustes.distancia = int(valor)
 		"inverter":
 			Ajustes.inverter = valor > 0.5
 		"vibracao":
@@ -198,6 +204,8 @@ func _mostrar(chave: String) -> void:
 			rotulo.text = "Mudo" if v == 0 else str(v)
 		"camera":
 			rotulo.text = str(int((controles[chave] as HSlider).value))
+		"distancia":
+			rotulo.text = Ajustes.NOMES_DISTANCIA[int((controles[chave] as HSlider).value)]
 		_:
 			var ligado := (controles[chave] as CheckButton).button_pressed
 			(controles[chave] as CheckButton).text = "Sim" if ligado else "Não"

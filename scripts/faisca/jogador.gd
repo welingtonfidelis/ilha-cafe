@@ -74,8 +74,10 @@ const TEXTURAS := {
 }
 const PITCH_MIN := -1.1
 const PITCH_MAX := 0.3
-## A câmera ficou mais perto em 2026-11-13 (era 7,5 m), para o Faísca aparecer maior, como o Astro.
-const DISTANCIA_CAMERA := 6.3
+## A distância de sempre da câmera. Em 2026-11-13 ela foi para 6,3 m, para o Faísca aparecer maior, e o usuário achou
+## estranha: voltou para 7,5 m, e quem quiser mais perto ou mais longe escolhe nos Ajustes (Ajustes.distancia_camera
+## multiplica todas as distâncias, também as do farol e as das zonas de câmera).
+const DISTANCIA_CAMERA := 7.5
 const ALTURA_QUEDA := -12.0
 const VIDA_MAX := 3
 ## Depois de levar dano, fica piscando e sem levar outro por este tempo.
@@ -368,7 +370,7 @@ func _montar_camera() -> void:
 	camera_inclina = Node3D.new()
 	camera_pivo.add_child(camera_inclina)
 	braco_camera = SpringArm3D.new()
-	braco_camera.spring_length = DISTANCIA_CAMERA
+	braco_camera.spring_length = DISTANCIA_CAMERA * Ajustes.distancia_camera()
 	braco_camera.collision_mask = 1
 	braco_camera.margin = 0.3
 	camera_inclina.add_child(braco_camera)
@@ -696,11 +698,11 @@ func _quina_amiga() -> void:
 func _guiar_camera(delta: float) -> void:
 	var k := 1.0 - exp(-3.0 * delta)
 	if camera_guiada.is_empty():
-		braco_camera.spring_length = lerpf(braco_camera.spring_length, distancia_camera, k)
+		braco_camera.spring_length = lerpf(braco_camera.spring_length, distancia_camera * Ajustes.distancia_camera(), k)
 		return
 	yaw = lerp_angle(yaw, float(camera_guiada.yaw), k)
 	pitch = lerpf(pitch, float(camera_guiada.pitch), k)
-	braco_camera.spring_length = lerpf(braco_camera.spring_length, float(camera_guiada.get("distancia", DISTANCIA_CAMERA)), k)
+	braco_camera.spring_length = lerpf(braco_camera.spring_length, float(camera_guiada.get("distancia", DISTANCIA_CAMERA)) * Ajustes.distancia_camera(), k)
 
 
 ## Para quem carrega o Faísca com o processo de física dele desligado (o canhão, que leva ele pelo ar): a câmera

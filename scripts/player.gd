@@ -262,7 +262,7 @@ func _build_camera() -> void:
 	camera_pitch = Node3D.new()
 	camera_pivot.add_child(camera_pitch)
 	spring_arm = SpringArm3D.new()
-	spring_arm.spring_length = CAMERA_LENGTH
+	spring_arm.spring_length = CAMERA_LENGTH * Ajustes.distancia_camera()
 	spring_arm.collision_mask = 1
 	spring_arm.margin = 0.2
 	spring_arm.position = Vector3(1.25, 0.35, 0.0)
@@ -730,7 +730,8 @@ func _physics_process(delta: float) -> void:
 
 	var smooth := 1.0 - exp(-12.0 * delta)
 	var zoomed := is_zoomed()
-	var target_len := CAMERA_LENGTH_SCOPE if zoomed else (CAMERA_LENGTH_AIM if aiming else CAMERA_LENGTH)
+	# A distância escolhida nos Ajustes vale para a câmera de andar (mirando e na luneta, ficam as de sempre).
+	var target_len := CAMERA_LENGTH_SCOPE if zoomed else (CAMERA_LENGTH_AIM if aiming else CAMERA_LENGTH * Ajustes.distancia_camera())
 	var target_fov: float = current_weapon().zoom if zoomed else (55.0 if aiming else 70.0)
 	spring_arm.spring_length = lerpf(spring_arm.spring_length, target_len, smooth)
 	camera.fov = lerpf(camera.fov, target_fov, smooth)

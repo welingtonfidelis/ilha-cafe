@@ -39,6 +39,8 @@ extends Node3D
 ##                           curto) em tools/capturas/faisca/particulas/ (ver scripts/faisca/teste_particulas.gd)
 ##   --faisca-giro-captura   1-1: fotos dos efeitos no jeito do Astro Bot (carga, giro forte, tontura, zuim do soco, giro no
 ##                           ar e pouso alto), na mesma pasta
+##   --faisca-canhao         o canhão jogando de verdade (chegar andando, pular em cima, na 1-1 as argolas pulando; ver
+##                           scripts/faisca/teste_canhao.gd); --faisca-canhao-2-2 e --faisca-canhao-3-1 nas outras fases
 ##   --faisca-espera         1-1: confere as animações de espera (olhar, brincadeiras, dormir, acordar; ver
 ##                           scripts/faisca/teste_espera.gd)
 ##   --faisca-espera-captura 1-1: fotos das esperas em tools/capturas/faisca/espera/
@@ -66,7 +68,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-fase-3-3", "--faisca-fase-3-3-captura",
-		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-giro-quadros", "--faisca-visual-captura", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
+		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-giro-quadros", "--faisca-visual-captura", "--faisca-canhao", "--faisca-canhao-2-2", "--faisca-canhao-3-1", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
 		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1",
 		"--faisca-chefe-2", "--faisca-chefe-2-captura", "--faisca-jogar-chefe-2",
@@ -92,6 +94,7 @@ var _teste33: TesteFase33
 var _teste_nave: TesteFaseNave
 var _teste_particulas: TesteParticulas
 var _teste_espera: TesteEspera
+var _teste_canhao: TesteCanhao
 var _teste_monstro: TesteMonstro
 var _teste_movimento: TesteMovimento
 var _teste_faisquinhas: TesteFaisquinhas
@@ -160,9 +163,9 @@ func _ready() -> void:
 	else:
 		var a_1_2 := "--faisca-fase-1-2" in args or "--faisca-fase-1-2-captura" in args or "--faisca-jogar-1-2" in args
 		var a_2_1 := "--faisca-fase-2-1" in args or "--faisca-fase-2-1-captura" in args or "--faisca-jogar-2-1" in args
-		var a_2_2 := "--faisca-fase-2-2" in args or "--faisca-fase-2-2-captura" in args or "--faisca-jogar-2-2" in args
+		var a_2_2 := "--faisca-canhao-2-2" in args or "--faisca-fase-2-2" in args or "--faisca-fase-2-2-captura" in args or "--faisca-jogar-2-2" in args
 		var a_2_3 := "--faisca-fase-2-3" in args or "--faisca-fase-2-3-captura" in args or "--faisca-jogar-2-3" in args
-		var a_3_1 := "--faisca-fase-3-1" in args or "--faisca-fase-3-1-captura" in args or "--faisca-jogar-3-1" in args
+		var a_3_1 := "--faisca-canhao-3-1" in args or "--faisca-fase-3-1" in args or "--faisca-fase-3-1-captura" in args or "--faisca-jogar-3-1" in args
 		var a_3_2 := "--faisca-fase-3-2" in args or "--faisca-fase-3-2-captura" in args or "--faisca-jogar-3-2" in args
 		var a_3_3 := "--faisca-fase-3-3" in args or "--faisca-fase-3-3-captura" in args or "--faisca-jogar-3-3" in args
 		var a_nave := "--faisca-fase-nave" in args or "--faisca-fase-nave-captura" in args or "--faisca-jogar-nave" in args
@@ -288,6 +291,9 @@ func _ready() -> void:
 	elif "--faisca-visual-captura" in args:
 		_teste_particulas = TesteParticulas.new(self)
 		_teste_particulas.capturar_visual()
+	elif "--faisca-canhao" in args or "--faisca-canhao-2-2" in args or "--faisca-canhao-3-1" in args:
+		_teste_canhao = TesteCanhao.new(self)
+		_teste_canhao.rodar()
 	elif "--faisca-espera" in args:
 		_teste_espera = TesteEspera.new(self)
 		_teste_espera.rodar()
@@ -568,6 +574,20 @@ func _rodar_teste_controle() -> void:
 			"faisca_giro", "faisca_pisao", "faisca_carga", "faisca_piao", "faisca_agarra", "faisca_arremesso", "faisca_danca",
 			"bolota_ai", "bolota_estoura", "estrelinha"].filter(func(n: String) -> bool: return not n in Sfx.played)
 	ok = _conferir("cada ação do Faísca tem o seu som", faltando.is_empty(), "(faltando: %s)" % ", ".join(faltando)) and ok
+	# A distância da câmera nos Ajustes (2026-11-13): a de sempre é 7,5 m; "Bem perto" chega mais perto e "Bem longe",
+	# mais longe (num lugar aberto, sem nada atrás para encurtar o braço da câmera).
+	jogador.teleportar(fase.inicio + Vector3(0, 0.1, 0))
+	await _esperar(2.0)
+	var sempre := jogador.braco_camera.spring_length
+	Ajustes.distancia = Ajustes.DISTANCIA_MIN
+	await _esperar(2.5)
+	var perto := jogador.braco_camera.spring_length
+	Ajustes.distancia = Ajustes.DISTANCIA_MAX
+	await _esperar(2.5)
+	var longe := jogador.braco_camera.spring_length
+	Ajustes.distancia = Ajustes.DISTANCIA_PADRAO
+	ok = _conferir("a distância da câmera dos Ajustes: de sempre 7,5 m, bem perto mais perto, bem longe mais longe",
+			absf(sempre - 7.5) < 0.3 and perto < 6.0 and longe > 9.0, "(%.1f, %.1f, %.1f m)" % [sempre, perto, longe]) and ok
 	_terminar(ok)
 
 

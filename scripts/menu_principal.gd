@@ -378,8 +378,16 @@ func _testar_ajustes() -> bool:
 	await _esperar(0.1)
 	ok = _conferir("o direcional para o lado abaixa a música na hora", Ajustes.musica == Ajustes.PASSOS - 3
 			and AudioServer.get_bus_volume_db(canal) < antes - 2.0, "(%d, %.1f dB -> %.1f dB)" % [Ajustes.musica, antes, AudioServer.get_bus_volume_db(canal)]) and ok
+	# A distância da câmera (2026-11-13) fica logo abaixo da rapidez: o direcional para o lado afasta.
 	for i in 3:
 		await _botao(JOY_BUTTON_DPAD_DOWN)
+	await _esperar(0.1)
+	var na_distancia: bool = get_viewport().gui_get_focus_owner() == painel_ajustes.controles.distancia
+	await _botao(JOY_BUTTON_DPAD_RIGHT)
+	await _esperar(0.1)
+	ok = _conferir("três para baixo chega na distância da câmera, e o direcional para o lado afasta", na_distancia
+			and Ajustes.distancia == Ajustes.DISTANCIA_PADRAO + 1 and Ajustes.distancia_camera() > 1.1, "(%d)" % Ajustes.distancia) and ok
+	await _botao(JOY_BUTTON_DPAD_DOWN)
 	await _esperar(0.1)
 	var na_chave: bool = get_viewport().gui_get_focus_owner() == painel_ajustes.controles.inverter
 	await _botao(JOY_BUTTON_A)
@@ -390,7 +398,7 @@ func _testar_ajustes() -> bool:
 	var gravado: Variant = JSON.parse_string(FileAccess.get_file_as_string(Ajustes.path)) if FileAccess.file_exists(Ajustes.path) else null
 	ok = _conferir("o B fecha, volta ao botão Ajustes e grava", not painel_ajustes.visible and _centro.visible
 			and get_viewport().gui_get_focus_owner() == botao_ajustes and gravado is Dictionary and int(gravado.musica) == Ajustes.PASSOS - 3
-			and gravado.inverter) and ok
+			and gravado.inverter and int(gravado.get("distancia", 0)) == Ajustes.DISTANCIA_PADRAO + 1) and ok
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Ajustes.path))
 	Ajustes.padrao()
 	return ok

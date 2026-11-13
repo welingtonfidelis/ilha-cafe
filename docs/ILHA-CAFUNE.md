@@ -961,7 +961,10 @@ Depois de salvar a maquete da 3-3, o usuário pediu "vamos trabalhar nas melhori
 ### Ajustes e o farol mirante (itens 1 e 2 da lista, escolhidos pelo usuário em 2026-11-10)
 
 **Ajustes** (`scripts/ajustes.gd`, `scripts/painel_ajustes.gd`):
-- **O que dá para mudar:** música e efeitos (de 0, mudo, a 10, o volume de sempre), rapidez da câmera (de 1 a 9; 5 é a de sempre, e cada passo multiplica por uns 19%, de 0,5 a 2 vezes), câmera invertida (para cima e para baixo), vibração e, desde o item 3, o Modo Fácil.
+- **O que dá para mudar:** música e efeitos (de 0, mudo, a 10, o volume de sempre), rapidez da câmera (de 1 a 9; 5 é a de sempre, e cada passo multiplica por uns 19%, de 0,5 a 2 vezes), câmera invertida (para cima e para baixo), vibração e, desde o item 3, o Modo Fácil. Desde 2026-11-13 também a distância da câmera:
+  - de "Bem perto" a "Bem longe", em 5 passos; "Normal" é a de sempre (7,5 m atrás do Faísca, 5,5 m atrás das crianças), e cada passo muda uns 14%;
+  - no Faísca, multiplica também as distâncias do farol e das zonas de câmera; na ilha, vale para a câmera de andar (mirando e na luneta, ficam as de sempre);
+  - a linha tem o ícone do binóculo. O usuário pediu essa opção quando achou estranha a câmera do Faísca mais perto (6,3 m) e quis a de antes como a de sempre.
 - **Onde:** botão "Ajustes" no menu principal (ao lado do Sair), na pausa da ilha (depois de Comandos) e na pausa do Faísca (depois de Sair da fase). É o mesmo painel nos três: uma linha por ajuste com o ícone colorido (engrenagem, nota, alto-falante, olho, setas e controle tremendo, desenhados no `MenuIcon`), barras grossas que o direcional para os lados muda, chaves de Sim e Não, e o Voltar. B ou Esc também voltam, para onde estava, com o botão dos Ajustes marcado.
 - **Vale na hora:** a música abaixa enquanto se mexe, os efeitos tocam um som de amostra e a vibração treme um pouquinho ao ligar.
 - **Valem para os dois jogos:** ficam em `user://ajustes.json`, fora da campanha e do save do Faísca, e são lidos uma vez por partida (`Ajustes.carregar`). Fechar o painel grava.
@@ -2424,7 +2427,7 @@ A identidade dele fica: laranja, estrela no peito e orelhas de LED. O usuário m
 - **Contraste:**
   - a luz ambiente das fases é forte e lisa (0,8), e o branco quase puro saía chapado. O branco ficou um tiquinho azulado (`Robo.BRANCO` "dce2ef"; era "f4f5f9") e mais brilhante (rugosidade 0,22 e verniz 1), e o lado da sombra ganha volume;
   - um contorno de luz azulada (`contorno_luz.gdshader`, uma segunda passada somando luz nas beiradas) no branco, no laranja e no cromo destaca ele do cenário. A névoa das fases quase não pesa a essa distância e ficou como estava.
-- **Câmera:** `Jogador.DISTANCIA_CAMERA` foi de 7,5 para 6,3 m. O farol continua com as distâncias dele.
+- **Câmera:** `Jogador.DISTANCIA_CAMERA` foi de 7,5 para 6,3 m. O usuário achou estranha ("a camera ficou estranha proxima, deixa como default a anterior mas adiciona essa opcao de distancia de camera nas opcoes do menu"): voltou para 7,5 m, e a distância virou um ajuste no menu (ver "Ajustes e o farol mirante").
 - **Rosto:**
   - viseira maior (`Robo.TELA` 0,475 x 0,325; era 0,44 x 0,29), com o friso laranja acompanhando;
   - olhos 30% maiores, mais separados e um pouco mais baixos, e o normal virou uma pílula deitada (era em pé, e o rosto parecia mais assustado que amigo). O bravo seguiu a mesma pílula;
@@ -3027,6 +3030,15 @@ Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começa
   - o canhão com rolha até as quatro argolas;
   - na Ponte Fofa: a Bolota caindo atrás com a câmera de lado; parado, ela alcança e ele volta sem perder coração; fora da estrada, a câmera solta; e uma corrida de verdade, com o analógico para a direita da tela e os três pulos, em que ela não alcança, cai e o prêmio aparece.
 - **Fotos:** `--faisca-fase-captura` ganhou a cancela, a alavanca, o canhão com rolha, a Ponte Fofa de cima e a corrida de lado.
+- **O canhão jogando de verdade** (relato do usuário em 2026-11-13: "chegando perto do canhão o Faísca não era atirado pra próxima plataforma"). `--faisca-canhao` (e `--faisca-canhao-2-2`, `--faisca-canhao-3-1`, em `teste_canhao.gd`) faz como uma criança:
+  - chega andando, pula em cima e chega devagarinho, sem teleportar para cima do canhão como os testes das fases;
+  - na 1-1, atravessa as quatro argolas pulando de verdade pelos vãos.
+
+  Os três canhões atiram e o Faísca pousa a menos de 0,2 m do destino. Dois ficam trancados de propósito:
+  - o da 1-1, com rolha até as quatro argolas (que ficam só na rota da direita; pela esquerda, das ilhas de pulo, não se passa por nenhuma);
+  - o da 3-1, com o monte de neve até os três pinguins.
+
+  Chegando neles trancados, não acontece nada além da dica do Vovô, e para uma criança isso pode parecer defeito.
 
 **1-2 Túneis do Morro (feito em 2026-11-11):**
 - **A Estação dos Trilhos, o playground 4 novo** (no lugar da balsa que ia da Sala das Alavancas até o Poço dos Cristais; o Poço virou o 5):
