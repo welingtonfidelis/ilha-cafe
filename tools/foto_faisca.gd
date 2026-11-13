@@ -22,6 +22,13 @@ const VISTAS := [
 	{"nome": "correndo", "orto": false, "pos": Vector3(2.6, 1.4, 3.2), "alvo": Vector3(0, 1.0, 0), "anim": "mov/Running_A", "tempo": 0.2},
 	{"nome": "parado", "orto": false, "pos": Vector3(1.4, 1.5, 3.9), "alvo": Vector3(0, 1.05, 0), "anim": "geral/Idle_A", "tempo": 0.5},
 	{"nome": "comemorando", "orto": false, "pos": Vector3(1.6, 1.5, 4.3), "alvo": Vector3(0, 1.25, 0), "anim": "festa/Cheering", "tempo": 0.45, "expressao": "feliz"},
+	# A mão esquerda de perto (2026-11-13, a garra de quatro dedos e o polegar): de frente, de cima, pela palma, parada
+	# ao lado do corpo e fechada em punho.
+	{"nome": "mao_frente", "orto": false, "pos": Vector3(1.3, 1.25, 0.95), "alvo": Vector3(0.9, 1.1, 0.0)},
+	{"nome": "mao_cima", "orto": false, "pos": Vector3(1.08, 1.8, 0.4), "alvo": Vector3(0.9, 1.1, 0.0)},
+	{"nome": "mao_palma", "orto": false, "pos": Vector3(1.15, 0.55, 0.7), "alvo": Vector3(0.9, 1.1, 0.0)},
+	{"nome": "mao_parado", "orto": false, "pos": Vector3(1.4, 0.95, 1.3), "alvo": Vector3(0.42, 0.72, 0.05), "anim": "geral/Idle_A", "tempo": 0.5},
+	{"nome": "mao_punho", "orto": false, "pos": Vector3(1.3, 1.35, 1.9), "alvo": Vector3(0.35, 1.0, 0.25), "anim": "luta/Melee_Unarmed_Idle", "tempo": 0.3},
 ]
 ## Uma foto de perto para cada expressão (só se o Robo tiver expressões).
 const EXPRESSOES := ["normal", "piscando", "feliz", "surpreso", "bravo", "dor", "tonto", "coracao"]

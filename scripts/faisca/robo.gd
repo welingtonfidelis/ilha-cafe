@@ -17,12 +17,21 @@ const RIG := "res://assets/characters/protagonists/Protagonist_B.glb"
 const PUNHO_SOLTO := 0.1
 ## Dedos da luva: quanto dobram com a mão solta e com o punho fechado (graus).
 const DEDO_SOLTO := 12.0
-const DEDO_FECHADO := 105.0
+## Os dedos já têm a dobra da ponta; fechando mais que isso, a ponta entrava na palma.
+const DEDO_FECHADO := 80.0
 const POLEGAR_FECHADO := 70.0
 ## Tronco: a Forma.ovo branca (raios, afina e altura do meio). As placas do peito e das costas seguem a curva dele.
 ## A tela do capacete (meias-medidas e o meio). Maior desde 2026-11-13 (era 0.44 x 0.29 x 0.24 em y 1.68): no Astro,
 ## a viseira ocupa quase a frente toda.
 const TELA := Vector3(0.475, 0.325, 0.245)
+## O capacete: meias-medidas, o meio e o expoente da forma (0,72 até 2026-11-13; mais perto de 1 é mais redondo).
+const CAPACETE := Vector3(0.56, 0.47, 0.5)
+const CENTRO_CAPACETE := Vector3(0, 1.72, 0)
+const FORMA_CAPACETE := 0.8
+## Proporções mais fofas (2026-11-13, olhando o Astro): a cabeça inteira cresce e sobe um pouco, as mãos e os pés
+## crescem e braços e pernas ficam mais roliços. Cada peça presa nesses ossos passa pelo ajuste (ver _montar_ajustes).
+const CABECA_ESCALA := 1.08
+const MAO_ESCALA := 1.25
 const CENTRO_TELA := Vector3(0, 1.675, 0.3)
 const TRONCO := Vector3(0.31, 0.34, 0.27)
 const TRONCO_AFINA := -0.13
@@ -70,6 +79,17 @@ var _dancando := false
 var _mao_fechada := 0.0
 var _danca := 0.0
 var _danca_t := 0.0
+## Osso -> ajuste de proporção (Transform3D no espaço do Robo, T-pose) para as peças presas nele.
+var _ajustes := {}
+## A cabeça inclinando sozinha quando ele está parado (jeito de corpo, 2026-11-13): o giro de agora, o pedido, quando
+## muda de novo, o sorteio dele e o que foi posto no osso no quadro anterior (para não somar quando a animação não
+## mexe na cabeça).
+var _cabeca := Vector3.ZERO
+var _cabeca_alvo := Vector3.ZERO
+var _prox_inclinada := 2.5
+var _sorteio := RandomNumberGenerator.new()
+var _cabeca_base := Quaternion.IDENTITY
+var _cabeca_posta := Quaternion.IDENTITY
 ## Pião (o giro forte e o giro no ar): a pose entra e sai misturando por cima da animação (antes, a T-pose entrava seca).
 var _girando := false
 var _giro := 0.0
@@ -83,6 +103,7 @@ func _ready() -> void:
 	for m in _rig.find_children("*", "MeshInstance3D", true, false):
 		m.queue_free()
 	_criar_materiais()
+	_montar_ajustes()
 	_montar()
 	_aplicar_expressao("normal")
 
@@ -255,6 +276,7 @@ func _process(delta: float) -> void:
 	if _giro > 0.0:
 		_giro_t += delta
 		_pose_de_giro(_giro_t, _giro * _giro * (3.0 - 2.0 * _giro))
+	_inclinar_cabeca(delta, anim)
 	_rosto(delta)
 	if _jatos.size() > 0 and _jatos[0].visible:
 		mat.jato.emission_energy_multiplier = 3.0 + randf() * 1.5
@@ -418,20 +440,50 @@ func _placa(no: Array, raios: Vector3) -> void:
 ## Mão de luva: palma redonda, três dedos gordinhos e o polegar na frente. Cada dedo gira numa dobradiça
 ## presa ao osso da mão; `_punho` dobra os dedos para baixo da palma (as palmas ficam para baixo na
 ## T-pose) e o polegar por baixo (ver _process).
+## Os três dedos da mão, do indicador (do lado do polegar, na frente) ao de trás: onde ficam no lado da palma (z) e o
+## comprimento relativo (o do meio é o maior). O usuário provou quatro e pediu três mais o polegar.
+const DEDOS := [[0.05, 0.95], [0.0, 1.0], [-0.05, 0.88]]
+## Meia-largura de cada dedo, de lado (com três, cabem mais gordinhos que com quatro).
+const DEDO_LARGURA := 0.026
+
+
 func _mao(osso: String, lado: float) -> void:
-	_peca(osso, Forma.superelipsoide(Vector3(0.07, 0.062, 0.088), 0.75, 0.75), mat.branco, Vector3(0.845 * lado, 1.107, 0))
-	for z in [-0.052, 0.0, 0.052]:
-		var dobradica := _no_preso(osso, Transform3D(Basis.IDENTITY, Vector3(0.895 * lado, 1.1, z)), esqueleto)
+	# A mão de garra (pedido do usuário em 2026-11-13: "queria que fossem garras como do astro bot"; antes eram três
+	# dedinhos finos e o polegar). Palma redonda, dedos roliços e meio achatados, cada um com a falange de dentro
+	# branca e a da ponta laranja, já dobrada para baixo (para o lado da palma), e o polegar. Três dedos (DEDOS).
+	# Uma versão com luva em copo e garras grafite em gancho ficou pior ("nao, piorou"); o usuário pediu esta com quatro
+	# dedos e o polegar conferido, e depois "tenta 3 dedos mais o polegar".
+	_peca(osso, Forma.superelipsoide(Vector3(0.075, 0.07, 0.082), 0.8, 0.8), mat.branco, Vector3(0.84 * lado, 1.107, 0))
+	for d: Array in DEDOS:
+		var z: float = d[0]
+		var k: float = d[1]
+		var dobradica := _no_preso(osso, Transform3D(Basis.IDENTITY, Vector3(0.888 * lado, 1.116, z)), esqueleto)
 		var giro := Node3D.new()
 		dobradica.add_child(giro)
 		_dedos.append([giro, Vector3(0, 0, -lado), deg_to_rad(DEDO_SOLTO), deg_to_rad(DEDO_FECHADO)])
-		_filho(giro, _capsula(0.03, 0.115 if z == 0.0 else 0.1), mat.branco, Vector3(0.035 * lado, 0, 0), Vector3(0, 0, PI / 2))
-	var base := _no_preso(osso, Transform3D(Basis.IDENTITY, Vector3(0.83 * lado, 1.095, 0.07)), esqueleto)
+		_filho(giro, Forma.superelipsoide(Vector3(0.046 * k, 0.032, DEDO_LARGURA), 0.8, 0.8), mat.branco, Vector3(0.036 * k * lado, 0, 0))
+		# A segunda falange já sai dobrada para baixo: é o que faz o desenho de garra.
+		var dobra := Node3D.new()
+		dobra.position = Vector3(0.07 * k * lado, 0, 0)
+		dobra.rotation = Vector3(0, 0, -0.9 * lado)
+		giro.add_child(dobra)
+		_filho(dobra, Forma.superelipsoide(Vector3(0.042 * k, 0.03, DEDO_LARGURA - 0.002), 0.8, 0.8), mat.laranja, Vector3(0.03 * k * lado, 0, 0))
+	# O polegar: com a palma virada para baixo (T-pose), ele sai da frente da palma, um pouco para baixo, aponta para a
+	# frente e um tanto para o lado dos dedos, e a ponta dobra para o lado da palma, como os outros dedos. (Na versão de
+	# antes a ponta subia, para as costas da mão, e não fechava a garra.) Fechando, ele dobra para baixo da palma.
+	var base := _no_preso(osso, Transform3D(Basis.IDENTITY, Vector3(0.83 * lado, 1.088, 0.062)), esqueleto)
 	var polegar := Node3D.new()
 	base.add_child(polegar)
 	_dedos.append([polegar, Vector3(1, 0, 0), deg_to_rad(DEDO_SOLTO), deg_to_rad(POLEGAR_FECHADO)])
-	# Aponta para a frente e um pouco para o lado dos dedos.
-	_filho(polegar, _capsula(0.032, 0.1), mat.branco, Vector3(0.019 * lado, 0, 0.035), Vector3(PI / 2, 0.5 * lado, 0))
+	var dedao := Node3D.new()
+	dedao.rotation = Vector3(0.25, 0.65 * lado, 0)
+	polegar.add_child(dedao)
+	_filho(dedao, Forma.superelipsoide(Vector3(0.026, 0.026, 0.044), 0.8, 0.8), mat.branco, Vector3(0, 0, 0.034))
+	var ponta := Node3D.new()
+	ponta.position = Vector3(0, 0, 0.068)
+	ponta.rotation = Vector3(0.6, 0, 0)
+	dedao.add_child(ponta)
+	_filho(ponta, Forma.superelipsoide(Vector3(0.024, 0.024, 0.04), 0.8, 0.8), mat.laranja, Vector3(0, 0, 0.028))
 
 
 func _criar_materiais() -> void:
@@ -471,7 +523,7 @@ func _criar_materiais() -> void:
 
 func _montar() -> void:
 	# ----- cabeça: capacete branco quadrado e arredondado, tela preta, olhos e orelhas -----
-	_peca("head", Forma.superelipsoide(Vector3(0.56, 0.47, 0.5), 0.72, 0.72), mat.branco, Vector3(0, 1.72, 0))
+	_peca("head", Forma.superelipsoide(CAPACETE, FORMA_CAPACETE, FORMA_CAPACETE), mat.branco, CENTRO_CAPACETE)
 	# A tela desenha os olhos (rosto_led.gdshader); a moldura laranja aparece só como um friso em volta.
 	_peca("head", Forma.superelipsoide(TELA, 0.6, 0.6, -PI / 2.0, 40, 96), mat.rosto, CENTRO_TELA)
 	_peca("head", Forma.tubo_fechado(_borda_da_tela(), 0.02), mat.laranja, Vector3.ZERO)
@@ -509,7 +561,8 @@ func _montar() -> void:
 		# laranja vai até perto dali e a bola branca da mão fica no centro do giro.
 		_peca("upperarm" + s, _esfera(0.088), mat.branco, Vector3(0.22 * lado, 1.107, 0))
 		_peca("upperarm" + s, Forma.superelipsoide(Vector3(0.14, 0.085, 0.085)), mat.branco, Vector3(0.33 * lado, 1.107, 0))
-		_peca("lowerarm" + s, _esfera(0.074), mat.branco, Vector3(0.454 * lado, 1.107, 0))
+		# O cotovelo e o joelho são bolinhas cromadas (como as juntas do Astro).
+		_peca("lowerarm" + s, _esfera(0.074), mat.cromo, Vector3(0.454 * lado, 1.107, 0))
 		_peca("lowerarm" + s, Forma.superelipsoide(Vector3(0.13, 0.078, 0.078)), mat.branco, Vector3(0.575 * lado, 1.107, 0))
 		_peca("lowerarm" + s, _disco(0.086, 0.035), mat.cromo, Vector3(0.635 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
 		_peca("lowerarm" + s, _disco(0.102, 0.085), mat.laranja, Vector3(0.7 * lado, 1.107, 0), Vector3(0, 0, PI / 2))
@@ -519,7 +572,7 @@ func _montar() -> void:
 		# laranja de onde sai o laser (sem bota). -----
 		_peca("upperleg" + s, _disco(0.07, 0.03), mat.cromo, Vector3(0.285 * lado, 0.47, 0), Vector3(0, 0, PI / 2))
 		_peca("upperleg" + s, Forma.ovo(Vector3(0.124, 0.155, 0.124), 0.12), mat.branco, Vector3(0.171 * lado, 0.41, 0))
-		_peca("lowerleg" + s, _esfera(0.085), mat.branco, Vector3(0.171 * lado, 0.292, 0.004))
+		_peca("lowerleg" + s, _esfera(0.085), mat.cromo, Vector3(0.171 * lado, 0.292, 0.004))
 		_peca("lowerleg" + s, Forma.ovo(Vector3(0.094, 0.12, 0.094), 0.1), mat.branco, Vector3(0.171 * lado, 0.24, 0))
 		_peca("lowerleg" + s, _disco(0.084, 0.055), mat.laranja, Vector3(0.171 * lado, 0.165, -0.005))
 		_peca("foot" + s, _disco(0.074, 0.04), mat.cromo, Vector3(0.171 * lado, 0.122, -0.005))
@@ -538,9 +591,9 @@ func _borda_da_tela() -> PackedVector3Array:
 	var tela := TELA
 	var nt := 2.0 / 0.6
 	var centro_tela := CENTRO_TELA
-	var capacete := Vector3(0.56, 0.47, 0.5)
-	var nc := 2.0 / 0.72
-	var centro_capacete := Vector3(0, 1.72, 0)
+	var capacete := CAPACETE
+	var nc := 2.0 / FORMA_CAPACETE
+	var centro_capacete := CENTRO_CAPACETE
 	var frente := func(x: float, y: float) -> Vector3:
 		var resto := 1.0 - pow(absf(x / tela.x), nt) - pow(absf(y / tela.y), nt)
 		return centro_tela + Vector3(x, y, tela.z * pow(maxf(resto, 0.0), 1.0 / nt))
@@ -573,7 +626,8 @@ func _peca(osso: String, malha: Mesh, material: Material, pos: Vector3, rot := V
 	var mi := MeshInstance3D.new()
 	mi.mesh = malha
 	mi.material_override = material
-	var desejado := Transform3D(Basis.from_euler(rot) * Basis.from_scale(escala), pos)
+	var ajuste: Transform3D = _ajustes.get(osso, Transform3D.IDENTITY)
+	var desejado := ajuste * Transform3D(Basis.from_euler(rot) * Basis.from_scale(escala), pos)
 	var descanso := global_transform.affine_inverse() * sk.global_transform * sk.get_bone_global_rest(sk.find_bone(osso))
 	mi.transform = descanso.affine_inverse() * desejado
 	_anexo(osso, sk).add_child(mi)
@@ -584,9 +638,58 @@ func _peca(osso: String, malha: Mesh, material: Material, pos: Vector3, rot := V
 func _no_preso(osso: String, desejado: Transform3D, sk: Skeleton3D) -> Node3D:
 	var no := Node3D.new()
 	var descanso := global_transform.affine_inverse() * sk.global_transform * sk.get_bone_global_rest(sk.find_bone(osso))
-	no.transform = descanso.affine_inverse() * desejado
+	var ajuste: Transform3D = _ajustes.get(osso, Transform3D.IDENTITY)
+	no.transform = descanso.affine_inverse() * ajuste * desejado
 	_anexo(osso, sk).add_child(no)
 	return no
+
+
+## Parado (respirando), de tempos em tempos a cabeça inclina um pouco para um lado, vira de leve ou volta para o meio,
+## e os olhos acompanham. Por cima da animação, só com ela tocando; em qualquer outra coisa, volta para o meio.
+func _inclinar_cabeca(delta: float, anim: String) -> void:
+	var tocando := _ap != null and _ap.is_playing()
+	var parado := tocando and anim.begins_with("geral/Idle") and not _dancando and _giro <= 0.0
+	if parado:
+		_prox_inclinada -= delta
+		if _prox_inclinada <= 0.0:
+			_prox_inclinada = _sorteio.randf_range(1.8, 4.0)
+			_cabeca_alvo = Vector3.ZERO if _sorteio.randf() < 0.3 else Vector3(_sorteio.randf_range(-0.06, 0.12),
+					_sorteio.randf_range(-0.3, 0.3), _sorteio.randf_range(-0.24, 0.24))
+	else:
+		_cabeca_alvo = Vector3.ZERO
+	_cabeca = _cabeca.lerp(_cabeca_alvo, 1.0 - exp(-4.0 * delta))
+	if not tocando or _cabeca.length() < 0.002:
+		return
+	var i := esqueleto.find_bone("head")
+	var agora := esqueleto.get_bone_pose_rotation(i)
+	# A animação não mexeu na cabeça neste quadro: continua da mesma base (senão o giro ia somando).
+	var base := _cabeca_base if agora.is_equal_approx(_cabeca_posta) else agora
+	_cabeca_base = base
+	_cabeca_posta = base * Quaternion.from_euler(_cabeca)
+	esqueleto.set_bone_pose_rotation(i, _cabeca_posta)
+	if olhando == Vector2.ZERO and _expr == "normal":
+		_olhar_alvo = Vector2(-_cabeca.y * 0.08, 0.0)
+
+
+## Os ajustes de proporção por osso: escala em volta de um ponto (no espaço do Robo, T-pose), que pode ir para outro
+## lugar. A cabeça cresce 8% e sobe 3 cm; a mão (luvinha) cresce 25% e vai 1,3 cm para fora; braços e pernas engrossam
+## em volta do próprio eixo. Os pés não mudam.
+func _montar_ajustes() -> void:
+	_ajustes["head"] = _escala_em(CENTRO_CAPACETE, Vector3.ONE * CABECA_ESCALA, CENTRO_CAPACETE + Vector3.UP * 0.03)
+	for lado in [-1.0, 1.0]:
+		var s := ".l" if lado > 0.0 else ".r"
+		_ajustes["hand" + s] = _escala_em(Vector3(0.787 * lado, 1.107, 0), Vector3.ONE * MAO_ESCALA, Vector3(0.8 * lado, 1.107, 0))
+		var braco := _escala_em(Vector3(0, 1.107, 0), Vector3(1.0, 1.15, 1.15), Vector3(0, 1.107, 0))
+		_ajustes["upperarm" + s] = braco
+		_ajustes["lowerarm" + s] = braco
+		var perna := _escala_em(Vector3(0.171 * lado, 0, 0), Vector3(1.12, 1.0, 1.12), Vector3(0.171 * lado, 0, 0))
+		_ajustes["upperleg" + s] = perna
+		_ajustes["lowerleg" + s] = perna
+		# Os pés ficam no formato de antes (pedido do usuário: "os pés nao devem mudar aquele formato anterior").
+
+
+static func _escala_em(centro: Vector3, k: Vector3, novo_centro: Vector3) -> Transform3D:
+	return Transform3D(Basis.from_scale(k), novo_centro - centro * k)
 
 
 ## Peça presa a outra (posição e giro no espaço da peça mãe).

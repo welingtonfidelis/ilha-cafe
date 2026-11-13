@@ -2432,7 +2432,23 @@ A identidade dele fica: laranja, estrela no peito e orelhas de LED. O usuário m
 - **Fotos de antes e depois:**
   - no jogo, `--faisca-visual-captura --prefixo=antes|depois` (`tools/capturas/faisca/visual/`), na 1-1, de costas e de frente pela câmera do jogo e de perto;
   - no estúdio, `tools/foto_faisca.gd --prefixo=hoje|depois`.
-- **Falta, se o usuário quiser:** os itens 4 a 6.
+- **Itens 4 a 6** (o usuário: "pode seguir as sugestões"):
+  - **proporções** (`Robo._montar_ajustes`): cada peça presa num osso passa por uma escala no espaço do boneco, sem refazer as peças;
+    - a cabeça cresce 8% e sobe 3 cm, mais redonda (`FORMA_CAPACETE` 0,8; era 0,72);
+    - a mão cresce 25% e virou garra (pedido do usuário: "as maos me incomodam desde a concepção do faisca, queria que fossem garras como do astro bot"; eram três dedinhos finos e o polegar).
+      - Primeira tentativa: dois dedos roliços de ponta laranja. O usuário: "ainda nao passa a impressão que eu imaginei", com uma imagem das mãos do Astro.
+      - Segunda: luva em copo e garras grafite em gancho. O usuário: "nao, piorou"; pediu a anterior com quatro dedos e o polegar conferido.
+      - Ficou assim: palma redonda e dedos roliços e meio achatados (`Robo.DEDOS`), cada um com a falange de dentro branca e a da ponta laranja, dobrada para o lado da palma. Primeiro foram quatro; depois o usuário pediu "tenta 3 dedos mais o polegar", e ficaram três mais gordinhos (`DEDO_LARGURA`), com o do meio maior. A faixa laranja reta do antebraço continua.
+      - **O polegar estava errado:** a ponta subia para as costas da mão. Com a palma para baixo (T-pose), ele sai da frente da palma, aponta para a frente e para o lado dos dedos, e a ponta dobra para o lado da palma; fechando, dobra por baixo. `DEDO_FECHADO` foi de 105° para 80°, porque com a dobra a ponta entrava na palma.
+      - `tools/foto_faisca.gd` ganhou a mão de perto: de frente, de cima, a palma, parada e em punho;
+    - os pés ficaram no formato de antes. Na primeira versão viravam botinhas maiores, e o usuário pediu: "os pés nao devem mudar aquele formato anterior";
+    - braços e pernas engrossam em volta do próprio eixo;
+    - cotovelos e joelhos viram bolinhas cromadas;
+  - **a antena de raio:** barrinhas laranja em zigue-zague no alto do capacete, com uma estrelinha acesa na ponta e balançando com mola. O usuário pediu para tirar ("remove o raio da cabeça"), e ela saiu;
+  - **jeito de corpo:**
+    - parado, a cabeça inclina ou vira de leve de tempos em tempos (`_inclinar_cabeca`, por cima da animação), e os olhos acompanham;
+    - ele respira esticando e encolhendo devagar (`Jogador._corpo_vivo`).
+  - Fotos: `--faisca-visual-captura` ganhou o parado inclinando e o correr e parar, com a antena balançando.
 
 ### Lista de melhorias e novidades do Faísca (2026-11-11)
 

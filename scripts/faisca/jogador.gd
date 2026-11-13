@@ -303,6 +303,7 @@ var _cam_pronta := false
 var _sem_olhar := 0.0
 var _mola := 0.0
 var _mola_vel := 0.0
+var _respiro := 0.0
 var _giro_antes := 0.0
 var _passo := 0.0
 var _passo_lado := 1.0
@@ -770,7 +771,12 @@ func _corpo_vivo(delta: float) -> void:
 	_mola_vel += (-220.0 * _mola - 14.0 * _mola_vel) * delta
 	_mola += _mola_vel * delta
 	_mola = clampf(_mola, -0.25, 0.35)
-	robo.scale = Vector3(1.0 + _mola * 0.6, 1.0 - _mola, 1.0 + _mola * 0.6)
+	# Parado no chão, ele respira: estica e encolhe de leve, devagar (jeito de corpo, 2026-11-13).
+	var respira := 0.0
+	if is_on_floor() and vel_h < 0.3 and golpe_atual < 0 and giro_forte <= 0.0 and _carga <= 0.0:
+		_respiro += delta
+		respira = sin(_respiro * 2.6) * 0.014
+	robo.scale = Vector3(1.0 + _mola * 0.6 - respira * 0.4, 1.0 - _mola + respira, 1.0 + _mola * 0.6 - respira * 0.4)
 
 
 ## Pouso de verdade: achata conforme a queda e solta um anelzinho de poeira.

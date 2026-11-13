@@ -253,6 +253,23 @@ func capturar_visual() -> void:
 	j.robo.expressao("normal")
 	await m._esperar(0.6)
 	await m._foto("visual/%s_3_perto" % prefixo)
+	# Parado um tempo: a cabeça inclinando (dois instantes).
+	await m._esperar(2.2)
+	await m._foto("visual/%s_4_parado_a" % prefixo)
+	await m._esperar(1.6)
+	await m._foto("visual/%s_5_parado_b" % prefixo)
+	# Correndo e parando de repente: a antena balança. Câmera de lado.
+	j.teleportar(p)
+	await m._esperar(0.3)
+	var lado := Vector3(sin(j.yaw), 0, cos(j.yaw)).cross(Vector3.UP)
+	cam.global_position = p + Vector3(0, 0, 0) + Vector3(-sin(j.yaw), 0, -cos(j.yaw)) * 3.0 + lado * 5.0 + Vector3.UP * 1.8
+	cam.look_at(p + Vector3(-sin(j.yaw), 0, -cos(j.yaw)) * 3.0 + Vector3.UP * 1.3)
+	j.forcar_direcao = Vector2(0, -1)
+	await m._esperar(0.45)
+	await m._foto("visual/%s_6_correndo" % prefixo)
+	j.forcar_direcao = Vector2.ZERO
+	await m._esperar(0.12)
+	await m._foto("visual/%s_7_parando" % prefixo)
 	m.get_tree().quit()
 
 
