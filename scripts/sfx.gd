@@ -15,12 +15,31 @@ const ALL := [
 	"flecha", "ventosa", "bolha", "estouro", "bonk", "tonto", "bandeira", "coracao", "pulo",
 	"reaparecer", "ui_mover", "ui_ok", "splash", "granulado", "pipoqueira", "pe_de_moleque",
 	"recarga", "sem_municao", "troca_arma", "arremesso", "granada", "municao", "pancada",
+	# Faísca (Parte 2).
+	"faisca_soco", "faisca_soco_forte", "faisca_acerto", "bolota_ai", "bolota_estoura", "faisca_giro", "faisca_carga",
+	"faisca_piao", "faisca_pisao", "faisca_agarra", "faisca_arremesso", "faisca_pulo", "faisca_pouso", "faisca_laser_liga",
+	"faisca_laser", "faisca_mola", "faisca_dor", "faisca_curto", "estrelinha", "vaga_lume", "faisca_danca",
+	# 3-1 Pico Gelado.
+	"sino", "gelo",
+	# 3-2 Fábrica de Blocos.
+	"martelo", "tique", "pistao",
+	# Faisquinhas (o chamado e o resgate).
+	"faisquinha_chama", "faisquinha_salvo",
+	# Moedas e a Máquina de Brindes.
+	"moeda", "maquina",
+	# O mundo que reage (item 6) e a Bolota gigante da 1-1 (item 9).
+	"mato", "caixa_quebra", "pote_quebra", "presente_abre", "poca", "rolar", "enchente", "confeitos", "interruptor", "brilha", "alarme", "vento", "vendaval",
+	# A Nave Aspiratrão (a fase final).
+	"sem_gravidade", "aspirador", "choro",
 ]
 
 ## Nos testes, anota o nome de cada som tocado (não dá para ouvir num teste sem tela).
 static var logging := false
 static var played: Array[String] = []
 static var _cache := {}
+## Volume de sempre de cada canal; os Ajustes de quem joga mexem por cima.
+static var _base_musica := -9.0
+static var _base_efeitos := 0.0
 
 
 static func setup_buses(music_db := -9.0, sfx_db := 0.0) -> void:
@@ -30,8 +49,19 @@ static func setup_buses(music_db := -9.0, sfx_db := 0.0) -> void:
 			var idx := AudioServer.bus_count - 1
 			AudioServer.set_bus_name(idx, bus_name)
 			AudioServer.set_bus_send(idx, &"Master")
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(BUS_MUSIC), music_db)
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(BUS_SFX), sfx_db)
+	_base_musica = music_db
+	_base_efeitos = sfx_db
+	aplicar_volumes()
+
+
+## Põe nos canais o volume de sempre mais o dos Ajustes (no zero, o canal fica mudo).
+static func aplicar_volumes() -> void:
+	for spec in [[BUS_MUSIC, _base_musica, Ajustes.musica], [BUS_SFX, _base_efeitos, Ajustes.efeitos]]:
+		var idx := AudioServer.get_bus_index(spec[0])
+		if idx == -1:
+			continue
+		AudioServer.set_bus_volume_db(idx, spec[1] + Ajustes.decibeis(spec[2]))
+		AudioServer.set_bus_mute(idx, spec[2] <= 0)
 
 
 static func stream(sfx_name: String) -> AudioStream:
@@ -68,6 +98,21 @@ static func play_at(parent: Node, sfx_name: String, pos: Vector3, volume_db := 0
 	p.max_distance = 60.0
 	parent.add_child(p)
 	p.global_position = pos
+	p.play()
+	p.finished.connect(p.queue_free)
+	return p
+
+
+## Vinheta (o tema curto do Faisquinha resgatado e o da Estrela Grande, item 7 da lista do Faísca): toca uma vez no
+## canal "Musica", para seguir o volume da música dos Ajustes, e se solta no fim.
+static func vinheta(parent: Node, nome: String) -> AudioStreamPlayer:
+	var s: AudioStreamWAV = load(MUSIC_DIR % nome)
+	s.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	var p := AudioStreamPlayer.new()
+	p.name = "Vinheta"
+	p.stream = s
+	p.bus = BUS_MUSIC
+	parent.add_child(p)
 	p.play()
 	p.finished.connect(p.queue_free)
 	return p

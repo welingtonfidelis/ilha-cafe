@@ -78,7 +78,7 @@ func _physics_process(delta: float) -> void:
 	var d := Vector2(p.global_position.x - center.x, p.global_position.z - center.z).length()
 	match state:
 		State.ESPERANDO, State.PAUSADA:
-			if d < radius and not p.dizzy and not p.in_vehicle:
+			if d < radius and not p.dizzy and not p.in_vehicle and not p.parked:
 				state = State.CHEGANDO
 				_timer = INTRO * (0.2 if fast else 1.0)
 				Sfx.play(game, "alerta", 2.0, 0.0)

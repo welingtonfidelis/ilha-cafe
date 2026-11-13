@@ -1,0 +1,516 @@
+class_name Carona
+extends AnimatableBody3D
+## Viagem entre dois playgrounds que espera o Faísca (2-2 Nuvens de Algodão-Doce, 2026-10-30): a nuvem-carro e o
+## teleférico. Fica parada em `de` até ele subir; um instante depois sai sozinha, acelera, freia e para em `ate`.
+## - Se ele descer e subir de novo em `ate`, ela o leva de volta (é o atalho para quem quer voltar atrás de um
+##   vaga-lume).
+## - Vazia em `ate` por ESPERA_VAZIA, ela volta sozinha para `de`, para quem cair e voltar no posto andar de novo.
+## - Quem chega em cima dela precisa descer antes de ela sair de novo do mesmo lugar.
+## O nó fica no meio do chão, onde ele pisa. `tipo` "nuvem" é uma nuvem branca grande; "cabine" é a cabine rosa do
+## teleférico, pendurada no cabo, com grade dos lados e aberta na frente e atrás. Na 2-3 (2026-10-30) vieram o "trem"
+## (vagão chato com a locomotiva na frente), o "aviao" (avião de papel) e o "carrinho" (carrinho de corda); com
+## `caminho` (uma lista de pontos), ela segue a linha por eles em vez da reta de `de` até `ate`, virando nas curvas.
+## Na 3-1 (2026-10-30) vieram o "treno" (trenó vermelho puxado por dois pinguins) e a "cadeirinha" (a cadeirinha de
+## esqui azul, pendurada no cabo, com encosto atrás e grade dos lados). Na 3-2 (2026-10-31) vieram o "palete" (o
+## palete laranja pendurado no gancho da ponte rolante), a "empilhadeira" (o Faísca vai no palete do garfo) e o
+## "montacarga" (o elevador laranja que leva de volta quem caiu no chão da fábrica, que sobe reto e usa `giro_fixo`).
+## Na 3-3 (2026-11-12) veio o "balao" (o balão de ar quente: o cesto de vime com o balão vermelho em cima).
+## Na nave (2026-11-12) veio a "capsula" (a cápsula cor-de-rosa do tubo pneumático: o piso redondo com a casca de vidro
+## aberta na frente e atrás; o tubo de vidro por onde ela passa é da fase).
+
+signal saiu
+signal chegou
+
+const ESPERA_VAZIA := 8.0
+
+var de := Vector3.ZERO
+var ate := Vector3.ZERO
+var velocidade := 5.0
+var tipo := "nuvem"
+## Pontos do caminho (opcional); o primeiro vira `de` e o último, `ate`.
+var caminho: Array = []
+## em_de, indo, em_ate, voltando
+var estado := "em_de"
+## Travada, ela não sai do lugar (a cadeirinha da 3-1 espera os três sinos da Vila do Iglu).
+var travada := false
+## Para onde ela fica virada (radianos); sem ele, vira para o lado em que anda. O monta-carga, que sobe reto, usa.
+var giro_fixo := NAN
+var _andado := 0.0
+var _dentro := 0.0
+var _vazio := 0.0
+var _liberada := true
+var _area: Area3D
+var _curva: Curve3D
+
+
+func _ready() -> void:
+	sync_to_physics = true
+	collision_layer = 1
+	collision_mask = 0
+	var dir := ate - de
+	if caminho.size() >= 2:
+		_curva = Curve3D.new()
+		_curva.bake_interval = 0.4
+		for p: Vector3 in caminho:
+			_curva.add_point(p)
+		de = caminho[0]
+		ate = caminho[caminho.size() - 1]
+		dir = caminho[1] - caminho[0]
+	rotation.y = giro_fixo if not is_nan(giro_fixo) else atan2(dir.x, dir.z)
+	match tipo:
+		"cabine":
+			_montar_cabine()
+		"trem":
+			_montar_trem()
+		"aviao":
+			_montar_aviao()
+		"carrinho":
+			_montar_carrinho()
+		"treno":
+			_montar_treno()
+		"cadeirinha":
+			_montar_cadeirinha()
+		"palete":
+			_montar_palete()
+		"empilhadeira":
+			_montar_empilhadeira()
+		"montacarga":
+			_montar_montacarga()
+		"balao":
+			_montar_balao()
+		"capsula":
+			_montar_capsula()
+		_:
+			_montar_nuvem()
+	_area = Area3D.new()
+	_area.collision_layer = 0
+	_area.collision_mask = Fase.CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(2.8, 1.2, 2.8)
+	cs.shape = caixa
+	cs.position.y = 0.6
+	_area.add_child(cs)
+	add_child(_area)
+
+
+func _montar_nuvem() -> void:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("ffffff")
+	m.roughness = 1.0
+	m.rim_enabled = true
+	m.rim = 0.25
+	for bola in [[Vector3(0, -0.45, 0), Vector3(2.5, 0.6, 2.5)], [Vector3(1.4, -0.25, 0.5), Vector3(1.4, 0.65, 1.4)],
+			[Vector3(-1.3, -0.3, -0.4), Vector3(1.5, 0.6, 1.5)], [Vector3(0.2, -0.3, 1.4), Vector3(1.2, 0.55, 1.2)], [Vector3(-0.3, -0.3, -1.5), Vector3(1.2, 0.55, 1.2)]]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = Forma.superelipsoide(bola[1], 1.0, 1.0)
+		mi.material_override = m
+		mi.position = bola[0]
+		add_child(mi)
+	# Uma bandeirinha laranja atrás: a cor do que mexe.
+	var mastro := MeshInstance3D.new()
+	var haste := CylinderMesh.new()
+	haste.top_radius = 0.05
+	haste.bottom_radius = 0.05
+	haste.height = 1.8
+	mastro.mesh = haste
+	mastro.material_override = _material(Color("6a6478"))
+	mastro.position = Vector3(0, 0.9, -2.0)
+	add_child(mastro)
+	var flamula := MeshInstance3D.new()
+	var pano := BoxMesh.new()
+	pano.size = Vector3(0.05, 0.5, 0.8)
+	flamula.mesh = pano
+	flamula.material_override = _material(Color("ff7a22"))
+	flamula.position = Vector3(0, 1.55, -2.4)
+	add_child(flamula)
+	var cs := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = 2.5
+	cil.height = 0.8
+	cs.shape = cil
+	cs.position.y = -0.4
+	add_child(cs)
+
+
+func _montar_cabine() -> void:
+	var rosa := _material(Color("ff9fd0"))
+	var branco := _material(Color("fff6fb"))
+	var ferro := _material(Color("4a4658"))
+	ferro.metallic = 0.5
+	_caixa(Vector3(3.4, 0.3, 3.4), Vector3(0, -0.15, 0), rosa, true)
+	# Grade dos lados (com colisão, 0,7 m: ele não cai de lado), aberta na frente e atrás.
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.7, 3.4), Vector3(lado * 1.62, 0.35, 0), branco, true)
+		for frente in [-1.0, 1.0]:
+			_caixa(Vector3(0.15, 3.3, 0.15), Vector3(lado * 1.62, 1.65, frente * 1.62), ferro, false)
+	_caixa(Vector3(3.8, 0.35, 3.8), Vector3(0, 3.45, 0), rosa, true)
+	_caixa(Vector3(0.12, 1.6, 0.12), Vector3(0, 4.4, 0), ferro, false)
+	_caixa(Vector3(1.0, 0.35, 0.5), Vector3(0, 5.2, 0), ferro, false)
+
+
+## Vagão chato vermelho com grade dos lados e a locomotiva verde na frente (Holiday Bits).
+func _montar_trem() -> void:
+	var vermelho := _material(Color("e94f4f"))
+	var amarelo := _material(Color("ffc93a"))
+	_caixa(Vector3(3.2, 0.4, 5.0), Vector3(0, -0.2, 0), vermelho, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.2, 0.6, 5.0), Vector3(lado * 1.5, 0.3, 0), amarelo, true)
+		for frente in [-1.0, 1.0]:
+			var roda := MeshInstance3D.new()
+			var cil := CylinderMesh.new()
+			cil.top_radius = 0.5
+			cil.bottom_radius = 0.5
+			cil.height = 0.3
+			roda.mesh = cil
+			roda.material_override = _material(Color("3a3150"))
+			roda.rotation.z = PI / 2.0
+			roda.position = Vector3(lado * 1.5, -0.6, frente * 1.6)
+			add_child(roda)
+	var loco: Node3D = load(Fase.QUARTO + "train_locomotive.gltf").instantiate()
+	loco.scale = Vector3.ONE * 6.0
+	loco.position = Vector3(0, -1.0, 5.4)
+	add_child(loco)
+	_caixa(Vector3(2.6, 3.6, 5.0), Vector3(0, 0.8, 5.6), _material(Color.WHITE), true).visible = false
+
+
+## Avião de papel branco, deitado, com o bico para a frente (+Z) e uma quilha embaixo.
+func _montar_aviao() -> void:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var bico := Vector3(0, 0, 3.4)
+	var meio := Vector3(0, 0, -1.4)
+	var asas := [Vector3(-2.6, 0.25, -2.4), Vector3(2.6, 0.25, -2.4)]
+	for asa: Vector3 in asas:
+		for v in [bico, asa, meio]:
+			st.set_normal(Vector3.UP)
+			st.add_vertex(v)
+	for v in [bico, meio, Vector3(0, -1.0, -1.8)]:
+		st.set_normal(Vector3.RIGHT)
+		st.add_vertex(v)
+	var papel := StandardMaterial3D.new()
+	papel.albedo_color = Color("fbfbff")
+	papel.cull_mode = BaseMaterial3D.CULL_DISABLED
+	papel.roughness = 0.9
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = papel
+	add_child(mi)
+	var dobra := MeshInstance3D.new()
+	var linha := BoxMesh.new()
+	linha.size = Vector3(0.08, 0.06, 4.8)
+	dobra.mesh = linha
+	dobra.material_override = _material(Color("c9d4e8"))
+	dobra.position = Vector3(0, 0.03, 1.0)
+	add_child(dobra)
+	var cs := CollisionShape3D.new()
+	var forma := BoxShape3D.new()
+	forma.size = Vector3(3.4, 0.3, 4.8)
+	cs.shape = forma
+	cs.position = Vector3(0, -0.15, 0.4)
+	add_child(cs)
+
+
+## Carrinho de corda azul: chão com grade dos lados, o capô na frente, quatro rodas e a chave de corda atrás.
+func _montar_carrinho() -> void:
+	var azul := _material(Color("3f8fe0"))
+	_caixa(Vector3(3.2, 0.3, 4.4), Vector3(0, -0.15, 0), azul, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.2, 0.7, 4.4), Vector3(lado * 1.5, 0.35, 0), azul, true)
+		for frente in [-1.0, 1.0]:
+			var roda := MeshInstance3D.new()
+			var cil := CylinderMesh.new()
+			cil.top_radius = 0.7
+			cil.bottom_radius = 0.7
+			cil.height = 0.5
+			roda.mesh = cil
+			roda.material_override = _material(Color("2b2140"))
+			roda.rotation.z = PI / 2.0
+			roda.position = Vector3(lado * 1.7, -0.4, frente * 1.5)
+			add_child(roda)
+	_caixa(Vector3(3.2, 1.0, 1.2), Vector3(0, 0.5, 2.8), _material(Color("e94f4f")), true)
+	_caixa(Vector3(2.6, 0.7, 0.1), Vector3(0, 1.35, 2.2), _material(Color("bfe3ff")), false)
+	_caixa(Vector3(0.25, 1.2, 0.25), Vector3(0, 0.6, -2.4), _material(Color("ffc93a")), false)
+	_caixa(Vector3(1.4, 0.25, 0.25), Vector3(0, 1.2, -2.4), _material(Color("ffc93a")), false)
+
+
+## Trenó vermelho com esquis amarelos e grade baixa dos lados, puxado por dois pinguins nas quinas da frente (+Z).
+func _montar_treno() -> void:
+	var vermelho := _material(Color("e94f4f"))
+	var amarelo := _material(Color("ffc93a"))
+	_caixa(Vector3(3.2, 0.4, 4.4), Vector3(0, -0.2, 0), vermelho, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.2, 0.6, 4.4), Vector3(lado * 1.5, 0.3, 0), vermelho, true)
+		_caixa(Vector3(0.25, 0.2, 5.2), Vector3(lado * 1.3, -0.75, 0.3), amarelo, false)
+		_caixa(Vector3(0.25, 0.6, 0.2), Vector3(lado * 1.3, -0.45, 2.2), amarelo, false)
+		_caixa(Vector3(0.15, 0.55, 0.15), Vector3(lado * 1.3, -0.45, -1.6), amarelo, false)
+	_caixa(Vector3(3.2, 1.2, 0.3), Vector3(0, 0.6, -2.05), vermelho, true)
+	var azul := _material(Color("1d2340"))
+	var branco := _material(Color("f4fbff"))
+	var laranja := _material(Color("ff8a2a"))
+	# Os pinguins puxam pelas quinas da frente, um de cada lado, e a frente fica aberta para descer andando (com eles
+	# no meio, sólidos, o trenó virava uma caixa fechada: grade dos lados, encosto atrás e pinguins na frente).
+	for lado in [-1.0, 1.0]:
+		var x: float = lado * 2.1
+		var corpo := MeshInstance3D.new()
+		var esfera := SphereMesh.new()
+		esfera.radius = 0.5
+		esfera.height = 1.3
+		corpo.mesh = esfera
+		corpo.material_override = azul
+		corpo.position = Vector3(x, 0.15, 3.0)
+		add_child(corpo)
+		var barriga := MeshInstance3D.new()
+		var b := SphereMesh.new()
+		b.radius = 0.38
+		b.height = 1.0
+		barriga.mesh = b
+		barriga.material_override = branco
+		barriga.position = Vector3(x, 0.1, 3.25)
+		add_child(barriga)
+		var bico := MeshInstance3D.new()
+		var cone := CylinderMesh.new()
+		cone.top_radius = 0.0
+		cone.bottom_radius = 0.1
+		cone.height = 0.3
+		bico.mesh = cone
+		bico.material_override = laranja
+		bico.rotation.x = PI / 2.0
+		bico.position = Vector3(x, 0.6, 3.45)
+		add_child(bico)
+		_caixa(Vector3(0.06, 0.06, 1.0), Vector3(lado * 1.75, 0.1, 2.3), _material(Color("3a3150")), false)
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = Vector3(1.0, 1.4, 1.1)
+		cs.shape = forma
+		cs.position = Vector3(x, 0.2, 3.05)
+		add_child(cs)
+
+
+## Cadeirinha de esqui azul: assento com grade dos lados, encosto atrás e a haste até o cabo.
+func _montar_cadeirinha() -> void:
+	var azul := _material(Color("3f8fe0"))
+	var ferro := _material(Color("3a3150"))
+	ferro.metallic = 0.5
+	_caixa(Vector3(3.4, 0.3, 3.2), Vector3(0, -0.15, 0), azul, true)
+	_caixa(Vector3(3.4, 1.6, 0.3), Vector3(0, 0.8, -1.45), azul, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.7, 3.2), Vector3(lado * 1.62, 0.35, 0), azul, true)
+		_caixa(Vector3(0.12, 4.6, 0.12), Vector3(lado * 1.62, 2.6, -1.45), ferro, false)
+	_caixa(Vector3(3.4, 0.15, 0.15), Vector3(0, 4.9, -1.45), ferro, true)
+	_caixa(Vector3(0.12, 2.4, 0.12), Vector3(0, 6.1, -1.45), ferro, false)
+	_caixa(Vector3(1.0, 0.35, 0.5), Vector3(0, 7.4, -1.45), ferro, false)
+
+
+## Balão de ar quente: o cesto de vime (chão e grade baixa dos quatro lados, aberto atrás para entrar), as quatro cordas
+## e o balão vermelho com a faixa amarela lá em cima (só enfeite: o Faísca não esbarra nele).
+func _montar_balao() -> void:
+	var vime := _material(Color("b07a45"))
+	var vime_escuro := _material(Color("8a5a36"))
+	var vermelho := _material(Color("e94f4f"))
+	var amarelo := _material(Color("ffd23f"))
+	var corda := _material(Color("3a3150"))
+	_caixa(Vector3(3.6, 0.3, 3.6), Vector3(0, -0.15, 0), vime, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.18, 0.8, 3.6), Vector3(lado * 1.71, 0.4, 0), vime_escuro, true)
+	_caixa(Vector3(3.6, 0.8, 0.18), Vector3(0, 0.4, 1.71), vime_escuro, true)
+	for x in [-1.0, 1.0]:
+		for z in [-1.0, 1.0]:
+			_caixa(Vector3(0.06, 4.2, 0.06), Vector3(x * 1.6, 2.5, z * 1.6), corda, false)
+	var bola := MeshInstance3D.new()
+	bola.mesh = Forma.superelipsoide(Vector3(3.6, 4.2, 3.6), 1.0, 1.0)
+	bola.material_override = vermelho
+	bola.position.y = 8.6
+	add_child(Fase.so_enfeite(bola))
+	var faixa := MeshInstance3D.new()
+	var toro := TorusMesh.new()
+	toro.inner_radius = 3.35
+	toro.outer_radius = 3.75
+	toro.rings = 48
+	faixa.mesh = toro
+	faixa.material_override = amarelo
+	faixa.position.y = 8.2
+	add_child(Fase.so_enfeite(faixa))
+	var boca := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 1.6
+	cone.bottom_radius = 1.0
+	cone.height = 1.2
+	boca.mesh = cone
+	boca.material_override = vermelho
+	boca.position.y = 4.9
+	add_child(Fase.so_enfeite(boca))
+
+
+## Palete laranja pendurado no gancho da ponte rolante: chão com grade baixa dos lados, aberto na frente e atrás, e as
+## quatro cordas até o gancho (a viga que corre nos trilhos lá no alto é da fase).
+func _montar_palete() -> void:
+	var laranja := _material(Color("ff7a22"))
+	var escuro := _material(Color("2b2140"))
+	_caixa(Vector3(4.0, 0.4, 4.0), Vector3(0, -0.2, 0), laranja, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.2, 0.7, 4.0), Vector3(lado * 1.9, 0.35, 0), laranja, true)
+	var gancho := Vector3(0, 4.6, 0)
+	for c in [Vector3(-1.8, 0.1, -1.8), Vector3(1.8, 0.1, -1.8), Vector3(1.8, 0.1, 1.8), Vector3(-1.8, 0.1, 1.8)]:
+		_corda(c, gancho, escuro)
+	_caixa(Vector3(0.8, 0.6, 0.8), gancho + Vector3.UP * 0.3, escuro, false)
+
+
+## Empilhadeira laranja: o Faísca vai no palete do garfo, na frente (o nó fica no meio do palete, em cima); atrás dele
+## ficam o mastro e o corpo com a cabine. Grade baixa dos lados do palete; a frente fica aberta para descer andando.
+func _montar_empilhadeira() -> void:
+	var laranja := _material(Color("ff7a22"))
+	var madeira := _material(Color("c49a6c"))
+	var ferro := _material(Color("4a5068"))
+	var escuro := _material(Color("2b2140"))
+	_caixa(Vector3(3.2, 0.35, 3.2), Vector3(0, -0.175, 0), madeira, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.6, 3.2), Vector3(lado * 1.52, 0.3, 0), madeira, true)
+	_caixa(Vector3(2.8, 4.4, 0.3), Vector3(0, 1.8, -1.8), ferro, true)
+	_caixa(Vector3(3.0, 1.8, 3.6), Vector3(0, 0.6, -3.9), laranja, true)
+	_caixa(Vector3(3.0, 0.25, 2.6), Vector3(0, 3.7, -4.2), escuro, true)
+	for lado in [-1.0, 1.0]:
+		for z in [-3.0, -5.4]:
+			_caixa(Vector3(0.15, 2.2, 0.15), Vector3(lado * 1.35, 2.5, z), escuro, false)
+		for z in [-2.6, -5.0]:
+			var roda := MeshInstance3D.new()
+			var cil := CylinderMesh.new()
+			cil.top_radius = 0.5
+			cil.bottom_radius = 0.5
+			cil.height = 0.4
+			roda.mesh = cil
+			roda.material_override = escuro
+			roda.rotation.z = PI / 2.0
+			roda.position = Vector3(lado * 1.6, 0.1, z)
+			add_child(roda)
+
+
+## Monta-carga laranja: plataforma com grade baixa dos lados, aberta na frente e atrás (o poço com as colunas é da fase).
+func _montar_montacarga() -> void:
+	var laranja := _material(Color("ff7a22"))
+	_caixa(Vector3(3.4, 0.4, 3.4), Vector3(0, -0.2, 0), laranja, true)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.7, 3.4), Vector3(lado * 1.62, 0.35, 0), laranja, true)
+
+
+## Cápsula do tubo pneumático: piso redondo rosa com a beira de ferro, os dois arcos laranja por cima e a casca de vidro
+## dos lados (aberta na frente e atrás, para entrar e sair andando).
+func _montar_capsula() -> void:
+	var rosa := _material(Color("ff8fd0"))
+	var ferro := _material(Color("3a3150"))
+	var laranja := _material(Color("ff7a22"))
+	_caixa(Vector3(3.6, 0.4, 3.6), Vector3(0, -0.2, 0), rosa, true)
+	_caixa(Vector3(3.8, 0.2, 3.8), Vector3(0, -0.45, 0), ferro, false)
+	for lado in [-1.0, 1.0]:
+		_caixa(Vector3(0.15, 0.6, 3.6), Vector3(lado * 1.72, 0.3, 0), rosa, true)
+	var vidro := StandardMaterial3D.new()
+	vidro.albedo_color = Color(1.0, 0.7, 0.9, 0.22)
+	vidro.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	vidro.cull_mode = BaseMaterial3D.CULL_DISABLED
+	vidro.roughness = 0.05
+	var casca := MeshInstance3D.new()
+	var c := CylinderMesh.new()
+	c.top_radius = 1.9
+	c.bottom_radius = 1.9
+	c.height = 3.4
+	c.cap_top = false
+	c.cap_bottom = false
+	casca.mesh = c
+	casca.material_override = vidro
+	casca.rotation.x = PI / 2.0
+	casca.position = Vector3(0, 1.5, 0)
+	casca.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(Fase.so_enfeite(casca))
+	for z in [-1.5, 1.5]:
+		var arco := MeshInstance3D.new()
+		var t := TorusMesh.new()
+		t.inner_radius = 1.85
+		t.outer_radius = 2.05
+		arco.mesh = t
+		arco.material_override = laranja
+		arco.rotation.x = PI / 2.0
+		arco.position = Vector3(0, 1.5, z)
+		add_child(Fase.so_enfeite(arco))
+
+
+## Corda fininha (sem colisão, enfeite que se atravessa) de `de` até `ate`.
+func _corda(de: Vector3, ate: Vector3, material: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = 0.04
+	cil.bottom_radius = 0.04
+	cil.height = de.distance_to(ate)
+	mi.mesh = cil
+	mi.material_override = material
+	mi.position = (de + ate) * 0.5
+	mi.basis = Basis(Quaternion(Vector3.UP, (ate - de).normalized()))
+	add_child(Fase.so_enfeite(mi))
+
+
+func _caixa(tamanho: Vector3, pos: Vector3, material: Material, solida: bool) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var malha := BoxMesh.new()
+	malha.size = tamanho
+	mi.mesh = malha
+	mi.material_override = material
+	# O desenho das partes sólidas fica 1,5 cm acima da colisão: parada na estação, o piso da carona ficava no mesmo
+	# plano do chão de lá, e os dois piscavam.
+	mi.position = pos + (Vector3.UP * 0.015 if solida else Vector3.ZERO)
+	add_child(mi)
+	if solida:
+		var cs := CollisionShape3D.new()
+		var forma := BoxShape3D.new()
+		forma.size = tamanho
+		cs.shape = forma
+		cs.position = pos
+		add_child(cs)
+	return mi
+
+
+func _material(cor: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = cor
+	m.roughness = 0.6
+	return m
+
+
+## O Faísca está em cima, em pé no chão dela.
+func com_faisca() -> bool:
+	for corpo in _area.get_overlapping_bodies():
+		if corpo is Jogador and (corpo as Jogador).is_on_floor():
+			return true
+	return false
+
+
+func _physics_process(delta: float) -> void:
+	var total := _curva.get_baked_length() if _curva else de.distance_to(ate)
+	var duracao := total / velocidade + 1.5
+	var dentro := com_faisca()
+	if not dentro:
+		_liberada = true
+	match estado:
+		"em_de", "em_ate":
+			_dentro = _dentro + delta if dentro and _liberada else 0.0
+			_vazio = 0.0 if dentro else _vazio + delta
+			if not travada and (_dentro > 0.4 or (estado == "em_ate" and _vazio > ESPERA_VAZIA)):
+				estado = "indo" if estado == "em_de" else "voltando"
+				_dentro = 0.0
+				saiu.emit()
+				Sfx.play_at(get_parent(), "faisca_mola", global_position, -6.0)
+		"indo", "voltando":
+			_andado = clampf(_andado + (delta if estado == "indo" else -delta) / duracao, 0.0, 1.0)
+			var s := 0.5 - 0.5 * cos(PI * _andado)
+			if _curva:
+				# Posição e giro juntos num transform só: mudando um e depois o outro, o corpo animado ficava só com o
+				# giro (achado na sonda do trenzinho, em 2026-10-30).
+				var d := s * total
+				var tg := _curva.sample_baked(minf(d + 0.6, total), true) - _curva.sample_baked(maxf(d - 0.6, 0.0), true)
+				var giro := atan2(tg.x, tg.z) if Vector2(tg.x, tg.z).length() > 0.05 else rotation.y
+				global_transform = Transform3D(Basis(Vector3.UP, giro), _curva.sample_baked(d, true))
+			else:
+				global_position = de.lerp(ate, s)
+			if (estado == "indo" and _andado >= 1.0) or (estado == "voltando" and _andado <= 0.0):
+				estado = "em_ate" if estado == "indo" else "em_de"
+				_liberada = not dentro
+				_vazio = 0.0
+				chegou.emit()

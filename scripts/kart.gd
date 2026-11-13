@@ -34,6 +34,11 @@ var driver: Player
 ## Lugar no box; volta para cá quando o aventureiro desce longe ou sai da pista.
 var home := Transform3D.IDENTITY
 var input_enabled := true
+## Rival da corrida (pedido do usuário em 2026-10-29: "mais 1 ou 2 corredores na pista, pilotando com IA"): o
+## acelerador e o volante vêm de ai_throttle e ai_steer (a KartRace guia), não do controle.
+var ai := false
+var ai_throttle := 0.0
+var ai_steer := 0.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
 var _visual: Node3D
 var _bump := 0.0
@@ -47,6 +52,14 @@ var _spin := 0.0
 var _cam_yaw := 0.0
 var _cam_pitch := 0.0
 var _cam_idle := 10.0
+## O corpo segue o chão (pedido do usuário em 2026-10-29: subindo morro, o kart ficava reto e parecia flutuar):
+## inclinação para a frente e para o lado e quanto ele desce até as rodas encostarem. _axle e _track são a
+## metade da distância entre as rodas de trás e as da frente e entre as dos lados.
+var _ground_pitch := 0.0
+var _ground_roll := 0.0
+var _ground_dy := 0.0
+var _axle := 0.0
+var _track := 0.0
 const CAM_STICK := Vector2(2.6, 1.6)
 const CAM_MOUSE := 0.004
 
@@ -80,6 +93,14 @@ func _ready() -> void:
 		var a: AABB = mi.transform * mi.get_aabb()
 		box = a if first else box.merge(a)
 		first = false
+	for w in _wheels:
+		var at := to_local(w.global_position)
+		_axle = maxf(_axle, absf(at.z))
+		_track = maxf(_track, absf(at.x))
+	if _axle < 0.3:
+		_axle = 0.9
+	if _track < 0.2:
+		_track = 0.6
 	# Cápsula deitada: passa liso pelas emendas das peças da pista (uma caixa engancha nelas).
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
@@ -104,6 +125,9 @@ func forward() -> Vector3:
 func park() -> void:
 	driving = false
 	driver = null
+	ai = false
+	ai_throttle = 0.0
+	ai_steer = 0.0
 	speed = 0.0
 	velocity = Vector3.ZERO
 	collision_layer = 1
@@ -113,16 +137,38 @@ func park() -> void:
 	_head = null
 	_steer = 0.0
 	_pose_wheels()
+	# Estacionado fica encostado no chão de onde parou (na vaga, reto).
+	if is_inside_tree():
+		_fit_to_ground(0.0)
+		_visual.rotation = Vector3(_ground_pitch, 0.0, _ground_roll)
+		_visual.position.y = _ground_dy
 
 
-## Começa a dirigir, com o aventureiro (o mesmo personagem dele) no lugar do piloto.
+## Começa a dirigir, com o aventureiro (o mesmo personagem dele, ou o Faísca) no lugar do piloto.
 func drive(who: Player) -> void:
-	driving = true
+	# A criança ou, com o Faísca na ilha, o Robo (no mesmo esqueleto do KayKit).
+	_seat(who.driver_model())
 	driver = who
+	_cam_yaw = 0.0
+	_cam_pitch = 0.0
+	_place_camera(1.0)
+
+
+## Rival da corrida: o computador dirige, com `pilot` (um personagem do KayKit) no banco.
+func drive_ai(pilot: Node3D) -> void:
+	_seat(pilot)
+	ai = true
+	input_enabled = false
+
+
+## Liga o veículo (na camada de quem dirige, que o mundo não vê) com `model` no banco, segurando o volante.
+func _seat(model: Node3D) -> void:
+	driving = true
+	driver = null
 	speed = 0.0
 	collision_layer = 1 << 1
 	set_physics_process(true)
-	_head = load(who.model_path()).instantiate()
+	_head = model
 	_head.name = "PilotoNoBanco"
 	for m in _head.find_children("*", "MeshInstance3D", true, false):
 		var n := String(m.name)
@@ -131,11 +177,12 @@ func drive(who: Player) -> void:
 	# A cintura do KayKit fica a 0,45 do chão do modelo: ela vai na altura do banco.
 	_head.position = driver_spot - Vector3(0, 0.45 * driver_scale, 0)
 	_visual.add_child(_head)
-	var ap := AnimUtil.make_player(_head, ["ferramentas"])
-	ap.play(&"ferramentas/Holding_A")
-	_cam_yaw = 0.0
-	_cam_pitch = 0.0
-	_place_camera(1.0)
+	if _head is Robo:
+		(_head as Robo).esconder_pernas()
+		(_head as Robo).animar("ferramentas/Holding_A", 0.0)
+	else:
+		var ap := AnimUtil.make_player(_head, ["ferramentas"])
+		ap.play(&"ferramentas/Holding_A")
 
 
 ## Quem dirige levou um golpe: o veículo perde o embalo e dá um tranco (o bico afunda, como numa freada).
@@ -163,7 +210,10 @@ func _physics_process(delta: float) -> void:
 	var throttle := 0.0
 	var brake := 0.0
 	var steer := 0.0
-	if input_enabled:
+	if ai:
+		throttle = ai_throttle
+		steer = ai_steer
+	elif input_enabled:
 		throttle = maxf(Input.get_action_strength("frente"), Input.get_action_strength("atirar"))
 		brake = maxf(Input.get_action_strength("tras"), Input.get_action_strength("mirar"))
 		steer = Input.get_action_strength("esquerda") - Input.get_action_strength("direita")
@@ -196,23 +246,51 @@ func _physics_process(delta: float) -> void:
 			speed *= 0.35
 			_bump = 0.4
 			Sfx.play_at(get_parent(), "bonk", global_position + Vector3.UP, -2.0)
-	# Balanço do corpo: inclina para fora na curva e empina um pouco ao acelerar.
-	_visual.rotation.z = lerpf(_visual.rotation.z, -steer * grip * 0.08, 1.0 - exp(-8.0 * delta))
-	_visual.rotation.x = lerpf(_visual.rotation.x, -throttle * 0.03 + brake * 0.04, 1.0 - exp(-6.0 * delta))
+	_fit_to_ground(delta)
+	# Balanço do corpo, por cima da inclinação do chão: inclina para fora na curva e empina um pouco ao acelerar.
+	_visual.rotation.z = lerpf(_visual.rotation.z, _ground_roll - steer * grip * 0.08, 1.0 - exp(-8.0 * delta))
+	_visual.rotation.x = lerpf(_visual.rotation.x, _ground_pitch - throttle * 0.03 + brake * 0.04, 1.0 - exp(-6.0 * delta))
+	_visual.position.y = lerpf(_visual.position.y, _ground_dy, 1.0 - exp(-12.0 * delta))
 	_steer = lerpf(_steer, steer, 1.0 - exp(-10.0 * delta))
 	if input_enabled:
 		var look := Input.get_vector("olhar_esquerda", "olhar_direita", "olhar_cima", "olhar_baixo")
 		if look.length() > 0.1:
 			_cam_idle = 0.0
-			_cam_yaw -= look.x * CAM_STICK.x * delta
-			_cam_pitch = clampf(_cam_pitch - look.y * CAM_STICK.y * delta, -0.35, 0.9)
+			_cam_yaw -= look.x * CAM_STICK.x * Ajustes.rapidez_camera() * delta
+			_cam_pitch = clampf(_cam_pitch - look.y * CAM_STICK.y * Ajustes.rapidez_camera() * Ajustes.sinal_vertical() * delta, -0.35, 0.9)
 	_cam_idle += delta
 	if _cam_idle > 1.5:
 		_cam_yaw = lerp_angle(_cam_yaw, 0.0, 1.0 - exp(-2.0 * delta))
 		_cam_pitch = lerpf(_cam_pitch, 0.0, 1.0 - exp(-2.0 * delta))
 	_spin += speed / maxf(_wheel_radius, 0.1) * delta
 	_pose_wheels()
-	_place_camera(delta)
+	if not ai:
+		_place_camera(delta)
+
+
+## Mede o chão embaixo das rodas da frente, de trás e dos lados (raios de cima para baixo). A cápsula deitada encosta
+## no chão por uma ponta na rampa e deixa o meio no ar; o desenho inclina junto com o chão e desce até as rodas
+## encostarem. No ar (ou sem chão embaixo), volta aos poucos para reto.
+func _fit_to_ground(_delta: float) -> void:
+	var space := get_world_3d().direct_space_state
+	var fwd := forward()
+	fwd.y = 0.0
+	fwd = fwd.normalized()
+	var left := Vector3.UP.cross(fwd)
+	var hs: Array[float] = []
+	for offset in [fwd * _axle, -fwd * _axle, left * _track, -left * _track]:
+		var top: Vector3 = global_position + offset + Vector3.UP * 1.2
+		var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(top, top + Vector3.DOWN * 2.6, 1, [get_rid()]))
+		if hit.is_empty():
+			_ground_pitch = 0.0
+			_ground_roll = 0.0
+			_ground_dy = 0.0
+			return
+		hs.append(hit.position.y)
+	# Girar em x positivo abaixa o bico (+Z); em z positivo levanta o lado esquerdo (+X).
+	_ground_pitch = -atan2(hs[0] - hs[1], 2.0 * _axle)
+	_ground_roll = atan2(hs[2] - hs[3], 2.0 * _track)
+	_ground_dy = clampf((hs[0] + hs[1]) * 0.5 - global_position.y, -0.6, 0.2)
 
 
 ## Rodas: giram com a velocidade; as da frente (z > 0) esterçam.
@@ -226,8 +304,8 @@ func _pose_wheels() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if driving and input_enabled and event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		_cam_idle = 0.0
-		_cam_yaw -= event.relative.x * CAM_MOUSE
-		_cam_pitch = clampf(_cam_pitch + event.relative.y * CAM_MOUSE, -0.35, 0.9)
+		_cam_yaw -= event.relative.x * CAM_MOUSE * Ajustes.rapidez_camera()
+		_cam_pitch = clampf(_cam_pitch + event.relative.y * CAM_MOUSE * Ajustes.rapidez_camera() * Ajustes.sinal_vertical(), -0.35, 0.9)
 
 
 func _place_camera(delta: float) -> void:

@@ -1,0 +1,1118 @@
+<title>Rascunho da Fase 3-2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: maquete 3D no topo, botões dos playgrounds logo abaixo e a ficha do escolhido (o mesmo das maquetes 2-2, 2-3 e 3-1). */
+:root {
+  --bg: #eef1f7;
+  --card: #ffffff;
+  --ink: #1d2340;
+  --muted: #56607f;
+  --line: #d3d9e8;
+  --orange: #f26b1d;
+  --cyan: #12a8c9;
+  --tinta: #ff5fae;
+  --chip: #e2e7f3;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11141d; --card: #1b2030; --ink: #eaf0ff; --muted: #9eaac6; --line: #2f374d;
+    --orange: #ff8a45; --cyan: #7fe9ff; --tinta: #ff8cc6; --chip: #232a3d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11141d; --card: #1b2030; --ink: #eaf0ff; --muted: #9eaac6; --line: #2f374d;
+  --orange: #ff8a45; --cyan: #7fe9ff; --tinta: #ff8cc6; --chip: #232a3d; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1rem; line-height: 1.55; margin: 0; }
+.pagina {
+  max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+  display: grid; gap: 16px;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); font-weight: 800; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; }
+.rotulo { font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.topo { display: grid; gap: 6px; }
+.topo p.lede { max-width: 74ch; color: var(--muted); }
+.numeros { display: flex; flex-wrap: wrap; gap: 8px; }
+.numeros span { font-family: var(--font-data); font-size: 0.8rem; background: var(--chip); border-radius: 999px; padding: 4px 10px; font-variant-numeric: tabular-nums; }
+
+.palco { position: relative; border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; background: #dfe6f0; }
+#cena { display: block; width: 100%; height: min(70vh, 640px); min-height: 360px; touch-action: none; }
+.dica-palco {
+  position: absolute; left: 10px; bottom: 10px;
+  font-size: 0.78rem; background: rgba(29, 35, 64, 0.78); color: #fff;
+  padding: 5px 10px; border-radius: 8px; pointer-events: none;
+}
+.legenda {
+  position: absolute; right: 10px; top: 10px;
+  background: rgba(255, 255, 255, 0.92); color: #1d2340;
+  border-radius: 10px; padding: 8px 10px; font-size: 0.78rem; line-height: 1.5;
+  display: grid; gap: 1px; max-width: 46%;
+}
+.legenda i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.25); }
+.legenda .so-largo { display: block; }
+@media (max-width: 640px) { .legenda .so-largo { display: none; } .legenda { font-size: 0.72rem; } }
+
+.botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.botoes button, .alternar button {
+  font: 700 0.92rem var(--font-body);
+  border: 2px solid var(--ink); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 6px 14px; cursor: pointer;
+}
+.botoes button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.botoes button.viagem { border-style: dashed; }
+.botoes button:focus-visible, .alternar button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.alternar { display: flex; flex-wrap: wrap; gap: 8px; }
+.alternar button { font-weight: 400; font-size: 0.85rem; border-width: 1px; }
+.alternar button[aria-pressed="true"] { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+
+.ficha { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.ficha .medida { font-family: var(--font-data); font-size: 0.8rem; color: var(--muted); }
+.ficha p { max-width: 74ch; }
+.ficha .grupo { display: grid; gap: 4px; }
+.ficha ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; max-width: 74ch; }
+
+.principios { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.principio { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; min-width: 0; align-content: start; }
+.principio p { font-size: 0.95rem; color: var(--muted); }
+.rodape { color: var(--muted); font-size: 0.9rem; max-width: 80ch; }
+</style>
+
+<main class="pagina">
+  <header class="topo">
+    <p class="rotulo">Ilha Cafuné · Parte 2 · rascunho em blocos (greybox) · fase de chão, 3º andar</p>
+    <h1>Fábrica de Blocos, em playgrounds</h1>
+    <p class="lede">Uma fábrica de brinquedos que faz blocos. As Bolotas desligaram tudo e penduraram a Estrela Grande no gancho do guindaste, no alto da Máquina de Blocos. Cinco playgrounds sobem em espiral em volta da máquina, e cada um liga de volta uma parte da fábrica. As novidades são as esteiras e os blocos que aparecem e somem; o poder da fase é o Martelinho de Apito. Arraste para girar, use a roda ou dois dedos para aproximar, e os botões para ir a cada parte.</p>
+    <div class="numeros" id="numeros"></div>
+  </header>
+
+  <div class="palco">
+    <canvas id="cena" aria-label="Maquete 3D da fase Fábrica de Blocos em playgrounds"></canvas>
+    <div class="legenda" aria-hidden="true">
+      <span><i style="background:#fff1c9"></i>trilha creme (caminho)</span>
+      <span><i style="background:#f26b1d"></i>arco de saída, pino, alavanca, viagem</span>
+      <span><i style="background:#29c4e6"></i>bolso para explorar</span>
+      <span class="so-largo"><i style="background:#36405a"></i>esteira (as setas mostram o sentido)</span>
+      <span class="so-largo"><i style="background:#c9a7ff"></i>bloco-pisca (some e volta)</span>
+      <span class="so-largo"><i style="background:#ff5fae"></i>tinta (encostar conta como cair)</span>
+      <span class="so-largo"><i style="background:#b7814f"></i>caixotes: escada de volta</span>
+      <span class="so-largo"><i style="background:#9b5de5"></i>Bolota</span>
+      <span class="so-largo"><i style="background:#9be15d"></i>vaga-lume</span>
+      <span class="so-largo"><i style="background:#3fd0ee"></i>posto</span>
+    </div>
+    <div class="dica-palco">arraste para girar · roda ou pinça para aproximar</div>
+  </div>
+
+  <nav class="botoes" id="botoes" aria-label="Ir para uma parte da fase"></nav>
+  <div class="alternar">
+    <button type="button" id="b-nomes" aria-pressed="true">Nomes</button>
+    <button type="button" id="b-rota" aria-pressed="false">Rota principal (só para o autor)</button>
+    <button type="button" id="b-vista" aria-pressed="false">Linhas de vista até a Estrela Grande</button>
+    <button type="button" id="b-gira" aria-pressed="false">Câmera girando sozinha</button>
+  </div>
+
+  <article class="ficha" id="ficha" aria-live="polite"></article>
+
+  <section class="principios" aria-label="O que esta fase traz">
+    <div class="principio"><h3>Esteiras</h3><p>Faixas escuras com setas brancas andando, que mostram para onde levam. Na entrada elas ficam rentes ao chão e levam os blocos; depois aparecem no alto, uma delas empurrando para o lado sobre a tinta, e outra subindo a máquina. Andar contra a esteira é devagar.</p></div>
+    <div class="principio"><h3>Blocos-pisca</h3><p>Blocos lilases em dois grupos que se revezam no tique-taque da fábrica. Por um instante os dois grupos ficam juntos; antes de sumir, o bloco pisca três vezes, e o que vai aparecer já mostra o contorno. O lilás continua querendo dizer: cuidado, some.</p></div>
+    <div class="principio"><h3>Poder: Martelinho de Apito</h3><p>Pego na caixa de ferramentas da oficina. Com ele, o golpe no ar vira pancada: o Faísca para, desce reto e afunda o pino laranja que estiver embaixo, com um apito. A pancada também derruba a Bolota de capacete. Sem botão novo.</p></div>
+    <div class="principio"><h3>Fase de chão</h3><p>Cair de uma máquina só leva ao chão da fábrica, sem perder coração; escadas de caixotes e monta-cargas laranja levam de volta. A exceção é a tinta rosa do andar da pintura, que conta como cair, como a lava do quarto.</p></div>
+    <div class="principio"><h3>Fase maior</h3><p>Cinco playgrounds, e cada saída só abre com uma tarefa: três blocos nas esteiras, três alavancas, três pinos na oficina, três vãos da ponte e um pino em cada canto da subida.</p></div>
+  </section>
+
+  <p class="rodape">Rascunho em blocos, sem arte. As medidas seguem o Faísca de hoje: pulo de uns 4,8 m, voo de uns 11 m, degrau de até 1,6 m. Peças previstas: os blocos coloridos, caixotes, canos e metal do Block Bits (os arquivos estão no LFS da coleção) e as esteiras, alavancas e placas de seta do Platformer. A maquete anterior é a do <a href="https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4">Pico Gelado</a>, já construída no jogo.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- partes: câmera, alvo e ficha ----------
+  var PARTES = {
+    geral: { botao: "Visão geral", nome: "Visão geral", medida: "5 playgrounds + arena · 4 viagens · uns 12 min para uma criança",
+      alvo: [-8, 14, -8], cam: [120, 200, 230],
+      texto: "Os cinco playgrounds ficam em volta da Máquina de Blocos e sobem em espiral: as esteiras no chão da entrada, as máquinas dos blocos-pisca, a oficina do martelinho, o andar da pintura e a subida pela própria máquina, até a arena no topo. A Estrela Grande fica pendurada no gancho do guindaste, em cima da máquina, à vista de qualquer lugar. Cada playground liga de volta uma parte da fábrica. A rota principal está escondida; no jogo quem mostra o caminho é o cenário." },
+    p1: { botao: "1 Esteiras da Entrada", nome: "1 · Esteiras da Entrada", medida: "apresenta · 2 a 3 min · no chão, sem risco · P0",
+      alvo: [2, 2, 104], cam: [48, 44, 168],
+      texto: "O chão da fábrica, logo depois do portão. Três esteiras rentes ao chão levam até a recebedora, e andar contra elas é devagar. O Vovô mostra a esteira logo na chegada. Tarefa: três blocos de brinquedo estão fora do lugar, um ao lado de cada esteira. Um soco tomba o bloco (como o dado do quarto) até a esteira, e ela o leva para a recebedora, que acende uma luz. Com as três luzes, a esteira expressa liga. Mini-marco: a torre de blocos ABC.",
+      bolsos: ["A escada de caixotes até a prateleira do coração.", "Atrás da torre ABC, uma esteira entra num nicho com estrelinhas."],
+      bolotas: "Duas: uma dormindo perto do portão e uma no meio das esteiras." },
+    p2: { botao: "2 Blocos-Pisca", nome: "2 · Blocos-Pisca", medida: "desenvolve · 3 min · risco leve (cair só leva ao chão) · P1",
+      alvo: [-94, 9, 40], cam: [-34, 56, 98],
+      texto: "Máquinas de 8 m de altura com blocos lilases entre elas. Os blocos-pisca se revezam em dois grupos no tique-taque da fábrica, e antes de sumir piscam três vezes. Quem cai vai para o chão, e uma escada de caixotes leva de volta. Tarefa: três alavancas, cada uma em cima de uma máquina, chamam a ponte rolante. Há mais de um caminho até a praça do meio. Mini-marco: a Impressora de Blocos, que bate o carimbo e imprime um bloco lilás no tique.",
+      bolsos: ["Dentro do cano gigante que sai da parede, subindo pelos blocos-pisca do fundo, o vaga-lume 1."],
+      bolotas: "Três: duas na praça da impressora e um morcego perto do caminho da segunda alavanca." },
+    p3: { botao: "3 Oficina do Martelinho", nome: "3 · Oficina do Martelinho", medida: "central · 3 min · respiro e poder novo · P2",
+      alvo: [-70, 15, -80], cam: [-18, 64, -24],
+      texto: "Uma bancada larga a 14 m, com ferramentas de brinquedo gigantes. Na caixa de ferramentas está o poder da fase, o Martelinho de Apito: com ele, o golpe no ar vira uma pancada, que desce reto e afunda os pinos laranja. Tarefa: a empilhadeira espera em cima da estante, 6 m acima da oficina. Três pinos no chão, cada um ligado por um cano a um pistão perto da estante: cada pancada sobe um pistão, e os três viram uma escada. Uma fileira de placas de seta aponta para a estante.",
+      bolsos: ["Atrás da caixa de ferramentas, um quarto pino meio escondido liga o pistão alto, que sobe e desce até a prateleira com o vaga-lume 2.", "Coração na gaveta aberta da caixa de ferramentas."],
+      bolotas: "Três, com espaço para o giro forte. Uma usa capacete de obra: o soco não derruba, só a pancada do martelinho." },
+    p4: { botao: "4 Andar da Pintura", nome: "4 · Andar da Pintura", medida: "reviravolta · 3 min · risco médio · P3",
+      alvo: [86, 20, -18], cam: [40, 72, 46],
+      texto: "O andar onde os blocos são pintados, a 20 m. O chão é um tanque de tinta rosa: encostar conta como cair, como a lava do quarto. Só as faixas da entrada e da saída são firmes. Latas de tinta gigantes servem de ilhas, ligadas por esteiras (uma delas empurra para o lado) e blocos-pisca. Tarefa: a ponte de blocos até a máquina tem três vãos. Um pino em cada lata, batido com o martelinho, liga a esteira que empurra uma fileira de blocos para um dos vãos.",
+      bolsos: ["A lata tombada no canto: dentro, coração e estrelinhas, por uma esteira e dois blocos-pisca."],
+      bolotas: "Duas, em lugar estreito: uma andando na esteira que empurra e uma na lata do meio." },
+    p5: { botao: "5 Subida da Máquina", nome: "5 · Subida da Máquina", medida: "o fim · 3 min · risco médio · P4",
+      alvo: [0, 35, 2], cam: [46, 58, 52],
+      texto: "A ponte de blocos chega ao anel em volta da máquina, a 26 m. A subida vai pela parede da parte de cima, no sentido do relógio: saliências de metal, uma esteira que sobe, blocos-pisca e pistões. Tarefa: um pino em cada canto levanta o pistão logo adiante, e o último levanta o pistão grande até o topo. Quem cai da parede cai no anel, sem perder coração.",
+      bolsos: ["Segredo: um painel rachado na parede da máquina, no anel, com uma luz verde-limão perto. Três golpes (ou uma pancada) abrem a sala das engrenagens, com o vaga-lume 3."],
+      bolotas: "Duas: uma no anel e um morcego perto dos blocos-pisca." },
+    arena: { botao: "Arena no topo", nome: "Arena no topo", medida: "clímax · 1 min",
+      alvo: [0, 47, 0], cam: [36, 70, 46],
+      texto: "O topo plano da máquina, a 44 m, com o guindaste. Três Bolotas guardam o baú, uma delas de capacete; vencidas, três golpes abrem o baú, e o guindaste desce a Estrela Grande." },
+    viagens: { botao: "Viagens", viagem: true, nome: "Viagens entre os playgrounds", medida: "10 a 20 s cada · sem risco",
+      alvo: [-12, 14, -12], cam: [30, 230, 130],
+      texto: "Entre um playground e outro, uma viagem curta: o caixote na esteira expressa leva da entrada às máquinas, a ponte rolante leva das máquinas à oficina, a empilhadeira leva da oficina ao andar da pintura (e volta, servindo de atalho), e a ponte de blocos liga a pintura ao anel da máquina. Todas esperam o Faísca subir. Quem cai no chão volta pelas escadas de caixotes e pelos monta-cargas laranja." }
+  };
+  var ORDEM = ["geral", "p1", "p2", "p3", "p4", "p5", "arena", "viagens"];
+
+  // ---------- cena ----------
+  var canvas = document.getElementById("cena");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  var cena = new THREE.Scene();
+  var FUNDO = new THREE.Color("#dfe6f0");
+  cena.background = FUNDO;
+  cena.fog = new THREE.Fog(FUNDO, 380, 820);
+  var camera = new THREE.PerspectiveCamera(50, 1, 0.5, 2500);
+  var controles = new THREE.OrbitControls(camera, canvas);
+  controles.enableDamping = true;
+  controles.maxPolarAngle = 1.45;
+  controles.minDistance = 8;
+  controles.maxDistance = 600;
+
+  cena.add(new THREE.HemisphereLight(0xffffff, 0xb9c2d4, 0.9));
+  var sol = new THREE.DirectionalLight(0xffffff, 0.55);
+  sol.position.set(80, 140, 60);
+  cena.add(sol);
+
+  var materiais = {};
+  function mat(cor, extra) {
+    var chave = cor + JSON.stringify(extra || {});
+    if (!materiais[chave]) {
+      var m = new THREE.MeshLambertMaterial({ color: cor });
+      if (extra) Object.keys(extra).forEach(function (k) { m[k] = extra[k]; });
+      materiais[chave] = m;
+    }
+    return materiais[chave];
+  }
+  function malha(geo, material, x, y, z) {
+    var m = new THREE.Mesh(geo, material);
+    m.position.set(x || 0, y || 0, z || 0);
+    cena.add(m);
+    return m;
+  }
+  function V(p) { return new THREE.Vector3(p[0], p[1], p[2]); }
+
+  var animados = [], rotulos = [], vistas = [], rota = [];
+  var estrelas = 0, bolotas = 0, coracoes = 0;
+
+  var COR = { bolota: 0x9b5de5, estrela: 0xffd23f, vagalume: 0x9be15d, posto: 0x3fd0ee, laranja: 0xf26b1d, bolso: 0x29c4e6,
+    pisca: 0xc9a7ff, tinta: 0xff5fae, coracao: 0xff4d6d, creme: 0xfff1c9, aco: 0x8ea4c9, tampo: 0xd6deec, aresta: 0x2c3550,
+    caixote: 0xb7814f, esteira: 0x36405a, ferro: 0x55607a, vermelho: 0xe0524d, azul: 0x3f8fe0, verde: 0x46b36b };
+
+  // ---------- o galpão ----------
+  var texPiso = (function () {
+    var c = document.createElement("canvas"); c.width = 128; c.height = 128;
+    var k = c.getContext("2d");
+    k.fillStyle = "#e3e8f0"; k.fillRect(0, 0, 128, 128);
+    k.strokeStyle = "#c5cddb"; k.lineWidth = 3; k.strokeRect(1, 1, 126, 126);
+    var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(34, 34); return t;
+  })();
+  var piso = malha(new THREE.PlaneGeometry(274, 278), new THREE.MeshLambertMaterial({ map: texPiso }), 3, 0, 12);
+  piso.rotation.x = -Math.PI / 2;
+
+  function caixa(x, y0, y1, z, w, d, cor, aresta) {
+    var m = malha(new THREE.BoxGeometry(w, y1 - y0, d), mat(cor), x, (y0 + y1) / 2, z);
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: aresta || COR.aresta })));
+    return m;
+  }
+  // Paredes do fundo (norte e oeste) com janelas altas; ao sul e a leste só a mureta, para a câmera ver dentro.
+  caixa(3, 0, 56, -126.5, 274, 1, 0xc6cfdd, 0x9aa6bd);
+  caixa(-134.5, 0, 56, 12, 1, 278, 0xc6cfdd, 0x9aa6bd);
+  for (var j = 0; j < 9; j++) {
+    malha(new THREE.PlaneGeometry(20, 12), new THREE.MeshBasicMaterial({ color: 0xf2f8ff }), -112 + j * 28, 40, -125.9);
+    var jo = malha(new THREE.PlaneGeometry(20, 12), new THREE.MeshBasicMaterial({ color: 0xf2f8ff }), -133.9, 40, -104 + j * 28);
+    jo.rotation.y = Math.PI / 2;
+  }
+  caixa(-67, 0, 3, 151, 136, 1, 0xc6cfdd, 0x9aa6bd);
+  caixa(76, 0, 3, 151, 130, 1, 0xc6cfdd, 0x9aa6bd);
+  caixa(140.5, 0, 3, 12, 1, 278, 0xc6cfdd, 0x9aa6bd);
+  [-12, 12].forEach(function (x) { caixa(x, 0, 20, 151, 2, 2, 0x55607a); });
+  caixa(0, 20, 22, 151, 26, 2, 0x55607a);
+
+  // ---------- peças ----------
+  function maquina(x, topo, z, w, d, faixa, base) {
+    var b = base || 0;
+    caixa(x, b, topo - 0.4, z, w, d, COR.aco);
+    caixa(x, topo - 0.4, topo, z, w + 0.4, d + 0.4, COR.tampo);
+    if (faixa) caixa(x, topo - 2.6, topo - 1.4, z, w + 0.1, d + 0.1, faixa);
+  }
+  // Viga estreita e firme de a até b (o topo em y).
+  function passarela(a, b, largura) {
+    var va = V(a), vb = V(b);
+    var m = malha(new THREE.BoxGeometry(largura || 2.4, 0.5, va.distanceTo(vb)), mat(0xaab6cc), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 0.25, (a[2] + b[2]) / 2);
+    m.lookAt(vb.x, m.position.y + (vb.y - va.y) / 2, vb.z);
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: COR.aresta })));
+    return m;
+  }
+  // Esteira de a até b (o topo da faixa): as setas brancas andam no sentido em que ela leva.
+  var texSetas = (function () {
+    var c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    var k = c.getContext("2d");
+    k.strokeStyle = "rgba(255,255,255,0.95)"; k.lineWidth = 9; k.lineCap = "round"; k.lineJoin = "round";
+    k.beginPath(); k.moveTo(12, 44); k.lineTo(32, 22); k.lineTo(52, 44); k.stroke();
+    var t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+  })();
+  var matSetas = new THREE.MeshBasicMaterial({ map: texSetas, transparent: true, depthWrite: false });
+  animados.push(function (t) { texSetas.offset.y = -t * 0.8; });
+  function esteira(a, b, largura) {
+    var va = V(a), vb = V(b), comp = va.distanceTo(vb), l = largura || 4;
+    var g = new THREE.Group();
+    g.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
+    cena.add(g);
+    g.lookAt(vb);
+    var corpo = new THREE.Mesh(new THREE.BoxGeometry(l, 0.7, comp), mat(COR.esteira));
+    corpo.position.y = -0.35;
+    g.add(corpo);
+    [-1, 1].forEach(function (s) {
+      var rolo = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, l + 0.2, 10), mat(0x9aa7bf));
+      rolo.rotation.z = Math.PI / 2;
+      rolo.position.set(0, -0.35, s * comp / 2);
+      g.add(rolo);
+    });
+    var geo = new THREE.PlaneGeometry(l - 0.8, comp - 0.3);
+    var uv = geo.attributes.uv;
+    for (var i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) * comp / 3);
+    var faixa = new THREE.Mesh(geo, matSetas);
+    faixa.rotation.set(-Math.PI / 2, 0, Math.PI);
+    faixa.position.y = 0.03;
+    g.add(faixa);
+    return g;
+  }
+  // Bloco-pisca lilás (topo em y): dois grupos que se revezam, com um instante juntos; pisca antes de sumir.
+  // O contorno fica sempre, mostrando onde ele aparece.
+  var piscas = [];
+  function blocoPisca(x, y, z, grupo) {
+    var geo = new THREE.BoxGeometry(3, 1, 3);
+    var m = malha(geo, mat(COR.pisca, { transparent: true, opacity: 0.92 }), x, y - 0.5, z);
+    var contorno = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x7d55d0 }));
+    contorno.position.set(x, y - 0.5, z);
+    cena.add(contorno);
+    piscas.push({ m: m, grupo: grupo });
+  }
+  animados.push(function (t) {
+    piscas.forEach(function (b) {
+      var f = (t + b.grupo * 2.4) % 4.8;
+      var ligado = f < 3.0;
+      if (ligado && f > 2.3) ligado = Math.floor(f * 10) % 2 === 0;
+      b.m.visible = ligado;
+    });
+  });
+  // Pino laranja (a pancada do martelinho afunda) e o cano que o liga a um pistão.
+  function pino(x, y, z) {
+    malha(new THREE.CylinderGeometry(1.5, 1.6, 0.3, 20), mat(0x3a3f55), x, y + 0.15, z);
+    malha(new THREE.CylinderGeometry(0.95, 0.95, 1.6, 20), mat(COR.laranja), x, y + 1.1, z);
+    malha(new THREE.CylinderGeometry(1.05, 1.05, 0.25, 20), mat(0xffffff), x, y + 1.95, z);
+  }
+  function cano(pontos) { malha(new THREE.TubeGeometry(curva(pontos), 40, 0.28, 8, false), mat(COR.laranja)); }
+  // Pistão: a base no lugar e, transparente, até onde ele sobe quando o pino é batido.
+  function pistao(x, y, z, sobe, lado) {
+    var l = lado || 3;
+    malha(new THREE.BoxGeometry(l, 0.5, l), mat(COR.ferro), x, y + 0.25, z);
+    malha(new THREE.BoxGeometry(l * 0.6, sobe, l * 0.6), new THREE.MeshLambertMaterial({ color: 0x9aa7bf, transparent: true, opacity: 0.35 }), x, y + sobe / 2, z);
+    malha(new THREE.BoxGeometry(l, 0.4, l), new THREE.MeshLambertMaterial({ color: COR.laranja, transparent: true, opacity: 0.55 }), x, y + sobe - 0.2, z);
+  }
+  function alavanca(x, y, z) {
+    caixa(x, y, y + 0.6, z, 1.8, 1.2, COR.ferro);
+    var haste = malha(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), mat(0x2b2140), x, y + 1.5, z);
+    haste.rotation.z = 0.5;
+    malha(new THREE.SphereGeometry(0.45, 12, 8), mat(COR.laranja), x - 0.5, y + 2.5, z);
+  }
+  // Coluna de caixotes (de base até base + altura) e a escada de caixotes de 1,6 m em 1,6 m.
+  function coluna(x, z, altura, base) {
+    var b = base || 0;
+    var m = caixa(x, b, b + altura, z, 2.6, 2.6, COR.caixote, 0x5a3a1c);
+    for (var k = 1; k * 1.6 < altura; k++) malha(new THREE.BoxGeometry(2.64, 0.12, 2.64), mat(0x7a5232), x, b + k * 1.6, z);
+    return m;
+  }
+  function escadaDeCaixotes(pontos, base) { pontos.forEach(function (p, i) { coluna(p[0], p[1], 1.6 * (i + 1), base); }); }
+  function prateleira(x, topo, z, w, d, base) {
+    var b = base || 0;
+    caixa(x, topo - 0.5, topo, z, w, d, 0xc49a6c, 0x6a4a2a);
+    [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (c) { caixa(x + c[0] * (w / 2 - 0.3), b, topo - 0.5, z + c[1] * (d / 2 - 0.3), 0.5, 0.5, 0x6a4a2a); });
+  }
+  // Monta-carga laranja: sobe e desce do chão até o andar, para quem caiu voltar.
+  function montaCarga(x, z, ate, base) {
+    var b = base || 0;
+    [-1.9, 1.9].forEach(function (s) { malha(new THREE.BoxGeometry(0.4, ate - b + 3, 0.4), mat(COR.ferro), x + s, (b + ate + 3) / 2, z); });
+    malha(new THREE.BoxGeometry(4.2, 0.4, 0.4), mat(COR.ferro), x, ate + 3, z);
+    var plat = malha(new THREE.BoxGeometry(3.2, 0.4, 3.2), mat(COR.laranja), x, b + 0.2, z);
+    animados.push(function (t) { var k = 0.5 - 0.5 * Math.cos(t * 0.6 + x); plat.position.y = b + 0.2 + k * (ate - b); });
+    rotulo("monta-carga de volta", x, ate + 5, z, "pequeno");
+  }
+  function corrimao(x0, z0, x1, z1, y) {
+    var comp = Math.hypot(x1 - x0, z1 - z0);
+    var m = malha(new THREE.BoxGeometry(0.2, 0.2, comp), mat(COR.ferro), (x0 + x1) / 2, y + 1.1, (z0 + z1) / 2);
+    m.lookAt(x1, y + 1.1, z1);
+    var n = Math.max(1, Math.round(comp / 3));
+    for (var i = 0; i <= n; i++) malha(new THREE.BoxGeometry(0.16, 1.1, 0.16), mat(COR.ferro), x0 + (x1 - x0) * i / n, y + 0.55, z0 + (z1 - z0) * i / n);
+  }
+  // Bloco de brinquedo que o soco tomba (a seta laranja em cima aponta para a esteira, a oeste).
+  function blocoTomba(x, z, cor) {
+    caixa(x, 0, 2.6, z, 2.6, 2.6, cor, 0x1d2340);
+    var forma = new THREE.Shape(); forma.moveTo(-0.95, 0); forma.lineTo(0.5, 0.7); forma.lineTo(0.5, -0.7); forma.closePath();
+    var seta = malha(new THREE.ShapeGeometry(forma), mat(COR.laranja, { side: THREE.DoubleSide }), x, 2.63, z);
+    seta.rotation.x = -Math.PI / 2;
+  }
+  function placa(x, y, z, alvoX, alvoZ) {
+    malha(new THREE.CylinderGeometry(0.12, 0.12, 2.6, 8), mat(0x2b2140), x, y + 1.3, z);
+    var dx = alvoX - x, dz = alvoZ - z, n = Math.hypot(dx, dz);
+    var g = new THREE.Group();
+    var chapa = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 0.14), mat(COR.azul));
+    var ponta = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.8, 3), mat(0xffffff));
+    ponta.rotation.z = -Math.PI / 2; ponta.position.x = 1.25;
+    g.add(chapa, ponta);
+    g.position.set(x, y + 2.8, z);
+    g.rotation.y = Math.atan2(-dz / n, dx / n);
+    cena.add(g);
+  }
+  function tinta(x0, x1, z0, z1, y) {
+    var m = malha(new THREE.PlaneGeometry(x1 - x0, z1 - z0), new THREE.MeshLambertMaterial({ color: COR.tinta, emissive: new THREE.Color(0x4a0828) }), (x0 + x1) / 2, y, (z0 + z1) / 2);
+    m.rotation.x = -Math.PI / 2;
+    animados.push(function (t) { m.material.emissive.setRGB(0.29 + 0.06 * Math.sin(t * 1.5), 0.03, 0.16); });
+    return m;
+  }
+  // Lata de tinta gigante em pé (ilha firme, topo em y) e a lata tombada (bolso, deitada no eixo z, boca ao norte).
+  function lata(x, topo, z, r) {
+    malha(new THREE.CylinderGeometry(r, r, 4, 32), mat(0xf4f6fb), x, topo - 2, z);
+    malha(new THREE.CylinderGeometry(r + 0.06, r + 0.06, 1.6, 32), mat(COR.azul), x, topo - 2.2, z);
+    malha(new THREE.CylinderGeometry(r - 0.2, r - 0.2, 0.12, 32), mat(0xcfd6e2), x, topo + 0.02, z);
+    malha(new THREE.TorusGeometry(r - 0.1, 0.18, 6, 40), mat(0x9aa7bf), x, topo + 0.05, z).rotation.x = Math.PI / 2;
+    malha(new THREE.BoxGeometry(1.1, 1.6, 0.2), mat(COR.tinta), x, topo - 0.8, z + r + 0.05);
+  }
+  function lataTombada(x, y, z, r, comp) {
+    var corpo = malha(new THREE.CylinderGeometry(r, r, comp, 32, 1, true), mat(0xf4f6fb, { side: THREE.DoubleSide }), x, y + r, z + comp / 2);
+    corpo.rotation.x = Math.PI / 2;
+    var faixa = malha(new THREE.CylinderGeometry(r + 0.06, r + 0.06, comp * 0.4, 32, 1, true), mat(COR.verde, { side: THREE.DoubleSide }), x, y + r, z + comp / 2);
+    faixa.rotation.x = Math.PI / 2;
+    malha(new THREE.CircleGeometry(r, 32), mat(0xcfd6e2, { side: THREE.DoubleSide }), x, y + r, z + comp);
+  }
+  function caixaDeFerramentas(x, y, z) {
+    caixa(x, y, y + 5, z, 10, 6, COR.vermelho, 0x7a1f1c);
+    var tampa = caixa(x, y + 5, y + 11, z - 3.3, 10, 0.5, COR.vermelho, 0x7a1f1c);
+    tampa.rotation.x = -0.25;
+    var alca = malha(new THREE.TorusGeometry(1.6, 0.25, 8, 20, Math.PI), mat(0x2b2140), x, y + 5, z + 0.5);
+    alca.rotation.y = 0;
+    caixa(x, y + 1.2, y + 2.6, z + 4.2, 8, 2.4, 0xc0403b, 0x7a1f1c);
+  }
+  // O Martelinho de Apito flutuando (o poder da fase).
+  function martelinho(x, y, z) {
+    var g = new THREE.Group();
+    var cabo = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 3.2, 10), mat(0xffd23f));
+    cabo.position.y = -1.2;
+    var cabeca = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 2.8, 16), mat(COR.vermelho));
+    cabeca.rotation.z = Math.PI / 2; cabeca.position.y = 0.6;
+    var sanfona = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.8, 16), mat(0xffd23f));
+    sanfona.rotation.z = Math.PI / 2; sanfona.position.y = 0.6;
+    g.add(cabo, cabeca, sanfona);
+    g.position.set(x, y, z);
+    cena.add(g);
+    brilho(x, y, z, 0xffe3a3, 7, true);
+    animados.push(function (t) { g.rotation.y = t; g.position.y = y + Math.sin(t * 1.5) * 0.4; });
+  }
+  function caixoteAberto() {
+    var g = new THREE.Group();
+    var fundo = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.3, 3.2), mat(COR.laranja));
+    fundo.position.y = 0.15;
+    g.add(fundo);
+    [[0, 1.5, 3.2, 0.25], [0, -1.5, 3.2, 0.25], [1.5, 0, 0.25, 3.2], [-1.5, 0, 0.25, 3.2]].forEach(function (w) {
+      var p = new THREE.Mesh(new THREE.BoxGeometry(w[2], 0.9, w[3]), mat(COR.laranja));
+      p.position.set(w[0], 0.6, w[1]);
+      g.add(p);
+    });
+    cena.add(g);
+    return g;
+  }
+  function empilhadeira() {
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 4), mat(COR.laranja)); corpo.position.set(0, 1.4, -1.2);
+    var teto = new THREE.Mesh(new THREE.BoxGeometry(3, 0.25, 2.6), mat(0x2b2140)); teto.position.set(0, 4.2, -1.4);
+    var mastro = new THREE.Mesh(new THREE.BoxGeometry(2.6, 4.4, 0.3), mat(COR.ferro)); mastro.position.set(0, 2.6, 1.0);
+    var palete = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.4, 3.2), mat(0xc49a6c)); palete.position.set(0, 0.9, 2.8);
+    g.add(corpo, teto, mastro, palete);
+    [-1.3, 1.3].forEach(function (s) {
+      var p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2, 0.2), mat(0x2b2140)); p.position.set(s, 3.2, -0.3); g.add(p);
+      [-2.4, 0.4].forEach(function (zz) {
+        var r = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 14), mat(0x2b2140)); r.rotation.z = Math.PI / 2; r.position.set(s * 1.15, 0.55, zz); g.add(r);
+      });
+    });
+    cena.add(g);
+    return g;
+  }
+  function torreABC(x, y, z) {
+    ["A", "B", "C", "D"].forEach(function (letra, i) {
+      var cor = ["#e0524d", "#3f8fe0", "#46b36b", "#e0524d"][i];
+      var c = document.createElement("canvas"); c.width = 128; c.height = 128;
+      var k = c.getContext("2d");
+      k.fillStyle = "#ffffff"; k.fillRect(0, 0, 128, 128);
+      k.strokeStyle = cor; k.lineWidth = 12; k.strokeRect(6, 6, 116, 116);
+      k.fillStyle = cor; k.font = "800 84px 'Baloo 2', 'Trebuchet MS', sans-serif"; k.textAlign = "center"; k.textBaseline = "middle";
+      k.fillText(letra, 64, 70);
+      var b = malha(new THREE.BoxGeometry(4.5, 4.5, 4.5), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(c) }), x, y + 2.25 + i * 4.5, z);
+      b.rotation.y = i * 0.35;
+    });
+  }
+  function arco(x, y, z, dx, dz) {
+    var n = Math.hypot(dx, dz), px = -dz / n, pz = dx / n, meia = 3.6, alto = 8;
+    [1, -1].forEach(function (s) {
+      malha(new THREE.CylinderGeometry(0.55, 0.65, alto, 12), mat(COR.laranja), x + px * meia * s, y + alto / 2, z + pz * meia * s);
+      malha(new THREE.SphereGeometry(0.7, 12, 8), mat(0xffffff), x + px * meia * s, y + alto, z + pz * meia * s);
+    });
+    var topo = malha(new THREE.TorusGeometry(meia, 0.55, 10, 32, Math.PI), mat(COR.laranja), x, y + alto, z);
+    topo.rotation.y = Math.atan2(-pz, px);
+  }
+  function trilha(pontos, largura, cor) {
+    var c = curva(pontos), n = Math.max(20, Math.round(c.getLength() / 1.2));
+    var pos = [], idx = [];
+    for (var i = 0; i <= n; i++) {
+      var p = c.getPointAt(i / n), tg = c.getTangentAt(i / n);
+      var lx = -tg.z, lz = tg.x, l = Math.hypot(lx, lz) || 1;
+      lx = lx / l * largura / 2; lz = lz / l * largura / 2;
+      pos.push(p.x + lx, p.y + 0.08, p.z + lz, p.x - lx, p.y + 0.08, p.z - lz);
+      if (i < n) { var a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    cena.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: cor || COR.creme, side: THREE.DoubleSide })));
+  }
+  function bolota(x, y, z, capacete) {
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(0.95, 20, 14), mat(COR.bolota));
+    corpo.position.y = 0.95;
+    var olho = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), mat(0xffffff));
+    olho.position.set(0, 1.15, 0.78);
+    var pupila = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), mat(0x1b1530));
+    pupila.position.set(0, 1.15, 1.08);
+    var haste = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 6), mat(0x3d2e5c));
+    haste.position.y = 2.1;
+    var bola = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), mat(0xff5a6e));
+    bola.position.y = 2.35;
+    g.add(corpo, olho, pupila, haste, bola);
+    if (capacete) {
+      var casco = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xffffff));
+      casco.position.y = 1.45;
+      var aba = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 0.12, 20), mat(0xffffff));
+      aba.position.y = 1.5;
+      g.add(casco, aba);
+    }
+    g.position.set(x, y, z);
+    g.rotation.y = (x * 7 + z * 3) % 6.28;
+    cena.add(g);
+    bolotas++;
+    animados.push(function (t) { corpo.scale.y = 1 + Math.sin(t * 4 + x) * 0.04; });
+  }
+  var formaEstrela = (function () {
+    var s = new THREE.Shape();
+    for (var i = 0; i < 10; i++) {
+      var a = Math.PI / 2 + i * Math.PI / 5, r = i % 2 === 0 ? 1 : 0.45;
+      if (i === 0) s.moveTo(Math.cos(a) * r, Math.sin(a) * r); else s.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    s.closePath();
+    return s;
+  })();
+  var geoEstrelinha = new THREE.ExtrudeGeometry(formaEstrela, { depth: 0.2, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.06, bevelSegments: 1 });
+  geoEstrelinha.center();
+  function estrelinha(x, y, z) {
+    var m = malha(geoEstrelinha, mat(COR.estrela, { emissive: new THREE.Color(0x8a6400) }), x, y, z);
+    m.scale.setScalar(0.5);
+    var fase = (x + z) % 6;
+    animados.push(function (t) { m.rotation.y = t * 1.6 + fase; });
+    estrelas++;
+  }
+  function roda(x, y, z, r, n) { for (var i = 0; i < n; i++) { var a = i * Math.PI * 2 / n; estrelinha(x + Math.cos(a) * r, y, z + Math.sin(a) * r); } }
+  function fila(pontos) { pontos.forEach(function (p) { estrelinha(p[0], p[1], p[2]); }); }
+  var texBrilho = (function () {
+    var c = document.createElement("canvas"); c.width = 64; c.height = 64;
+    var k = c.getContext("2d");
+    var g = k.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.35, "rgba(255,255,255,0.45)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    k.fillStyle = g; k.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  function brilho(x, y, z, cor, tamanho, pulsa, atravessa) {
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: texBrilho, color: cor, transparent: true, depthWrite: false, depthTest: !atravessa, blending: THREE.AdditiveBlending }));
+    s.position.set(x, y, z);
+    s.scale.setScalar(tamanho);
+    cena.add(s);
+    if (pulsa) animados.push(function (t) { s.material.opacity = 0.55 + 0.45 * Math.sin(t * 3 + x); });
+    return s;
+  }
+  function vagalume(x, y, z, atravessa) {
+    malha(new THREE.SphereGeometry(0.35, 14, 10), new THREE.MeshBasicMaterial({ color: COR.vagalume }), x, y, z);
+    brilho(x, y, z, COR.vagalume, 5, true, atravessa);
+  }
+  function posto(x, y, z, nome) {
+    malha(new THREE.CylinderGeometry(0.12, 0.12, 4, 8), mat(0x2b2140), x, y + 2, z);
+    var forma = new THREE.Shape(); forma.moveTo(0, 0); forma.lineTo(2.2, -0.7); forma.lineTo(0, -1.4); forma.closePath();
+    var bandeira = malha(new THREE.ShapeGeometry(forma), mat(COR.posto, { side: THREE.DoubleSide }), x + 0.1, y + 4, z);
+    animados.push(function (t) { bandeira.rotation.y = Math.sin(t * 2 + x) * 0.35; });
+    rotulo(nome, x, y + 5.4, z, "posto");
+  }
+  var formaCoracao = (function () {
+    var s = new THREE.Shape();
+    s.moveTo(0, -0.9);
+    s.bezierCurveTo(-1.2, 0, -0.9, 1, 0, 0.45);
+    s.bezierCurveTo(0.9, 1, 1.2, 0, 0, -0.9);
+    return s;
+  })();
+  function coracao(x, y, z) {
+    var geo = new THREE.ExtrudeGeometry(formaCoracao, { depth: 0.35, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.08, bevelSegments: 2 });
+    geo.center();
+    var m = malha(geo, mat(COR.coracao, { emissive: new THREE.Color(0x5a0a1a) }), x, y, z);
+    m.scale.setScalar(0.8);
+    animados.push(function (t) { m.rotation.y = t * 1.2; m.position.y = y + Math.sin(t * 2) * 0.2; });
+    coracoes++;
+  }
+  // O Faísca em tamanho real, com a sombra redonda de pouso.
+  function faisca(x, y, z) {
+    var sombra = malha(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0x1d2340, transparent: true, opacity: 0.4 }), x, y + 0.06, z);
+    sombra.rotation.x = -Math.PI / 2;
+    var g = new THREE.Group();
+    var corpo = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 12), mat(0xffffff));
+    corpo.scale.y = 1.2; corpo.position.y = 0.95;
+    var cabeca = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.95, 1.0), mat(0xffffff));
+    cabeca.position.y = 1.75;
+    var visor = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.1), mat(0x141622));
+    visor.position.set(0, 1.72, -0.52);
+    var placaPeito = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.1), mat(COR.laranja));
+    placaPeito.position.set(0, 1.05, -0.47);
+    g.add(corpo, cabeca, visor, placaPeito);
+    g.position.set(x, y, z);
+    g.rotation.y = Math.PI * 0.8;
+    cena.add(g);
+    rotulo("Faísca (2,2 m) e a sombra de pouso", x, y + 3.4, z, "pequeno");
+  }
+  var texRacha = (function () {
+    var c = document.createElement("canvas"); c.width = 128; c.height = 128;
+    var k = c.getContext("2d");
+    k.fillStyle = "#b8c4da"; k.fillRect(0, 0, 128, 128);
+    k.strokeStyle = "#2c3550"; k.lineWidth = 5; k.lineJoin = "round";
+    k.beginPath(); k.moveTo(60, 0); k.lineTo(48, 40); k.lineTo(70, 64); k.lineTo(52, 100); k.lineTo(64, 128); k.stroke();
+    k.beginPath(); k.moveTo(70, 64); k.lineTo(100, 80); k.stroke();
+    return new THREE.CanvasTexture(c);
+  })();
+  function tracejado(pontos, cor) {
+    var c = curva(pontos);
+    var linha = new THREE.Line(new THREE.BufferGeometry().setFromPoints(c.getPoints(160)), new THREE.LineDashedMaterial({ color: cor, dashSize: 2.4, gapSize: 1.6 }));
+    linha.computeLineDistances();
+    cena.add(linha);
+    return linha;
+  }
+  function curva(pontos) { return new THREE.CatmullRomCurve3(pontos.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); })); }
+  function pontilhado(pontos, cor, raio, passo) {
+    var c = curva(pontos), n = Math.max(1, Math.round(c.getLength() / (passo || 1.4))), lista = [];
+    var geo = new THREE.SphereGeometry(raio || 0.28, 8, 6), m = new THREE.MeshBasicMaterial({ color: cor });
+    for (var i = 0; i <= n; i++) { var p = c.getPointAt(i / n); lista.push(malha(geo, m, p.x, p.y, p.z)); }
+    return lista;
+  }
+  function rotulo(texto, x, y, z, tipo) {
+    var c = document.createElement("canvas");
+    var k = c.getContext("2d");
+    var tam = tipo === "pequeno" || tipo === "posto" ? 34 : 44;
+    k.font = "700 " + tam + "px 'Baloo 2', 'Trebuchet MS', sans-serif";
+    var w = Math.ceil(k.measureText(texto).width) + 40, h = tam + 26;
+    c.width = w; c.height = h;
+    k.font = "700 " + tam + "px 'Baloo 2', 'Trebuchet MS', sans-serif";
+    var fundo = { bolso: "rgba(18,120,150,0.92)", posto: "rgba(20,120,150,0.88)", dica: "rgba(255,255,255,0.95)", viagem: "rgba(255,255,255,0.95)", poder: "rgba(242,107,29,0.92)" }[tipo] || "rgba(29,35,64,0.9)";
+    k.fillStyle = fundo;
+    var r = h / 2;
+    k.beginPath(); k.moveTo(r, 0); k.lineTo(w - r, 0); k.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2); k.lineTo(r, h); k.arc(r, r, r, Math.PI / 2, Math.PI * 1.5); k.fill();
+    k.fillStyle = tipo === "dica" || tipo === "viagem" ? "#1d2340" : "#ffffff";
+    k.textBaseline = "middle";
+    k.fillText(texto, 20, h / 2 + 2);
+    var tex = new THREE.CanvasTexture(c);
+    var fixo = !(tipo === "pequeno" || tipo === "posto");
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true, sizeAttenuation: !fixo }));
+    var alto = tipo === "bolso" || tipo === "dica" || tipo === "viagem" || tipo === "poder" ? 0.034 : 0.042;
+    if (fixo) s.scale.set(alto * w / h, alto, 1); else s.scale.set(w * 0.034, h * 0.034, 1);
+    s.position.set(x, y, z);
+    s.renderOrder = 10;
+    cena.add(s);
+    rotulos.push(s);
+    return s;
+  }
+  // Leva um grupo de ida e volta por uma curva, virado para o lado em que anda.
+  function viajanteCurva(g, pontos, vel) {
+    var c = curva(pontos);
+    g.position.copy(c.getPointAt(0));
+    animados.push(function (t) {
+      var k = 0.5 - 0.5 * Math.cos(t * vel);
+      var p = c.getPointAt(k), tg = c.getTangentAt(k);
+      g.position.copy(p);
+      g.rotation.y = Math.atan2(tg.x, tg.z);
+    });
+  }
+
+  // ================= A MÁQUINA DE BLOCOS (marco no meio de tudo) =================
+  // Parte de baixo 34 x 34 m até 26 m; o teto dela é o anel do playground 5 (de 10 a 17 m do meio). Parte de cima 20 x 20 m
+  // até 44 m, onde fica a arena. Em cima, o guindaste segura a Estrela Grande no gancho.
+  (function () {
+    caixa(0, 0, 25.6, 0, 34, 34, 0x7f93b8);
+    caixa(0, 25.6, 26, 0, 34.4, 34.4, COR.tampo);
+    caixa(0, 26, 43.6, 0, 20, 20, 0x93a6c7);
+    caixa(0, 43.6, 44, 0, 20.4, 20.4, COR.tampo);
+    caixa(0, 35, 38, 0, 20.3, 20.3, 0xcfe6f7, 0x6f86a8);
+    var cores = [COR.vermelho, COR.azul, COR.verde];
+    [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (c, i) {
+      for (var k = 0; k < 6; k++) caixa(c[0] * 15.1, k * 4, k * 4 + 4, c[1] * 15.1, 4.2, 4.2, cores[(i + k) % 3], 0x1d2340);
+    });
+    [-6, 6].forEach(function (z) { malha(new THREE.CylinderGeometry(0.8, 0.8, 25.6, 12), mat(COR.verde), -17.7, 12.8, z); });
+    // a engrenagem grande na frente (sul), girando devagar
+    var engrenagem = new THREE.Group();
+    engrenagem.add(new THREE.Mesh(new THREE.TorusGeometry(4.6, 0.7, 8, 32), mat(0xffd9a8)));
+    for (var d = 0; d < 10; d++) {
+      var dente = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.9), mat(0xffd9a8));
+      var a = d * Math.PI / 5;
+      dente.position.set(Math.cos(a) * 5.4, Math.sin(a) * 5.4, 0);
+      dente.rotation.z = a;
+      engrenagem.add(dente);
+    }
+    engrenagem.add(new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 1, 16).rotateX(Math.PI / 2), mat(COR.ferro)));
+    engrenagem.position.set(0, 13, 17.4);
+    cena.add(engrenagem);
+    animados.push(function (t) { engrenagem.rotation.z = t * 0.3; });
+    // corrimão do anel (com a passagem da ponte a leste) e da arena (com a passagem do pistão grande ao norte)
+    corrimao(-17, -17, 17, -17, 26); corrimao(-17, -17, -17, 17, 26); corrimao(-17, 17, 17, 17, 26);
+    corrimao(17, 17, 17, 7, 26); corrimao(17, 1, 17, -17, 26);
+    corrimao(-10.2, 10.2, 10.2, 10.2, 44); corrimao(-10.2, -10.2, -10.2, 10.2, 44); corrimao(10.2, -10.2, 10.2, 10.2, 44);
+    corrimao(-10.2, -10.2, -7.4, -10.2, 44); corrimao(-3, -10.2, 10.2, -10.2, 44);
+    // o guindaste
+    caixa(-7, 44, 66, -7, 1.6, 1.6, 0x3f4c6b);
+    var lanca = malha(new THREE.BoxGeometry(1.2, 1.2, 33.9), mat(0x3f4c6b), -3, 66.6, -3);
+    lanca.lookAt(9, 66.6, 9);
+    caixa(-14, 63.6, 66, -14, 3, 3, COR.ferro);
+    caixa(-7, 62.4, 65.2, -4.6, 2.6, 2.4, 0xcfe6f7, 0x3f4c6b);
+    malha(new THREE.CylinderGeometry(0.08, 0.08, 7.4, 6), mat(0x2b2140), 0, 62.6, 0);
+    malha(new THREE.BoxGeometry(1.4, 1.2, 1.4), mat(COR.laranja), 0, 58.4, 0);
+  })();
+
+  // ================= 1 · ESTEIRAS DA ENTRADA =================
+  faisca(12, 0, 130);
+  posto(17, 0, 126, "P0");
+  rotulo("dica do Vovô: a esteira leva", 6, 6, 120, "dica");
+  trilha([[12, 0, 126], [6, 0, 119], [-6, 0, 117], [-20, 0, 113], [-26, 0, 104], [-29, 0, 97]], 3.2);
+  // a recebedora, com as três luzes, e as três esteiras rentes ao chão
+  maquina(0, 8, 82, 52, 8, COR.azul);
+  [-14, 0, 14].forEach(function (x) {
+    caixa(x, 0, 4.4, 86.2, 5.2, 0.4, 0x1d2340);
+    malha(new THREE.SphereGeometry(0.9, 14, 10), new THREE.MeshBasicMaterial({ color: 0xfff3b0 }), x, 9.2, 84);
+    brilho(x, 9.2, 84, 0xffe28a, 4, true);
+    esteira([x, 0.05, 114], [x, 0.05, 86.4], 4);
+    fila([[x, 1.3, 108], [x, 1.3, 100], [x, 1.3, 92]]);
+  });
+  rotulo("tarefa: um bloco em cada esteira", 0, 15, 98, "dica");
+  [[-8.5, 106, COR.vermelho], [5.5, 100, COR.verde], [19.5, 108, COR.azul]].forEach(function (b) { blocoTomba(b[0], b[1], b[2]); });
+  // a esteira comprida que leva os blocos da recebedora até a máquina, com blocos andando nela (enfeite)
+  esteira([0, 0.05, 77.6], [0, 0.05, 17.6], 4);
+  [COR.vermelho, COR.verde, COR.azul, COR.vermelho].forEach(function (cor, i) {
+    var b = caixa(0, 0, 1.6, 70, 1.6, 1.6, cor, 0x1d2340);
+    animados.push(function (t) { b.position.z = 76 - ((t * 3 + i * 15) % 57); });
+  });
+  // mini-marco: a torre de blocos ABC; atrás dela, a esteira que entra no nicho
+  torreABC(30, 0, 102);
+  esteira([33, 0.05, 92], [44.5, 0.05, 92], 3.6);
+  caixa(49, 4.6, 5.2, 92, 9, 9, COR.aco);
+  caixa(53.3, 0, 4.6, 92, 0.4, 9, COR.aco);
+  [87.7, 96.3].forEach(function (z) { caixa(49, 0, 4.6, z, 9, 0.4, COR.aco); });
+  roda(49, 1.2, 92, 1.8, 4);
+  // bolso: a escada de caixotes até a prateleira do coração
+  escadaDeCaixotes([[-17.5, 125], [-20.1, 125]]);
+  prateleira(-26, 4.8, 125, 7, 5);
+  coracao(-26.5, 6.4, 125);
+  fila([[-24, 6, 123.5], [-28.5, 6, 126.5]]);
+  bolota(-6, 0, 128); bolota(8, 0, 94);
+  fila([[10, 1.2, 122], [2, 1.2, 118], [-12, 1.2, 115], [-22, 1.2, 110], [-27, 1.2, 101]]);
+  roda(12, 1.2, 138, 2.5, 3);
+  arco(-29, 0, 97, -1, -0.9);
+  rotulo("1 · Esteiras da Entrada", 0, 26, 106);
+  rotulo("bolso: prateleira do coração", -26, 11, 125, "bolso");
+  rotulo("bolso: nicho atrás da torre", 49, 10, 92, "bolso");
+
+  // viagem 1: o caixote na esteira expressa, da entrada às máquinas
+  (function () {
+    var pts = [[-30, 0.4, 95], [-40, 2.2, 86], [-50, 4.6, 77], [-58, 7, 68.5], [-62.5, 8.1, 63]];
+    var c = curva(pts), n = 8, ant = c.getPointAt(0);
+    for (var i = 1; i <= n; i++) {
+      var p = c.getPointAt(i / n);
+      esteira([ant.x, ant.y, ant.z], [p.x, p.y, p.z], 4.4);
+      if (p.y > 1.5 && i < n) malha(new THREE.CylinderGeometry(0.35, 0.45, p.y - 0.7, 8), mat(0x6b7894), p.x, (p.y - 0.7) / 2, p.z);
+      if (i % 3 === 0) estrelinha(p.x, p.y + 1.6, p.z);
+      ant = p;
+    }
+    viajanteCurva(caixoteAberto(), pts, 0.5);
+  })();
+  rotulo("viagem: caixote na esteira expressa", -48, 14, 80, "viagem");
+
+  // ================= 2 · BLOCOS-PISCA =================
+  maquina(-64, 8, 62, 12, 12, COR.vermelho);
+  posto(-61, 8, 59, "P1");
+  maquina(-86, 8, 66, 8, 8, COR.azul);
+  alavanca(-86, 8, 66);
+  maquina(-96, 8, 40, 18, 18, COR.verde);
+  maquina(-72, 8, 27, 8, 8, COR.azul);
+  alavanca(-72, 8, 27);
+  maquina(-118, 10, 24, 8, 8, COR.vermelho);
+  alavanca(-118, 10, 24);
+  maquina(-100, 8, 12, 12, 12, COR.verde);
+  // os blocos-pisca: até a primeira alavanca, até a segunda, até a terceira e, subindo, até o cano do V1
+  blocoPisca(-73.5, 8, 64.5, 0); blocoPisca(-78.5, 8, 65.5, 1);
+  blocoPisca(-83.5, 8, 31.5, 0); blocoPisca(-79.5, 8, 29.5, 1);
+  blocoPisca(-107.5, 8.8, 30, 1); blocoPisca(-111.5, 9.6, 27, 0);
+  blocoPisca(-120, 11.6, 30.5, 0); blocoPisca(-121.5, 13.2, 34.5, 1);
+  // vigas firmes: são o caminho sem pisca até a praça (mais de um caminho) e até a saída
+  passarela([-86, 8, 61.8], [-90, 8, 49.2]);
+  passarela([-65, 8, 55.8], [-87.2, 8, 44]);
+  passarela([-72, 8, 22.8], [-94.2, 8, 14]);
+  passarela([-98, 8, 30.8], [-98, 8, 18.2]);
+  // mini-marco: a Impressora de Blocos, que bate o carimbo e imprime um bloco lilás no tique
+  (function () {
+    [-104.5, -87.5].forEach(function (x) { caixa(x, 8, 19, 40, 1, 1, COR.ferro); });
+    caixa(-96, 19, 20.2, 40, 18, 1.4, COR.ferro);
+    var cabeca = malha(new THREE.BoxGeometry(2.6, 2.6, 2.6), mat(0x2b2140), -96, 16, 40);
+    var bico = malha(new THREE.ConeGeometry(0.7, 1.2, 10), mat(COR.pisca), -96, 14.2, 40);
+    bico.rotation.x = Math.PI;
+    animados.push(function (t) { var y = 16 - Math.max(0, Math.sin(t * Math.PI / 2.4)) * 3; cabeca.position.y = y; bico.position.y = y - 1.8; });
+    blocoPisca(-96, 9, 40, 0);
+  })();
+  // bolso: o cano gigante da parede, com o V1 lá dentro
+  var canoGigante = malha(new THREE.CylinderGeometry(2.6, 2.6, 10, 24, 1, true), mat(COR.verde, { side: THREE.DoubleSide }), -129, 15.6, 38.5);
+  canoGigante.rotation.z = Math.PI / 2;
+  malha(new THREE.TorusGeometry(2.6, 0.35, 8, 24), mat(0x2f8a4f), -124, 15.6, 38.5).rotation.y = Math.PI / 2;
+  vagalume(-128, 14.4, 38.5, true);
+  // a escada de caixotes de volta, para quem caiu no chão
+  escadaDeCaixotes([[-56.2, 70.5], [-56.2, 67.9], [-56.2, 65.3], [-56.2, 62.7]]);
+  bolota(-92, 8, 36); bolota(-100, 8, 45); bolota(-80, 11, 34);
+  fila([[-73.5, 9.4, 64.5], [-78.5, 9.4, 65.5], [-83.5, 9.4, 31.5], [-79.5, 9.4, 29.5], [-107.5, 10.2, 30], [-111.5, 11, 27], [-120, 13, 30.5], [-121.5, 14.6, 34.5]]);
+  roda(-96, 9.2, 40, 5.5, 5);
+  fila([[-86, 9.2, 68.5], [-72, 9.2, 29.5], [-118, 11.2, 21.5], [-64, 9.2, 65], [-100, 9.2, 9]]);
+  fila([[-76, 9.2, 50], [-88, 9.2, 55], [-83, 9.2, 18.5], [-98, 9.2, 24]]);
+  fila([[-60, 1.2, 75], [-66, 1.2, 76]]);
+  trilha([[-66, 8, 57], [-76, 8, 51], [-87, 8, 45], [-96, 8, 37], [-98, 8, 31], [-99, 8, 17]], 2.4);
+  arco(-100, 8, 7, 0, -1);
+  rotulo("blocos-pisca: piscam antes de sumir", -76, 15, 66, "dica");
+  rotulo("três alavancas chamam a ponte rolante", -96, 25, 22, "dica");
+  rotulo("2 · Blocos-Pisca", -94, 31, 44);
+  rotulo("bolso: cano gigante (vaga-lume 1)", -126, 22, 38.5, "bolso");
+
+  // viagem 2: a ponte rolante, das máquinas à oficina
+  (function () {
+    var a = V([-100, 30, 10]), b = V([-82, 30, -56]);
+    var d = new THREE.Vector3().subVectors(b, a).setY(0).normalize();
+    var p = new THREE.Vector3(-d.z, 0, d.x);
+    [-5, 5].forEach(function (s) {
+      var ra = a.clone().addScaledVector(p, s).addScaledVector(d, -10), rb = b.clone().addScaledVector(p, s).addScaledVector(d, 10);
+      var trilho = malha(new THREE.BoxGeometry(0.8, 0.8, ra.distanceTo(rb)), mat(COR.ferro), (ra.x + rb.x) / 2, 30, (ra.z + rb.z) / 2);
+      trilho.lookAt(rb.x, 30, rb.z);
+      [ra, rb].forEach(function (q) { malha(new THREE.BoxGeometry(1, 30, 1), mat(0x6b7894), q.x, 15, q.z); });
+    });
+    var viga = malha(new THREE.BoxGeometry(11, 0.9, 1.2), mat(COR.laranja), a.x, 30, a.z);
+    viga.rotation.y = Math.atan2(-p.z, p.x);
+    var cabo = malha(new THREE.CylinderGeometry(0.06, 0.06, 1, 6), mat(0x2b2140), a.x, 20, a.z);
+    var palete = new THREE.Group();
+    var tabua = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 4), mat(COR.laranja));
+    tabua.position.y = 0.25;
+    palete.add(tabua);
+    [[-1.8, -1.8], [1.8, -1.8], [1.8, 1.8], [-1.8, 1.8]].forEach(function (c) {
+      var corda = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 4), mat(0x2b2140));
+      corda.position.set(c[0] * 0.5, 2.0, c[1] * 0.5);
+      corda.rotation.set(c[1] * 0.22, 0, -c[0] * 0.22);
+      palete.add(corda);
+    });
+    cena.add(palete);
+    var trajeto = curva([[-100, 8.4, 10], [-99, 18, 3], [-90, 21, -26], [-83, 18, -50], [-82, 14.4, -56]]);
+    animados.push(function (t) {
+      var k = 0.5 - 0.5 * Math.cos(t * 0.4);
+      var q = trajeto.getPointAt(k);
+      palete.position.copy(q);
+      viga.position.set(q.x, 30, q.z);
+      cabo.position.set(q.x, (q.y + 3.6 + 30) / 2, q.z);
+      cabo.scale.y = Math.max(0.1, 30 - q.y - 3.6);
+    });
+  })();
+  rotulo("viagem: ponte rolante", -92, 37, -24, "viagem");
+
+  // ================= 3 · OFICINA DO MARTELINHO =================
+  caixa(-72, 13, 14, -80, 56, 46, COR.tampo);
+  [[-98, -59], [-46, -59], [-98, -101], [-46, -101], [-72, -59], [-72, -101]].forEach(function (p) { caixa(p[0], 0, 13, p[1], 2, 2, 0x6b7894); });
+  posto(-86, 14, -61, "P2");
+  caixaDeFerramentas(-58, 14, -68);
+  martelinho(-58, 25, -68);
+  rotulo("poder da fase: Martelinho de Apito", -58, 33, -68, "poder");
+  coracao(-58, 17.6, -63.8);
+  // tarefa: três pinos, cada um ligado por um cano ao seu pistão; os três pistões viram a escada até a estante
+  [[-84, -76, -61, -94, 1.6], [-74, -90, -57.5, -94, 3.2], [-64, -82, -54, -94, 4.8]].forEach(function (q) {
+    pino(q[0], 14, q[1]);
+    cano([[q[0], 14.3, q[1]], [(q[0] + q[2]) / 2, 14.3, (q[1] + q[3]) / 2 + 2], [q[2], 14.3, q[3] + 1.8]]);
+    pistao(q[2], 14, q[3], q[4]);
+    estrelinha(q[2], 14 + q[4] + 1.2, q[3]);
+    estrelinha(q[0], 17.4, q[1]);
+  });
+  caixa(-47, 14, 20, -94, 6, 12, 0xc49a6c, 0x6a4a2a);
+  [16, 18].forEach(function (y) { malha(new THREE.BoxGeometry(6.1, 0.2, 12.1), mat(0x6a4a2a), -47, y, -94); });
+  rotulo("cada pancada num pino sobe um pistão", -64, 25, -96, "dica");
+  [[-78, -66], [-70, -76], [-63, -88]].forEach(function (p) { placa(p[0], 14, p[1], -47, -94); });
+  // bolso alto: o quarto pino, atrás da caixa de ferramentas, e o pistão alto que sobe e desce até a prateleira do V2
+  pino(-48, 14, -64);
+  cano([[-48, 14.3, -64], [-47.4, 14.3, -70], [-47, 14.3, -73.2]]);
+  (function () {
+    caixa(-47, 14, 14.5, -75, 3, 3, COR.ferro);
+    var elev = malha(new THREE.BoxGeometry(3, 0.4, 3), mat(COR.laranja), -47, 14.7, -75);
+    var haste = malha(new THREE.BoxGeometry(1.2, 1, 1.2), mat(0x9aa7bf), -47, 14.6, -75);
+    animados.push(function (t) {
+      var y = 14.7 + (0.5 - 0.5 * Math.cos(t * 0.5)) * 8;
+      elev.position.y = y;
+      haste.scale.y = Math.max(0.05, y - 14.5);
+      haste.position.y = 14.5 + (y - 14.5) / 2;
+    });
+  })();
+  prateleira(-47, 22.8, -80, 5, 5, 14);
+  vagalume(-47, 24.2, -80.5);
+  bolota(-72, 14, -70); bolota(-80, 14, -88, true); bolota(-62, 14, -100);
+  montaCarga(-86, -54.5, 14);
+  trilha([[-82, 14, -60], [-76, 14, -68], [-70, 14, -80], [-64, 14, -90], [-61, 14, -93]], 3.2);
+  fila([[-80, 15.2, -63], [-74, 15.2, -72], [-68, 15.2, -84]]);
+  roda(-78, 15.2, -80, 3, 4);
+  fila([[-47, 21.2, -91], [-47, 21.2, -97], [-45.5, 24, -78.5], [-48.5, 24, -82]]);
+  fila([[-60, 1.2, -66], [-80, 1.2, -66], [-70, 1.2, -96]]);
+  arco(-46, 20, -94, 1, 0.1);
+  rotulo("3 · Oficina do Martelinho", -72, 41, -80);
+  rotulo("bolso alto: o quarto pino e o pistão (vaga-lume 2)", -47, 31, -80, "bolso");
+
+  // viagem 3: a empilhadeira, pela passarela alta, da oficina ao andar da pintura (vai e volta)
+  (function () {
+    var pts = [[-44, 20, -94], [-30, 20, -96], [-6, 20, -88], [18, 20, -74], [40, 20, -62], [62, 20, -55], [80, 20, -52], [90, 20, -46.5]];
+    trilha(pts, 4.6, 0xaab6cc);
+    pts.slice(1, 7).forEach(function (p) { malha(new THREE.BoxGeometry(1, 19.9, 1), mat(0x6b7894), p[0], 9.95, p[2]); });
+    viajanteCurva(empilhadeira(), pts, 0.35);
+    fila([[-18, 21.4, -93], [29, 21.4, -68], [71, 21.4, -53.5]]);
+  })();
+  rotulo("viagem: empilhadeira (vai e volta)", 0, 29, -86, "viagem");
+
+  // ================= 4 · ANDAR DA PINTURA =================
+  caixa(88, 0, 19.4, -18, 52, 60, COR.aco);
+  tinta(62, 114, -48, 12, 19.6);
+  function parede(x0, z0, x1, z1) {
+    if (x0 === x1) caixa(x0, 19.4, 22, (z0 + z1) / 2, 0.8, Math.abs(z1 - z0), 0xb8c4da);
+    else caixa((x0 + x1) / 2, 19.4, 22, z0, Math.abs(x1 - x0), 0.8, 0xb8c4da);
+  }
+  parede(62, -48, 86, -48); parede(94, -48, 114, -48); parede(114, -48, 114, 12);
+  parede(62, 12, 64, 12); parede(68, 12, 114, 12);
+  parede(62, -48, 62, 1.5); parede(62, 6.5, 62, 12);
+  caixa(99, 19.4, 20, -45, 30, 6, COR.tampo);
+  caixa(67, 19.4, 20, 4, 10, 16, COR.tampo);
+  posto(96, 20, -45, "P3");
+  rotulo("o chão é tinta: encostar conta como cair", 106, 25, -44, "dica");
+  lata(102, 20, -30, 4.5); lata(82, 20, -24, 4.5); lata(84, 20, -4, 4.5);
+  pino(102, 20, -30); pino(82, 20, -24); pino(84, 20, -4);
+  esteira([102, 20.05, -42], [102, 20.05, -34.8], 4);
+  blocoPisca(94.6, 20, -27.8, 0); blocoPisca(89.4, 20, -26.2, 1);
+  esteira([77, 20.05, -14], [89, 20.05, -14], 8);
+  blocoPisca(75.8, 20, -1.5, 1);
+  // bolso: a lata tombada, por uma esteira e dois blocos-pisca
+  esteira([104, 20.05, -25.6], [104, 20.05, -12], 4);
+  blocoPisca(106, 20, -7.5, 0); blocoPisca(107.5, 20, -3.5, 1);
+  lataTombada(108, 20, -1.5, 3.6, 10);
+  coracao(108, 21.8, 6);
+  bolota(85, 20, -14); bolota(80, 20, -22);
+  fila([[102, 21.2, -40], [102, 21.2, -36.5]]);
+  roda(102, 21.2, -30, 2.8, 3); roda(82, 21.2, -24, 2.8, 3); roda(84, 21.2, -4, 2.8, 3);
+  fila([[94.6, 21.4, -27.8], [89.4, 21.4, -26.2], [75.8, 21.4, -1.5]]);
+  fila([[80, 21.2, -14], [86, 21.2, -14]]);
+  fila([[104, 21.2, -20], [104, 21.2, -15], [106, 21.4, -7.5]]);
+  fila([[108, 21.2, 1.5], [106.8, 21.2, 3], [109.2, 21.2, 3]]);
+  fila([[67, 21.2, 0], [67, 21.2, 8]]);
+  montaCarga(66, 14.5, 20);
+  arco(62.8, 20, 4, -1, 0);
+  // a ponte de blocos até o anel: o começo é firme; cada pino manda uma fileira de blocos para um vão
+  passarela([62, 20, 4], [56, 20, 4], 4.4);
+  [[56, 20, 43, 22], [43, 22, 30, 24], [30, 24, 17, 26]].forEach(function (v, i) {
+    var cor = [COR.vermelho, COR.verde, COR.azul][i];
+    var seg = passarela([v[0], v[1], 4], [v[2], v[3], 4], 4.4);
+    seg.material = new THREE.MeshLambertMaterial({ color: cor, transparent: true, opacity: 0.3 });
+    var mx = (v[0] + v[2]) / 2, my = (v[1] + v[3]) / 2;
+    caixa(mx, 0, my - 0.7, 12.5, 12, 6, COR.aco);
+    esteira([mx, my - 0.65, 15.4], [mx, my - 0.65, 9.6], 12);
+    caixa(mx, my - 0.65, my + 0.85, 13.4, 11.6, 1.5, cor, 0x1d2340);
+    estrelinha(mx, my + 1.4, 4);
+  });
+  rotulo("cada pino manda blocos para um vão da ponte", 38, 35, 16, "dica");
+  rotulo("4 · Andar da Pintura", 84, 42, -8);
+  rotulo("bolso: a lata tombada", 108, 30, 3, "bolso");
+
+  // ================= 5 · SUBIDA DA MÁQUINA =================
+  posto(14, 26, -1, "P4");
+  function saliencia(x, y, z, l) { caixa(x, y - 1.2, y, z, l || 3.4, l || 3.4, 0xaab6cc); }
+  // pelo sentido do relógio: leste, sul, oeste e norte, um pino em cada canto
+  saliencia(11.7, 27.6, 7);
+  saliencia(11.9, 29.2, 11.9, 4.4); pino(11.9, 29.2, 11.9);
+  saliencia(6.5, 29.2, 11.7); pistao(6.5, 29.2, 11.7, 1.6);
+  esteira([3.2, 32.4, 11.7], [-7.5, 35.2, 11.7], 3.4);
+  saliencia(-11.9, 35.2, 11.9, 4.4); pino(-11.9, 35.2, 11.9);
+  blocoPisca(-11.7, 36.8, 7.6, 0); blocoPisca(-11.7, 38.4, 3.6, 1);
+  saliencia(-11.7, 38.4, -0.6); pistao(-11.7, 38.4, -0.6, 1.6);
+  saliencia(-11.7, 41.6, -5.2);
+  saliencia(-11.9, 41.6, -11.9, 4.4); pino(-11.9, 41.6, -11.9);
+  saliencia(-5.2, 41.6, -11.9, 4); pistao(-5.2, 41.6, -11.9, 2.4, 4);
+  rotulo("um pino em cada canto sobe o pistão seguinte", 24, 47, 18, "dica");
+  // segredo: o painel rachado na parede da máquina, no anel, com a luz verde-limão perto
+  (function () {
+    var painel = malha(new THREE.BoxGeometry(5, 4, 0.5), new THREE.MeshLambertMaterial({ map: texRacha }), -10.3, 28, 4);
+    painel.rotation.y = Math.PI / 2;
+    malha(new THREE.SphereGeometry(0.5, 12, 8), new THREE.MeshBasicMaterial({ color: COR.vagalume }), -10.5, 31, 7.4);
+    brilho(-10.7, 31, 7.4, COR.vagalume, 3, true);
+    vagalume(-7, 27.6, 4, true);
+  })();
+  bolota(4, 26, 14); bolota(-14.5, 38.6, 5.6);
+  coracao(4, 27.4, -14);
+  fila([[11.7, 28.8, 7], [11.9, 30.4, 10.6], [6.5, 32.2, 11.7], [-1, 34.4, 11.7], [-5, 35.4, 11.7], [-11.7, 38, 7.6], [-11.7, 39.6, 3.6],
+    [-11.7, 41.2, -0.6], [-11.7, 42.8, -5.2], [-5.2, 45.2, -11.9]]);
+  fila([[14, 27.2, 10], [10, 27.2, 14.5], [-6, 27.2, 14.5], [-14, 27.2, 8], [-14, 27.2, -8], [-6, 27.2, -14.5], [10, 27.2, -14.5], [14, 27.2, -9]]);
+  fila([[-7, 27.2, 2.4], [-7, 27.2, 5.6]]);
+  rotulo("5 · Subida da Máquina", -26, 53, 22);
+  rotulo("segredo: painel rachado (vaga-lume 3)", -18, 34, 4, "bolso");
+
+  // ================= ARENA NO TOPO =================
+  bolota(-4, 44, 4); bolota(5, 44, -2); bolota(-1, 44, -6, true);
+  malha(new THREE.BoxGeometry(2.4, 1.6, 1.6), mat(0xffc93a), 0, 44.8, 3);
+  roda(0, 45, 3, 3, 4);
+  var geoEG = new THREE.ExtrudeGeometry(formaEstrela, { depth: 0.6, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.15, bevelSegments: 2 });
+  geoEG.center();
+  var estrelaGrande = malha(geoEG, new THREE.MeshBasicMaterial({ color: 0xffd23f }), 0, 55, 0);
+  estrelaGrande.scale.setScalar(3.5);
+  brilho(0, 55, 0, 0xffe066, 30, true);
+  animados.push(function (t) { estrelaGrande.rotation.y = t * 0.8; });
+  rotulo("Arena no topo", 0, 73, 0);
+
+  // ---------- linhas de autor (escondidas) ----------
+  var pontosRota = [[12, 0.6, 128], [-8, 0.6, 110], [5, 0.6, 104], [19, 0.6, 112], [-20, 0.6, 112], [-30, 1, 95], [-50, 5.2, 77], [-64, 8.6, 62],
+    [-78, 8.6, 65], [-86, 8.6, 66], [-90, 8.6, 50], [-96, 8.6, 40], [-80, 8.6, 30], [-72, 8.6, 27], [-96, 8.6, 34], [-110, 9.8, 28],
+    [-118, 10.6, 24], [-100, 8.6, 18], [-100, 8.6, 10], [-90, 21, -26], [-82, 14.6, -56], [-58, 14.6, -62], [-84, 14.6, -76],
+    [-74, 14.6, -90], [-64, 14.6, -82], [-56, 18, -94], [-46, 20.6, -94], [-6, 20.6, -88], [40, 20.6, -62], [90, 20.6, -46],
+    [102, 20.6, -38], [102, 20.6, -30], [92, 20.6, -27], [82, 20.6, -24], [83, 20.6, -14], [84, 20.6, -4], [76, 20.6, -1.5], [67, 20.6, 4],
+    [43, 22.6, 4], [17, 26.6, 4], [11.7, 28.2, 7], [11.9, 29.8, 11.9], [6.5, 31.4, 11.7], [-7.5, 35.8, 11.7], [-11.9, 35.8, 11.9],
+    [-11.7, 39, 2], [-11.7, 42.2, -5], [-11.9, 42.2, -11.9], [-5.2, 44.6, -11.9], [0, 44.6, 0]];
+  rota = pontilhado(pontosRota, COR.laranja, 0.35, 2.4);
+  rota.forEach(function (m) { m.visible = false; });
+  var comprimentoRota = Math.round(curva(pontosRota).getLength());
+  vistas = [tracejado([[12, 2.5, 128], [0, 55, 0]], 0x1d2340), tracejado([[-96, 10, 40], [0, 55, 0]], 0x1d2340),
+    tracejado([[-72, 16, -80], [0, 55, 0]], 0x1d2340), tracejado([[96, 22, -45], [0, 55, 0]], 0x1d2340)];
+  vistas.forEach(function (v) { v.visible = false; });
+
+  // ---------- números ----------
+  var numeros = document.getElementById("numeros");
+  [["playgrounds", "5 + arena"], ["viagens", 4], ["rota principal", "~" + comprimentoRota + " m"], ["estrelinhas", estrelas], ["vaga-lumes", 3], ["postos", "P0 + 4"], ["Bolotas", bolotas], ["corações extras", coracoes]].forEach(function (n) {
+    var s = document.createElement("span");
+    s.textContent = n[0] + ": " + n[1];
+    numeros.appendChild(s);
+  });
+
+  // ---------- câmera, botões e ficha ----------
+  var voo = null;
+  function irPara(chave) {
+    var t = PARTES[chave];
+    voo = { de: camera.position.clone(), deAlvo: controles.target.clone(), para: new THREE.Vector3().fromArray(t.cam), paraAlvo: new THREE.Vector3().fromArray(t.alvo), t0: performance.now() };
+    var ficha = document.getElementById("ficha");
+    ficha.innerHTML = "";
+    var h = document.createElement("h2"); h.textContent = t.nome;
+    var m = document.createElement("p"); m.className = "medida"; m.textContent = t.medida;
+    var p = document.createElement("p"); p.textContent = t.texto;
+    ficha.append(h, m, p);
+    function grupo(titulo, itens) {
+      var d = document.createElement("div"); d.className = "grupo";
+      var hh = document.createElement("h3"); hh.textContent = titulo;
+      var ul = document.createElement("ul");
+      itens.forEach(function (item) { var li = document.createElement("li"); li.textContent = item; ul.appendChild(li); });
+      d.append(hh, ul);
+      ficha.appendChild(d);
+    }
+    if (t.bolsos) grupo("Bolsos para explorar", t.bolsos);
+    if (t.bolotas) grupo("Bolotas", [t.bolotas]);
+    document.querySelectorAll("#botoes button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.parte === chave ? "true" : "false"); });
+  }
+  var botoes = document.getElementById("botoes");
+  ORDEM.forEach(function (chave) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = PARTES[chave].botao;
+    b.dataset.parte = chave;
+    if (PARTES[chave].viagem) b.className = "viagem";
+    b.addEventListener("click", function () { irPara(chave); });
+    botoes.appendChild(b);
+  });
+  function alternar(id, aoMudar) {
+    var b = document.getElementById(id);
+    b.addEventListener("click", function () {
+      var ligado = b.getAttribute("aria-pressed") !== "true";
+      b.setAttribute("aria-pressed", ligado ? "true" : "false");
+      aoMudar(ligado);
+    });
+  }
+  alternar("b-nomes", function (on) { rotulos.forEach(function (r) { r.visible = on; }); });
+  alternar("b-rota", function (on) { rota.forEach(function (m) { m.visible = on; }); });
+  alternar("b-vista", function (on) { vistas.forEach(function (v) { v.visible = on; }); });
+  alternar("b-gira", function (on) { controles.autoRotate = on; controles.autoRotateSpeed = 0.6; });
+
+  var inicio = (location.hash || "").replace("#", "");
+  if (!PARTES[inicio]) inicio = "geral";
+  camera.position.fromArray(PARTES[inicio].cam);
+  controles.target.fromArray(PARTES[inicio].alvo);
+  irPara(inicio);
+  voo = null;
+
+  function ajustar() {
+    var w = canvas.clientWidth, h = canvas.clientHeight, pr = renderer.getPixelRatio();
+    if (canvas.width !== Math.round(w * pr) || canvas.height !== Math.round(h * pr)) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  }
+  var reduzir = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var t0 = performance.now();
+  function quadro(agora) {
+    ajustar();
+    var t = (agora - t0) / 1000;
+    if (!reduzir) animados.forEach(function (f) { f(t); });
+    if (voo) {
+      var k = Math.min((agora - voo.t0) / 900, 1);
+      var e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      camera.position.lerpVectors(voo.de, voo.para, e);
+      controles.target.lerpVectors(voo.deAlvo, voo.paraAlvo, e);
+      if (k >= 1) voo = null;
+    }
+    controles.update();
+    renderer.render(cena, camera);
+    requestAnimationFrame(quadro);
+  }
+  requestAnimationFrame(quadro);
+})();
+</script>

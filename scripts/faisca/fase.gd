@@ -1,0 +1,1858 @@
+class_name Fase
+extends Node3D
+## Base das fases do Faísca (a Parte 2 da Ilha Cafuné). Monta o céu de dia, a luz, o mar de nuvens lá
+## embaixo e o farol da ilha ao longe (a bússola do jogador), e tem as funções que cada fase chama em
+## `_montar()` como uma tabela: morros da floresta e plataformas do KayKit, árvores,
+## estrelinhas em trilha e em arco, postos de recarga, molas, corações, plataformas que vão e
+## voltam, flores de luz com portão, o baú com a Estrela Grande, Faisquinhas presos em bolhas, Bolotas
+## e os pontos de dica do vovô. As posições estão em metros; o Faísca tem uns 2,2 m.
+## Cada estrelinha e cada Faisquinha tem um nome (a ordem em que a fase cria, ou "b<Bolota>_<n>" nas
+## que as Bolotas soltam): os já pegos em outras vezes chegam em `ja_pegas` e `ja_achados`, aparecem
+## transparentes e não contam de novo; os novos ficam em `novas` e `novos_faisquinhas`.
+
+signal estrela_pega(pegas: int, total: int)
+signal faisquinha_salvo(achados: int, total: int)
+signal posto_aceso(posto: Posto)
+signal dica(qual: String)
+signal estrela_grande_pega
+## Pegou uma moeda (item 4 da lista do Faísca): quantas desta vez.
+signal moeda_pega(pegas: int)
+
+const PLATAFORMA := "res://assets/faisca/plataforma/"
+const FLORESTA := "res://assets/faisca/floresta/"
+## Peças do Dungeon Pack (Túneis do Morro).
+const MASMORRA := "res://assets/faisca/masmorra/"
+## Peças do Restaurant Bits (a 2-1 Cozinha Gigante, ampliadas 8 vezes).
+const COZINHA := "res://assets/faisca/cozinha/"
+## Peças do quarto (Furniture Bits, Board Game Bits e o trenzinho do Holiday Bits), para a 2-3 Quarto de Brinquedos.
+const QUARTO := "res://assets/faisca/quarto/"
+## Peças do Block Bits (blocos coloridos, caixote, metal, cano, pilha), para a 3-2 Fábrica de Blocos. Os modelos têm 2 m.
+const FABRICA := "res://assets/faisca/fabrica/"
+const CAMADA_JOGADOR := 1 << 1
+## Camada do que o laser dos pés acende (flores de luz). O Faísca não esbarra nela. Na Ilha a camada 4
+## é a dos pontos de impacto dos esqueletos e a 5 a dos moradores; esta é a 6.
+const CAMADA_LUZ := 1 << 5
+## Paredes invisíveis acima das paredes que se veem (fases sem teto, como os Túneis do Morro): o Faísca
+## esbarra e a câmera não. Na Ilha é a camada dos moradores, que não existem dentro das fases.
+const CAMADA_LIMITE := 1 << 4
+## Cada Bolota derrotada solta estas estrelinhas (já contam no total desde o começo).
+const ESTRELAS_POR_BOLOTA := 3
+## Moedas (item 4): cada Bolota vencida, cada Faisquinha salvo e o baú aberto soltam estas.
+const MOEDAS_POR_BOLOTA := 3
+const MOEDAS_POR_FAISQUINHA := 5
+const MOEDAS_DO_BAU := 20
+## O mundo que reage (item 6 da lista): o que cada mundo espalha sozinho nos playgrounds, pela `superficie` (ou pelo
+## `estilo`): [plantas do Mato, coisas que quebram (Quebravel), cores de poça (Poca)].
+const ESTILOS := {
+	"grama": [["grama", "grama", "flor", "flor", "flor"], ["caixa", "vaso"], ["agua"]],
+	"pedra": [["cogumelo"], ["barril", "caixa", "vaso"], ["agua"]],
+	"madeira": [[], ["pote", "pote_azul"], ["leite", "suco"]],
+	"algodao": [["pirulito", "flor_rosa", "flor_rosa"], ["presente", "presente_alto"], ["calda"]],
+	"tapete": [["catavento"], ["presente", "presente_alto", "presente_grande"], ["tinta"]],
+	"neve": [["gelo", "gelo", "flor_de_gelo"], ["presente_verde", "presente_grande"], ["agua"]],
+	"metal": [["antena"], ["caixote"], ["agua"]],
+}
+const CANTEIROS_POR_PLAYGROUND := 3
+const QUEBRAVEIS_POR_PLAYGROUND := 3
+const POCAS_POR_PLAYGROUND := 2
+
+## Onde o Faísca começa.
+var inicio := Vector3.ZERO
+## O chão de sempre da fase, para a tremida de cada passo (Jogador.TEXTURAS): cada fase diz o seu no _montar.
+var superficie := "grama"
+## Abaixo desta altura o Faísca caiu nas nuvens.
+var limite_queda := -12.0
+var nome := ""
+## Estrelinhas e Faisquinhas pegos em outras vezes (nome -> true), postos antes de entrar na árvore.
+var ja_pegas := {}
+var ja_achados := {}
+## Pegos desta vez (só os que não estavam em `ja_pegas` / `ja_achados`).
+var novas: Array[String] = []
+var novos_faisquinhas: Array[String] = []
+var estrelas: Array[Area3D] = []
+var pegas := 0
+var alvos: Array[Alvo] = []
+var postos: Array[Posto] = []
+var faisquinhas: Array[Faisquinha] = []
+var achados := 0
+## Moedas pegas desta vez (vão para a carteira do FaiscaJogo uma a uma, pelo sinal moeda_pega).
+var moedas_pegas := 0
+var flores: Array[FlorDeLuz] = []
+var portoes: Array[Node3D] = []
+var tochas: Array[Tocha] = []
+var paredes_rachadas: Array[ParedeRachada] = []
+## Portas que abrem com tochas: {"porta": nó da folha, "tochas": [Tocha], "aberta": bool}.
+var portas_das_tochas: Array[Dictionary] = []
+## Pontes que sobem quando a tocha delas acende.
+var pontes: Array[StaticBody3D] = []
+var bau: Bau
+var molas: Array[Area3D] = []
+var coracoes: Array[Area3D] = []
+var moveis: Array[AnimatableBody3D] = []
+## Peças pedidas em 2026-10-29 para as fases ficarem mais compridas: esteiras, argolas no ar (com as estrelinhas
+## do prêmio, que aparecem quando todas acendem), botões que sobem a ponte, nuvens que somem e o canhão.
+var esteiras: Array[Esteira] = []
+var argolas: Array[Argola] = []
+var premio_argolas: Array[Area3D] = []
+var botoes: Array[Botao] = []
+var ponte_botoes: Array[StaticBody3D] = []
+var nuvens_que_somem: Array[NuvemQueSome] = []
+var canhoes: Array[Canhao] = []
+## As saídas com tarefa (item 12), a Bolota gigante (item 9) e as zonas de câmera guiada.
+var cancelas: Array[StaticBody3D] = []
+var bolotas_gigantes: Array[BolotaGigante] = []
+var zonas_de_camera: Array[ZonaDeCamera] = []
+## E as da 1-2: carrinho de mina, alavancas com as grades delas, cristais que pulam e a Bolotona.
+var carrinhos: Array[CarrinhoDeMina] = []
+var alavancas: Array[Alavanca] = []
+var grades: Array[Grade] = []
+var cristais: Array[Area3D] = []
+var bolotonas: Array[Bolotona] = []
+## E as da 2-1: tampas que pulam, rolos de macarrão, a pizza que gira, as bocas do fogão e a água da pia.
+var tampas: Array[TampaQuePula] = []
+var rolos: Array[RoloDeMassa] = []
+var pizzas: Array[PizzaGiratoria] = []
+var bocas: Array[BocaDoFogao] = []
+var aguas: Array[Area3D] = []
+## E as da 2-2: nuvens que quicam (e as que quicam e somem) e as viagens que esperam o Faísca (nuvem-carro, teleférico).
+var nuvens_que_quicam: Array[NuvemQueQuica] = []
+var caronas: Array[Carona] = []
+## E as da 2-3: dados que tombam com um soco, dados que rolam sozinhos, argolas do ioiô e cartas que viram.
+var dados: Array[DadoQueTomba] = []
+var dados_rolando: Array[DadoRolando] = []
+var argolas_ioio: Array[ArgolaDeIoio] = []
+var cartas: Array[CartaQueVira] = []
+## E as da 3-1: sinos (da Luva de Neve), pinguins presos no gelo, bolas de neve que rolam e cachoeiras que congelam.
+var sinos: Array[Sino] = []
+var cubos_de_gelo: Array[CuboDeGelo] = []
+var bolas_de_neve: Array[BolaDeNeve] = []
+var cachoeiras: Array[Cachoeira] = []
+## E as da 3-2: pinos que só afundam com o Martelinho de Apito, pistões que eles ligam e blocos-pisca.
+var pinos: Array[Pino] = []
+var pistoes: Array[Pistao] = []
+var blocos_pisca: Array[BlocoPisca] = []
+
+## Padrão de playgrounds (aprovado pelo usuário em 2026-10-29; docs/level-design/molde-das-fases.html): os
+## playgrounds na ordem ({nome, centro, raio, entrada}), o marco com o ponto do brilho dele (a coluna de luz que
+## aparece de toda a fase) e os arcos de saída. Os testes e as fotos usam.
+var playgrounds: Array[Dictionary] = []
+var brilho_do_marco := Vector3.ZERO
+var saidas: Array[Node3D] = []
+var _trilhas_por_fazer := []
+
+var _moveis := []  # [corpo, origem, caminho, período, atraso]
+var _tempo := 0.0
+var _mat_estrela: StandardMaterial3D
+var _mat_estrela_vista: StandardMaterial3D
+var _proxima_estrela := 0
+var _cenas := {}
+var _dicas_dadas := {}
+var _faisquinhas_sem_nome := 0
+## O mundo que reage: as plantinhas (um Mato só), o que quebra e as poças. A fase pode desligar o espalhar sozinho
+## (`mundo_que_reage`) e pôr à mão, ou trocar o `estilo` (vazio = o da `superficie`).
+var mato: Mato
+var quebraveis: Array[Quebravel] = []
+var pocas: Array[Poca] = []
+var mundo_que_reage := true
+var estilo := ""
+## Os caminhos creme ([pontos, largura]), que nada do mundo que reage pode tapar.
+var trilhas: Array = []
+## Quantas peças de chão ganharam o desenho da textura (item 13, para os testes), e quais ([peça, desenho]).
+var pecas_com_textura := 0
+var pecas_de_chao: Array = []
+## A vegetação e as miudezas do chão (grama, musgo, granulado, pecinhas, porcas...), pedido de 2026-11-11.
+var vegetacao: VegetacaoDaFase
+
+
+func _ready() -> void:
+	add_to_group("fase_do_faisca")
+	_montar_ceu_e_luz()
+	_montar()
+	# Depois do caminho, que diz a altura das nuvens (`limite_queda`).
+	_montar_nuvens()
+	pegas = ja_pegas.size()
+	achados = ja_achados.size()
+	# Na ordem dos nomes: os três de antes ("0" a "2") e depois os novos, criados em qualquer ponto do caminho.
+	faisquinhas.sort_custom(func(a: Faisquinha, b: Faisquinha) -> bool: return int(a.id) < int(b.id))
+	_mundo_que_reage()
+	# A textura no chão (item 13): o desenho da superfície da fase por cima das peças de chão.
+	pecas_com_textura = TexturaDoChao.na_fase(self, superficie, pecas_de_chao)
+	_vegetar()
+
+
+## Cada fase monta o caminho aqui.
+func _montar() -> void:
+	pass
+
+
+## Estrelinhas da fase: as soltas no caminho mais as que as Bolotas ainda vão soltar.
+func total_estrelas() -> int:
+	var por_vir := 0
+	for a in alvos:
+		if a is Bolota and not a.derrotado:
+			por_vir += ESTRELAS_POR_BOLOTA
+	return estrelas.size() + por_vir
+
+
+func _physics_process(delta: float) -> void:
+	_tempo += delta
+	for m in _moveis:
+		var t: float = (_tempo + m[4]) / m[3]
+		var s := 0.5 - 0.5 * cos(TAU * t)
+		# Com pausa (as viagens), fica parado um tempo em cada ponta, para dar tempo de subir e descer.
+		if m.size() > 5 and m[5] > 0.0:
+			s = clampf((s - m[5]) / (1.0 - 2.0 * m[5]), 0.0, 1.0)
+		m[0].position = m[1] + m[2] * s
+
+
+func _process(delta: float) -> void:
+	for e in estrelas:
+		if e.visible and e.monitoring:
+			e.rotation.y += delta * 2.5
+	for c in coracoes:
+		c.rotation.y += delta * 1.5
+
+
+# --- peças dos pacotes --------------------------------------------------------------
+
+## Peça de um pacote do KayKit pelo nome do arquivo, sem ".gltf" (as da floresta têm "_Color"
+## no nome). `escala` aceita número ou Vector3. `solida` gera a colisão com a forma da malha.
+func peca(arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 1.0, solida := true) -> Node3D:
+	return peca_de(FLORESTA if arquivo.contains("_Color") else PLATAFORMA, arquivo, pos, giro, escala, solida)
+
+
+## Como `peca`, de uma pasta qualquer (MASMORRA, por exemplo).
+func peca_de(pasta: String, arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 1.0, solida := true) -> Node3D:
+	var no: Node3D = _cena(pasta + arquivo + ".gltf").instantiate()
+	no.position = pos
+	no.rotation.y = giro
+	no.scale = escala if escala is Vector3 else Vector3.ONE * float(escala)
+	add_child(no)
+	if solida:
+		for mi in no.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).create_trimesh_collision()
+	return no
+
+
+## Morro de grama com paredão de pedra (Forest Nature). `tamanho` é o do nome ("12x12x4");
+## `topo` é o meio da grama em cima, então a altura do morro fica para baixo.
+func morro(tamanho: String, topo: Vector3, giro := 0.0) -> Node3D:
+	var altura := float(tamanho.get_slice("x", 2))
+	return peca("Hill_%s_Color1" % tamanho, topo - Vector3(0, altura, 0), giro)
+
+
+## Plataforma colorida do Platformer ("4x4x1", "blue"), com `topo` no meio da face de cima.
+func plataforma(tamanho: String, cor: String, topo: Vector3, giro := 0.0) -> Node3D:
+	var altura := float(tamanho.get_slice("x", 2))
+	return peca("platform_%s_%s" % [tamanho, cor], topo - Vector3(0, altura, 0), giro)
+
+
+## Árvore da floresta (`tipo` 1, 2, 4 ou 5; `cor` de 1 a 8: 1 verde, 5 amarela, 6 laranja,
+## 7 vermelha, 8 rosa), com um tronco sólido para não atravessar.
+func arvore(tipo: int, cor: int, pos: Vector3, escala := 1.0, giro := 0.0) -> Node3D:
+	var no := peca("Tree_%d_A_Color%d" % [tipo, cor], pos, giro, escala, false)
+	var corpo := StaticBody3D.new()
+	corpo.position = pos + Vector3(0, 1.5 * escala, 0)
+	var cs := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = 0.35 * escala
+	cil.height = 3.0 * escala
+	cs.shape = cil
+	corpo.add_child(cs)
+	add_child(corpo)
+	return no
+
+
+## Enfeite sem colisão (moitas, pedrinhas, grama).
+func enfeite(arquivo: String, pos: Vector3, escala := 1.0, giro := 0.0) -> Node3D:
+	return so_enfeite(peca(arquivo, pos, giro, escala, false))
+
+
+## Marca um nó (e tudo dentro dele) como enfeite de propósito, que o Faísca atravessa: a água, o cabo do
+## teleférico, a chama da tocha. O revisor de física (tools/revisor_fisica.gd) não cobra colisão dele.
+static func so_enfeite(no: Node3D) -> Node3D:
+	no.set_meta("enfeite", true)
+	return no
+
+
+# --- estrelinhas ------------------------------------------------------------------
+
+func estrelinha(pos: Vector3, id := "") -> Area3D:
+	if id == "":
+		id = str(_proxima_estrela)
+		_proxima_estrela += 1
+	if _mat_estrela == null:
+		_mat_estrela = StandardMaterial3D.new()
+		_mat_estrela.albedo_color = Color("ffd23f")
+		_mat_estrela.roughness = 0.3
+		_mat_estrela.emission_enabled = true
+		_mat_estrela.emission = Color("ffb800")
+		_mat_estrela.emission_energy_multiplier = 0.7
+		_mat_estrela_vista = _mat_estrela.duplicate()
+		_mat_estrela_vista.albedo_color = Color(1.0, 0.86, 0.4, 0.4)
+		_mat_estrela_vista.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_mat_estrela_vista.emission_energy_multiplier = 0.25
+	var area := Area3D.new()
+	area.set_meta("id", id)
+	area.position = pos
+	area.collision_layer = 0
+	area.collision_mask = CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var esfera := SphereShape3D.new()
+	esfera.radius = 0.65
+	cs.shape = esfera
+	area.add_child(cs)
+	var mi := MeshInstance3D.new()
+	mi.mesh = Forma.estrela(0.34, 0.15, 0.17)
+	mi.material_override = _mat_estrela_vista if ja_pegas.has(id) else _mat_estrela
+	area.add_child(mi)
+	area.body_entered.connect(_pegar.bind(area))
+	add_child(area)
+	estrelas.append(area)
+	return area
+
+
+## `n` estrelinhas em linha reta de `de` até `ate`.
+func trilha(de: Vector3, ate: Vector3, n: int) -> void:
+	for i in n:
+		estrelinha(de.lerp(ate, float(i) / maxf(n - 1, 1)))
+
+
+## `n` estrelinhas num arco de `de` até `ate`, subindo `altura` no meio (o desenho de um pulo).
+func arco(de: Vector3, ate: Vector3, altura: float, n: int) -> void:
+	for i in n:
+		var t := float(i) / maxf(n - 1, 1)
+		estrelinha(de.lerp(ate, t) + Vector3.UP * altura * 4.0 * t * (1.0 - t))
+
+
+## `n` estrelinhas em roda, deitada no chão em volta de `centro`.
+func roda(centro: Vector3, raio: float, n: int) -> void:
+	for i in n:
+		var a := TAU * i / n
+		estrelinha(centro + Vector3(cos(a), 0, sin(a)) * raio)
+
+
+func _pegar(corpo: Node3D, area: Area3D) -> void:
+	if not corpo is Jogador or not area.monitoring:
+		return
+	area.set_deferred("monitoring", false)
+	var id: String = area.get_meta("id")
+	if not ja_pegas.has(id) and not id in novas:
+		novas.append(id)
+		pegas += 1
+	estrela_pega.emit(pegas, total_estrelas())
+	(corpo as Jogador).robo.expressao("feliz", 0.8)
+	Sfx.play(self, "estrelinha", 0.0, 0.1)
+	var tw := create_tween()
+	tw.tween_property(area, "scale", Vector3.ONE * 1.6, 0.1)
+	tw.tween_property(area, "scale", Vector3.ONE * 0.01, 0.12)
+	tw.tween_callback(area.hide)
+
+
+## As estrelinhas que a Bolota soltou pulam para perto dela e ficam esperando.
+func _soltar_estrelinhas(alvo: Alvo) -> void:
+	var centro := alvo.global_position
+	var k := alvos.find(alvo)
+	for i in ESTRELAS_POR_BOLOTA:
+		var a := TAU * i / ESTRELAS_POR_BOLOTA + randf() * 0.5
+		var destino := centro + Vector3(cos(a) * 1.3, 0.8, sin(a) * 1.3)
+		var e := estrelinha(centro + Vector3.UP * 0.6, "b%d_%d" % [k, i])
+		e.monitoring = false
+		var tw := e.create_tween()
+		tw.tween_property(e, "position", destino + Vector3.UP * 1.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(e, "position", destino, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func(): e.monitoring = true)
+	soltar_moedas(centro + Vector3.UP * 0.4, MOEDAS_POR_BOLOTA)
+
+
+## `n` moedas saem pulando de `centro` para os lados e caem no chão em volta (pegáveis um instante depois).
+func soltar_moedas(centro: Vector3, n: int, raio := 1.6) -> void:
+	var espaco := get_world_3d().direct_space_state
+	for i in n:
+		var a := TAU * i / n + randf() * 0.6
+		var r := raio * randf_range(0.6, 1.0)
+		var destino := centro + Vector3(cos(a) * r, 0, sin(a) * r)
+		# Cai no chão embaixo do destino, se tiver chão até 2 m abaixo; senão (a beira de um bolso, o vão) fica
+		# flutuando na altura de onde saiu, como as moedas do Astro, em vez de cair lá embaixo.
+		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(destino + Vector3.UP * 1.5, destino + Vector3.DOWN * 2.0, 1))
+		if not chao.is_empty():
+			destino = chao.position + Vector3.UP * 0.55
+		var m := moeda(centro)
+		m.pegavel = false
+		var tw := m.create_tween()
+		var alto := (centro + destino) * 0.5 + Vector3.UP * randf_range(1.2, 1.8)
+		tw.tween_property(m, "position", to_local(alto), 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(m, "position", to_local(destino), 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func() -> void: m.pegavel = true)
+
+
+## Uma moeda parada em `pos`.
+func moeda(pos: Vector3) -> Moeda:
+	var m := Moeda.new()
+	m.position = to_local(pos)
+	add_child(m)
+	m.pega.connect(func(_m: Moeda) -> void:
+		moedas_pegas += 1
+		moeda_pega.emit(moedas_pegas))
+	return m
+
+
+# --- o mundo que reage (item 6 da lista, 2026-11-11) ------------------------------------
+
+## Uma plantinha que balança quando o Faísca passa (o `tipo` é um dos do Mato), com o pé em `pe`.
+func planta(tipo: String, pe: Vector3) -> Node3D:
+	if mato == null:
+		mato = Mato.new()
+		mato.name = "Mato"
+		add_child(mato)
+	return mato.plantar(tipo, pe, hash(Vector3i(roundi(pe.x * 10.0), roundi(pe.y * 10.0), roundi(pe.z * 10.0))))
+
+
+## Um tufo de `n` plantas (sorteadas de `tipos`) em volta de `centro`, cada uma no chão firme que tiver embaixo.
+## Devolve quantas couberam.
+func canteiro(centro: Vector3, raio: float, n: int, tipos: Array, gerador: RandomNumberGenerator = null) -> int:
+	var g := gerador
+	if g == null:
+		g = RandomNumberGenerator.new()
+		g.seed = hash(centro)
+	var espaco := get_world_3d().direct_space_state
+	var feitas: Array[Vector3] = []
+	for k in n * 3:
+		if feitas.size() >= n:
+			break
+		var a := g.randf() * TAU
+		var r := raio * sqrt(g.randf())
+		var q := centro + Vector3(cos(a) * r, 0, sin(a) * r)
+		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(q + Vector3.UP * 2.0, q + Vector3.DOWN * 2.5, 1))
+		if chao.is_empty() or chao.normal.y < 0.75 or not _chao_firme(chao.collider):
+			continue
+		var pe: Vector3 = chao.position
+		if feitas.any(func(o: Vector3) -> bool: return o.distance_to(pe) < 0.55):
+			continue
+		feitas.append(pe)
+		planta(tipos[g.randi() % tipos.size()], pe)
+	return feitas.size()
+
+
+## Caixa, pote ou presente que quebra no golpe e solta moedas (os tipos estão na Quebravel), em pé em `pos`.
+func quebravel(pos: Vector3, tipo := "caixa", giro := 0.0) -> Quebravel:
+	var q := Quebravel.new(tipo)
+	q.position = to_local(pos)
+	q.rotation.y = giro
+	add_child(q)
+	quebraveis.append(q)
+	return q
+
+
+## Poça que espirra quando o Faísca pisa (água, leite, suco, calda ou tinta), no chão em `centro`.
+func poca(centro: Vector3, raio := 1.6, tipo := "agua") -> Poca:
+	var p := Poca.new(tipo, raio)
+	p.position = to_local(centro)
+	add_child(p)
+	pocas.append(p)
+	return p
+
+
+## Depois do mundo que reage (as poças e as caixas já no lugar), a vegetação e as miudezas do mundo da fase em cima
+## das peças de chão (VegetacaoDaFase). O farol não tem.
+func _vegetar() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if not is_inside_tree() or self is HubFarol:
+		return
+	vegetacao = VegetacaoDaFase.new()
+	vegetacao.name = "Vegetacao"
+	add_child(vegetacao)
+	vegetacao.montar(self, pecas_de_chao)
+
+
+## Depois do primeiro quadro de física (o chão já responde aos raios), espalha em cada playground o que o mundo da
+## fase tem (`ESTILOS`): tufos de plantas, coisas que quebram e uma poça. Só em chão firme (nem o que se mexe, nem o
+## que some), plano, com espaço em volta e longe do que a fase já pôs (estrelinhas, postos, Bolotas, molas, o caminho
+## creme, as entradas e o que anda de um lado para o outro). O sorteio é sempre o mesmo para a mesma fase.
+func _mundo_que_reage() -> void:
+	await get_tree().physics_frame
+	if not is_inside_tree() or not mundo_que_reage or playgrounds.is_empty():
+		return
+	var e: Array = ESTILOS.get(estilo if estilo != "" else superficie, [])
+	if e.is_empty():
+		return
+	# Um sorteio para cada coisa (mexer nas poças ou nas plantas não muda o lugar das caixas, que os testes das fases
+	# percorrem) e uma passada por coisa: primeiro o que pede chão mais exigente (as caixas, depois as poças) e por
+	# último as plantas, que cabem em quase todo canto e ficam longe das duas (nada de flor dentro da poça).
+	var raiz := String(get_script().resource_path) + nome
+	var ocupados := _pontos_ocupados()
+	var g := _sorteio(raiz + "/caixas")
+	for pg in playgrounds:
+		for k in QUEBRAVEIS_POR_PLAYGROUND:
+			var p := _lugar_livre(g, pg.centro, pg.raio, ocupados, 3.0, 1.5, 1.3)
+			if p == Vector3.INF:
+				continue
+			quebravel(p, e[1][g.randi() % (e[1] as Array).size()], g.randf() * TAU)
+			ocupados.append([p, 2.4])
+	g = _sorteio(raiz + "/pocas")
+	for pg in playgrounds:
+		for k in POCAS_POR_PLAYGROUND:
+			var tam := g.randf_range(1.3, 1.9)
+			var p := _lugar_livre(g, pg.centro, pg.raio, ocupados, 1.5 + tam, 0.0, tam * 1.1, 0.08)
+			if p == Vector3.INF:
+				continue
+			poca(p, tam, e[2][g.randi() % (e[2] as Array).size()])
+			ocupados.append([p, tam + 1.0])
+	if (e[0] as Array).is_empty():
+		return
+	g = _sorteio(raiz + "/plantas")
+	for pg in playgrounds:
+		for k in CANTEIROS_POR_PLAYGROUND:
+			var p := _lugar_livre(g, pg.centro, pg.raio, ocupados, 2.0, 0.0, 0.0)
+			if p != Vector3.INF:
+				canteiro(p, 2.2, g.randi_range(6, 9), e[0], g)
+				ocupados.append([p, 2.4])
+
+
+func _sorteio(semente: String) -> RandomNumberGenerator:
+	var g := RandomNumberGenerator.new()
+	g.seed = hash(semente)
+	return g
+
+
+## Um ponto de chão dentro do playground (`centro`, `raio`) que sirva: chão firme quase reto; nenhum `ocupados`
+## ([ponto, raio]) mais perto que `longe`; sem nada sólido num cilindro de `livre` em volta (até 2 m de altura); e o
+## chão na mesma altura (até `degrau`) a `plano` metros para os quatro lados (nem beirada, nem rampa). Depois de 24
+## tentativas, desiste (Vector3.INF).
+func _lugar_livre(g: RandomNumberGenerator, centro: Vector3, raio: float, ocupados: Array, longe: float, livre: float,
+		plano: float, degrau := 0.25) -> Vector3:
+	var espaco := get_world_3d().direct_space_state
+	for tentativa in 24:
+		var a := g.randf() * TAU
+		var r := raio * 0.85 * sqrt(g.randf())
+		var q := centro + Vector3(cos(a) * r, 0, sin(a) * r)
+		var chao := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(q + Vector3.UP * 4.0, q + Vector3.DOWN * 4.0, 1))
+		if chao.is_empty() or chao.normal.y < 0.92 or absf(chao.position.y - centro.y) > 3.0 or not _chao_firme(chao.collider):
+			continue
+		var p: Vector3 = chao.position
+		if ocupados.any(func(o: Array) -> bool: return _perto_de(p, o, longe)):
+			continue
+		if plano > 0.0:
+			var reto := true
+			for k in 8:
+				var b := TAU * k / 8.0
+				var s := p + Vector3(cos(b) * plano, 0, sin(b) * plano)
+				var r2 := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(s + Vector3.UP * 1.0, s + Vector3.DOWN * 1.5, 1))
+				if r2.is_empty() or absf(r2.position.y - p.y) > degrau or not _chao_firme(r2.collider):
+					reto = false
+					break
+			if not reto:
+				continue
+		if livre > 0.0:
+			var cil := CylinderShape3D.new()
+			cil.radius = livre
+			cil.height = 1.8
+			var consulta := PhysicsShapeQueryParameters3D.new()
+			consulta.shape = cil
+			consulta.transform = Transform3D(Basis.IDENTITY, p + Vector3.UP * 1.25)
+			consulta.collision_mask = 1
+			if not espaco.intersect_shape(consulta, 1).is_empty():
+				continue
+		return p
+	return Vector3.INF
+
+
+## Se `p` está a menos de `longe` (mais o raio dele) de um ocupado: um ponto [p, raio] ou um trecho [a, b, raio].
+func _perto_de(p: Vector3, o: Array, longe: float) -> bool:
+	if o.size() == 2:
+		var c: Vector3 = o[0]
+		return Vector2(p.x - c.x, p.z - c.z).length() < longe + float(o[1]) and absf(p.y - c.y) < 4.0
+	var a: Vector3 = o[0]
+	var b: Vector3 = o[1]
+	var perto := Geometry3D.get_closest_point_to_segment(p, a, b)
+	return Vector2(p.x - perto.x, p.z - perto.z).length() < longe + float(o[2]) and absf(p.y - perto.y) < 4.0
+
+
+## Tudo o que a fase já pôs e que não pode ficar embaixo de uma caixa: cada coisa com script ou que se mexe sozinha
+## (estrelinhas, postos, Bolotas, molas, botões...), os arcos de saída, o começo e as entradas, o caminho creme e o
+## caminho de quem anda de um lado para o outro (plataformas, bolas de neve, dados, carrinhos, caronas e rolos).
+func _pontos_ocupados() -> Array:
+	var o: Array = [[inicio, 3.0]]
+	for pg in playgrounds:
+		o.append([pg.entrada, 3.0])
+	for s in saidas:
+		o.append([s.global_position, 4.0])
+	for t in trilhas:
+		var pontos: Array = t[0]
+		for i in pontos.size() - 1:
+			o.append([pontos[i], pontos[i + 1], float(t[1]) * 0.5 + 0.6])
+	for m in _moveis:
+		var de: Vector3 = to_global(m[1])
+		o.append([de, de + global_basis * (m[2] as Vector3), 3.0])
+	for filho in get_children():
+		if not filho is Node3D or filho == mato:
+			continue
+		var no := filho as Node3D
+		var mexe := no is Area3D or no is AnimatableBody3D or no is RigidBody3D or no is CharacterBody3D
+		if no.get_script() == null and not mexe:
+			continue
+		o.append([no.global_position, 2.5])
+		if "de" in no and "ate" in no and no.get("de") is Vector3:
+			o.append([no.get("de"), no.get("ate"), 2.5])
+		if "caminho" in no and no.get("caminho") is Vector3:
+			o.append([no.global_position, no.global_position + (no.get("caminho") as Vector3), 2.5])
+		if "caminho" in no and no.get("caminho") is Array:
+			var c: Array = no.get("caminho")
+			for i in c.size() - 1:
+				o.append([c[i], c[i + 1], 2.5])
+	return o
+
+
+## Chão que não se mexe nem some: nem ele nem ninguém acima dele (até a fase) tem script ou é corpo que anda.
+func _chao_firme(quem: Object) -> bool:
+	var n := quem as Node
+	while n and n != self:
+		if n is AnimatableBody3D or n is RigidBody3D or n is CharacterBody3D or n is Area3D or n.get_script() != null:
+			return false
+		n = n.get_parent()
+	return n == self
+
+
+# --- coisas da fase ------------------------------------------------------------------
+
+func posto(pos: Vector3, giro := 0.0) -> Posto:
+	var p := Posto.new()
+	p.position = pos
+	p.rotation.y = giro
+	add_child(p)
+	p.aceso.connect(func(q: Posto): posto_aceso.emit(q))
+	postos.append(p)
+	return p
+
+
+# --- padrão de playgrounds -------------------------------------------------------------
+
+## Registra um playground (para os testes e as fotos): `entrada` é onde o Faísca chega nele.
+func playground(nome_do: String, centro: Vector3, raio: float, entrada: Vector3) -> void:
+	playgrounds.append({"nome": nome_do, "centro": centro, "raio": raio, "entrada": entrada})
+
+
+## Chão largo de um playground: o morro do nome esticado em X e Z (`escala`), sem emendas no meio.
+func chao_largo(tamanho: String, topo: Vector3, escala: Vector2, giro := 0.0) -> Node3D:
+	var altura := float(tamanho.get_slice("x", 2))
+	return peca("Hill_%s_Color1" % tamanho, topo - Vector3(0, altura, 0), giro, Vector3(escala.x, 1.0, escala.y))
+
+
+## Trilha creme pintada no chão: o caminho fácil do playground, da entrada até o arco de saída. Os pontos são
+## no chão; a faixa é montada depois do primeiro quadro de física, encostando cada ponta no chão de verdade.
+func trilha_creme(pontos: Array, largura := 2.4) -> void:
+	_trilhas_por_fazer.append([pontos, largura])
+	trilhas.append([pontos, largura])
+	if _trilhas_por_fazer.size() == 1:
+		_fazer_trilhas.call_deferred()
+
+
+func _fazer_trilhas() -> void:
+	await get_tree().physics_frame
+	if not is_inside_tree():
+		return
+	var espaco := get_world_3d().direct_space_state
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("f6e2a8")
+	mat.roughness = 1.0
+	for t in _trilhas_por_fazer:
+		var curva := Curve3D.new()
+		for p: Vector3 in t[0]:
+			curva.add_point(p)
+		curva.bake_interval = 0.8
+		var pts := curva.get_baked_points()
+		var meia: float = t[1] * 0.5
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var anterior := []
+		for i in pts.size():
+			var tg := pts[mini(i + 1, pts.size() - 1)] - pts[maxi(i - 1, 0)]
+			tg.y = 0.0
+			var lado := Vector3(-tg.z, 0, tg.x).normalized() * meia
+			var par := []
+			for q: Vector3 in [pts[i] + lado, pts[i] - lado]:
+				var r := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(q + Vector3.UP * 2.0, q + Vector3.DOWN * 3.0, 1))
+				par.append((r.position if not r.is_empty() else q) + Vector3.UP * 0.05)
+			if not anterior.is_empty():
+				for v: Vector3 in [anterior[0], par[0], anterior[1], anterior[1], par[0], par[1]]:
+					st.set_normal(Vector3.UP)
+					st.add_vertex(v)
+			anterior = par
+		var mi := MeshInstance3D.new()
+		mi.mesh = st.commit()
+		mi.material_override = mat
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+	_trilhas_por_fazer.clear()
+
+
+## Arco de saída do playground: o arco do Platformer, duas vezes maior, em pé no `pe` e atravessado no caminho
+## (com `giro` 0 atravessa-se em Z). Aparece de qualquer ponto do playground.
+func arco_de_saida(pe: Vector3, giro := 0.0, cor := "red") -> Node3D:
+	var a := peca("arch_%s" % cor, pe, giro, 2.0)
+	saidas.append(a)
+	return a
+
+
+## O brilho do marco: uma coluna de luz dourada saindo do baú lá no alto, que aparece de toda a fase.
+func brilho_de_marco(base: Vector3, altura := 36.0) -> void:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.85, 0.3, 0.22)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var coluna := MeshInstance3D.new()
+	var cil := CylinderMesh.new()
+	cil.top_radius = 0.6
+	cil.bottom_radius = 1.8
+	cil.height = altura
+	coluna.mesh = cil
+	coluna.material_override = mat
+	coluna.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	coluna.position = base + Vector3.UP * altura * 0.5
+	add_child(coluna)
+	var luz := OmniLight3D.new()
+	luz.light_color = Color("ffd86a")
+	luz.light_energy = 2.0
+	luz.omni_range = 16.0
+	luz.position = base + Vector3.UP * 3.0
+	add_child(luz)
+	brilho_do_marco = base + Vector3.UP * altura * 0.6
+
+
+## Mola amarela: quem cai em cima vai lá para o alto (`forca` em m/s; 17 dá uns 6 m).
+func mola(pos: Vector3, forca := 17.0) -> Area3D:
+	var modelo := peca("spring_pad_yellow", pos, 0.0, 1.2)
+	var area := AreaDeMola.new()
+	area.forca = forca
+	area.visual = modelo
+	area.escala_normal = Vector3.ONE * 1.2
+	area.amassado = Vector3(1.4, 0.7, 1.4)
+	area.position = pos + Vector3(0, 1.25, 0)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(1.6, 0.7, 1.6)
+	cs.shape = caixa
+	area.add_child(cs)
+	add_child(area)
+	molas.append(area)
+	return area
+
+
+## Coração extra: devolve um coração (se o Faísca não estiver com todos, ele fica esperando).
+func coracao(pos: Vector3) -> Area3D:
+	var area := Area3D.new()
+	area.position = pos
+	area.collision_layer = 0
+	area.collision_mask = CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var esfera := SphereShape3D.new()
+	esfera.radius = 0.8
+	cs.shape = esfera
+	area.add_child(cs)
+	var modelo: Node3D = _cena(PLATAFORMA + "heart_red.gltf").instantiate()
+	modelo.scale = Vector3.ONE * 0.8
+	area.add_child(modelo)
+	add_child(area)
+	area.body_entered.connect(func(corpo: Node3D):
+		if corpo is Jogador and area.visible and corpo.curar():
+			area.set_deferred("monitoring", false)
+			area.hide())
+	coracoes.append(area)
+	return area
+
+
+## Plataforma colorida que vai e volta `caminho` (em metros) a cada `periodo` segundos.
+func movel(tamanho: String, cor: String, topo: Vector3, caminho: Vector3, periodo := 4.0, atraso := 0.0) -> AnimatableBody3D:
+	var corpo := AnimatableBody3D.new()
+	var dim := Vector3(float(tamanho.get_slice("x", 0)), float(tamanho.get_slice("x", 2)), float(tamanho.get_slice("x", 1)))
+	corpo.position = topo - Vector3(0, dim.y, 0)
+	var modelo: Node3D = _cena(PLATAFORMA + "platform_%s_%s.gltf" % [tamanho, cor]).instantiate()
+	corpo.add_child(modelo)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = dim
+	cs.shape = caixa
+	cs.position.y = dim.y / 2.0
+	corpo.add_child(cs)
+	add_child(corpo)
+	_moveis.append([corpo, corpo.position, caminho, periodo, atraso])
+	moveis.append(corpo)
+	return corpo
+
+
+## Esteira rolante com `topo` no meio da faixa, levando para o +Z do `giro` (0 leva para +Z; PI, para -Z). A
+## faixa fica 3 cm acima de `topo`: quem a esteira leva até a ponta desce um degrauzinho para a plataforma do
+## lado (na mesma altura, a emenda segurava o Faísca parado ali).
+func esteira(topo: Vector3, giro: float, velocidade := 3.0, cor := "blue", faixa_escura := false) -> Esteira:
+	var e := Esteira.new()
+	e.velocidade = velocidade
+	e.cor = cor
+	e.faixa_escura = faixa_escura
+	e.position = topo - Vector3(0, Esteira.ALTURA - 0.03, 0)
+	e.rotation.y = giro
+	add_child(e)
+	esteiras.append(e)
+	return e
+
+
+## Argola em pé no ar, com o pé em `pe` e a abertura virada para o caminho (`giro` 0: atravessa-se em Z).
+func argola(pe: Vector3, giro := 0.0, cor := "red") -> Argola:
+	var a := Argola.new()
+	a.cor = cor
+	a.position = pe
+	a.rotation.y = giro
+	add_child(a)
+	a.acesa.connect(_argola_acesa)
+	argolas.append(a)
+	return a
+
+
+## Estrelinhas do prêmio das argolas: ficam escondidas até todas as argolas acenderem.
+func premio_das_argolas(posicoes: Array) -> void:
+	for p: Vector3 in posicoes:
+		var e := estrelinha(p)
+		e.visible = false
+		e.monitoring = false
+		premio_argolas.append(e)
+
+
+func _argola_acesa(_a: Argola) -> void:
+	# Os canhões trancados pelas argolas (a saída das Ilhas das Argolas, na 1-1) acendem uma luzinha por argola.
+	var acesas := argolas.filter(func(x: Argola) -> bool: return x.esta_acesa).size()
+	for c in canhoes:
+		if c.travado:
+			c.acender_luzes(acesas)
+	if acesas < argolas.size():
+		return
+	for i in premio_argolas.size():
+		var e := premio_argolas[i]
+		var alvo := e.position
+		e.position = alvo + Vector3.UP * 4.0
+		e.scale = Vector3.ONE * 0.01
+		e.show()
+		var tw := e.create_tween()
+		tw.tween_interval(0.08 * i)
+		tw.tween_property(e, "position", alvo, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.parallel().tween_property(e, "scale", Vector3.ONE, 0.4)
+		tw.tween_callback(func() -> void: e.monitoring = true)
+	if not premio_argolas.is_empty():
+		Fx.confetti(self, premio_argolas[0].position + Vector3.UP, 60, 5.0)
+	Sfx.play(self, "bandeira", 0.0, 0.0)
+
+
+## A cor de cada argola (para as luzinhas do canhão trancado).
+static func cor_da_argola(cor: String) -> Color:
+	return {"red": Color("ff4d4d"), "yellow": Color("ffd23f"), "blue": Color("3fa7ff"), "green": Color("4cd964")}.get(cor, Color.WHITE)
+
+
+## Cancela (o item 12 da lista do Faísca: cada saída só abre com uma tarefa): a barreira vermelha em pé, `largura` m,
+## que segura o caminho até `abrir_cancela`. Não entra nos `portoes` (esses abrem com as flores).
+func cancela(pos: Vector3, giro := 0.0, largura := 4.0) -> StaticBody3D:
+	var corpo := StaticBody3D.new()
+	corpo.position = pos
+	corpo.rotation.y = giro
+	var modelo: Node3D = _cena(PLATAFORMA + "barrier_4x1x2_red.gltf").instantiate()
+	modelo.scale = Vector3(largura / 4.0, 2, 1)
+	corpo.add_child(modelo)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(largura, 4, 1)
+	cs.shape = caixa
+	cs.position.y = 2.0
+	corpo.add_child(cs)
+	add_child(corpo)
+	cancelas.append(corpo)
+	return corpo
+
+
+## A cancela desce para dentro do chão e some (como o portão das flores).
+func abrir_cancela(c: Node3D) -> void:
+	if portao_aberto(c):
+		return
+	c.set_meta("aberto", true)
+	var tw := c.create_tween()
+	tw.tween_property(c, "position:y", c.position.y + 0.3, 0.2)
+	tw.tween_property(c, "position:y", c.position.y - 4.3, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func(): c.process_mode = Node.PROCESS_MODE_DISABLED; c.hide())
+	Sfx.play_at(self, "remontar", c.global_position + Vector3.UP * 2.0, -3.0)
+
+
+## Cancela que abre com o soco numa alavanca em `alavanca_em`.
+func cancela_da_alavanca(pos: Vector3, giro: float, alavanca_em: Vector3, largura := 4.0) -> StaticBody3D:
+	var c := cancela(pos, giro, largura)
+	var a := Alavanca.new()
+	a.cor = "yellow"
+	a.position = alavanca_em
+	add_child(a)
+	a.puxada.connect(func(_a: Alavanca) -> void: abrir_cancela(c))
+	alavancas.append(a)
+	return c
+
+
+## A corrida da Bolota gigante (o momento especial da 1-1, item 9): ela cai atrás do Faísca quando ele passa pelo
+## gatilho e rola pelo `caminho` (o chão do meio dela) até cair depois da beira; alcançando, ele volta ao `retorno`.
+## Vencida, aparecem as estrelinhas do `premio` (já contadas no total da fase) e saem moedas.
+func corrida_da_bolota(caminho: Array, gatilho: Vector3, tamanho_gatilho: Vector3, retorno: Vector3, premio: Array) -> BolotaGigante:
+	var b := BolotaGigante.new()
+	b.caminho = PackedVector3Array(caminho)
+	b.gatilho_centro = gatilho
+	b.gatilho_tamanho = tamanho_gatilho
+	b.retorno = retorno
+	add_child(b)
+	bolotas_gigantes.append(b)
+	var estrelas_do_premio: Array[Area3D] = []
+	for p: Vector3 in premio:
+		var e := estrelinha(p)
+		e.visible = false
+		e.monitoring = false
+		estrelas_do_premio.append(e)
+	b.vencida.connect(func() -> void:
+		for i in estrelas_do_premio.size():
+			var e := estrelas_do_premio[i]
+			var alvo := e.position
+			e.position = alvo + Vector3.UP * 4.0
+			e.scale = Vector3.ONE * 0.01
+			e.show()
+			var tw := e.create_tween()
+			tw.tween_interval(0.6 + 0.08 * i)
+			tw.tween_property(e, "position", alvo, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(e, "scale", Vector3.ONE, 0.4)
+			tw.tween_callback(func() -> void: e.monitoring = true)
+		if not premio.is_empty():
+			Fx.confetti(self, premio[0] + Vector3.UP, 60, 5.0)
+			soltar_moedas(premio[0] + Vector3.UP * 0.5, 10, 2.4)
+		Sfx.play(self, "bandeira", 0.0, 0.0))
+	return b
+
+
+## Zona de câmera guiada (o começo do item 8): dentro dela, a câmera fica no ângulo dado.
+func zona_de_camera(centro: Vector3, tamanho: Vector3, yaw: float, pitch: float, distancia: float) -> ZonaDeCamera:
+	var z := ZonaDeCamera.new()
+	z.position = to_local(centro)
+	z.tamanho = tamanho
+	z.yaw = yaw
+	z.pitch = pitch
+	z.distancia = distancia
+	add_child(z)
+	zonas_de_camera.append(z)
+	return z
+
+
+## Botão colorido no chão. Com todos os botões apertados, a ponte dos botões sobe.
+func botao(pos: Vector3, cor: String, giro := 0.0) -> Botao:
+	var b := Botao.new()
+	b.cor = cor
+	b.position = pos
+	b.rotation.y = giro
+	add_child(b)
+	b.apertado.connect(_botao_apertado)
+	botoes.append(b)
+	return b
+
+
+## Plataformas escondidas lá embaixo, que sobem para `topos` quando todos os botões estão apertados.
+func ponte_dos_botoes(topos: Array, tamanho := "4x4x1", cores := ["red", "yellow", "blue"]) -> void:
+	var dim := Vector3(float(tamanho.get_slice("x", 0)), float(tamanho.get_slice("x", 2)), float(tamanho.get_slice("x", 1)))
+	for i in topos.size():
+		var corpo := StaticBody3D.new()
+		var lugar: Vector3 = topos[i] - Vector3(0, dim.y, 0)
+		corpo.set_meta("lugar", lugar)
+		corpo.position = lugar - Vector3(0, 14.0, 0)
+		corpo.visible = false
+		var modelo: Node3D = _cena(PLATAFORMA + "platform_%s_%s.gltf" % [tamanho, cores[i % cores.size()]]).instantiate()
+		corpo.add_child(modelo)
+		var cs := CollisionShape3D.new()
+		var caixa := BoxShape3D.new()
+		caixa.size = dim
+		cs.shape = caixa
+		cs.position.y = dim.y / 2.0
+		cs.disabled = true
+		corpo.add_child(cs)
+		add_child(corpo)
+		ponte_botoes.append(corpo)
+
+
+func _botao_apertado(_b: Botao) -> void:
+	if not botoes.all(func(x: Botao) -> bool: return x.esta_apertado):
+		return
+	for i in ponte_botoes.size():
+		var corpo := ponte_botoes[i]
+		corpo.show()
+		(corpo.get_child(1) as CollisionShape3D).set_deferred("disabled", false)
+		var tw := corpo.create_tween()
+		tw.tween_interval(0.25 * i)
+		tw.tween_property(corpo, "position", corpo.get_meta("lugar"), 1.0).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_callback(func() -> void: Fx.confetti(self, corpo.position + Vector3.UP * 1.5, 16, 2.5))
+	Sfx.play(self, "bandeira", 0.0, 0.0)
+
+
+## A ponte dos botões já subiu e está no lugar.
+func ponte_dos_botoes_pronta() -> bool:
+	return not ponte_botoes.is_empty() and ponte_botoes.all(func(c: StaticBody3D) -> bool:
+		return c.visible and c.position.distance_to(c.get_meta("lugar")) < 0.05)
+
+
+## Nuvem lilás que some um instante depois de pisada e volta depois de 3 s (`topo` em cima). Com `bolha`, é
+## uma bolha de sabão (a pia da 2-1).
+func nuvem_que_some(topo: Vector3, raio := 1.6, bolha := false) -> NuvemQueSome:
+	var n := NuvemQueSome.new()
+	n.raio = raio
+	n.bolha = bolha
+	n.position = topo
+	add_child(n)
+	nuvens_que_somem.append(n)
+	return n
+
+
+## Nuvem de algodão-doce que quica (rosa), com `topo` onde se pisa; com `some`, é lilás e some depois do quique.
+func nuvem_que_quica(topo: Vector3, raio := 2.2, forca := 16.0, some := false) -> NuvemQueQuica:
+	var n := NuvemQueQuica.new()
+	n.raio = raio
+	n.forca = forca
+	n.some = some
+	n.position = topo
+	add_child(n)
+	nuvens_que_quicam.append(n)
+	return n
+
+
+## Viagem que espera o Faísca subir em `de` e o leva até `ate` (`tipo` "nuvem", "cabine", "trem", "aviao" ou
+## "carrinho"; os pontos são o chão dela, onde ele pisa). Com `caminho`, ela segue os pontos (curvas, subidas).
+func carona(de: Vector3, ate: Vector3, tipo := "nuvem", velocidade := 5.0, caminho: Array = []) -> Carona:
+	var c := Carona.new()
+	c.de = de
+	c.ate = ate
+	c.tipo = tipo
+	c.velocidade = velocidade
+	c.caminho = caminho
+	# A posição vai antes de entrar na cena: depois, o corpo animado só sai do lugar quando começa a andar.
+	c.position = de
+	add_child(c)
+	caronas.append(c)
+	return c
+
+
+## Dado grande que tomba com um soco, com o meio de baixo em `chao` (`lado` de 1,8 m sobe com um pulo).
+func dado(chao: Vector3, modelo := "D6_A", lado := 1.8) -> DadoQueTomba:
+	var d := DadoQueTomba.new()
+	d.lado = lado
+	d.modelo = modelo
+	d.position = chao + Vector3.UP * lado * 0.5
+	add_child(d)
+	dados.append(d)
+	return d
+
+
+## Dado que rola sozinho de `de` até `ate` e volta (os dois no chão, embaixo do meio dele).
+func dado_rolando(de: Vector3, ate: Vector3, periodo := 8.0, atraso := 0.0, lado := 2.6, modelo := "D6_A_red") -> DadoRolando:
+	var d := DadoRolando.new()
+	d.de = de + Vector3.UP * lado * 0.5
+	d.ate = ate + Vector3.UP * lado * 0.5
+	d.periodo = periodo
+	d.atraso = atraso
+	d.lado = lado
+	d.modelo = modelo
+	d.position = d.de
+	add_child(d)
+	dados_rolando.append(d)
+	return d
+
+
+## Argola laranja do ioiô, com o meio em `pos`.
+func argola_de_ioio(pos: Vector3) -> ArgolaDeIoio:
+	var a := ArgolaDeIoio.new()
+	a.position = pos
+	add_child(a)
+	argolas_ioio.append(a)
+	return a
+
+
+## Carta gigante deitada que vira de tempos em tempos, com o meio em `pos` (a face de cima, mais ou menos).
+func carta(pos: Vector3, modelo := "card_hearts_ace", atraso := 0.0, giro := 0.0) -> CartaQueVira:
+	var c := CartaQueVira.new()
+	c.modelo = modelo
+	c.atraso = atraso
+	c.position = pos - Vector3.UP * 0.1
+	c.rotation.y = giro
+	add_child(c)
+	cartas.append(c)
+	return c
+
+
+## Sino laranja com o pé do arco em `pe` (o sino fica Sino.ALTURA acima), virado de frente para `giro`.
+func sino(pe: Vector3, giro := 0.0) -> Sino:
+	var s := Sino.new()
+	s.position = pe
+	s.rotation.y = giro
+	add_child(s)
+	sinos.append(s)
+	return s
+
+
+## Pinguim filhote preso num cubo de gelo, com o pé do cubo em `chao`, olhando para `giro`.
+func pinguim_preso(chao: Vector3, giro := 0.0) -> CuboDeGelo:
+	var c := CuboDeGelo.new()
+	c.position = chao
+	c.rotation.y = giro
+	add_child(c)
+	cubos_de_gelo.append(c)
+	return c
+
+
+## Bola de neve grande que rola de `de` até `ate` e volta (os dois no chão, embaixo do meio dela).
+func bola_de_neve(de: Vector3, ate: Vector3, raio := 1.6, periodo := 6.0, atraso := 0.0) -> BolaDeNeve:
+	var b := BolaDeNeve.new()
+	b.raio = raio
+	b.de = de + Vector3.UP * raio
+	b.ate = ate + Vector3.UP * raio
+	b.periodo = periodo
+	b.atraso = atraso
+	b.position = b.de
+	add_child(b)
+	bolas_de_neve.append(b)
+	return b
+
+
+## Cachoeira no vão de `de` até `ate` (as beiradas das duas plataformas, na altura do chão), caindo de `topo` até
+## `fundo`. O sino que a congela é ligado pela fase.
+func cachoeira(de: Vector3, ate: Vector3, topo: float, fundo: float, largura := 3.2) -> Cachoeira:
+	var c := Cachoeira.new()
+	c.de = de
+	c.ate = ate
+	c.topo = topo
+	c.fundo = fundo
+	c.largura = largura
+	c.position = (de + ate) * 0.5
+	add_child(c)
+	cachoeiras.append(c)
+	return c
+
+
+## Monte de neve fofa que quica (a nuvem que quica com o desenho de neve), com `topo` onde se pisa.
+func neve_fofa(topo: Vector3, raio := 2.0, forca := 16.0) -> NuvemQueQuica:
+	var n := NuvemQueQuica.new()
+	n.raio = raio
+	n.forca = forca
+	n.neve = true
+	n.position = topo
+	add_child(n)
+	nuvens_que_quicam.append(n)
+	return n
+
+
+## Pingente de gelo lilás deitado que some um instante depois de pisado (a nuvem que some com o desenho de gelo).
+func pingente(topo: Vector3, raio := 1.7) -> NuvemQueSome:
+	var n := NuvemQueSome.new()
+	n.raio = raio
+	n.pingente = true
+	n.position = topo
+	add_child(n)
+	nuvens_que_somem.append(n)
+	return n
+
+
+## Pino laranja de bater (só afunda com a pancada do martelinho), com o pé em `chao`.
+func pino(chao: Vector3) -> Pino:
+	var p := Pino.new()
+	p.position = chao
+	add_child(p)
+	pinos.append(p)
+	return p
+
+
+## Pistão com a placa de `lado` m em pé em `chao`, que sobe `sobe` m quando ligado (com `vai_e_volta`, fica subindo e
+## descendo depois de ligado).
+func pistao(chao: Vector3, sobe: float, lado := 3.0, vai_e_volta := false) -> Pistao:
+	var p := Pistao.new()
+	p.sobe = sobe
+	p.lado = lado
+	p.vai_e_volta = vai_e_volta
+	p.position = chao
+	add_child(p)
+	pistoes.append(p)
+	return p
+
+
+## Bloco-pisca lilás do grupo `grupo` (0 ou 1), com `topo` no meio da face de cima.
+func bloco_pisca(topo: Vector3, grupo := 0) -> BlocoPisca:
+	var b := BlocoPisca.new()
+	b.grupo = grupo
+	b.position = topo
+	add_child(b)
+	blocos_pisca.append(b)
+	return b
+
+
+## Canhão em `pos` que lança o Faísca até `destino` (onde ele pousa).
+func canhao(pos: Vector3, destino: Vector3, cor := "blue") -> Canhao:
+	var c := Canhao.new()
+	c.cor = cor
+	c.destino = destino
+	c.position = pos
+	add_child(c)
+	canhoes.append(c)
+	return c
+
+
+## Trilhos de `de` até `ate` (no chão, em linha reta): dois trilhos de ferro e dormentes de madeira, com uma
+## faixa sólida rente aos dormentes, para dar para andar neles (a rampa do carrinho, a ponte do trenzinho).
+func trilhos(de: Vector3, ate: Vector3) -> void:
+	var ferro := _material(Color("5a5668"))
+	ferro.metallic = 0.6
+	var madeira := _material(Color("6a4126"))
+	var dir := (ate - de).normalized()
+	var lado := Vector3.UP.cross(dir).normalized()
+	var comprimento := de.distance_to(ate)
+	var base := Basis(lado, Vector3.UP, dir)
+	for s in [-0.7, 0.7]:
+		var t := MeshInstance3D.new()
+		var caixa := BoxMesh.new()
+		caixa.size = Vector3(0.12, 0.12, comprimento)
+		t.mesh = caixa
+		t.material_override = ferro
+		add_child(t)
+		t.global_transform = Transform3D(base, (de + ate) * 0.5 + lado * s + Vector3.UP * 0.12)
+	var n := int(comprimento / 1.2)
+	for i in n + 1:
+		var d := MeshInstance3D.new()
+		var caixa := BoxMesh.new()
+		caixa.size = Vector3(2.0, 0.1, 0.35)
+		d.mesh = caixa
+		d.material_override = madeira
+		add_child(d)
+		d.global_transform = Transform3D(base, de.lerp(ate, float(i) / maxf(n, 1)) + Vector3.UP * 0.05)
+	# A faixa vai deitada na rampa (a base dos desenhos fica com o "em pé" sempre para cima, e a colisão não aceita
+	# base torta), com o topo na altura de cima dos dormentes.
+	var corpo := StaticBody3D.new()
+	var cima := dir.cross(lado).normalized()
+	corpo.transform = Transform3D(Basis(lado, cima, dir), (de + ate) * 0.5 + Vector3.UP * 0.1 - cima * 0.1)
+	var cs := CollisionShape3D.new()
+	var faixa := BoxShape3D.new()
+	faixa.size = Vector3(2.0, 0.2, comprimento)
+	cs.shape = faixa
+	corpo.add_child(cs)
+	add_child(corpo)
+
+
+## Carrinho de mina nos trilhos de `de` até `ate` (o carrinho anda sozinho com o Faísca dentro).
+func carrinho(de: Vector3, ate: Vector3) -> CarrinhoDeMina:
+	trilhos(de - (ate - de).normalized() * 2.0, ate + (ate - de).normalized() * 2.0)
+	var c := CarrinhoDeMina.new()
+	c.de = de
+	c.ate = ate
+	# A posição vai antes de entrar na cena: depois, o corpo animado só sai do lugar quando começa a andar.
+	c.position = de
+	add_child(c)
+	carrinhos.append(c)
+	return c
+
+
+## Porta de masmorra com grade em `pos` (o meio do vão, no chão) e a alavanca que abre em `alavanca_em`.
+func portao_de_grade(pos: Vector3, giro: float, alavanca_em: Vector3, cor := "yellow") -> Grade:
+	var vao := peca_de(MASMORRA, "wall_doorway", pos, giro, 1.5, false)
+	vao.find_child("wall_doorway_door", true, false).queue_free()
+	var g := Grade.new()
+	g.position = pos
+	g.rotation.y = giro
+	add_child(g)
+	grades.append(g)
+	var a := Alavanca.new()
+	a.cor = cor
+	a.position = alavanca_em
+	add_child(a)
+	a.puxada.connect(func(_a: Alavanca) -> void: g.abrir())
+	alavancas.append(a)
+	return g
+
+
+## Cristal azul que joga para o alto, como a mola (mesma `forca`): três prismas brilhando.
+func mola_de_cristal(pos: Vector3, forca := 19.0) -> Area3D:
+	var brilho := StandardMaterial3D.new()
+	brilho.albedo_color = Color("7fd8ff")
+	brilho.emission_enabled = true
+	brilho.emission = Color("4ab8ff")
+	brilho.emission_energy_multiplier = 1.6
+	brilho.roughness = 0.2
+	var visual := Node3D.new()
+	visual.position = pos
+	add_child(visual)
+	for spec in [[Vector3(0, 0, 0), 0.55, 1.6, 0.0], [Vector3(0.6, 0, 0.3), 0.32, 1.0, 0.35], [Vector3(-0.5, 0, -0.4), 0.3, 0.9, -0.3]]:
+		var mi := MeshInstance3D.new()
+		var prisma := CylinderMesh.new()
+		prisma.radial_segments = 6
+		prisma.rings = 1
+		prisma.top_radius = spec[1] * 0.35
+		prisma.bottom_radius = spec[1]
+		prisma.height = spec[2]
+		mi.mesh = prisma
+		mi.material_override = brilho
+		mi.position = spec[0] + Vector3.UP * spec[2] * 0.5
+		mi.rotation.z = spec[3]
+		visual.add_child(mi)
+	var luz := OmniLight3D.new()
+	luz.light_color = Color("7fd8ff")
+	luz.light_energy = 1.2
+	luz.omni_range = 6.0
+	luz.position = Vector3.UP * 1.2
+	visual.add_child(luz)
+	var corpo := StaticBody3D.new()
+	var cs0 := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = 0.8
+	cil.height = 0.5
+	cs0.shape = cil
+	cs0.position.y = 0.25
+	corpo.add_child(cs0)
+	visual.add_child(corpo)
+	var area := AreaDeMola.new()
+	area.forca = forca
+	area.visual = visual
+	area.amassado = Vector3(1.2, 0.75, 1.2)
+	area.position = pos + Vector3(0, 0.9, 0)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(1.8, 1.0, 1.8)
+	cs.shape = caixa
+	area.add_child(cs)
+	add_child(area)
+	cristais.append(area)
+	molas.append(area)
+	return area
+
+
+## A Bolotona e as três filhas dela (escondidas até ela se desfazer).
+func bolotona(pos: Vector3) -> Bolotona:
+	var grande := Bolotona.new()
+	grande.position = pos
+	grande.dormindo = true
+	add_child(grande)
+	grande.derrotada.connect(_soltar_estrelinhas)
+	alvos.append(grande)
+	for i in 3:
+		var filha := bolota(pos)
+		Bolotona.guardar(filha)
+		grande.filhas.append(filha)
+	bolotonas.append(grande)
+	return grande
+
+
+## A Bolotona e as filhas já foram todas derrotadas.
+func bolotona_vencida(b: Bolotona) -> bool:
+	return b.derrotado and b.filhas.all(func(f: Bolota) -> bool: return f.derrotado)
+
+
+## Como `movel`, com uma peça qualquer de `pasta` (o prato que boia, a frigideira): `tamanho` é a caixa de
+## colisão (ou o cilindro, com `redondo`), com o topo em `topo`. `pausa` (de 0 a 0,5) é quanto do vaivém ele
+## fica parado em cada ponta (as viagens usam, para dar tempo de descer andando).
+func movel_peca(pasta: String, arquivo: String, escala: float, topo: Vector3, tamanho: Vector3, caminho: Vector3,
+		periodo := 4.0, atraso := 0.0, redondo := false, pausa := 0.0) -> AnimatableBody3D:
+	var corpo := AnimatableBody3D.new()
+	corpo.position = topo - Vector3(0, tamanho.y, 0)
+	var modelo: Node3D = _cena(pasta + arquivo + ".gltf").instantiate()
+	modelo.scale = Vector3.ONE * escala
+	corpo.add_child(modelo)
+	var cs := CollisionShape3D.new()
+	if redondo:
+		var cil := CylinderShape3D.new()
+		cil.radius = tamanho.x * 0.5
+		cil.height = tamanho.y
+		cs.shape = cil
+	else:
+		var caixa := BoxShape3D.new()
+		caixa.size = tamanho
+		cs.shape = caixa
+	cs.position.y = tamanho.y / 2.0
+	corpo.add_child(cs)
+	add_child(corpo)
+	_moveis.append([corpo, corpo.position, caminho, periodo, atraso, pausa])
+	moveis.append(corpo)
+	return corpo
+
+
+## Peça da cozinha (Restaurant Bits), 8 vezes maior se não disser outra escala.
+func cozinha(arquivo: String, pos: Vector3, giro := 0.0, escala: Variant = 8.0, solida := true) -> Node3D:
+	return peca_de(COZINHA, arquivo, pos, giro, escala, solida)
+
+
+## Panela no fogo com a tampa que pula: a panela fica em `pos` (no tampo), a tampa em cima dela.
+func panela_com_tampa(pos: Vector3, forca := 21.0, atraso := 0.0, escala := 6.0) -> TampaQuePula:
+	cozinha("pot_A", pos, 0.0, escala)
+	var t := TampaQuePula.new()
+	t.forca = forca
+	t.atraso = atraso
+	t.escala = escala
+	t.position = pos + Vector3.UP * 0.5 * escala
+	add_child(t)
+	tampas.append(t)
+	return t
+
+
+## Rolo de macarrão rolando `caminho` metros e voltando, a partir de `pos` (no tampo).
+func rolo(pos: Vector3, caminho: Vector3, periodo := 4.0, atraso := 0.0) -> RoloDeMassa:
+	var r := RoloDeMassa.new()
+	r.caminho = caminho
+	r.periodo = periodo
+	r.atraso = atraso
+	r.position = pos
+	add_child(r)
+	rolos.append(r)
+	return r
+
+
+## Pizza gigante girando, com o meio de baixo em `pos` (com `escala` 8 ela tem 16 m e 2,4 de altura).
+func pizza(pos: Vector3, velocidade := 0.35, escala := 8.0) -> PizzaGiratoria:
+	var p := PizzaGiratoria.new()
+	p.velocidade = velocidade
+	p.escala = escala
+	p.position = pos
+	add_child(p)
+	pizzas.append(p)
+	return p
+
+
+## Boca do fogão que acende e apaga, com o meio em `pos` (no tampo).
+func boca(pos: Vector3, raio := 2.6, atraso := 0.0) -> BocaDoFogao:
+	var b := BocaDoFogao.new()
+	b.raio = raio
+	b.atraso = atraso
+	b.position = pos
+	add_child(b)
+	bocas.append(b)
+	return b
+
+
+## Água com espuma (a pia da 2-1): a superfície em `centro`, do `tamanho` no plano. Encostar nela é cair.
+func agua(centro: Vector3, tamanho: Vector2) -> Area3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.55, 0.82, 1.0, 0.75)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.roughness = 0.1
+	m.metallic = 0.2
+	var plano := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = tamanho
+	plano.mesh = pm
+	plano.material_override = m
+	plano.position = centro
+	add_child(so_enfeite(plano))
+	# Espuma: bolinhas brancas boiando.
+	var espuma := StandardMaterial3D.new()
+	espuma.albedo_color = Color("f4fbff")
+	espuma.roughness = 0.9
+	var gerador := RandomNumberGenerator.new()
+	gerador.seed = int(centro.z * 10.0)
+	for i in int(tamanho.x * tamanho.y / 6.0):
+		var bola := MeshInstance3D.new()
+		var esfera := SphereMesh.new()
+		esfera.radius = gerador.randf_range(0.3, 0.8)
+		esfera.height = esfera.radius * 1.2
+		bola.mesh = esfera
+		bola.material_override = espuma
+		bola.position = centro + Vector3(gerador.randf_range(-0.5, 0.5) * tamanho.x, 0.05, gerador.randf_range(-0.5, 0.5) * tamanho.y)
+		add_child(so_enfeite(bola))
+	var area := Area3D.new()
+	area.collision_layer = 0
+	area.collision_mask = CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(tamanho.x, 1.2, tamanho.y)
+	cs.shape = caixa
+	cs.position = centro + Vector3.DOWN * 0.7
+	area.add_child(cs)
+	add_child(area)
+	area.body_entered.connect(func(corpo: Node3D) -> void:
+		if corpo is Jogador:
+			Fx.confetti(self, corpo.global_position, 20, 3.0)
+			(corpo as Jogador).cair())
+	aguas.append(area)
+	return area
+
+
+## Sorvete de casquinha que joga para o alto, como a mola: a bola de cima é o que se pisa. Fica baixinho
+## (2,1 m), para dar para subir nele com um pulo.
+func mola_de_sorvete(pos: Vector3, forca := 19.0, sabor := "strawberry") -> Area3D:
+	var visual := cozinha("food_icecream_cone_" + sabor, pos, 0.0, 2.0, false)
+	var corpo := StaticBody3D.new()
+	var cs0 := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = 0.5
+	cil.height = 1.3
+	cs0.shape = cil
+	cs0.position = pos + Vector3.UP * 0.65
+	corpo.add_child(cs0)
+	add_child(corpo)
+	var area := AreaDeMola.new()
+	area.forca = forca
+	area.visual = visual
+	area.escala_normal = Vector3.ONE * 2.0
+	area.amassado = Vector3(2.4, 1.6, 2.4)
+	area.position = pos + Vector3(0, 1.9, 0)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(1.8, 1.0, 1.8)
+	cs.shape = caixa
+	area.add_child(cs)
+	add_child(area)
+	molas.append(area)
+	return area
+
+
+## Nuvenzinha firme para pisar (segunda chance no meio de um vão), com `topo` em cima.
+func nuvem(topo: Vector3, raio := 1.6) -> StaticBody3D:
+	var corpo := StaticBody3D.new()
+	corpo.position = topo
+	var m := _material(Color("ffffff"))
+	m.roughness = 1.0
+	for bola in [[Vector3(0, -0.35, 0), Vector3(raio, 0.5, raio)], [Vector3(raio * 0.5, -0.2, raio * 0.3), Vector3(raio * 0.6, 0.55, raio * 0.6)],
+			[Vector3(-raio * 0.45, -0.25, -raio * 0.35), Vector3(raio * 0.65, 0.5, raio * 0.6)], [Vector3(-raio * 0.2, -0.3, raio * 0.5), Vector3(raio * 0.5, 0.45, raio * 0.5)]]:
+		var mi := MeshInstance3D.new()
+		mi.mesh = Forma.superelipsoide(bola[1], 1.0, 1.0)
+		mi.material_override = m
+		mi.position = bola[0]
+		corpo.add_child(mi)
+	var cs := CollisionShape3D.new()
+	var cil := CylinderShape3D.new()
+	cil.radius = raio
+	cil.height = 0.7
+	cs.shape = cil
+	cs.position.y = -0.35
+	corpo.add_child(cs)
+	add_child(corpo)
+	return corpo
+
+
+func flor(pos: Vector3) -> FlorDeLuz:
+	var f := FlorDeLuz.new()
+	f.position = pos
+	f.scale = Vector3.ONE * 1.4
+	add_child(f)
+	f.acesa.connect(_flor_acesa)
+	flores.append(f)
+	return f
+
+
+## Portão vermelho (a barreira do Platformer, 4 m de largura por 4 de altura). Abre, afundando
+## no chão, quando todas as flores de luz da fase estão acesas.
+func portao(pos: Vector3, giro := 0.0) -> Node3D:
+	var corpo := StaticBody3D.new()
+	corpo.position = pos
+	corpo.rotation.y = giro
+	var modelo: Node3D = _cena(PLATAFORMA + "barrier_4x1x2_red.gltf").instantiate()
+	modelo.scale = Vector3(1, 2, 1)
+	corpo.add_child(modelo)
+	var cs := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(4, 4, 1)
+	cs.shape = caixa
+	cs.position.y = 2.0
+	corpo.add_child(cs)
+	add_child(corpo)
+	portoes.append(corpo)
+	return corpo
+
+
+func portao_aberto(p: Node3D) -> bool:
+	return p.has_meta("aberto")
+
+
+func _flor_acesa(_f: FlorDeLuz) -> void:
+	for f in flores:
+		if not f.esta_acesa:
+			return
+	for p in portoes:
+		if portao_aberto(p):
+			continue
+		p.set_meta("aberto", true)
+		var tw := p.create_tween()
+		tw.tween_property(p, "position:y", p.position.y + 0.3, 0.2)
+		tw.tween_property(p, "position:y", p.position.y - 4.3, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func(): p.process_mode = Node.PROCESS_MODE_DISABLED; p.hide())
+
+
+## Tocha que o laser acende (com pedestal de pedra, ou direto no chão de cima de um pilar ou caixote).
+func tocha(pos: Vector3, com_pedestal := true, acesa := false) -> Tocha:
+	var t := Tocha.new()
+	t.position = pos
+	t.com_pedestal = com_pedestal
+	t.acesa_no_comeco = acesa
+	add_child(t)
+	t.acesa.connect(_tocha_acesa)
+	tochas.append(t)
+	return t
+
+
+## Parede rachada (6 x 6 m) com a frente para +Z girada de `giro`: três golpes quebram.
+func parede_rachada(pos: Vector3, giro := 0.0) -> ParedeRachada:
+	var p := ParedeRachada.new()
+	p.position = pos
+	p.rotation.y = giro
+	add_child(p)
+	paredes_rachadas.append(p)
+	return p
+
+
+## Vão de porta com a porta de madeira do Dungeon Pack (6 x 6 m), fechada até as `quais` tochas acenderem;
+## aí a porta gira e abre. Devolve o nó da parede.
+func porta_das_tochas(pos: Vector3, giro: float, quais: Array) -> Node3D:
+	var vao := peca_de(MASMORRA, "wall_doorway", pos, giro, 1.5)
+	portas_das_tochas.append({"porta": vao.find_child("wall_doorway_door", true, false), "tochas": quais, "aberta": false})
+	return vao
+
+
+## Ponte de tábuas (3 m de largura) de `de` até `ate` (os dois na altura de pisar), escondida no escuro
+## até a tocha `t` acender; aí ela sobe lá de baixo e para no lugar.
+func ponte_da_tocha(t: Tocha, de: Vector3, ate: Vector3) -> StaticBody3D:
+	var corpo := StaticBody3D.new()
+	var meio := (de + ate) * 0.5
+	var dir := ate - de
+	var comprimento := dir.length()
+	corpo.position = meio
+	corpo.rotation.y = atan2(dir.x, dir.z)
+	var n := maxi(1, ceili(comprimento / 3.0))
+	for i in n:
+		var tabua: Node3D = _cena(MASMORRA + "floor_wood_small.gltf").instantiate()
+		tabua.scale = Vector3(1.5, 1.5, comprimento / n / 2.0)
+		tabua.position = Vector3(0, -0.08, -comprimento * 0.5 + comprimento / n * (i + 0.5))
+		corpo.add_child(tabua)
+	var vigas := _material(Color("6b3f22"))
+	for lado in [-1.0, 1.0]:
+		var viga := MeshInstance3D.new()
+		var caixa := BoxMesh.new()
+		caixa.size = Vector3(0.25, 0.35, comprimento)
+		viga.mesh = caixa
+		viga.material_override = vigas
+		viga.position = Vector3(1.4 * lado, -0.3, 0)
+		corpo.add_child(viga)
+	var cs := CollisionShape3D.new()
+	var forma := BoxShape3D.new()
+	forma.size = Vector3(3.0, 0.4, comprimento)
+	cs.shape = forma
+	cs.position.y = -0.2
+	cs.disabled = true
+	corpo.add_child(cs)
+	corpo.visible = false
+	add_child(corpo)
+	corpo.set_meta("lugar", meio)
+	corpo.set_meta("tocha", t)
+	pontes.append(corpo)
+	return corpo
+
+
+func ponte_no_lugar(p: StaticBody3D) -> bool:
+	return p.has_meta("no_lugar")
+
+
+func _tocha_acesa(t: Tocha) -> void:
+	for p in pontes:
+		if p.get_meta("tocha") == t and not p.visible:
+			var lugar: Vector3 = p.get_meta("lugar")
+			p.position = lugar + Vector3.DOWN * 14.0
+			p.visible = true
+			(p.get_child(p.get_child_count() - 1) as CollisionShape3D).disabled = false
+			var tw := p.create_tween()
+			tw.tween_property(p, "position", lugar, 1.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.tween_callback(func(): p.set_meta("no_lugar", true))
+	for d in portas_das_tochas:
+		if d.aberta or not (d.tochas as Array).all(func(q: Tocha) -> bool: return q.esta_acesa):
+			continue
+		d.aberta = true
+		var folha: Node3D = d.porta
+		var tw := folha.create_tween()
+		tw.tween_interval(0.4)
+		tw.tween_property(folha, "rotation:y", folha.rotation.y - 1.75, 1.0).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func colocar_bau(pos: Vector3, giro := 0.0, dourado := false) -> Bau:
+	bau = Bau.new()
+	bau.dourado = dourado
+	bau.position = pos
+	bau.rotation.y = giro
+	add_child(bau)
+	bau.estrela_pega.connect(func(): estrela_grande_pega.emit())
+	bau.aberto.connect(func() -> void: soltar_moedas(bau.global_position + Vector3.UP * 1.2, MOEDAS_DO_BAU, 2.4))
+	return bau
+
+
+## Um Faisquinha preso na bolha em `pos` (o meio da bolha). Os três de antes ganham o nome pela ordem ("0" a "2");
+## os novos (2026-11-11) vêm com o nome deles ("3" e "4" nos bolsos, "5" na Bolota), para o save de quem já jogou
+## continuar valendo.
+func faisquinha(pos: Vector3, nome_dele := "") -> Faisquinha:
+	var v := Faisquinha.new()
+	var id := nome_dele
+	if id == "":
+		id = str(_faisquinhas_sem_nome)
+		_faisquinhas_sem_nome += 1
+	v.id = id
+	v.position = pos
+	v.ja_visto = ja_achados.has(id)
+	add_child(v)
+	v.salvo.connect(func(_v: Faisquinha):
+		# O já salvo é só a bolha com a moeda: uma moeda, sem contar nem festejar (o "faisquinha_salvo" é dos novos).
+		if v.ja_visto:
+			soltar_moedas(v.global_position, 1, 0.5)
+			return
+		soltar_moedas(v.global_position, MOEDAS_POR_FAISQUINHA, 0.9)
+		if not id in novos_faisquinhas:
+			novos_faisquinhas.append(id)
+			achados += 1
+		faisquinha_salvo.emit(achados, faisquinhas.size()))
+	faisquinhas.append(v)
+	return v
+
+
+## O Faisquinha que a Bolota `b` leva pendurado numa bolha: só sai quando ela é vencida.
+func faisquinha_na_bolota(b: Alvo, nome_dele := "5") -> Faisquinha:
+	var v := faisquinha(b.position + Vector3.UP * Faisquinha.ALTURA_NA_BOLOTA, nome_dele)
+	v.carregar(b)
+	return v
+
+
+## Uma Bolota da turma do Rei Bolotão: `tipo` é um dos BolotaMonstro.TIPOS (o Alien é a Bolota de sempre).
+func bolota(pos: Vector3, dormindo := false, tipo := "alien") -> BolotaMonstro:
+	var b := BolotaMonstro.new(tipo)
+	b.position = pos
+	b.dormindo = dormindo
+	add_child(b)
+	b.derrotada.connect(_soltar_estrelinhas)
+	alvos.append(b)
+	return b
+
+
+## Lugar onde o Vovô Farol dá uma dica, uma vez só ("pulo_alto", "flutuar", "laser").
+func ponto_de_dica(pos: Vector3, raio: float, qual: String) -> void:
+	var area := Area3D.new()
+	area.position = pos
+	area.collision_layer = 0
+	area.collision_mask = CAMADA_JOGADOR
+	var cs := CollisionShape3D.new()
+	var esfera := SphereShape3D.new()
+	esfera.radius = raio
+	cs.shape = esfera
+	area.add_child(cs)
+	add_child(area)
+	area.body_entered.connect(func(corpo: Node3D):
+		if corpo is Jogador and not _dicas_dadas.has(qual):
+			_dicas_dadas[qual] = true
+			dica.emit(qual))
+
+
+# --- céu, nuvens e farol --------------------------------------------------------------
+
+func _montar_ceu_e_luz() -> void:
+	var ceu := ProceduralSkyMaterial.new()
+	ceu.sky_top_color = Color("5fa4ff")
+	ceu.sky_horizon_color = Color("cfe8ff")
+	ceu.ground_horizon_color = Color("d9ecff")
+	ceu.ground_bottom_color = Color("8fc3ff")
+	ceu.sun_angle_max = 20.0
+	var sky := Sky.new()
+	sky.sky_material = ceu
+	var env := Environment.new()
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
+	# Luz ambiente quase neutra: com a cor do céu as sombras saíam azuis, parecendo buracos.
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("e2e0ee")
+	env.ambient_light_energy = 0.8
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 0.95
+	env.ssao_enabled = true
+	env.glow_enabled = true
+	env.glow_intensity = 0.45
+	env.glow_hdr_threshold = 1.3
+	# Neblina clarinha ao longe: as ilhas distantes ficam azuladas, dando fundo.
+	env.fog_enabled = true
+	env.fog_light_color = Color("d6ebff")
+	env.fog_density = 0.004
+	env.fog_sky_affect = 0.0
+	var we := WorldEnvironment.new()
+	we.environment = env
+	add_child(we)
+	var sol := DirectionalLight3D.new()
+	sol.rotation_degrees = Vector3(-50, -35, 0)
+	sol.light_energy = 1.05
+	sol.shadow_enabled = true
+	sol.shadow_opacity = 0.75
+	sol.light_angular_distance = 1.5
+	sol.directional_shadow_max_distance = 80.0
+	add_child(sol)
+
+
+## Mar de nuvens: muitas bolas brancas achatadas um pouco abaixo de onde o Faísca cai.
+func _montar_nuvens() -> void:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color("eef3ff")
+	m.roughness = 1.0
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = _esfera_baixa()
+	var gerador := RandomNumberGenerator.new()
+	gerador.seed = 7
+	var bolas := []
+	# Bem abaixo de onde o Faísca cai, com buracos para o azul de baixo aparecer.
+	for i in 40:
+		for j in 40:
+			if gerador.randf() < 0.3:
+				continue
+			var p := Vector3(-240 + i * 12 + gerador.randf_range(-5, 5), limite_queda - 5.0 + gerador.randf_range(-2.5, 1.5), 70 - j * 12 + gerador.randf_range(-5, 5))
+			var r := gerador.randf_range(5.0, 9.5)
+			bolas.append(Transform3D(Basis.from_scale(Vector3(r, r * 0.42, r)), p))
+	mm.instance_count = bolas.size()
+	for k in bolas.size():
+		mm.set_instance_transform(k, bolas[k])
+	var nuvens := MultiMeshInstance3D.new()
+	nuvens.multimesh = mm
+	nuvens.material_override = m
+	nuvens.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(nuvens)
+
+
+## O farol da Ilha Cafuné ao longe, numa ilhota com grama, sempre à vista, como bússola.
+func farol(pos: Vector3, escala := 1.0) -> void:
+	var raiz := Node3D.new()
+	raiz.position = pos
+	raiz.scale = Vector3.ONE * escala
+	add_child(raiz)
+	var ilha := MeshInstance3D.new()
+	ilha.mesh = Forma.superelipsoide(Vector3(9, 4, 9), 1.0, 1.0, -PI / 2.0)
+	ilha.material_override = _material(Color("8fd16a"))
+	raiz.add_child(ilha)
+	var pedra := MeshInstance3D.new()
+	var cone := CylinderMesh.new()
+	cone.top_radius = 8.5
+	cone.bottom_radius = 2.0
+	cone.height = 10.0
+	pedra.mesh = cone
+	pedra.position.y = -4.5
+	pedra.material_override = _material(Color("b9bccb"))
+	raiz.add_child(pedra)
+	var torre := FarolModelo.new()
+	torre.escala = 6.0
+	torre.aceso = true
+	torre.position.y = -0.2
+	raiz.add_child(torre)
+
+
+func _material(cor: Color) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = cor
+	m.roughness = 0.7
+	return m
+
+
+func _esfera_baixa() -> SphereMesh:
+	var s := SphereMesh.new()
+	s.radius = 1.0
+	s.height = 2.0
+	s.radial_segments = 16
+	s.rings = 8
+	return s
+
+
+func _cena(caminho: String) -> PackedScene:
+	if not _cenas.has(caminho):
+		_cenas[caminho] = load(caminho)
+	return _cenas[caminho]

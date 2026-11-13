@@ -2,6 +2,8 @@ class_name ObjectiveMarker
 extends Control
 ## Losango roxo que aponta o objetivo atual, com a distância em metros. Quando o ponto está fora da
 ## tela (ou atrás da câmera), o losango fica preso na borda, do lado certo. Some quando chega perto.
+## Em cima do losango vai a figura do objetivo (`icone`, um desenho do MenuIcon: a lanterna, a ponte, o guardião
+## da luta...), para quem ainda não lê saber para onde a seta leva (item 4 da lista de melhorias, 2026-11-10).
 
 const MARGIN := 48.0
 ## Embaixo sobra espaço para o painel de armas não ficar por baixo do losango.
@@ -10,6 +12,17 @@ const NEAR := 8.0
 
 ## Seta da entrega de balão da lojinha do celular: moeda dourada com "Entrega" no lugar do losango roxo.
 var coin := false
+## O nome ao lado da distância, na seta de moeda ("Entrega" da lojinha; "Dourado" para o esqueleto dourado).
+var rotulo := "Entrega"
+## Figura do objetivo (vazio: só o losango).
+var icone := "":
+	set(valor):
+		icone = valor
+		if _figura:
+			_figura.kind = valor
+			_figura.color = MenuKit.ICON_COLORS.get(valor, Color.GRAY)
+			_figura.queue_redraw()
+var _figura: MenuIcon
 var _font: FontVariation
 var _pos := Vector2.ZERO
 var _meters := 0
@@ -19,6 +32,9 @@ var _edge := false
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
 	visible = false
+	_figura = MenuIcon.new(icone if icone != "" else "objetivo", MenuKit.ICON_COLORS.get(icone, Color.GRAY), 44)
+	_figura.visible = false
+	add_child(_figura)
 	_font = FontVariation.new()
 	_font.base_font = ThemeDB.fallback_font
 	_font.variation_embolden = 0.6
@@ -53,6 +69,9 @@ func update_marker(camera: Camera3D, target: Vector3, from: Vector3) -> void:
 		var ky := (area.size.y * 0.5) / maxf(absf(d.y), 0.001)
 		p = c + d * minf(kx, ky)
 	_pos = p
+	# A figura vai em cima do losango; colado na borda de cima, vai do lado.
+	_figura.visible = icone != "" and not coin
+	_figura.position = _pos + (Vector2(-22, -68) if _pos.y > 84.0 else Vector2(20, -22))
 	queue_redraw()
 
 
@@ -62,7 +81,7 @@ func _draw() -> void:
 		draw_circle(_pos, s, Color("#ffd23f"))
 		draw_arc(_pos, s, 0.0, TAU, 32, Color.WHITE, 3.0, true)
 		draw_arc(_pos, s * 0.55, 0.0, TAU, 24, Color("#c98a10"), 2.5, true)
-		var label := "Entrega · %d m" % _meters
+		var label := "%s · %d m" % [rotulo, _meters]
 		var lw := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
 		var lp := _pos + Vector2(-lw / 2.0, s + 22)
 		draw_string_outline(_font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 6, Color(0, 0, 0, 0.75))

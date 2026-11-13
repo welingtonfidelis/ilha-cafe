@@ -49,6 +49,9 @@ var _p_back: Button
 ## Duas pistolas: põe a pistola na mão esquerda.
 var _p_second: Button
 var _close: Button
+## Roupinhas (item 11 da lista de melhorias): abre o guarda-roupa (PainelRoupas).
+var roupinhas: Button
+var _botoes: HBoxContainer
 var _current := ""
 var _phone: PanelContainer
 var _more: Control
@@ -118,12 +121,20 @@ func build() -> void:
 	_preview = _build_preview()
 	box.add_child(_preview)
 	_preview.visible = false
+	_botoes = HBoxContainer.new()
+	_botoes.alignment = BoxContainer.ALIGNMENT_CENTER
+	_botoes.add_theme_constant_override("separation", 16)
+	box.add_child(_botoes)
+	roupinhas = _button("Roupinhas", Vector2(240, 48))
+	roupinhas.pressed.connect(func() -> void:
+		Sfx.play(game.ui_layer, "ui_ok", 0.0, 0.0)
+		game.open_menu("roupas"))
+	_botoes.add_child(roupinhas)
 	_close = _button("Guardar o celular", Vector2(300, 48))
-	_close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_close.pressed.connect(func() -> void:
 		Sfx.play(game.ui_layer, "ui_ok", 0.0, 0.0)
 		game.close_menus())
-	box.add_child(_close)
+	_botoes.add_child(_close)
 
 
 ## Câmera na lateral esquerda e os botões de volume e de ligar na borda de cima da moldura.
@@ -428,7 +439,7 @@ func back() -> void:
 	_preview.visible = false
 	_grid.visible = true
 	_more.visible = true
-	_close.visible = true
+	_botoes.visible = true
 	_current = ""
 	refresh()
 	if was != "" and _cards.has(was):
@@ -478,7 +489,7 @@ func open_preview(id: String) -> void:
 	_current = id
 	_grid.visible = false
 	_more.visible = false
-	_close.visible = false
+	_botoes.visible = false
 	_preview.visible = true
 	for child in _turntable.get_children():
 		child.queue_free()

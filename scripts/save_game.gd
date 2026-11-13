@@ -6,7 +6,9 @@ extends RefCounted
 ## usam outro arquivo (path), para nunca mexer na campanha de quem joga.
 
 ## 2: moedas da lojinha (campanhas da versão 1 ganham as moedas dos guardiões já vencidos ao continuar).
-const VERSION := 2
+## 3: Parte 2 ("parte2": aberta, Faísca em uso, estrelinhas, Estrelas Grandes e vaga-lumes por fase). Campanhas
+## antigas que já tinham terminado ganham a abertura da Parte 2 ao continuar.
+const VERSION := 3
 
 static var path := "user://campanha.json"
 static var enabled := true

@@ -37,6 +37,8 @@ const SEA_LEVEL := -0.6
 
 var arena := false
 var island: Node3D
+## A vegetação abundante da ilha (grama, trevos, florzinhas e samambaias em 3D), pedido de 2026-11-11.
+var vegetacao: VegetacaoIlha
 ## História na ilha (prólogo, lanternas, ondas); fica nula na arena dos testes.
 var story: Story
 var boss_bar: BossBar
@@ -52,14 +54,14 @@ var _splashing := false
 ## Comandos mostrados no menu de pausa (não ficam mais na tela durante o jogo).
 const CONTROLS_KEYBOARD := [
 	["Andar", "W A S D"], ["Olhar", "mouse"], ["Pular", "Espaço"], ["Mirar", "botão direito"],
-	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"], ["Kart e skate", "E (entrar e sair)"],
+	["Atirar", "botão esquerdo"], ["Recarregar", "R"], ["Granada", "G"], ["Pirulitão (corpo a corpo)", "F ou botão do meio"], ["Kart", "E (entrar e sair)"],
 	["Blasters", "1 Paçoca · 2 Granulado · 3 Pipoqueira · 4 Pé-de-Moleque (ou rodinha)"], ["Duas pistolas", "1 de novo (com duas pistolas)"],
 	["Lojinha no celular", "C (fora de luta)"],
 	["Pausa", "Esc ou Tab"], ["Regiões de impacto", "F3"],
 ]
 const CONTROLS_GAMEPAD := [
 	["Andar", "analógico esquerdo"], ["Olhar", "analógico direito"], ["Pular", "A"], ["Mirar", "LT"],
-	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart e skate", "B (entrar e sair)"],
+	["Atirar", "RT"], ["Recarregar", "X"], ["Granada", "RB"], ["Pirulitão (corpo a corpo)", "R3 (apertar o analógico direito)"], ["Kart", "B (entrar e sair)"],
 	["Blasters", "↑ Paçoca · → Granulado · ↓ Pipoqueira · ← Pé-de-Moleque (Y passa para o próximo)"],
 	["Duas pistolas", "↑ de novo (com duas pistolas)"],
 	["Lojinha no celular", "Select (fora de luta)"], ["Pausa", "Start"],
@@ -79,12 +81,32 @@ var confirm_panel: Control
 var select_panel: Control
 var pause_panel: Control
 var controls_panel: Control
-var controls_label: Label
+## Ajustes de som, câmera e vibração (scripts/painel_ajustes.gd), pela pausa.
+var ajustes_panel: PainelAjustes
+## Modo Fácil: tempo fora de luta desde o último coração que voltou.
+var _regen := 0.0
+## Comandos em duas colunas: o que faz e, numa etiqueta, o botão ou a tecla.
+var controls_grid: GridContainer
 var menu_dim: ColorRect
 var menu_state := ""
 var _menu_hints: Array[Label] = []
 var _buttons: Array[Button] = []
 var _pause_buttons: Array[Button] = []
+## "Trocar de personagem" na pausa (some de kart) e "Ajustes".
+var _pause_switch: Button
+var _pause_ajustes: Button
+## Escolha de personagem com os cartões (scripts/character_menu.gd); select_panel aponta para ele.
+var character_menu: CharacterMenu
+## Cartão de quem está jogando, na pausa.
+var _pause_card: PanelContainer
+var _pause_portrait: Portrait
+var _pause_name: Label
+var _pause_swap_icon: MenuIcon
+var _pause_goal: Control
+## Figura do objetivo na pausa (a mesma da seta; sem objetivo, o alvo).
+var _pause_goal_icon: MenuIcon
+## Onde o objetivo estava quando o aventureiro chegou nele (o som de chegada toca uma vez por lugar).
+var _chegou_em := Vector3.INF
 var _controls_back: Button
 var _start_buttons: Array[Button] = []
 var _continue_button: Button
@@ -106,15 +128,42 @@ var sun_light: DirectionalLight3D
 var ending: Ending
 ## "Festa sem fim" no cemitério (só no pós-jogo).
 var party_mode: EndlessParty
+## O farol da ponta sudeste, um mirante com binóculo (o Faísca tem o jogo dele, pelo menu principal). Nulo na arena.
+var farol: FarolIlha
+## Pescaria na ponta do cais e o aquário da praia (item 5 da lista de melhorias). Nulos na arena.
+var pescaria: Pescaria
+var aquario: Aquario
+## Esconde-esconde dos esqueletos amigos, no pós-jogo (item 6 da lista de melhorias). Nulo na arena.
+var esconde: EscondeEsconde
+## Álbum de figurinhas e os bilhetes pela ilha (item 7 da lista de melhorias). O botão e o painel ficam nulos na arena.
+var album_panel: PainelAlbum
+var bilhete_cartao: Bilhete.Cartao
+var bilhetes_nos: Array[Bilhete] = []
+var _pause_album: Button
+## Esqueleto dourado (item 8 da lista de melhorias): quem faz ele aparecer e a seta de moeda "Dourado".
+var caca: CacaDourada
+var dourado_marker: ObjectiveMarker
+## Revanche dos guardiões no cemitério, no pós-jogo (item 9 da lista de melhorias), e o painel da escolha.
+var revanche: Revanche
+var revanche_panel: Revanche.Painel
+## Copa de Kart com pódio (item 10 da lista de melhorias). Nula na arena.
+var copa: CopaKart
+## Guarda-roupa das roupinhas, aberto pelo celular (item 11 da lista de melhorias).
+var roupas_panel: PainelRoupas
+## Festa de fim de ano em dezembro (item 12 da lista de melhorias). Nula na arena.
+var fim_de_ano: FestaFimDeAno
+## Gatilhos adaptáveis do DualSense pelo hidraw do Linux (item 14 da lista de melhorias).
+var dualsense: DualSense
+## Ciclo de dia e noite (scripts/day_night.gd). Nulo na arena e nos testes, a não ser no --dia-e-noite.
+var day_night: DayNight
 ## Lojinha de Blasters no celular (o menu), a seta dourada que leva até a entrega de balão e o contador de moedas.
 var shop_menu: ShopMenu
 var shop_marker: ObjectiveMarker
 var coins_bar: CoinsBar
-## Atividades extras: corrida de kart e pista de skate.
+## Atividade extra: corrida de kart (a pista de skate saiu em 2026-10-29, pedido do usuário).
 var kart_race: KartRace
-var skate_park: SkatePark
 var message_label: Label
-## Aviso fixo embaixo, quando dá para fazer algo com o B (ou E): correr de kart, andar de skate.
+## Aviso fixo embaixo, quando dá para fazer algo com o B (ou E): correr de kart.
 var hint_label: Label
 var _shop_back_time := -1.0
 ## Puxando o celular do bolso (meio segundo antes do menu abrir).
@@ -270,12 +319,22 @@ class Crosshair:
 var music: AudioStreamPlayer
 
 
+## Modo Fácil: de quanto em quanto tempo volta um coração fora de luta.
+const REGEN_FACIL := 6.0
+## O vovô da praça fala do farol, que virou mirante.
+const FAROL_FALA := "Lá do alto do farol dá para ver a ilha inteira!"
+## O pescador chama para a pescaria do lado dele.
+const PESCADOR_FALA := "Pegue a vara no círculo dourado e venha pescar comigo!"
 ## Os testes automáticos rodam na arena plana (previsível); o jogo de verdade, na ilha.
 const TEST_MODES := ["--capture", "--smoke", "--controle", "--combate", "--som", "--armas", "--inimigos", "--inimigos-captura", "--pistolas-captura", "--dardo-captura", "--brinquedos-captura"]
 
 
 func _ready() -> void:
 	_setup_input()
+	# O Faísca sozinho, sem a ilha (os testes que vieram do projeto Faísca).
+	if FaiscaSolo.MODOS.any(func(m: String) -> bool: return m in OS.get_cmdline_user_args()):
+		add_child(FaiscaSolo.new())
+		return
 	Sfx.setup_buses()
 	music = Sfx.music(self, "tema")
 	music.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -283,6 +342,7 @@ func _ready() -> void:
 	arena = TEST_MODES.any(func(m: String) -> bool: return m in args)
 	# Os testes automáticos nunca mexem na campanha de quem joga (o de salvar usa outro arquivo).
 	SaveGame.enabled = not Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
+	Ajustes.carregar(not SaveGame.enabled)
 	_build_environment()
 	var world := _build_arena() if arena else _load_island()
 	player = Player.new()
@@ -290,6 +350,14 @@ func _ready() -> void:
 	add_child(player)
 	player.global_position = world.start
 	player.set_yaw(world.start_yaw)
+	if not arena:
+		# A vegetação abundante (grama, trevos, florzinhas e samambaias em 3D), em volta da câmera.
+		vegetacao = VegetacaoIlha.new()
+		vegetacao.name = "Vegetacao"
+		vegetacao.terreno = island.get_node("Terreno")
+		vegetacao.jogador = player
+		add_child(vegetacao)
+		vegetacao.call_deferred("montar_tudo_agora")
 	player.hit_confirmed.connect(_on_hit_confirmed)
 	player.input_device_changed.connect(_on_input_device_changed)
 	player.health_changed.connect(func(h: int, m: int) -> void: hearts_bar.set_hearts(h, m))
@@ -356,13 +424,20 @@ func _ready() -> void:
 	for pos in world.crates:
 		_spawn_crate(pos, CRATE_RESPAWN)
 	_build_ui()
+	dualsense = DualSense.new()
+	dualsense.name = "DualSense"
+	dualsense.game = self
+	add_child(dualsense)
 	if not arena:
 		story = Story.new()
 		story.name = "Historia"
 		add_child(story)
 		story.setup(self, island)
-		story.objective_changed.connect(func(text: String) -> void: pause_objective.text = "Objetivo: " + text)
+		story.objective_changed.connect(func(text: String) -> void:
+			pause_objective.text = "Objetivo: " + text
+			_mostrar_figura_do_objetivo())
 		pause_objective.text = "Objetivo: " + story.objective_text
+		_mostrar_figura_do_objetivo()
 		ending = Ending.new()
 		ending.name = "Desfecho"
 		add_child(ending)
@@ -381,18 +456,86 @@ func _ready() -> void:
 		for v in fun.get_node("Vagas").get_children():
 			kart_race.spots.append((v as Node3D).global_transform)
 		add_child(kart_race)
-		skate_park = SkatePark.new()
-		skate_park.name = "PistaDeSkate"
-		skate_park.game = self
-		skate_park.story = story
-		skate_park.entrance = (fun.get_node("Skate") as Node3D).global_position
-		skate_park.center = skate_park.entrance + Vector3(0, 0, -23.0)
-		skate_park.session_spot = _ground_point(skate_park.center + Vector3(3.0, 0, 13.0))
-		add_child(skate_park)
+		copa = CopaKart.new()
+		copa.name = "CopaKart"
+		copa.game = self
+		copa.story = story
+		copa.kr = kart_race
+		add_child(copa)
 		story.coins_changed.connect(func(n: int) -> void:
 			coins_bar.set_coins(n, story.coins_ever)
 			if menu_state == "loja":
 				shop_menu.refresh())
+		farol = FarolIlha.new()
+		farol.name = "Farol"
+		farol.game = self
+		farol.aberto = true
+		add_child(farol)
+		aquario = Aquario.new()
+		aquario.name = "Aquario"
+		add_child(aquario)
+		pescaria = Pescaria.new()
+		pescaria.name = "Pescaria"
+		pescaria.game = self
+		pescaria.aquario = aquario
+		add_child(pescaria)
+		esconde = EscondeEsconde.new()
+		esconde.name = "EscondeEsconde"
+		esconde.game = self
+		esconde.story = story
+		add_child(esconde)
+		caca = CacaDourada.new()
+		caca.name = "CacaDourada"
+		caca.game = self
+		caca.story = story
+		add_child(caca)
+		FestaFimDeAno.testando = Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
+		if Array(args).any(func(a: String) -> bool: return a.begins_with("--natal")):
+			FestaFimDeAno.forcar = true
+		fim_de_ano = FestaFimDeAno.new()
+		fim_de_ano.name = "FestaFimDeAno"
+		fim_de_ano.game = self
+		fim_de_ano.story = story
+		add_child(fim_de_ano)
+		revanche = Revanche.new()
+		revanche.name = "Revanche"
+		revanche.game = self
+		revanche.story = story
+		add_child(revanche)
+		revanche_panel = Revanche.Painel.new()
+		ui_layer.add_child(revanche_panel)
+		revanche_panel.montar(ui_layer, revanche)
+		revanche_panel.hide()
+		revanche_panel.fechou.connect(func() -> void:
+			if menu_state == "revanche":
+				close_menus())
+		revanche_panel.escolheu.connect(func(id: String) -> void:
+			close_menus()
+			revanche.comecar(id))
+		for spec: Dictionary in Album.BILHETES:
+			var b := Bilhete.new()
+			b.name = "Bilhete_" + String(spec.id)
+			b.id = spec.id
+			b.game = self
+			b.position = spec.onde
+			add_child(b)
+			bilhetes_nos.append(b)
+		bilhete_cartao = Bilhete.Cartao.new()
+		ui_layer.add_child(bilhete_cartao)
+		ui_layer.move_child(bilhete_cartao, fade.get_index())
+		var pescador := get_node_or_null("Pescador") as Townsperson
+		if pescador and not PESCADOR_FALA in pescador.lines:
+			pescador.lines.append(PESCADOR_FALA)
+		var vovo := get_node_or_null("Vovo") as Townsperson
+		if vovo and not FAROL_FALA in vovo.lines:
+			vovo.lines.append(FAROL_FALA)
+		# Os testes e as fotos ficam no dia de sempre (sem o ciclo), a não ser o teste e as fotos do próprio ciclo.
+		var tests := Array(args).any(func(a: String) -> bool: return a.begins_with("--"))
+		if not tests or "--dia-e-noite" in args or "--dia-e-noite-captura" in args:
+			day_night = DayNight.new()
+			day_night.name = "DiaENoite"
+			add_child(day_night)
+			day_night.setup(self)
 	_update_ammo_hud()
 	hearts_bar.set_hearts(player.hearts, player.max_hearts)
 	_on_input_device_changed(Input.get_connected_joypads().size() > 0)
@@ -491,6 +634,15 @@ func _ready() -> void:
 	elif "--festa-sem-fim" in args:
 		select_panel.hide()
 		_run_endless_test()
+	elif "--pista-kart" in args:
+		select_panel.hide()
+		_run_kart_track_test()
+	elif "--dia-e-noite" in args:
+		select_panel.hide()
+		_run_day_night_test()
+	elif "--dia-e-noite-captura" in args:
+		select_panel.hide()
+		_run_day_night_capture()
 	elif "--salvar" in args:
 		select_panel.hide()
 		_run_save_test()
@@ -512,6 +664,86 @@ func _ready() -> void:
 	elif "--brinquedos-captura" in args:
 		select_panel.hide()
 		_run_toys_capture()
+	elif "--vegetacao-captura" in args:
+		select_panel.hide()
+		_run_vegetation_capture()
+	elif "--menus-captura" in args:
+		_run_menus_capture()
+	elif "--farol" in args:
+		select_panel.hide()
+		_run_lighthouse_test()
+	elif "--farol-captura" in args:
+		select_panel.hide()
+		_run_lighthouse_capture()
+	elif "--facil" in args:
+		select_panel.hide()
+		_run_easy_test()
+	elif "--objetivo" in args:
+		select_panel.hide()
+		_run_objective_test()
+	elif "--objetivo-captura" in args:
+		select_panel.hide()
+		_run_objective_capture()
+	elif "--pescaria" in args:
+		select_panel.hide()
+		_run_fishing_test()
+	elif "--esconde" in args:
+		select_panel.hide()
+		_run_hide_test()
+	elif "--album" in args:
+		select_panel.hide()
+		_run_album_test()
+	elif "--dourado" in args:
+		select_panel.hide()
+		_run_golden_test()
+	elif "--revanche" in args:
+		select_panel.hide()
+		_run_rematch_test()
+	elif "--copa" in args:
+		select_panel.hide()
+		_run_cup_test()
+	elif "--roupas" in args:
+		select_panel.hide()
+		_run_outfits_test()
+	elif "--natal" in args:
+		select_panel.hide()
+		_run_holiday_test()
+	elif "--vozes" in args:
+		select_panel.hide()
+		_run_voices_test()
+	elif "--dualsense" in args:
+		select_panel.hide()
+		_run_dualsense_test()
+	elif "--dualsense-pc" in args:
+		select_panel.hide()
+		_run_dualsense_pc()
+	elif "--dualsense-uevent" in args:
+		select_panel.hide()
+		_run_dualsense_uevent()
+	elif "--natal-captura" in args:
+		select_panel.hide()
+		_run_holiday_capture()
+	elif "--roupas-captura" in args:
+		select_panel.hide()
+		_run_outfits_capture()
+	elif "--copa-captura" in args:
+		select_panel.hide()
+		_run_cup_capture()
+	elif "--revanche-captura" in args:
+		select_panel.hide()
+		_run_rematch_capture()
+	elif "--dourado-captura" in args:
+		select_panel.hide()
+		_run_golden_capture()
+	elif "--album-captura" in args:
+		select_panel.hide()
+		_run_album_capture()
+	elif "--esconde-captura" in args:
+		select_panel.hide()
+		_run_hide_capture()
+	elif "--pescaria-captura" in args:
+		select_panel.hide()
+		_run_fishing_capture()
 	elif SaveGame.go_new:
 		# Voltou da "Nova campanha" da pausa: direto para a escolha de personagem.
 		SaveGame.go_new = false
@@ -541,6 +773,8 @@ func _build_arena() -> Dictionary:
 func _load_island() -> Dictionary:
 	island = load(ISLAND_SCENE).instantiate()
 	add_child(island)
+	# A textura no chão (item 13 da lista do Faísca): grama, areia, pedra, trilha e calçada com desenho.
+	TexturaDoChao.na_ilha(island)
 	var start: Marker3D = island.get_node("Marcadores/Inicio")
 	var spawns := []
 	var minions := 0
@@ -585,95 +819,9 @@ func _load_island() -> Dictionary:
 
 # --- entrada -----------------------------------------------------------------
 
-## Teclado e mouse mais controle. Os nomes de botão seguem o controle de Xbox
-## (no de PlayStation: A = X, B = círculo, LT/RT = L2/R2, LB/RB = L1/R1, Back = Share, Start = Options).
+## Teclado, mouse e controle (Controles: o menu principal e o jogo do Faísca usam os mesmos).
 func _setup_input() -> void:
-	_bind_key("frente", [KEY_W, KEY_UP])
-	_bind_key("tras", [KEY_S, KEY_DOWN])
-	_bind_key("esquerda", [KEY_A, KEY_LEFT])
-	_bind_key("direita", [KEY_D, KEY_RIGHT])
-	_bind_axis("frente", JOY_AXIS_LEFT_Y, -1.0)
-	_bind_axis("tras", JOY_AXIS_LEFT_Y, 1.0)
-	_bind_axis("esquerda", JOY_AXIS_LEFT_X, -1.0)
-	_bind_axis("direita", JOY_AXIS_LEFT_X, 1.0)
-	_bind_axis("olhar_esquerda", JOY_AXIS_RIGHT_X, -1.0)
-	_bind_axis("olhar_direita", JOY_AXIS_RIGHT_X, 1.0)
-	_bind_axis("olhar_cima", JOY_AXIS_RIGHT_Y, -1.0)
-	_bind_axis("olhar_baixo", JOY_AXIS_RIGHT_Y, 1.0)
-
-	_bind_key("correr", [KEY_SHIFT])
-	_bind_button("correr_alternar", JOY_BUTTON_LEFT_STICK)
-	_bind_key("pular", [KEY_SPACE])
-	_bind_button("pular", JOY_BUTTON_A)
-	_bind_mouse("atirar", MOUSE_BUTTON_LEFT)
-	_bind_axis("atirar", JOY_AXIS_TRIGGER_RIGHT, 1.0)
-	_bind_key("recarregar", [KEY_R])
-	_bind_button("recarregar", JOY_BUTTON_X)
-	_bind_key("granada", [KEY_G])
-	_bind_button("granada", JOY_BUTTON_RIGHT_SHOULDER)
-	_bind_key("interagir", [KEY_E])
-	_bind_button("interagir", JOY_BUTTON_B)
-	_bind_key("corpo_a_corpo", [KEY_F])
-	_bind_mouse("corpo_a_corpo", MOUSE_BUTTON_MIDDLE)
-	_bind_button("corpo_a_corpo", JOY_BUTTON_RIGHT_STICK)
-	_bind_mouse("arma_proxima", MOUSE_BUTTON_WHEEL_UP)
-	_bind_button("arma_proxima", JOY_BUTTON_Y)
-	_bind_mouse("arma_anterior", MOUSE_BUTTON_WHEEL_DOWN)
-	for i in Weapons.count():
-		_bind_key("arma_%d" % (i + 1), [KEY_1 + i])
-		_bind_button("arma_%d" % (i + 1), Weapons.DPAD[i])
-	_bind_mouse("mirar", MOUSE_BUTTON_RIGHT)
-	_bind_axis("mirar", JOY_AXIS_TRIGGER_LEFT, 1.0)
-	_bind_button("mirar", JOY_BUTTON_LEFT_SHOULDER)
-	InputMap.action_set_deadzone("atirar", 0.3)
-	InputMap.action_set_deadzone("mirar", 0.3)
-
-	_bind_key("regioes", [KEY_F3])
-	# Lojinha no celular (pedido do usuário: o botão Select; no controle de PlayStation, Share/Create).
-	_bind_key("celular", [KEY_C])
-	_bind_button("celular", JOY_BUTTON_BACK)
-	_bind_key("menu", [KEY_TAB, KEY_ESCAPE])
-	_bind_button("menu", JOY_BUTTON_START)
-	# Na Godot 4.7 os menus aceitam o direcional, mas confirmar e voltar não vêm ligados ao controle.
-	_bind_button("ui_accept", JOY_BUTTON_A)
-	_bind_button("ui_cancel", JOY_BUTTON_B)
-
-
-func _ensure_action(action: String) -> void:
-	if not InputMap.has_action(action):
-		InputMap.add_action(action, 0.2)
-
-
-func _bind_key(action: String, keys: Array) -> void:
-	_ensure_action(action)
-	for k in keys:
-		var ev := InputEventKey.new()
-		ev.physical_keycode = k
-		InputMap.action_add_event(action, ev)
-
-
-func _bind_mouse(action: String, button: MouseButton) -> void:
-	_ensure_action(action)
-	var ev := InputEventMouseButton.new()
-	ev.button_index = button
-	InputMap.action_add_event(action, ev)
-
-
-func _bind_button(action: String, button: JoyButton) -> void:
-	_ensure_action(action)
-	var ev := InputEventJoypadButton.new()
-	ev.button_index = button
-	ev.device = -1
-	InputMap.action_add_event(action, ev)
-
-
-func _bind_axis(action: String, axis: JoyAxis, direction: float) -> void:
-	_ensure_action(action)
-	var ev := InputEventJoypadMotion.new()
-	ev.axis = axis
-	ev.axis_value = direction
-	ev.device = -1
-	InputMap.action_add_event(action, ev)
+	Controles.configurar()
 
 
 ## Recebe a entrada dos menus mesmo com o jogo pausado (o resto do jogo para).
@@ -708,6 +856,14 @@ func _menu_input(event: InputEvent) -> void:
 			close_menus()
 		"comandos":
 			open_menu("pausa")
+		"ajustes":
+			ajustes_panel.fechar()
+		"album":
+			album_panel.fechar()
+		"roupas":
+			roupas_panel.fechar()
+		"revanche":
+			revanche_panel.fechar()
 		"confirmar":
 			open_menu(_confirm_return)
 		"loja":
@@ -720,11 +876,7 @@ func _menu_input(event: InputEvent) -> void:
 			elif now - _shop_back_time > 0.35:
 				close_menus()
 		"escolha":
-			# Na abertura do jogo voltar leva ao menu inicial; vindo da pausa, à pausa.
-			if _game_started:
-				open_menu("pausa")
-			elif story:
-				open_menu("inicio")
+			_character_menu_back()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -747,6 +899,11 @@ func open_menu(state: String) -> void:
 	select_panel.visible = state == "escolha"
 	pause_panel.visible = state == "pausa"
 	controls_panel.visible = state == "comandos"
+	ajustes_panel.visible = state == "ajustes"
+	album_panel.visible = state == "album"
+	roupas_panel.visible = state == "roupas"
+	if revanche_panel:
+		revanche_panel.visible = state == "revanche"
 	menu_dim.visible = true
 	crosshair.hide()
 	# Com o jogo pausado o _process não roda: o aviso de baixo some aqui.
@@ -768,14 +925,27 @@ func open_menu(state: String) -> void:
 			shop_menu.open()
 			shop_menu.slide_in.call_deferred()
 		"escolha":
-			var i := maxi(CHARACTER_ORDER.find(player.character_name), 0)
-			_buttons[i].grab_focus.call_deferred()
+			character_menu.open(player.character_name if _game_started else "", _game_started or story != null)
 		"pausa":
 			if story:
 				story.save()
+			# De kart, desce primeiro.
+			_pause_switch.visible = not player.in_vehicle
+			if story:
+				pause_objective.text = "Objetivo: " + story.objective_text
+			_refresh_pause_card()
 			_pause_buttons[0].grab_focus.call_deferred()
 		"comandos":
+			_on_input_device_changed(player.using_gamepad)
 			_controls_back.grab_focus.call_deferred()
+		"ajustes":
+			ajustes_panel.abrir()
+		"album":
+			album_panel.abrir()
+		"roupas":
+			roupas_panel.abrir()
+		"revanche":
+			revanche_panel.abrir()
 
 
 func close_menus() -> void:
@@ -787,8 +957,13 @@ func close_menus() -> void:
 	select_panel.hide()
 	pause_panel.hide()
 	controls_panel.hide()
+	ajustes_panel.hide()
+	album_panel.hide()
+	roupas_panel.hide()
+	if revanche_panel:
+		revanche_panel.hide()
 	menu_dim.hide()
-	crosshair.show()
+	crosshair.visible = not player.parked and not _parado_no_lugar()
 	get_tree().paused = false
 	_game_started = true
 	if was == "loja":
@@ -799,8 +974,9 @@ func close_menus() -> void:
 		story.start()
 	if not player.using_gamepad:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo.
-	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = true)
+	# Libera o boneco um instante depois, para o A que confirmou o menu não virar pulo (olhando pelo binóculo do
+	# farol, ele continua parado na porta).
+	get_tree().create_timer(0.2).timeout.connect(func() -> void: player.input_enabled = not _parado_no_lugar())
 
 
 # --- campanha: continuar e começar de novo ------------------------------------
@@ -812,9 +988,10 @@ func open_shop() -> void:
 
 ## Select (ou C): puxa o celular do bolso e, meio segundo depois, abre a lojinha. Só fora de luta, a pé.
 func open_phone() -> bool:
-	if story == null or menu_state != "" or _phone_opening or player.dizzy or (ending and ending.busy()):
+	if story == null or menu_state != "" or _phone_opening or player.dizzy or (ending and ending.busy()) \
+			or (pescaria and pescaria.pescando()):
 		return false
-	if player.in_vehicle or player.skating:
+	if player.in_vehicle:
 		show_message("Desça primeiro para usar o celular", Color("#ff9d9d"), 1.6)
 		return false
 	if in_combat():
@@ -840,6 +1017,8 @@ func in_combat() -> bool:
 		if d and d.state != Defense.State.INTERVALO:
 			return true
 	if is_instance_valid(party_mode) and party_mode.running():
+		return true
+	if revanche and revanche.rodando():
 		return true
 	var awake := [SkeletonEnemy.State.PERSEGUINDO, SkeletonEnemy.State.ESPERANDO, SkeletonEnemy.State.PREPARANDO,
 			SkeletonEnemy.State.ATACANDO, SkeletonEnemy.State.ATINGIDO]
@@ -937,7 +1116,7 @@ func exit_vehicle(at: Vector3) -> void:
 
 ## Esconde a mira, os corações, os blasters e a seta do objetivo (cena final e créditos).
 func set_hud_visible(on: bool) -> void:
-	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, shop_marker, wave_label]:
+	for node in [crosshair, hearts_bar, ammo_hud, objective_marker, shop_marker, dourado_marker, wave_label]:
 		(node as CanvasItem).visible = on
 	coins_bar.visible = on and story != null and story.coins_ever
 
@@ -997,8 +1176,6 @@ func _physics_process(_delta: float) -> void:
 
 func _splash() -> void:
 	_splashing = true
-	if skate_park:
-		skate_park.splash()
 	Fx.bubble_pop(self, player.global_position + Vector3.UP * 0.8)
 	Fx.confetti(self, player.global_position + Vector3.UP * 0.8, 20, 4.0)
 	Sfx.play(self, "splash", 0.0, 0.0)
@@ -1144,6 +1321,10 @@ func _build_ui() -> void:
 	shop_marker = ObjectiveMarker.new()
 	shop_marker.coin = true
 	layer.add_child(shop_marker)
+	dourado_marker = ObjectiveMarker.new()
+	dourado_marker.coin = true
+	dourado_marker.rotulo = "Dourado"
+	layer.add_child(dourado_marker)
 	shop_marker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	coins_bar = CoinsBar.new()
 	layer.add_child(coins_bar)
@@ -1205,8 +1386,8 @@ func _build_ui() -> void:
 	tagline.add_theme_font_size_override("font_size", 18)
 	tagline.add_theme_color_override("font_color", Color("#d9a8ff"))
 	sbox.add_child(tagline)
-	for spec in [["Continuar", _continue_campaign], ["Nova campanha", _new_campaign_from_start], ["Sair do jogo", _quit_game]]:
-		var b := _menu_button(spec[0], focus_style)
+	for spec in [["Continuar", _continue_campaign, "continuar"], ["Nova campanha", _new_campaign_from_start, "nova"], ["Menu principal", _go_to_main_menu, "casa"]]:
+		var b := _menu_button(spec[0], spec[2])
 		b.pressed.connect(func() -> void:
 			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 			spec[1].call())
@@ -1224,64 +1405,63 @@ func _build_ui() -> void:
 	_confirm_text.custom_minimum_size = Vector2(380, 0)
 	_confirm_text.add_theme_font_size_override("font_size", 19)
 	qbox.add_child(_confirm_text)
-	for spec in [["Sim, começar do zero", func() -> void: _confirm_action.call()], ["Voltar", func() -> void: open_menu(_confirm_return)]]:
-		var b := _menu_button(spec[0], focus_style)
+	for spec in [["Sim, começar do zero", func() -> void: _confirm_action.call(), "nova"], ["Voltar", func() -> void: open_menu(_confirm_return), "voltar"]]:
+		var b := _menu_button(spec[0], spec[2])
 		b.pressed.connect(func() -> void:
 			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 			spec[1].call())
 		qbox.add_child(b)
 		_confirm_buttons.append(b)
 
-	var box := _menu_box(layer, "Escolha quem vai jogar")
-	select_panel = box.get_parent().get_parent()
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	box.add_child(grid)
-	for i in CHARACTER_ORDER.size():
-		var key: String = CHARACTER_ORDER[i]
-		var button := Button.new()
-		button.text = CHARACTER_LABELS[key]
-		button.custom_minimum_size = Vector2(220, 56)
-		button.add_theme_font_size_override("font_size", 20)
-		button.add_theme_stylebox_override("focus", focus_style)
-		button.pressed.connect(_choose_character.bind(key))
-		button.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
-		grid.add_child(button)
-		_buttons.append(button)
-	_add_menu_hint(box)
+	# Escolha de personagem: cartões com o boneco de cada um (scripts/character_menu.gd).
+	character_menu = CharacterMenu.new()
+	character_menu.game = self
+	layer.add_child(character_menu)
+	character_menu.build()
+	character_menu.chosen.connect(_choose_character)
+	character_menu.back_pressed.connect(_character_menu_back)
+	select_panel = character_menu
+	for key in CHARACTER_ORDER:
+		_buttons.append(character_menu.cards[key])
+	_menu_hints.append(character_menu.hint)
 
-	# Pausa: continuar, trocar de personagem, ver os comandos, começar de novo ou sair.
-	var pbox := _menu_box(layer, "Pausa")
-	pause_panel = pbox.get_parent().get_parent()
-	pause_objective = Label.new()
-	pause_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pause_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	pause_objective.custom_minimum_size = Vector2(320, 0)
-	pause_objective.add_theme_font_size_override("font_size", 18)
-	pause_objective.add_theme_color_override("font_color", Color("#d9a8ff"))
-	pbox.add_child(pause_objective)
-	var pause_specs := [["Continuar", close_menus], ["Trocar de personagem", open_menu.bind("escolha")],
-			["Comandos", open_menu.bind("comandos")], ["Nova campanha", _new_campaign_from_pause], ["Sair do jogo", _quit_game]]
-	if arena:
-		pause_specs.remove_at(3)
-	for spec in pause_specs:
-		var b := _menu_button(spec[0], focus_style)
-		b.pressed.connect(func() -> void:
-			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
-			spec[1].call())
-		pbox.add_child(b)
-		_pause_buttons.append(b)
-	_add_menu_hint(pbox)
+	_build_pause_menu(layer)
+	ajustes_panel = PainelAjustes.new()
+	layer.add_child(ajustes_panel)
+	ajustes_panel.montar(layer)
+	ajustes_panel.hide()
+	# Voltar dos Ajustes: à pausa, com o botão dos Ajustes marcado.
+	ajustes_panel.fechou.connect(func() -> void:
+		if menu_state == "ajustes":
+			open_menu("pausa")
+			_pause_ajustes.grab_focus.call_deferred())
+	roupas_panel = PainelRoupas.new()
+	layer.add_child(roupas_panel)
+	roupas_panel.montar(layer, self)
+	roupas_panel.hide()
+	# Voltar das roupinhas: de volta à lojinha, com o botão marcado.
+	roupas_panel.fechou.connect(func() -> void:
+		if menu_state == "roupas":
+			open_menu("loja")
+			shop_menu.roupinhas.grab_focus.call_deferred())
+	album_panel = PainelAlbum.new()
+	layer.add_child(album_panel)
+	album_panel.montar(layer, self)
+	album_panel.hide()
+	album_panel.fechou.connect(func() -> void:
+		if menu_state == "album":
+			open_menu("pausa")
+			_pause_album.grab_focus.call_deferred())
 
 	# Comandos: a lista do aparelho em uso (teclado e mouse ou controle).
 	var cbox := _menu_box(layer, "Comandos")
 	controls_panel = cbox.get_parent().get_parent()
-	controls_label = Label.new()
-	controls_label.add_theme_font_size_override("font_size", 19)
-	cbox.add_child(controls_label)
-	_controls_back = _menu_button("Voltar", focus_style)
+	controls_grid = GridContainer.new()
+	controls_grid.columns = 2
+	controls_grid.add_theme_constant_override("h_separation", 14)
+	controls_grid.add_theme_constant_override("v_separation", 5)
+	cbox.add_child(controls_grid)
+	_controls_back = _menu_button("Voltar", "voltar")
 	_controls_back.pressed.connect(func() -> void:
 		Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
 		open_menu("pausa"))
@@ -1345,6 +1525,7 @@ func _on_weapon_locked(id: String) -> void:
 
 func show_guardian(b: Boss) -> void:
 	boss_bar.track(b)
+	Vozes.falar(self, String(b.get_script().resource_path).get_file().get_basename().trim_prefix("boss_"))
 	banner(b.display_name, b.subtitle, Color("#ff9d7a"), 2.2)
 
 
@@ -1405,32 +1586,153 @@ func add_boss(b: Boss, pos: Vector3) -> void:
 	b.global_position = pos
 
 
+## Pausa (refeita em 2026-10-29 para criança): à esquerda o cartão de quem está jogando, com o boneco de verdade
+## (clicar nele também leva à troca de personagem); à direita os botões grandes com ícone colorido; embaixo o
+## objetivo, com o ícone de alvo. Com o Faísca, o cartão mostra as estrelinhas.
+func _build_pause_menu(layer: CanvasLayer) -> void:
+	var pbox := _menu_box(layer, "Pausa")
+	pause_panel = pbox.get_parent().get_parent()
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	pbox.add_child(row)
+	_pause_card = PanelContainer.new()
+	_pause_card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_pause_card.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pause_card.gui_input.connect(func(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT and _pause_switch.visible:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			open_menu("escolha"))
+	row.add_child(_pause_card)
+	var who := VBoxContainer.new()
+	who.add_theme_constant_override("separation", 4)
+	_pause_card.add_child(who)
+	var frame := Panel.new()
+	frame.custom_minimum_size = Vector2(196, 226)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	frame.add_theme_stylebox_override("panel", MenuKit.box(Color.WHITE, 14))
+	who.add_child(frame)
+	_pause_portrait = Portrait.new(frame.custom_minimum_size)
+	frame.add_child(_pause_portrait)
+	_pause_portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Bolinha roxa de trocar no canto da foto, a mesma do botão.
+	_pause_swap_icon = MenuIcon.new("trocar", MenuKit.ICON_COLORS.trocar, 38)
+	frame.add_child(_pause_swap_icon)
+	_pause_swap_icon.position = frame.custom_minimum_size - Vector2(46, 46)
+	_pause_name = Label.new()
+	_pause_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pause_name.add_theme_font_size_override("font_size", 26)
+	who.add_child(_pause_name)
+	# Álbum de figurinhas (item 7 da lista de melhorias): embaixo do cartão de quem joga; o direcional para a esquerda
+	# chega nele de qualquer botão da pausa.
+	if not arena:
+		var vao := Control.new()
+		vao.custom_minimum_size = Vector2(0, 8)
+		who.add_child(vao)
+		_pause_album = _menu_button("Álbum", "album")
+		_pause_album.custom_minimum_size = Vector2(196, 56)
+		_pause_album.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			open_menu("album"))
+		who.add_child(_pause_album)
+	var buttons := VBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	row.add_child(buttons)
+	# O "Menu principal" fica perto do Sair: logo abaixo do Continuar, um toque a mais no direcional tirava da ilha.
+	var pause_specs := [["Continuar", close_menus, "continuar"], ["Trocar de personagem", open_menu.bind("escolha"), "trocar"],
+			["Comandos", open_menu.bind("comandos"), "comandos"], ["Ajustes", open_menu.bind("ajustes"), "ajustes"],
+			["Nova campanha", _new_campaign_from_pause, "nova"], ["Menu principal", _go_to_main_menu, "casa"],
+			["Sair do jogo", _quit_game, "sair"]]
+	if arena:
+		pause_specs.remove_at(4)
+	for spec in pause_specs:
+		var b := _menu_button(spec[0], spec[2])
+		b.pressed.connect(func() -> void:
+			Sfx.play(ui_layer, "ui_ok", 0.0, 0.0)
+			spec[1].call())
+		buttons.add_child(b)
+		_pause_buttons.append(b)
+	_pause_switch = _pause_buttons[1]
+	_pause_ajustes = _pause_buttons[3]
+	if _pause_album:
+		for b in _pause_buttons:
+			b.focus_neighbor_left = b.get_path_to(_pause_album)
+		_pause_album.focus_neighbor_right = _pause_album.get_path_to(_pause_buttons[0])
+		_pause_album.focus_neighbor_left = _pause_album.get_path_to(_pause_album)
+		_pause_album.focus_neighbor_top = _pause_album.get_path_to(_pause_album)
+		_pause_album.focus_neighbor_bottom = _pause_album.get_path_to(_pause_album)
+	_pause_goal = PanelContainer.new()
+	var goal_style := MenuKit.box(Color("#2a2340"), 14)
+	goal_style.set_content_margin_all(10)
+	goal_style.content_margin_left = 12
+	goal_style.content_margin_right = 16
+	_pause_goal.add_theme_stylebox_override("panel", goal_style)
+	pbox.add_child(_pause_goal)
+	var goal_row := HBoxContainer.new()
+	goal_row.add_theme_constant_override("separation", 12)
+	_pause_goal.add_child(goal_row)
+	_pause_goal_icon = MenuIcon.new("objetivo", MenuKit.ICON_COLORS.objetivo, 40)
+	goal_row.add_child(_pause_goal_icon)
+	pause_objective = Label.new()
+	pause_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pause_objective.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pause_objective.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pause_objective.custom_minimum_size = Vector2(480, 0)
+	pause_objective.add_theme_font_size_override("font_size", 19)
+	pause_objective.add_theme_color_override("font_color", Color("#e6d6ff"))
+	goal_row.add_child(pause_objective)
+	_add_menu_hint(pbox)
+
+
+## Mostra na pausa quem está jogando: o boneco e o nome.
+func _refresh_pause_card() -> void:
+	var who := player.character_name
+	_pause_portrait.show_character(who)
+	_pause_portrait.vestir(player.chapeu)
+	_pause_name.text = CHARACTER_LABELS.get(who, "")
+	_pause_card.add_theme_stylebox_override("panel", _pause_card_style(Portrait.BACKGROUNDS.get(who, Color.WHITE)))
+	_pause_swap_icon.visible = _pause_switch.visible
+	_pause_card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if _pause_switch.visible else Control.CURSOR_ARROW
+	_pause_goal.visible = pause_objective.text != ""
+
+
+func _pause_card_style(color: Color) -> StyleBoxFlat:
+	var s := MenuKit.box(MenuKit.CARD, 20, color.darkened(0.15), 3)
+	s.set_content_margin_all(8)
+	s.content_margin_bottom = 10
+	return s
+
+
+## Voltar da escolha de personagem: no começo do jogo vai ao menu inicial; vindo da pausa, à pausa.
+func _character_menu_back() -> void:
+	if _game_started:
+		open_menu("pausa")
+	elif story:
+		open_menu("inicio")
+
+
 ## Caixa de menu centralizada: CenterContainer > PanelContainer > VBox com título. Devolve a VBox.
 func _menu_box(layer: CanvasLayer, title_text: String) -> VBoxContainer:
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", MenuKit.panel_style())
 	center.add_child(panel)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 14)
+	box.add_theme_constant_override("separation", 12)
 	panel.add_child(box)
 	var title := Label.new()
 	title.text = title_text
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", MenuKit.GOLD)
 	box.add_child(title)
 	return box
 
 
-func _menu_button(text: String, focus_style: StyleBox) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(320, 52)
-	b.add_theme_font_size_override("font_size", 20)
-	b.add_theme_stylebox_override("focus", focus_style)
-	b.focus_entered.connect(func() -> void: Sfx.play(ui_layer, "ui_mover", 0.0, 0.0))
-	return b
+func _menu_button(text: String, icon: String) -> Button:
+	return MenuKit.icon_button(text, icon, ui_layer)
 
 
 func _add_menu_hint(box: VBoxContainer) -> void:
@@ -1438,6 +1740,7 @@ func _add_menu_hint(box: VBoxContainer) -> void:
 	label.text = MENU_KEYBOARD
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	box.add_child(label)
 	_menu_hints.append(label)
 
@@ -1462,6 +1765,7 @@ func _on_player_damaged() -> void:
 ## Tonto: deita com estrelinhas, a tela escurece e o aventureiro volta na última bandeira.
 func _on_player_dizzy() -> void:
 	dizzy_label.visible = true
+	Vozes.falar(self, "tonto")
 	await _wait(2.4)
 	var tw := fade.create_tween()
 	tw.tween_property(fade, "modulate:a", 1.0, 0.4)
@@ -1489,6 +1793,8 @@ func _on_checkpoint_activated(cp: Checkpoint) -> void:
 
 
 func _on_enemy_defeated(e: SkeletonEnemy) -> void:
+	if story:
+		story.marcar_derrota(e.type_name)
 	var wave := e.has_meta("onda")
 	var heart_chance := 0.12 if wave else heart_drop_chance
 	var crate_chance := 0.15 if wave else AMMO_DROP_CHANCE
@@ -1530,6 +1836,7 @@ func show_message(text: String, color := Color.WHITE, seconds := 1.2) -> void:
 
 
 func _process(_delta: float) -> void:
+	_regenerar(_delta)
 	if is_instance_valid(player) and crosshair:
 		crosshair.reload_progress = player.reload_progress()
 		crosshair.scoped = player.is_zoomed()
@@ -1544,20 +1851,32 @@ func _process(_delta: float) -> void:
 			hud = d.hud_text()
 		elif is_instance_valid(party_mode) and party_mode.running():
 			hud = party_mode.hud_text()
+		elif revanche and revanche.rodando():
+			hud = revanche.hud_text()
 		elif kart_race and kart_race.driving():
 			hud = kart_race.hud_text()
-		elif skate_park and skate_park.riding():
-			hud = skate_park.hud_text()
 		wave_label.text = hud
 		var button := "B" if player.using_gamepad else "E"
 		var hint := ""
 		if menu_state == "" and kart_race and kart_race.state == "a_pe" and kart_race.nearest:
 			hint = "Aperte %s para dirigir: %s" % [button, kart_race.nearest.display_name]
-		elif menu_state == "" and skate_park and skate_park.state == "a_pe" and skate_park.near:
-			hint = "Aperte %s para pegar o skate" % button
-		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat():
+		elif menu_state == "" and farol and farol.dica(button) != "":
+			hint = farol.dica(button)
+		elif menu_state == "" and pescaria and pescaria.dica(button) != "":
+			hint = pescaria.dica(button)
+		elif menu_state == "" and esconde and esconde.dica(button) != "":
+			hint = esconde.dica(button)
+		elif menu_state == "" and revanche and revanche.dica(button) != "":
+			hint = revanche.dica(button)
+		elif menu_state == "" and copa and copa.dica(button) != "":
+			hint = copa.dica(button)
+		elif menu_state == "" and fim_de_ano and fim_de_ano.dica(button) != "":
+			hint = fim_de_ano.dica(button)
+		elif menu_state == "" and story.coins_ever and not story.shop_visited and not in_combat() and not player.parked:
 			# Até a primeira vez, um aviso ensina o botão da lojinha do celular.
 			hint = "%s para abrir a lojinha no celular" % phone_button().capitalize()
+		if copa and copa.na_cena:
+			hint = ""
 		hint_label.text = hint
 		hint_label.visible = hint != ""
 		var view := get_viewport().get_visible_rect().size
@@ -1565,10 +1884,76 @@ func _process(_delta: float) -> void:
 		wave_label.position = Vector2(view.x * 0.5 - wave_label.size.x * 0.5, top)
 		banner_title.position = Vector2(view.x * 0.5 - banner_title.size.x * 0.5, view.y * 0.2)
 		banner_subtitle.position = Vector2(view.x * 0.5 - banner_subtitle.size.x * 0.5, view.y * 0.2 + 56.0)
-		var show_target := menu_state == "" and not (ending and ending.busy())
+		var show_target := menu_state == "" and not (ending and ending.busy()) and not (pescaria and pescaria.pescando()) \
+				and not (copa and copa.na_cena)
 		var view_cam := get_viewport().get_camera_3d()
-		objective_marker.update_marker(view_cam, story.objective_target if show_target else Vector3.INF, player.global_position)
-		shop_marker.update_marker(view_cam, story.shop_target() if show_target else Vector3.INF, player.global_position)
+		var target := story.objective_target
+		var shop_target := story.shop_target()
+		objective_marker.update_marker(view_cam, target if show_target else Vector3.INF, player.global_position)
+		_som_de_chegada(target if show_target else Vector3.INF)
+		shop_marker.update_marker(view_cam, shop_target if show_target else Vector3.INF, player.global_position)
+		dourado_marker.update_marker(view_cam, caca.alvo() if show_target and caca else Vector3.INF, player.global_position)
+
+
+## A figura do objetivo vai na seta e na pausa (item 4 da lista de melhorias, 2026-11-10).
+func _mostrar_figura_do_objetivo() -> void:
+	var icone: String = story.objective_icon
+	objective_marker.icone = icone
+	if _pause_goal_icon:
+		_pause_goal_icon.kind = icone if icone != "" else "objetivo"
+		_pause_goal_icon.color = MenuKit.ICON_COLORS.get(_pause_goal_icon.kind, MenuKit.ICON_COLORS.objetivo)
+		_pause_goal_icon.queue_redraw()
+
+
+## Chegou perto do objetivo (onde a seta some): um "plim" e um brilho, uma vez por lugar.
+func _som_de_chegada(target: Vector3) -> void:
+	if target == Vector3.INF or player.global_position.distance_to(target) > ObjectiveMarker.NEAR:
+		return
+	if _chegou_em != Vector3.INF and _chegou_em.distance_to(target) < 1.0:
+		return
+	_chegou_em = target
+	Sfx.play(self, "estrelinha", -2.0, 0.0)
+	Fx.confetti(self, player.global_position + Vector3.UP * 2.2, 14, 2.5)
+
+
+## Modo Fácil (Ajustes): fora de luta, os corações voltam sozinhos, um a cada REGEN_FACIL segundos.
+func _regenerar(delta: float) -> void:
+	if not Ajustes.facil or story == null or not is_instance_valid(player) or player.dizzy or menu_state != "" \
+			or player.hearts >= player.max_hearts or in_combat():
+		_regen = 0.0
+		return
+	_regen += delta
+	if _regen >= REGEN_FACIL:
+		_regen = 0.0
+		if player.heal(1):
+			Sfx.play(self, "coracao", -6.0, 0.0)
+
+
+## Olhando pelo binóculo do farol.
+func _no_mirante() -> bool:
+	return farol != null and farol.no_mirante
+
+
+## Esconde os bilhetes que a campanha já achou.
+func atualizar_bilhetes() -> void:
+	if story == null:
+		return
+	for b in bilhetes_nos:
+		if is_instance_valid(b):
+			b.visible = not b.id in story.bilhetes
+
+
+## Parado num lugar, com outra câmera: no binóculo do farol ou pescando na ponta do cais.
+func _parado_no_lugar() -> bool:
+	return _no_mirante() or (pescaria != null and pescaria.pescando())
+
+
+## Pausa (ou menu inicial) > "Menu principal": salva e volta para a escolha entre a ilha e o Faísca.
+func _go_to_main_menu() -> void:
+	if story and _game_started:
+		story.save()
+	get_tree().paused = false
+	get_tree().change_scene_to_file(MenuPrincipal.CENA)
 
 
 func _choose_character(key: String) -> void:
@@ -1582,11 +1967,32 @@ func _choose_character(key: String) -> void:
 func _on_input_device_changed(gamepad: bool) -> void:
 	for label in _menu_hints:
 		label.text = MENU_GAMEPAD if gamepad else MENU_KEYBOARD
-	if controls_label:
-		var lines := PackedStringArray()
-		for row in (CONTROLS_GAMEPAD if gamepad else CONTROLS_KEYBOARD):
-			lines.append("%s:  %s" % row)
-		controls_label.text = "\n".join(lines)
+	if controls_grid:
+		var rows := CONTROLS_GAMEPAD if gamepad else CONTROLS_KEYBOARD
+		for child in controls_grid.get_children():
+			controls_grid.remove_child(child)
+			child.queue_free()
+		for row in rows:
+			var what := Label.new()
+			what.text = row[0]
+			what.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			what.add_theme_font_size_override("font_size", 18)
+			what.add_theme_color_override("font_color", Color(1, 1, 1, 0.78))
+			controls_grid.add_child(what)
+			var chip := PanelContainer.new()
+			chip.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			var cs := MenuKit.box(MenuKit.BUTTON_HOVER, 10)
+			cs.content_margin_left = 10
+			cs.content_margin_right = 10
+			cs.content_margin_top = 1
+			cs.content_margin_bottom = 1
+			chip.add_theme_stylebox_override("panel", cs)
+			var key := Label.new()
+			key.text = row[1]
+			key.add_theme_font_size_override("font_size", 18)
+			key.add_theme_color_override("font_color", Color("#ffe08a"))
+			chip.add_child(key)
+			controls_grid.add_child(chip)
 
 
 func _on_hit_confirmed(region: String, _damage: float) -> void:
@@ -1618,6 +2024,25 @@ func _shot(file_name: String) -> void:
 		FileAccess.open(dir + ".gdignore", FileAccess.WRITE).store_string("")
 	get_viewport().get_texture().get_image().save_png(dir + file_name)
 	print("captura: ", file_name)
+
+
+## Fotos da vegetação no jogo de verdade (pedido do usuário em 2026-11-11: "algo mais abundante de vegetação"): o
+## personagem posto no campo, no morro e na mata, visto pela câmera do jogo, com a grama abrindo em volta dele.
+## Saída: tools/capturas/veg_*.png (precisa de janela).
+func _run_vegetation_capture() -> void:
+	player.god_mode = true
+	var espaco := get_world_3d().direct_space_state
+	for spec in [["veg_campo", Vector2(-60, 20), 0.0], ["veg_morro", Vector2(30, 50), -PI / 2.0],
+			["veg_campo_oeste", Vector2(-100, -40), -PI / 2.0], ["veg_mata", Vector2(-20, -150), 0.0]]:
+		var xz: Vector2 = spec[1]
+		var r := espaco.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(xz.x, 200, xz.y), Vector3(xz.x, -50, xz.y), 1))
+		player.global_position = (r.position if not r.is_empty() else Vector3(xz.x, 5, xz.y)) + Vector3.UP * 0.3
+		player.set_yaw(float(spec[2]))
+		await _wait(1.0)
+		await _wait_until(func() -> bool: return vegetacao == null or vegetacao.pronta(), 5.0)
+		await _wait(0.3)
+		await _shot(spec[0] + ".png")
+	get_tree().quit()
 
 
 func _run_capture() -> void:
@@ -1819,7 +2244,7 @@ func _run_gamepad_test() -> void:
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
 	var focus_after := get_viewport().gui_get_focus_owner()
 	all_ok = _check("direcional move o foco no menu", focus_after != focus_before,
-			"(%s -> %s)" % [focus_before.text, focus_after.text if focus_after else "nada"]) and all_ok
+			"(%s -> %s)" % [focus_before.name, focus_after.name if focus_after else "nada"]) and all_ok
 	await _joy_button(JOY_BUTTON_A)
 	await _wait(0.3)
 	all_ok = _check("A escolhe o aventureiro e fecha o menu", not select_panel.visible,
@@ -1958,6 +2383,15 @@ func _run_gamepad_test() -> void:
 	await _joy_button(JOY_BUTTON_DPAD_DOWN)
 	await _joy_button(JOY_BUTTON_A)
 	all_ok = _check("pausa leva à escolha de personagem", select_panel.visible and get_tree().paused) and all_ok
+	all_ok = _check("a escolha marca quem está jogando, com a etiqueta", get_viewport().gui_get_focus_owner() == character_menu.cards[before]
+			and character_menu._tags[before].visible and character_menu._portraits[before].key == before) and all_ok
+	# Para baixo vai ao Voltar, que volta à pausa; e a pausa leva de novo à escolha.
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	var on_back := get_viewport().gui_get_focus_owner() == character_menu.back_button
+	await _joy_button(JOY_BUTTON_A)
+	all_ok = _check("Voltar da escolha leva de volta à pausa", on_back and pause_panel.visible and menu_state == "pausa") and all_ok
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	await _joy_button(JOY_BUTTON_A)
 	await _joy_button(JOY_BUTTON_DPAD_RIGHT if before == CHARACTER_ORDER[0] else JOY_BUTTON_DPAD_LEFT)
 	await _joy_button(JOY_BUTTON_A)
 	await _wait(0.3)
@@ -2285,6 +2719,31 @@ func _run_island_test() -> void:
 	player.global_position = top.global_position + Vector3(0, 0.5, 1.0)
 	await _wait(0.6)
 	all_ok = _check("bandeira do topo do Morro vira ponto de retorno", current_checkpoint == top) and all_ok
+
+	# Vielas da cidade (pedido do usuário em 2026-10-29): de uma rua à outra pelo meio do quarteirão, passando pelo
+	# jardinzinho, com a câmera sempre fora dos prédios.
+	# O esqueleto que dorme em (30, 110) acordava e, conforme o tipo sorteado, travava a viela: sai antes.
+	for e in enemies.duplicate():
+		if is_instance_valid(e) and Vector2(e.global_position.x - 43.5, e.global_position.z - 130.0).length() < 40.0:
+			e.queue_free()
+	await _stand(Vector3(43.5, 0, 111))
+	var alvo := Vector3(43.5, 0, 152)
+	var camera_fora := true
+	var espaco := player.get_world_3d().direct_space_state
+	var ponto := PhysicsPointQueryParameters3D.new()
+	ponto.collision_mask = 1
+	player.set_yaw(atan2(-(alvo - player.global_position).x, -(alvo - player.global_position).z))
+	Input.action_press("frente")
+	for i in int(10.0 * Engine.physics_ticks_per_second):
+		await get_tree().physics_frame
+		ponto.position = player.camera.global_position
+		camera_fora = camera_fora and espaco.intersect_point(ponto, 1).is_empty()
+		if player.global_position.z > 148.0:
+			break
+	Input.action_release("frente")
+	all_ok = _check("anda pela viela do quarteirão até a rua do outro lado", player.global_position.z > 147.0 and absf(player.global_position.x - 43.5) < 2.5,
+			"(%.1f, %.1f)" % [player.global_position.x, player.global_position.z]) and all_ok
+	all_ok = _check("na viela, a câmera não entra nos prédios", camera_fora) and all_ok
 
 	print("ILHA OK" if all_ok else "ILHA COM FALHAS")
 	get_tree().quit()
@@ -3591,9 +4050,7 @@ func _run_shop_capture() -> void:
 
 ## Atividades extras: barcos no mar; veículos do box (vazios, entrar perto de um, o aventureiro da cintura
 ## para cima no banco, dirigir, LARGADA começa a corrida, voltas, chegada, descer na pista volta para a vaga,
-## deixar pela ilha e se afastar 50 m volta para a vaga, cair no mar); skate (pegar, perna empurrando,
-## marca da sessão, half-pipe, pontos, tombo, fim com moedas, descer deixa no chão, longe volta para a
-## pista). Uso: godot --headless --path . -- --atividades
+## deixar pela ilha e se afastar 50 m volta para a vaga, cair no mar). Uso: godot --headless --path . -- --atividades
 func _run_activities_test() -> void:
 	var all_ok := true
 	player.god_mode = true
@@ -3646,11 +4103,10 @@ func _run_activities_test() -> void:
 	all_ok = _check("acelera e sai da vaga (para a pista, a leste)", car.global_position.x > x0 + 5.0 and kart_race.state == "dirigindo",
 			"(andou %.1f m)" % (car.global_position.x - x0)) and all_ok
 	# Entra pela LARGADA, vindo de fora da pista.
-	var zone := kart_race._entry_zone
-	car.global_position = Vector3(zone.position.x - 4.0, 0.4, zone.get_center().y)
+	car.global_position = kart_race.entry_center + kart_race.entry_out * 12.0 + Vector3.UP * 0.6
 	await get_tree().physics_frame
 	await get_tree().physics_frame
-	car.global_position = Vector3(zone.get_center().x, 0.4, zone.get_center().y)
+	car.global_position = kart_race.entry_center + Vector3.UP * 0.6
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	all_ok = _check("entrar pela LARGADA começa a corrida na largada", kart_race.state == "contagem"
@@ -3662,8 +4118,10 @@ func _run_activities_test() -> void:
 			await get_tree().physics_frame
 			await get_tree().physics_frame
 	await _wait(0.3)
-	all_ok = _check("três voltas: chegada com tempo, recorde e moedas, e continua dirigindo", kart_race.state == "dirigindo"
-			and story.records.kart > 0.0 and story.coins == coins0 + KartRace.COINS + KartRace.RECORD_BONUS, "(%d moedas)" % (story.coins - coins0)) and all_ok
+	# Pulando de marca em marca, chega antes dos rivais: 1º lugar, com o bônus.
+	all_ok = _check("três voltas: chegada em 1º com tempo, recorde e moedas, e continua dirigindo", kart_race.state == "dirigindo"
+			and kart_race.place == 1 and story.records.kart > 0.0 and story.coins == coins0 + KartRace.COINS + KartRace.RECORD_BONUS + KartRace.WIN_BONUS,
+			"(%dº, %d moedas)" % [kart_race.place, story.coins - coins0]) and all_ok
 	await _press_key(KEY_E)
 	await _wait(0.3)
 	all_ok = _check("descer na pista: aventureiro fora dela e o carrinho de volta na vaga", kart_race.state == "a_pe" and player.visible
@@ -3738,96 +4196,11 @@ func _run_activities_test() -> void:
 	all_ok = _check("caiu no mar: o carrinho volta para a vaga", kart_race.state == "a_pe" and blue.is_home() and player.visible) and all_ok
 	await _wait_until(func() -> bool: return not _splashing, 4.0)
 
-	# Skate.
-	all_ok = _check("pista de skate perto da cidade", skate_park.center.distance_to(Vector3(-72, 0, 98)) < 50.0,
-			"(%.0f m da esquina)" % skate_park.center.distance_to(Vector3(-72, 0, 98))) and all_ok
-	await _stand(skate_park.board.global_position + Vector3(1.5, 0, 0))
-	await _wait(0.3)
-	all_ok = _check("perto do skate, o aviso chama para pegar", skate_park.near and hint_label.visible and "skate" in hint_label.text) and all_ok
-	await _press_key(KEY_E)
-	await _wait(0.2)
-	all_ok = _check("B / E pega o skate (some do chão, aparece nos pés)", player.skating and skate_park.state == "andando"
-			and not skate_park.board.visible and is_instance_valid(player._board) and is_instance_valid(player._rider)) and all_ok
-	# Perna empurrando: o pé do impulso desce até o chão e o skate ganha velocidade.
-	player.global_position = _ground_point(skate_park.center + Vector3(-8, 0, 14)) + Vector3.UP * 0.3
-	player._skate_heading = PI / 2.0
-	player._skate_speed = 0.0
-	await _wait(0.3)
-	var lowest := INF
-	Input.action_press("frente")
-	var t := 0.0
-	while t < 1.5:
-		await get_tree().process_frame
-		t += get_process_delta_time()
-		lowest = minf(lowest, player._rider.right_foot_drop)
-	Input.action_release("frente")
-	all_ok = _check("dar impulso: o pé direito desce até o chão e o skate anda", player._skate_speed > 3.0
-			and lowest < -Player.SKATE_LIFT * 0.6, "(%.1f m/s, pé %.2f abaixo da tábua)" % [player._skate_speed, -lowest]) and all_ok
-	player.god_mode = false
-	var skate_h := player.hearts
-	var skate_v := player._skate_speed
-	player.take_damage(1, player.global_position + Vector3(1, 0, 0), "teste")
-	player.god_mode = true
-	all_ok = _check("no skate, golpe tira coração e o skate perde o embalo (sem empurrão)", player.hearts == skate_h - 1 and player.skating
-			and player._skate_speed < skate_v * 0.5 and player._knockback == Vector3.ZERO, "(%.1f -> %.1f m/s)" % [skate_v, player._skate_speed]) and all_ok
-	var yaw0 := player.get_yaw()
-	Input.action_press("olhar_direita")
-	await _wait(0.4)
-	Input.action_release("olhar_direita")
-	await _wait(0.5)
-	all_ok = _check("no skate, a câmera gira livre (não volta na hora)", absf(angle_difference(player.get_yaw(), yaw0)) > 0.5,
-			"(%.1f)" % angle_difference(player.get_yaw(), yaw0)) and all_ok
-	# Passar pela marca da sessão.
-	player.global_position = skate_park.session_spot + Vector3.UP * 0.3
-	await _wait(0.2)
-	all_ok = _check("passar pela marca SESSÃO começa a sessão de pontos", skate_park.state == "sessao") and all_ok
-	player.global_position = skate_park.center + Vector3(-5, 0.5, -10)
-	player._skate_heading = PI
-	player._skate_speed = 11.0
-	player.velocity = Vector3(0, 0, -11)
-	await get_tree().physics_frame
-	var top := -INF
-	var came_back := false
-	t = 0.0
-	while t < 4.0:
-		await get_tree().physics_frame
-		t += get_physics_process_delta_time()
-		top = maxf(top, player.global_position.y)
-		if top > 1.5 and player.velocity.z > 1.0:
-			came_back = true
-	all_ok = _check("no half-pipe o skate sobe a rampa e volta", top > 1.5 and came_back, "(subiu %.1f m)" % top) and all_ok
-	var s0 := skate_park.score
-	player.skate_landed.emit(1.0, TAU * 1.02, true)
-	all_ok = _check("pulo com giro 360 vale pontos (ar + meias voltas)", skate_park.score == s0 + SkatePark.trick_points(1.0, TAU * 1.02)
-			and SkatePark.trick_points(1.0, TAU * 1.02) == 400 and SkatePark.trick_name(TAU * 1.02) == "Giro 360", "(+%d)" % (skate_park.score - s0)) and all_ok
-	var s1 := skate_park.score
-	player.skate_landed.emit(1.0, PI, false)
-	all_ok = _check("pousar atravessado é tombo, sem pontos", skate_park.score == s1) and all_ok
-	var coins1 := story.coins
-	skate_park.time_left = 0.05
-	await _wait(0.2)
-	all_ok = _check("fim da sessão: recorde e moedas, e continua no skate", skate_park.state == "andando" and player.skating
-			and story.records.skate == skate_park.score and story.coins == coins1 + mini(skate_park.score / 100, SkatePark.MAX_COINS),
-			"(%d pontos)" % skate_park.score) and all_ok
-	# Descer pela ilha: o skate fica no chão; longe, volta para a pista.
-	var street := _ground_point(Vector3(-17.5, 0, 130))
-	player.global_position = street + Vector3.UP * 0.3
-	player._skate_speed = 0.0
-	player.velocity = Vector3.ZERO
-	await _wait(0.3)
-	await _press_key(KEY_E)
-	await _wait(0.2)
-	all_ok = _check("B / E desce: o skate fica no chão onde parou", not player.skating and skate_park.state == "a_pe"
-			and skate_park.board.visible and skate_park.board.global_position.distance_to(street) < 3.0 and not is_instance_valid(player._rider),
-			"(skate %s, rua %s, estado %s, skating %s)" % [skate_park.board.global_position.snappedf(0.1), street.snappedf(0.1), skate_park.state, player.skating]) and all_ok
-	await _stand(street + Vector3(0, 0, 60))
-	await _wait(0.3)
-	all_ok = _check("a mais de 50 m o skate volta para a pista", skate_park.board_at_home()) and all_ok
 	print("ATIVIDADES OK" if all_ok else "ATIVIDADES COM FALHAS")
 	get_tree().quit()
 
 
-## Fotos dos veículos com o aventureiro no banco (os dois personagens) e do impulso no skate, de lado (precisa de janela).
+## Fotos dos veículos com o aventureiro no banco (os dois personagens) (precisa de janela).
 ## Uso: godot --path . -- --veiculos-captura
 func _run_vehicles_capture() -> void:
 	player.god_mode = true
@@ -3852,25 +4225,11 @@ func _run_vehicles_capture() -> void:
 					v.global_position + Vector3.UP * 0.8, 50.0)
 			v.park()
 			n += 1
-	# Impulso no skate, de lado, num trecho plano da praça.
-	player.set_character("menina")
-	await _stand(_ground_point(Vector3(112, 0, 0)))
-	player.start_skating()
-	player._skate_heading = PI / 2.0
-	player.visual.rotation.y = PI / 2.0
-	await _wait(0.3)
-	player.force_skate_push = true
-	await _wait(0.4)
-	for k in 8:
-		await _wait(0.05)
-		var p := player.global_position
-		await _art_shot(out + "v1%d_skate_impulso.png" % k, Vector2i(800, 600), p + Vector3(1.2, 1.3, 4.6), p + Vector3(1.0, 0.9, 0), 45.0)
-	player.force_skate_push = false
 	print("capturas dos veículos em tools/capturas/")
 	get_tree().quit()
 
 
-## Fotos das atividades extras (precisa de janela): pista de kart, pista de skate e barcos no mar.
+## Fotos das atividades extras (precisa de janela): pista de kart e barcos no mar.
 ## Uso: godot --path . -- --atividades-captura
 func _run_activities_capture() -> void:
 	player.god_mode = true
@@ -3878,30 +4237,43 @@ func _run_activities_capture() -> void:
 	await _wait(0.8)
 	var out := "res://tools/capturas/"
 	var size := Vector2i(1280, 720)
-	var kart := Vector3(125, 0, 15)
-	var skate := skate_park.center
-	await _art_shot(out + "a01_kart_de_cima.png", size, kart + Vector3(0, 95, 0.5), kart, 50.0)
-	await _art_shot(out + "a02_kart_largada.png", size, kart + Vector3(-34, 9, 28), kart + Vector3(-20, 1, 8), 60.0)
-	await _art_shot(out + "a03_kart_curva.png", size, kart + Vector3(10, 12, -50), kart + Vector3(0, 0, -30), 60.0)
-	await _art_shot(out + "a04_skate_de_cima.png", size, skate + Vector3(0, 70, 0.5), skate, 50.0)
-	await _art_shot(out + "a05_skate_lado.png", size, skate + Vector3(18, 12, 34), skate + Vector3(-2, 1, -4), 60.0)
-	await _art_shot(out + "a06_half_pipe.png", size, skate + Vector3(-12, 6, -2), skate + Vector3(-8, 1, -16), 60.0)
+	# A pista em 8 (2026-10-29): de cima, a ponte do cruzamento, a largada com o box e a volta sul com a lombada.
+	var kart := Vector3(118, 0, 0)
+	var bridge: Vector3 = KartCircuit.at_point(KartCircuit.BRIDGE).pos
+	await _art_shot(out + "a01_kart_de_cima.png", size, kart + Vector3(0, 205, 0.5), kart, 50.0)
+	await _art_shot(out + "a02_kart_ponte.png", size, bridge + Vector3(-30, 6, -12), bridge + Vector3(0, -1, 0), 60.0)
+	await _art_shot(out + "a03_kart_largada.png", size, kart_race.paddock + Vector3(-10, 9, 6), kart_race.entry_center + Vector3(6, 0, -10), 60.0)
+	await _art_shot(out + "a03b_kart_volta_sul.png", size, Vector3(110, 14, 112), Vector3(130, 0, 60), 60.0)
+	await _art_shot(out + "a03c_kart_rampa_do_box.png", size, kart_race.entry_center + kart_race.entry_out * 14.0 + Vector3(0, 4, 0) - Vector3(kart_race.entry_out.z, 0, -kart_race.entry_out.x) * 10.0,
+			kart_race.entry_center + kart_race.entry_out * 4.0, 60.0)
 	await _art_shot(out + "a07_barcos_cais.png", size, Vector3(0, 8, 228), Vector3(0, 0, 275), 65.0)
-	await _art_shot(out + "a14_skate_e_cidade.png", size, Vector3(-55, 30, 118), skate + Vector3(-5, 0, -5), 55.0)
 	await _art_shot(out + "a15_fazenda_nova.png", size, Vector3(-120, 22, 30), Vector3(-120, 0, -6), 55.0)
 	var sea: SeaTraffic = get_node("Barcos")
 	for k in sea._ships.size():
 		var ship: Node3D = sea._ships[k].no
 		var from := ship.global_position * 0.62 + Vector3.UP * 6.0
 		await _art_shot(out + "a08_navio_%d.png" % k, size, from, ship.global_position + Vector3.UP * 8.0, 40.0)
-	# Em ação: kart andando (câmera do kart) e skate no ar no half-pipe.
+	# Vielas no meio dos quarteirões e a cerca do pasto, agora sólida (2026-10-29).
+	await _art_shot(out + "a16_vielas_da_cidade.png", size, Vector3(78, 34, 96), Vector3(40, 0, 132), 55.0)
+	await _art_shot(out + "a17_dentro_da_viela.png", size, Vector3(42, 2.2, 112), Vector3(40, 1.5, 140), 65.0)
+	# Largada com os dois rivais (2026-10-29), na contagem.
+	await _stand(kart_race.paddock)
+	var grid_car: Kart = kart_race.vehicles[0]
+	kart_race.enter(grid_car)
+	kart_race._start_race()
+	await _wait(0.6)
+	var g := kart_race.start
+	await _art_shot(out + "a03d_largada_com_rivais.png", size, g.origin + g.basis.z.normalized() * 11.0 + Vector3.UP * 3.0, g.origin + Vector3.UP * 0.8, 55.0)
+	kart_race.leave(true)
+	await _wait(0.4)
+	# Em ação: kart andando (câmera do kart).
 	close_menus()
 	await _stand(kart_race.paddock)
 	var car := kart_race.vehicles[0]
 	kart_race.enter(car)
 	await _wait(0.3)
 	await _shot("a09a_kart_vaga.png")
-	car.global_position = Vector3(kart_race._entry_zone.get_center().x, 0.4, kart_race._entry_zone.get_center().y)
+	car.global_position = kart_race.entry_center + Vector3.UP * 0.6
 	kart_race._armed = true
 	await _wait_until(func() -> bool: return kart_race.state == "correndo", 6.0)
 	Input.action_press("frente")
@@ -3911,25 +4283,17 @@ func _run_activities_capture() -> void:
 	await _wait(1.6)
 	await _shot("a10_kart_curva.png")
 	Input.action_release("direita")
+	# Subindo a rampa da ponte, de lado: o corpo do kart inclina com o chão.
+	var ramp: Dictionary = KartCircuit.at_point(8)
+	car.global_transform = Transform3D(Basis.looking_at(-ramp.dir), ramp.pos + Vector3.UP * 0.4)
+	car.speed = 8.0
+	await _wait(0.9)
+	var side_dir := Vector3(ramp.dir.z, 0, -ramp.dir.x)
+	await _art_shot("res://tools/capturas/a10b_kart_subindo_a_ponte.png", Vector2i(1280, 720), car.global_position + side_dir * 11.0 + Vector3.UP * 1.5,
+			car.global_position + Vector3.UP * 0.6, 50.0)
 	Input.action_release("frente")
 	kart_race.leave()
 	await _wait(0.4)
-	await _stand(skate_park.entrance + Vector3(0, 0, 4))
-	var to_park := skate_park.center - player.global_position
-	player.set_yaw(atan2(-to_park.x, -to_park.z))
-	await _wait(1.2)
-	await _shot("a11_skate_aviso.png")
-	skate_park.pick()
-	await _wait(0.3)
-	player.global_position = skate_park.center + Vector3(-5, 0.5, -10)
-	player._skate_heading = PI
-	player.set_yaw(0.0)
-	player._skate_speed = 11.0
-	await _wait(1.25)
-	await _shot("a12_skate_no_ar.png")
-	await _wait(0.8)
-	var p := player.global_position
-	await _art_shot(out + "a13_skate_half_pipe.png", size, p + Vector3(9.0, 1.5, 4.0), p + Vector3(0, 0.5, 0), 55.0)
 	print("capturas das atividades em tools/capturas/")
 	get_tree().quit()
 
@@ -4113,6 +4477,216 @@ func _run_endless_test() -> void:
 	all_ok = _check("depois dá para começar de novo", pd.state == EndlessParty.State.PARADA and "Recorde: 2" in pd._board.text) and all_ok
 	print("FESTA-SEM-FIM OK" if all_ok else "FESTA-SEM-FIM COM FALHAS")
 	get_tree().quit()
+
+
+## Pista de kart em 8 (refeita em 2026-10-29): uma corrida de verdade no piloto automático (acelera e vira para
+## um ponto 12 m à frente na pista), passando por cima da ponte, por baixo dela e pela lombada, até a volta 1
+## contar na chegada. Uso: godot --headless --path . -- --pista-kart
+## Dos caminhos dados, os que caem no exclude_filter da build (export_presets.cfg): esses não existem no PC.
+func _fora_da_build(caminhos: Array) -> Array:
+	var cfg := ConfigFile.new()
+	cfg.load("res://export_presets.cfg")
+	var filtros := (cfg.get_value("preset.0", "exclude_filter", "") as String).split(",", false)
+	return caminhos.filter(func(c: String) -> bool:
+		var local := c.trim_prefix("res://")
+		return Array(filtros).any(func(f: String) -> bool: return local.match(f.strip_edges())))
+
+
+func _run_kart_track_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	all_ok = _check("pista em 8 com uns 420 m por volta e 13 m de largura", absf(KartCircuit.length() - 420.0) < 25.0 and KartCircuit.WIDTH >= 12.0,
+			"(%.0f m)" % KartCircuit.length()) and all_ok
+	# No PC o jogo fechava ao começar a corrida: o Mago vinha de uma pasta que a build deixa de fora.
+	var fora := _fora_da_build(KartRace.RIVAL_PILOTS)
+	all_ok = _check("os pilotos rivais vêm de pastas que vão na build", fora.is_empty(), "(fora: %s)" % str(fora)) and all_ok
+	await _stand(kart_race.paddock)
+	var car: Kart = kart_race.vehicles[2]
+	kart_race.enter(car)
+	await _wait(0.3)
+	# Da vaga até a abertura da mureta, dirigindo: sobe a rampa e entra na pista (sem degrau).
+	var drive_t := 0.0
+	while kart_race.state == "dirigindo" and drive_t < 12.0:
+		await get_tree().physics_frame
+		drive_t += 1.0 / Engine.physics_ticks_per_second
+		var to_entry := kart_race.entry_center - car.global_position
+		to_entry.y = 0.0
+		var cside := car.forward().normalized().cross(to_entry.normalized()).y
+		Input.action_press("frente", 0.6)
+		Input.action_release("esquerda")
+		Input.action_release("direita")
+		if absf(cside) > 0.03:
+			Input.action_press("esquerda" if cside > 0.0 else "direita", clampf(absf(cside) * 3.0, 0.3, 1.0))
+	for action in ["frente", "esquerda", "direita"]:
+		Input.action_release(action)
+	all_ok = _check("da vaga, o kart sobe a rampa da abertura e começa a corrida", kart_race.state in ["contagem", "correndo"],
+			"(%.1f s, estado %s)" % [drive_t, kart_race.state]) and all_ok
+	# Rivais (2026-10-29): dois karts do box no grid, com piloto, parados até o "Já!".
+	var rivals: Array = kart_race.rivals.map(func(r: Dictionary) -> Kart: return r.kart)
+	all_ok = _check("dois rivais no grid, com piloto e parados na contagem", rivals.size() == 2 and rivals.all(func(v: Kart) -> bool:
+			return v.ai and v.driving and v.speed == 0.0 and KartCircuit.on_track(v.global_position, 0.0) and v != car), "(%d)" % rivals.size()) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 6.0)
+	var rival_top := [-INF, -INF]
+	var rival_off := [0, 0]
+	var resets0 := kart_race.rival_resets
+	var last_s: float = KartCircuit.nearest(car.global_position).sample.s
+	var total := KartCircuit.length()
+	var run := 0.0
+	var max_y := -INF
+	var low_bridge := INF
+	var stuck := 0.0
+	var worst_stuck := 0.0
+	var off := 0
+	var max_tilt := 0.0
+	var t := 0.0
+	var samples: Array = KartCircuit.samples()
+	while kart_race.lap < 1 and t < 75.0:
+		await get_tree().physics_frame
+		t += 1.0 / Engine.physics_ticks_per_second
+		var p := car.global_position
+		# A amostra mais perto, procurando só um pouco à frente da última (no cruzamento valem as duas pistas).
+		var best_d := INF
+		var best_s := last_s
+		for sm in samples:
+			var ahead := fposmod(sm.s - last_s, total)
+			if ahead > 25.0:
+				continue
+			var d := Vector2(sm.pos.x - p.x, sm.pos.z - p.z).length()
+			if d < best_d:
+				best_d = d
+				best_s = sm.s
+		run += fposmod(best_s - last_s, total)
+		last_s = best_s
+		if best_d > KartCircuit.WIDTH * 0.5 + 0.5:
+			off += 1
+		var target: Vector3 = samples[int(fposmod(last_s + 12.0, total) / total * samples.size()) % samples.size()].pos
+		var fwd := car.forward()
+		var to := target - p
+		to.y = 0.0
+		fwd.y = 0.0
+		var side := fwd.normalized().cross(to.normalized()).y
+		Input.action_press("frente")
+		Input.action_release("esquerda")
+		Input.action_release("direita")
+		if absf(side) > 0.03:
+			Input.action_press("esquerda" if side > 0.0 else "direita", clampf(absf(side) * 3.0, 0.2, 1.0))
+		max_y = maxf(max_y, p.y)
+		if p.y > 2.0:
+			max_tilt = maxf(max_tilt, absf(car._ground_pitch))
+		stuck = stuck + 1.0 / Engine.physics_ticks_per_second if car.speed < 2.0 else 0.0
+		worst_stuck = maxf(worst_stuck, stuck)
+		for k in rivals.size():
+			rival_top[k] = maxf(rival_top[k], (rivals[k] as Kart).global_position.y)
+			if not KartCircuit.on_track((rivals[k] as Kart).global_position, 0.5):
+				rival_off[k] += 1
+	for action in ["frente", "esquerda", "direita"]:
+		Input.action_release(action)
+	var runs: Array = kart_race.rivals.map(func(r: Dictionary) -> float: return r.run)
+	all_ok = _check("os rivais correm a volta junto, pela ponte, sem sair da pista nem enroscar", runs.size() == 2 and runs.all(func(m: float) -> bool:
+			return m > total * 0.8) and rival_top.all(func(y: float) -> bool: return y > 5.5) and rival_off.all(func(c: int) -> bool: return c < 30)
+			and kart_race.rival_resets == resets0, "(%s m, alto %s, fora %s, voltas ao meio %d)" % [str(runs.map(func(m: float) -> int: return int(m))),
+			str(rival_top.map(func(y: float) -> float: return snappedf(y, 0.1))), str(rival_off), kart_race.rival_resets - resets0]) and all_ok
+	all_ok = _check("a faixa de cima mostra a posição na corrida", kart_race.place >= 1 and kart_race.place <= 3 and "º de 3" in kart_race.hud_text(),
+			"(%s)" % kart_race.hud_text()) and all_ok
+	all_ok = _check("no piloto automático o kart dá a volta inteira e a volta conta na chegada", kart_race.lap >= 1 and run > total * 0.9 and run < total * 1.2,
+			"(%.0f m em %.1f s, volta %d)" % [run, t, kart_race.lap]) and all_ok
+	all_ok = _check("o kart sobe a ponte do cruzamento", max_y > 5.5, "(mais alto: %.1f m)" % max_y) and all_ok
+	all_ok = _check("na rampa da ponte o corpo do kart inclina junto com o chão", max_tilt > 0.05, "(%.1f°)" % rad_to_deg(max_tilt)) and all_ok
+	all_ok = _check("sem enroscar nem sair da pista", worst_stuck < 1.0 and off < 30, "(parado %.1f s, %d quadros fora)" % [worst_stuck, off]) and all_ok
+	# Chegada com os dois rivais já chegados: 3º lugar, sem o bônus de 1º.
+	for r in kart_race.rivals:
+		r.done = true
+	var coins0 := story.coins
+	kart_race._finish()
+	all_ok = _check("chegando depois dos dois rivais, fica em 3º e ganha as moedas sem o bônus de 1º", kart_race.place == 3
+			and story.coins - coins0 in [KartRace.COINS, KartRace.COINS + KartRace.RECORD_BONUS], "(%dº, +%d moedas)" % [kart_race.place, story.coins - coins0]) and all_ok
+	kart_race.leave(true)
+	await _wait(0.2)
+	all_ok = _check("saindo da corrida, os rivais voltam para as vagas", kart_race.rivals.is_empty() and rivals.all(func(v: Kart) -> bool:
+			return v.is_home() and not v.ai and not v.driving)) and all_ok
+	print("PISTA-KART OK" if all_ok else "PISTA-KART COM FALHAS")
+	get_tree().quit()
+
+
+## Ciclo de dia e noite (pedido do usuário em 2026-10-29): começa de manhã, as horas andam, entardecer, noite
+## com estrelas, lua e postes, amanhecer, pausa parada, a hora no salvamento e a noite da festa (do Desfecho).
+## Uso: godot --headless --path . -- --dia-e-noite
+func _run_day_night_test() -> void:
+	var all_ok := true
+	story.fast = true
+	await _wait(0.5)
+	var dn := day_night
+	all_ok = _check("o jogo começa de manhã, sem estrelas e com os postes apagados", dn != null and absf(dn.t - DayNight.MORNING) < 0.01
+			and sky_material.sky_cover_modulate.a < 0.05 and dn._lamps.size() >= 15 and not dn._lamps[0].visible, "(%d postes)" % dn._lamps.size()) and all_ok
+	var t0 := dn.t
+	await _wait(1.0)
+	all_ok = _check("as horas andam sozinhas (um dia em 16 minutos)", dn.t > t0 and dn.t - t0 < 0.01, "(%.4f -> %.4f)" % [t0, dn.t]) and all_ok
+	dn.t = 0.4
+	dn.apply()
+	var noon_sun := -sun_light.rotation_degrees.x
+	dn.t = 0.66
+	dn.apply()
+	all_ok = _check("à tarde o sol desce e no entardecer o horizonte fica alaranjado", noon_sun > 40.0 and -sun_light.rotation_degrees.x < 25.0
+			and sky_material.sky_horizon_color.r > sky_material.sky_horizon_color.b, "(sol %.0f° -> %.0f°)" % [noon_sun, -sun_light.rotation_degrees.x]) and all_ok
+	dn.t = 0.84
+	dn.apply()
+	all_ok = _check("à noite: céu escuro com estrelas, lua azulada e os postes acesos", sky_material.sky_top_color.v < 0.35
+			and sky_material.sky_cover_modulate.a > 0.9 and sun_light.light_color.b > sun_light.light_color.r and dn._lamps[0].visible
+			and dn._lamps[0].light_energy > 1.0 and dn.is_night()) and all_ok
+	all_ok = _check("a noite fica clara o bastante para brincar", environment.ambient_light_energy >= 0.75 and sun_light.light_energy > 0.2) and all_ok
+	dn.t = 0.99
+	dn.apply()
+	all_ok = _check("amanhecendo, as estrelas somem", sky_material.sky_cover_modulate.a < 0.4 and not dn.is_night()) and all_ok
+	dn.t = 0.3
+	open_menu("pausa")
+	await _wait(0.6)
+	all_ok = _check("com o jogo pausado as horas não andam", absf(dn.t - 0.3) < 0.0001) and all_ok
+	close_menus()
+	dn.t = 0.5
+	all_ok = _check("a hora vai para o salvamento", absf(float(story.snapshot().get("hora", -1.0)) - 0.5) < 0.001) and all_ok
+	_skip_to_festa_night()
+	await _wait(0.6)
+	all_ok = _check("a noite da festa é do Desfecho: o ciclo espera", ending.night and dn._held and absf(dn.t - 0.5) < 0.01
+			and sky_material.sky_top_color.is_equal_approx(Color("#0f1a4d"))) and all_ok
+	ending.post_game(false)
+	await _wait(0.6)
+	all_ok = _check("depois da festa o ciclo volta de manhã", not dn._held and absf(dn.t - DayNight.MORNING) < 0.01
+			and sky_material.sky_cover_modulate.a < 0.05) and all_ok
+	print("DIA-E-NOITE OK" if all_ok else "DIA-E-NOITE COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do ciclo (d01 a d06): a praça e o Morro de manhã, à tarde, no entardecer, à noite e amanhecendo, e a pista
+## de kart à noite com os postes. Uso: godot --path . -- --dia-e-noite-captura
+func _run_day_night_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	var dn := day_night
+	dn.running = false
+	var size := Vector2i(1280, 720)
+	var from := Vector3(-12, 26, 232)
+	var to := Vector3(0, 4, 150)
+	for spec in [[0.12, "d01_manha"], [0.45, "d02_tarde"], [0.685, "d03_entardecer"], [0.85, "d04_noite"], [0.985, "d05_amanhecendo"]]:
+		dn.t = spec[0]
+		dn.apply()
+		await _wait(0.8)
+		await _art_shot("res://tools/capturas/%s.png" % spec[1], size, from, to, 60.0)
+	dn.t = 0.85
+	dn.apply()
+	await _wait(0.8)
+	await _art_shot("res://tools/capturas/d06_pista_de_kart_a_noite.png", size, Vector3(70, 14, 10), Vector3(115, 0, -10), 60.0)
+	get_tree().quit()
+
+
+func _joy_hold(button: JoyButton, pressed: bool) -> void:
+	var ev := InputEventJoypadButton.new()
+	ev.device = 0
+	ev.button_index = button
+	ev.pressed = pressed
+	Input.parse_input_event(ev)
 
 
 ## Lojinha: a primeira moeda acende a seta dourada, o tapete abre o menu, comprar, equipar, melhorias, caixa de
@@ -4317,10 +4891,10 @@ func _run_save_test() -> void:
 					"(%d corações, %s)" % [player.max_hearts, player.character_name])
 			open_menu("pausa")
 			await get_tree().process_frame
-			_pause_buttons[3].pressed.emit()
+			_pause_buttons[4].pressed.emit()
 			await get_tree().process_frame
 			_save_check("Nova campanha na pausa pede confirmação", menu_state == "confirmar" and confirm_panel.visible
-					and _pause_buttons[3].text == "Nova campanha")
+					and _pause_buttons[4].text == "Nova campanha")
 			SaveGame.test_phase = 2
 			_confirm_buttons[0].pressed.emit()
 		2:
@@ -4945,6 +5519,1303 @@ func _ground_point(p: Vector3) -> Vector3:
 	var query := PhysicsRayQueryParameters3D.create(Vector3(p.x, 200.0, p.z), Vector3(p.x, -50.0, p.z), 1)
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	return hit.position if not hit.is_empty() else Vector3(p.x, 0.0, p.z)
+
+
+# --- campanha nos testes ------------------------------------------------------------------
+
+## Leva a campanha até a noite da festa (o epílogo), pronta para os créditos.
+func _skip_to_festa_night() -> void:
+	story.skip_to_cemetery()
+	var cemiterio: Defense = story.defenses.cemiterio
+	cemiterio.state = Defense.State.VENCIDA
+	cemiterio.active = false
+	ending.start_epilogue(false)
+
+
+## O farol virou mirante (item 2 da lista de melhorias, 2026-11-10) e a pausa ganhou os Ajustes (item 1): na porta,
+## o aviso e o B sobem para a vista do binóculo (máscara, nomes dos lugares, sem mira e sem controle do
+## aventureiro); os analógicos giram, mirar aproxima; pausa > Ajustes muda a câmera e a vibração e volta à pausa; a
+## câmera mais rápida vale no binóculo; fechar a pausa lá em cima não devolve o controle; B desce para a porta.
+## Uso: godot --headless --path . -- --farol
+func _run_lighthouse_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Ajustes.padrao()
+	await _wait(0.5)
+	all_ok = _check("o farol fica aceso, sem cadeado, com o binóculo na sacada", farol.aberto and farol.modelo.aceso
+			and not farol._cadeado.visible and farol.binoculo.global_position.y > 13.0) and all_ok
+	await _stand(farol.porta() + Vector3.UP * 0.2)
+	await _wait(0.3)
+	all_ok = _check("na porta, o aviso ensina a subir", hint_label.visible and "subir no farol" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait_until(func() -> bool: return farol.no_mirante and not farol._trocando, 3.0)
+	await _wait(0.2)
+	var cam := get_viewport().get_camera_3d()
+	all_ok = _check("B sobe: a vista é a do binóculo, lá do alto, com a máscara e os nomes dos lugares", farol.no_mirante
+			and cam == farol.camera_mirante and cam.global_position.y > 14.0 and farol.mascara.visible and farol.nomes.visible
+			and farol.nomes.get_child_count() >= 7 and not player.input_enabled and not crosshair.visible,
+			"(%d nomes)" % (farol.nomes.get_child_count() if farol.nomes else 0)) and all_ok
+	all_ok = _check("lá em cima, o aviso ensina a descer", hint_label.visible and "descer" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	var antes := farol._yaw
+	_joy_axis(JOY_AXIS_RIGHT_X, 1.0)
+	await _wait(0.5)
+	_joy_axis(JOY_AXIS_RIGHT_X, 0.0)
+	var giro := absf(farol._yaw - antes)
+	all_ok = _check("o analógico direito gira a vista", giro > 0.2, "(%.2f rad)" % giro) and all_ok
+	_joy_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await _wait(1.0)
+	var perto := cam.fov
+	_joy_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	await _wait(1.0)
+	all_ok = _check("mirar aproxima e soltar afasta", perto < 13.0 and cam.fov > 20.0, "(%.0f° -> %.0f°)" % [perto, cam.fov]) and all_ok
+
+	# Pausa > Ajustes, lá de cima.
+	open_menu("pausa")
+	await _wait(0.2)
+	_pause_ajustes.pressed.emit()
+	await _wait(0.3)
+	all_ok = _check("pausa > Ajustes abre o painel com a Música marcada", menu_state == "ajustes" and ajustes_panel.visible
+			and get_viewport().gui_get_focus_owner() == ajustes_panel.controles.musica) and all_ok
+	(ajustes_panel.controles.camera as HSlider).value = Ajustes.CAMERA_MAX
+	(ajustes_panel.controles.vibracao as CheckButton).button_pressed = false
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B nos Ajustes volta à pausa, com os Ajustes marcados e guardados", menu_state == "pausa" and not ajustes_panel.visible
+			and get_viewport().gui_get_focus_owner() == _pause_ajustes and Ajustes.camera == Ajustes.CAMERA_MAX and not Ajustes.vibracao) and all_ok
+	close_menus()
+	await _wait(0.5)
+	all_ok = _check("fechando a pausa no binóculo, o aventureiro continua parado e sem mira", farol.no_mirante and not player.input_enabled
+			and not crosshair.visible) and all_ok
+	antes = farol._yaw
+	_joy_axis(JOY_AXIS_RIGHT_X, 1.0)
+	await _wait(0.5)
+	_joy_axis(JOY_AXIS_RIGHT_X, 0.0)
+	var giro_rapido := absf(farol._yaw - antes)
+	all_ok = _check("com a câmera no mais rápido, a vista gira mais", giro_rapido > giro * 1.5, "(%.2f -> %.2f rad)" % [giro, giro_rapido]) and all_ok
+	Ajustes.padrao()
+	await _joy_button(JOY_BUTTON_B)
+	await _wait_until(func() -> bool: return not farol.no_mirante and not farol._trocando, 3.0)
+	await _wait(0.4)
+	all_ok = _check("B desce: volta para a porta, com a câmera, a mira e o controle do aventureiro", get_viewport().get_camera_3d() == player.camera
+			and player.input_enabled and not farol.mascara.visible and not farol.nomes.visible and crosshair.visible
+			and player.global_position.distance_to(farol.porta()) < 3.5) and all_ok
+	# A câmera invertida vale para o aventureiro: o mesmo analógico, ao contrário.
+	var pitch0 := player._pitch
+	_joy_axis(JOY_AXIS_RIGHT_Y, -1.0)
+	await _wait(0.25)
+	_joy_axis(JOY_AXIS_RIGHT_Y, 0.0)
+	var subiu := player._pitch - pitch0
+	Ajustes.inverter = true
+	pitch0 = player._pitch
+	_joy_axis(JOY_AXIS_RIGHT_Y, -1.0)
+	await _wait(0.25)
+	_joy_axis(JOY_AXIS_RIGHT_Y, 0.0)
+	var invertido := player._pitch - pitch0
+	Ajustes.padrao()
+	all_ok = _check("com a câmera invertida, o analógico para cima olha para baixo", subiu > 0.05 and invertido < -0.05,
+			"(%.2f e %.2f)" % [subiu, invertido]) and all_ok
+	print("FAROL OK" if all_ok else "FAROL COM FALHAS")
+	get_tree().quit()
+
+
+## Modo Fácil (item 3 da lista de melhorias, 2026-11-10), na ilha: esqueletos novos mais lentos e com mais tempo no
+## "!" (o tipo de sempre não muda), guardião com um quarto a menos de vida, mais tempo piscando depois de um golpe e
+## corações que voltam sozinhos fora de luta (no normal, não). Uso: godot --headless --path . -- --facil
+func _run_easy_test() -> void:
+	var all_ok := true
+	story.fast = true
+	Ajustes.padrao()
+	await _wait(0.5)
+	var longe := player.global_position + Vector3(40, 0, 40)
+	var normal := spawn_wave_enemy("Skeleton_Minion", longe)
+	var de_sempre: Dictionary = normal.config.duplicate()
+	Ajustes.facil = true
+	var lento := spawn_wave_enemy("Skeleton_Minion", longe + Vector3(3, 0, 0))
+	all_ok = _check("no fácil, o esqueleto anda mais devagar, demora mais no ! e espera mais entre golpes",
+			is_equal_approx(lento.config.speed, de_sempre.speed * 0.8) and lento.config.windup > de_sempre.windup * 1.3
+			and lento.config.cooldown > de_sempre.cooldown * 1.25 and is_equal_approx(SkeletonEnemy.TYPES.Skeleton_Minion.speed, de_sempre.speed),
+			"(%.2f -> %.2f m/s)" % [de_sempre.speed, lento.config.speed]) and all_ok
+	normal.queue_free()
+	lento.queue_free()
+	var oeste: Defense = story.defenses.oeste
+	Ajustes.facil = false
+	var forte: Boss = oeste.guardian_script.new()
+	forte.arena_center = longe
+	add_boss(forte, longe)
+	Ajustes.facil = true
+	var fraco: Boss = oeste.guardian_script.new()
+	fraco.arena_center = longe
+	add_boss(fraco, longe + Vector3(8, 0, 0))
+	await _wait(0.1)
+	all_ok = _check("no fácil, o guardião tem um quarto a menos de vida", is_equal_approx(fraco.max_health, forte.max_health * 0.75)
+			and is_equal_approx(fraco.health, fraco.max_health), "(%.0f -> %.0f)" % [forte.max_health, fraco.max_health]) and all_ok
+	forte.queue_free()
+	fraco.queue_free()
+	await _wait(0.5)
+	player._invulnerable = 0.0
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0))
+	all_ok = _check("no fácil, fica mais tempo piscando depois do golpe", player._invulnerable > player.invulnerable_time * 1.5,
+			"(%.2f s)" % player._invulnerable) and all_ok
+	await _wait(2.5)
+	player.hearts = 2
+	player.health_changed.emit(player.hearts, player.max_hearts)
+	await _wait(REGEN_FACIL + 0.6)
+	all_ok = _check("no fácil, fora de luta, um coração volta sozinho", player.hearts == 3, "(%d)" % player.hearts) and all_ok
+	Ajustes.facil = false
+	player.hearts = 2
+	await _wait(REGEN_FACIL + 0.6)
+	all_ok = _check("no normal, os corações não voltam sozinhos", player.hearts == 2, "(%d)" % player.hearts) and all_ok
+	Ajustes.padrao()
+	print("FACIL OK" if all_ok else "FACIL COM FALHAS")
+	get_tree().quit()
+
+
+## Objetivo com figura (item 4 da lista de melhorias): cada etapa e cada luta tem a sua figura na seta e na pausa, a
+## figura aparece com a seta longe e some com ela, e chegar perto toca o "plim" uma vez por lugar.
+## Uso: godot --headless --path . -- --objetivo
+func _run_objective_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	var figura_ok := func(nome: String) -> bool:
+		return story.objective_icon == nome and objective_marker.icone == nome and _pause_goal_icon.kind == nome
+	all_ok = _check("antes do prólogo, a figura é o esqueleto na seta e na pausa", figura_ok.call("esqueleto"),
+			"(%s / %s / %s)" % [story.objective_icon, objective_marker.icone, _pause_goal_icon.kind]) and all_ok
+	var praia: Vector3 = story.defenses.praca.center
+	await _stand(_ground_point(praia + Vector3(30, 0, -25)))
+	await _wait(0.2)
+	all_ok = _check("longe, a figura aparece em cima da seta", objective_marker.visible and objective_marker._figura.visible) and all_ok
+	Sfx.played.clear()
+	await _stand(_ground_point(praia))
+	await _wait(0.4)
+	all_ok = _check("perto, a seta e a figura somem e toca o plim", not objective_marker.visible
+			and Sfx.played.count("estrelinha") == 1, "(%d plins)" % Sfx.played.count("estrelinha")) and all_ok
+	await _stand(_ground_point(praia + Vector3(30, 0, -25)))
+	await _stand(_ground_point(praia))
+	await _wait(0.4)
+	all_ok = _check("voltando ao mesmo lugar, não repete o plim", Sfx.played.count("estrelinha") == 1) and all_ok
+	for etapa in [["cidade", "lanterna"], ["cemiterio", "cemiterio"], ["festa", "festa"]]:
+		story.stage = etapa[0]
+		await _wait(0.1)
+		all_ok = _check("etapa %s: figura %s" % etapa, figura_ok.call(etapa[1]), "(%s)" % story.objective_icon) and all_ok
+	story.stage = "cidade"
+	await _wait(0.1)
+	await _stand(_ground_point(story.objective_target))
+	await _wait(0.4)
+	all_ok = _check("lugar novo, plim novo", Sfx.played.count("estrelinha") == 2, "(%d plins)" % Sfx.played.count("estrelinha")) and all_ok
+	story.stage = "mata"
+	await _wait(0.1)
+	all_ok = _check("na mata, do lado de cá do rio, a figura é a ponte", story.south_of_river(player.global_position)
+			and figura_ok.call("ponte"), "(%s)" % story.objective_icon) and all_ok
+	await _stand(_ground_point(story.defenses.clareira.center + Vector3(0, 0, 14)))
+	await _wait(0.1)
+	all_ok = _check("do outro lado do rio, volta a lanterna", not story.south_of_river(player.global_position)
+			and figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
+	var oeste: Defense = story.defenses.oeste
+	var antes: Defense.State = oeste.state
+	oeste.state = Defense.State.ONDA
+	story._refresh_objective()
+	all_ok = _check("na luta da Lanterna Oeste, a figura é o Ossão", figura_ok.call("ossao"), "(%s)" % story.objective_icon) and all_ok
+	oeste.state = antes
+	story._spawn_reward("coracao", player.global_position + Vector3(4, 0, 0))
+	story._refresh_objective()
+	all_ok = _check("com recompensa no chão, a figura é o presente", figura_ok.call("presente"), "(%s)" % story.objective_icon) and all_ok
+	for r in story.rewards.duplicate():
+		r.queue_free()
+	await _wait(0.2)
+	all_ok = _check("pegou (ou sumiu) a recompensa, volta a lanterna", figura_ok.call("lanterna"), "(%s)" % story.objective_icon) and all_ok
+	print("OBJETIVO OK" if all_ok else "OBJETIVO COM FALHAS")
+	get_tree().quit()
+
+
+## Vozes (item 13 da lista de melhorias): os arquivos das falas existem; o prólogo, ficar tonto e o bilhete falam; com
+## as vozes desligadas nos Ajustes, não fala; a linha "Vozes" do painel mexe na chave. Uso: godot --headless --path . -- --vozes
+func _run_voices_test() -> void:
+	var all_ok := true
+	story.fast = true
+	Sfx.logging = true
+	await _wait(0.5)
+	var ids := ["prologo", "lanterna", "ossao", "mira_torta", "torre", "minionzao", "planta", "mestre", "conseguimos", "convite", "festa",
+		"fisgou", "peixe_novo", "la_vou_eu", "achei", "dourado", "figurinha", "bilhete", "campeao", "tres_estrelas", "fim_de_ano", "tonto"]
+	var faltam := ids.filter(func(id: String) -> bool: return not ResourceLoader.exists(Vozes.DIR % id))
+	all_ok = _check("as 22 falas existem", faltam.is_empty(), str(faltam)) and all_ok
+	Sfx.played.clear()
+	story.start()
+	await _wait(0.2)
+	all_ok = _check("o prólogo começa falando", "voz:prologo" in Sfx.played and Vozes._ultima == "prologo") and all_ok
+	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
+	await _stand(bilhetes_nos[0].global_position + Vector3.UP * 0.3)
+	await _wait(0.4)
+	all_ok = _check("pegar um bilhete fala", "voz:bilhete" in Sfx.played) and all_ok
+	bilhete_cartao.hide()
+	player.god_mode = false
+	player._invulnerable = 0.0
+	player.hearts = 1
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0))
+	await _wait(0.3)
+	all_ok = _check("ficar tonto fala", "voz:tonto" in Sfx.played) and all_ok
+	player.god_mode = true
+	await _wait(3.5)
+	Ajustes.vozes = false
+	Vozes._ultima = ""
+	Vozes.falar(self, "festa")
+	all_ok = _check("com as vozes desligadas, não fala", Vozes._ultima == "") and all_ok
+	open_menu("pausa")
+	await _wait(0.2)
+	open_menu("ajustes")
+	await _wait(0.2)
+	(ajustes_panel.controles.vozes as CheckButton).button_pressed = true
+	all_ok = _check("a linha \"Vozes\" dos Ajustes liga as falas", Ajustes.vozes) and all_ok
+	close_menus()
+	Ajustes.padrao()
+	print("VOZES OK" if all_ok else "VOZES COM FALHAS")
+	get_tree().quit()
+
+
+## DualSense (item 14 da lista de melhorias): o CRC32 do zlib; os relatórios USB e Bluetooth com os efeitos no lugar
+## certo; os efeitos com os bytes da página de teste; o HID_ID do uevent; o que cada gatilho faz no jogo; sem o
+## controle (no Mac), não quebra nada. Uso: godot --headless --path . -- --dualsense
+func _run_dualsense_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	all_ok = _check("CRC32 do zlib (\"123456789\" dá CBF43926) e continua de onde parou", DualSense.crc32("123456789".to_ascii_buffer()) == 0xCBF43926
+			and DualSense.crc32("6789".to_ascii_buffer(), DualSense.crc32("12345".to_ascii_buffer())) == 0xCBF43926) and all_ok
+	var arma := DualSense.efeito_arma(4, 6, 4)
+	var duro := DualSense.efeito_resistencia(2, 7)
+	var treme := DualSense.efeito_vibracao(3, 6, 14)
+	all_ok = _check("os efeitos com os bytes da página de teste", arma.slice(0, 4) == PackedByteArray([0x25, 0x50, 0x00, 0x03])
+			and duro[0] == 0x21 and duro[1] == 0xFC and duro[2] == 0x03 and treme[0] == 0x26 and treme[9] == 14
+			and DualSense.efeito_solto()[0] == 0x05 and DualSense.efeito_vibracao(3, 6, 0)[0] == 0x05) and all_ok
+	var comum := DualSense.bloco_comum(arma, duro)
+	var usb := DualSense.relatorio(comum, false)
+	var bt := DualSense.relatorio(comum, true)
+	var crc := DualSense.crc32(bt.slice(1, 74), DualSense.crc32(PackedByteArray([0xA2, 0x31])))
+	var crc_no_fim := bt[74] | (bt[75] << 8) | (bt[76] << 16) | (bt[77] << 24)
+	all_ok = _check("relatório USB: 0x02, 48 bytes, gatilhos ligados, R2 no 11 e L2 no 22", usb.size() == 48 and usb[0] == 0x02
+			and usb[1] == 0x0C and usb.slice(11, 22) == arma and usb.slice(22, 33) == duro) and all_ok
+	all_ok = _check("relatório Bluetooth: 0x31, 78 bytes, cabeçalho 0x02 e o CRC32 certo no fim", bt.size() == 78 and bt[0] == 0x31
+			and bt[1] == 0x02 and bt[2] == 0x0C and bt.slice(12, 23) == arma and crc_no_fim == crc) and all_ok
+	all_ok = _check("o HID_ID do uevent: DualSense por Bluetooth, Edge por USB e outro controle não",
+			DualSense.ler_uevent("DRIVER=playstation\nHID_ID=0005:0000054C:00000CE6\nHID_NAME=DualSense") == {"bluetooth": true}
+			and DualSense.ler_uevent("HID_ID=0003:0000054C:00000DF2") == {"bluetooth": false}
+			and DualSense.ler_uevent("HID_ID=0003:0000045E:00000B12").is_empty()) and all_ok
+	# Arquivo que diz ter mais bytes do que tem: lê só o que existe (o lixo depois virava avisos no log do PC).
+	var curto := "user://teste_uevent.txt"
+	var f := FileAccess.open(curto, FileAccess.WRITE)
+	f.store_string("HID_ID=0005:0000054C:00000CE6\n")
+	f.close()
+	all_ok = _check("lê o uevent só com os bytes de verdade", DualSense.ler_texto(curto) == "HID_ID=0005:0000054C:00000CE6\n"
+			and DualSense.ler_texto("user://nao_existe.txt") == "") and all_ok
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(curto))
+	var ds := dualsense
+	all_ok = _check("sem o controle (neste computador), não acha nada e não quebra", ds.caminho == "" and ds.enviados == 0) and all_ok
+	player.using_gamepad = true
+	player.weapon_index = 0
+	var r := ds.escolher()
+	var pistola: PackedByteArray = r[0]
+	player.weapon_index = 1
+	var rajada: PackedByteArray = ds.escolher()[0]
+	player.weapon_index = 2
+	var escopeta: PackedByteArray = ds.escolher()[0]
+	player.weapon_index = 0
+	all_ok = _check("no jogo: estalinho na pistola, tremidinho na rajada, estalo forte na escopeta e o L2 leve", pistola[0] == 0x25
+			and rajada[0] == 0x26 and escopeta[0] == 0x25 and escopeta[3] == 7 and (r[1] as PackedByteArray)[0] == 0x21) and all_ok
+	open_menu("pausa")
+	var no_menu: Array = ds.escolher()
+	close_menus()
+	Ajustes.vibracao = false
+	var sem_vibracao: Array = ds.escolher()
+	Ajustes.padrao()
+	all_ok = _check("com menu aberto ou a vibração desligada, os gatilhos ficam soltos", (no_menu[0] as PackedByteArray)[0] == 0x05
+			and (sem_vibracao[1] as PackedByteArray)[0] == 0x05) and all_ok
+	print("DUALSENSE OK" if all_ok else "DUALSENSE COM FALHAS")
+	get_tree().quit()
+
+
+## Prova do log que crescia (no PC): lê o uevent de cada hidraw 200 vezes do jeito antigo (`get_file_as_string`,
+## que lê os 4096 bytes que o Linux diz ter) e do novo (`DualSense.ler_texto`, só os bytes de verdade), e conta quantas
+## leituras vieram com lixo (caractere fora do texto). Não abre o controle. Uso: ./IlhaCafune.x86_64 --headless
+## --log-file /tmp/uevent.log -- --dualsense-uevent
+func _run_dualsense_uevent() -> void:
+	dualsense.set_physics_process(false)
+	for n in 8:
+		var arq := "/sys/class/hidraw/hidraw%d/device/uevent" % n
+		if not FileAccess.file_exists(arq):
+			continue
+		var antigo := 0
+		var novo := 0
+		for k in 200:
+			var t := FileAccess.get_file_as_string(arq)
+			if t.length() > 400 or t.contains("\ufffd"):
+				antigo += 1
+			var u := DualSense.ler_texto(arq)
+			if u.length() > 400 or u.contains("\ufffd"):
+				novo += 1
+		print("UEVENT hidraw%d: jeito antigo com lixo %d de 200, tamanho %d; novo com lixo %d de 200, tamanho %d" % [n, antigo,
+				FileAccess.get_file_as_string(arq).length(), novo, DualSense.ler_texto(arq).length()])
+	get_tree().quit()
+
+
+## DualSense de verdade (no PC, com o controle ligado): acha o controle, deixa o R2 duro e o L2 tremendo por
+## `segundos` (padrão 8), solta e conta o que fez. Uso: ./IlhaCafune.x86_64 --headless -- --dualsense-pc
+func _run_dualsense_pc() -> void:
+	await _wait(0.5)
+	var ds := dualsense
+	if ds.caminho == "":
+		ds.procurar()
+	print("DUALSENSE caminho '%s' bluetooth %s processo %d" % [ds.caminho, ds.bluetooth, ds._pid])
+	if ds.caminho != "":
+		ds.set_physics_process(false)
+		ds.mandar(DualSense.efeito_resistencia(1, 8), DualSense.efeito_vibracao(2, 8, 30))
+		print("DUALSENSE mandou o R2 duro e o L2 tremendo; aperte os gatilhos")
+		await _wait(8.0)
+		ds.soltar()
+		print("DUALSENSE soltou (enviados %d)" % ds.enviados)
+	get_tree().quit()
+
+
+## Festa de fim de ano (item 12 da lista de melhorias): só em dezembro (e 1º de janeiro); a árvore com os presentes,
+## os bonecos de neve e a neve caindo; os moradores sem chapéu de gorro; o presente do dia abre uma vez por dia e dá
+## mais nos dias especiais; fogos à noite no dia 31; salvar. Uso: godot --headless --path . -- --natal
+func _run_holiday_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	all_ok = _check("a época: dezembro e 1º de janeiro sim, novembro e 2 de janeiro não", FestaFimDeAno.esta_na_epoca("2026-12-03")
+			and FestaFimDeAno.esta_na_epoca("2027-01-01") and not FestaFimDeAno.esta_na_epoca("2026-11-10")
+			and not FestaFimDeAno.esta_na_epoca("2027-01-02")) and all_ok
+	FestaFimDeAno.hoje_teste = "2026-12-05"
+	fim_de_ano.atualizar_presente()
+	var arvore: Node3D = fim_de_ano._arvore
+	all_ok = _check("na praia, a árvore com presentes, os bonecos de neve e a neve caindo, tudo no chão", is_instance_valid(arvore)
+			and absf(arvore.global_position.y) < 1.0 and absf(fim_de_ano.presente_do_dia.global_position.y) < 1.0
+			and fim_de_ano.get_child_count() > 12 and fim_de_ano.neve.emitting, "(presente em y %.1f)" % fim_de_ano.presente_do_dia.global_position.y) and all_ok
+	all_ok = _check("moradores sem chapéu ganham o gorro de duende", fim_de_ano.gorros() >= 6, "(%d gorros)" % fim_de_ano.gorros()) and all_ok
+	await _stand(fim_de_ano.presente_do_dia.global_position + Vector3(0, 0.3, -2.0))
+	await _wait(0.3)
+	all_ok = _check("perto do presente do dia, o aviso ensina a abrir", "presente do dia" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	var moedas := story.coins
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B abre: 10 moedas e o presente fica aberto até amanhã", story.coins == moedas + FestaFimDeAno.MOEDAS
+			and fim_de_ano.aberto_em == "2026-12-05" and not fim_de_ano.pode_abrir() and not fim_de_ano._luz_presente.visible) and all_ok
+	FestaFimDeAno.hoje_teste = "2026-12-24"
+	fim_de_ano.atualizar_presente()
+	await _wait(0.2)
+	moedas = story.coins
+	fim_de_ano.abrir()
+	all_ok = _check("no outro dia abre de novo, e na véspera de Natal dá 25", story.coins == moedas + FestaFimDeAno.MOEDAS_ESPECIAL) and all_ok
+	FestaFimDeAno.hoje_teste = "2026-12-31"
+	await _wait(7.0)
+	all_ok = _check("no dia 31, de noite, sobem fogos da praia", fim_de_ano.fogos >= 1, "(%d fogos)" % fim_de_ano.fogos) and all_ok
+	all_ok = _check("a campanha guarda o dia do último presente", story.snapshot().get("fim_de_ano", {}).get("presente", "") == "2026-12-24") and all_ok
+	print("NATAL OK" if all_ok else "NATAL COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da festa de fim de ano (natal_1 e natal_2): a árvore na praia com a neve e o presente do dia aberto.
+## Uso: godot --path . -- --natal-captura
+func _run_holiday_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	player.using_gamepad = true
+	FestaFimDeAno.hoje_teste = "2026-12-24"
+	fim_de_ano.atualizar_presente()
+	var c: Vector3 = fim_de_ano._arvore.global_position
+	await _stand(_ground_point(c + Vector3(-5.0, 0, -13.0)))
+	var olhar := c + Vector3.UP * 3.5 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.5)
+	await _shot("natal_1_arvore.png")
+	await _stand(fim_de_ano.presente_do_dia.global_position + Vector3(0, 0.3, -2.2))
+	player.set_yaw(PI)
+	await _wait(0.3)
+	fim_de_ano.abrir()
+	await _wait(0.5)
+	await _shot("natal_2_presente.png")
+	get_tree().quit()
+
+
+## Roupinhas (item 11 da lista de melhorias): o botão no celular abre o guarda-roupa; marcar um chapéu prova no
+## retrato; sem moedas não compra; comprar veste (o chapéu na cabeça, a pintura nos blasters); A de novo tira; a
+## pintura fica ao trocar de blaster; o chapéu fica ao trocar de personagem e aparece na pausa; B volta à lojinha;
+## salvar e carregar. Uso: godot --headless --path . -- --roupas
+func _run_outfits_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	story.stage = "cidade"
+	open_menu("loja")
+	await _wait(0.3)
+	shop_menu.roupinhas.pressed.emit()
+	await _wait(0.3)
+	all_ok = _check("o botão Roupinhas do celular abre o guarda-roupa com 11 chapéus e 6 pinturas", menu_state == "roupas"
+			and roupas_panel.visible and roupas_panel.cartoes.size() == 17
+			and get_viewport().gui_get_focus_owner() == roupas_panel.cartoes.sem_chapeu.botao) and all_ok
+	(roupas_panel.cartoes.coroa.botao as Button).grab_focus()
+	await _wait(0.2)
+	var osso := roupas_panel.retrato.find_child("OssoDoChapeu", true, false)
+	all_ok = _check("marcar a coroa já prova no retrato", osso != null and osso.get_child_count() == 1) and all_ok
+	story.coins = 10
+	roupas_panel.escolher("coroa")
+	all_ok = _check("sem moedas não compra e avisa quantas faltam", not "coroa" in story.roupas and player.chapeu == ""
+			and "Faltam 50" in roupas_panel.mensagem.text, "(%s)" % roupas_panel.mensagem.text) and all_ok
+	story.coins = 200
+	roupas_panel.escolher("coroa")
+	await _wait(0.1)
+	var na_cabeca := player.find_children("Chapeu", "Node3D", true, false).filter(func(n: Node) -> bool: return n.is_inside_tree())
+	all_ok = _check("comprar a coroa: 60 moedas, é sua e já está na cabeça", "coroa" in story.roupas and story.coins == 140
+			and player.chapeu == "coroa" and na_cabeca.size() == 1 and roupas_panel.cartoes.coroa.estado.text == "usando") and all_ok
+	roupas_panel.escolher("coroa")
+	all_ok = _check("A de novo tira o chapéu", player.chapeu == "" and roupas_panel.cartoes.coroa.estado.text == "é seu") and all_ok
+	roupas_panel.escolher("coroa")
+	roupas_panel.escolher("rosa")
+	var pintado := func() -> bool:
+		for m: MeshInstance3D in player.find_children("*", "MeshInstance3D", true, false):
+			if m.is_inside_tree() and m.find_parent("Coice") != null:
+				var mat := m.get_surface_override_material(0) as StandardMaterial3D
+				return mat != null and mat.albedo_color.r > mat.albedo_color.g
+		return false
+	all_ok = _check("a pintura rosa vai para o blaster", player.pintura == "rosa" and pintado.call()) and all_ok
+	player._equip_model()
+	await _wait(0.1)
+	all_ok = _check("trocando de blaster, a pintura continua", pintado.call()) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B volta para a lojinha, com as Roupinhas marcadas", menu_state == "loja"
+			and get_viewport().gui_get_focus_owner() == shop_menu.roupinhas) and all_ok
+	close_menus()
+	await _wait(0.3)
+	player.set_character("menina" if player.character_name == "menino" else "menino")
+	await _wait(0.3)
+	na_cabeca = player.find_children("Chapeu", "Node3D", true, false).filter(func(n: Node) -> bool: return n.is_inside_tree())
+	all_ok = _check("trocando de personagem, a coroa vai junto", player.chapeu == "coroa" and na_cabeca.size() == 1) and all_ok
+	open_menu("pausa")
+	await _wait(0.3)
+	osso = _pause_portrait.find_child("OssoDoChapeu", true, false)
+	all_ok = _check("a pausa mostra a coroa no retrato", osso != null and osso.get_child_count() == 1) and all_ok
+	close_menus()
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda o que é seu e o que está usando", foto.roupas.tem == ["coroa", "rosa"] and foto.roupas.chapeu == "coroa"
+			and foto.roupas.pintura == "rosa") and all_ok
+	foto.roupas = {"tem": ["urso", "nada"], "chapeu": "coroa", "pintura": ""}
+	story.restore(foto)
+	await _wait(0.3)
+	all_ok = _check("carregando: só o que existe e o que é seu", story.roupas == ["urso"] and player.chapeu == "" and player.pintura == "") and all_ok
+	print("ROUPAS OK" if all_ok else "ROUPAS COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos das roupinhas (roupas_1 e roupas_2): o guarda-roupa provando o gorro de urso e o aventureiro na ilha de
+## coroa e blaster rosa. Uso: godot --path . -- --roupas-captura
+func _run_outfits_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	player.using_gamepad = true
+	story.coins = 300
+	story.stage = "cidade"
+	open_menu("loja")
+	await _wait(0.3)
+	shop_menu.roupinhas.pressed.emit()
+	await _wait(0.3)
+	roupas_panel.escolher("coroa")
+	roupas_panel.escolher("rosa")
+	(roupas_panel.cartoes.urso.botao as Button).grab_focus()
+	await _wait(0.6)
+	await _shot("roupas_1_guarda_roupa.png")
+	close_menus()
+	await _wait(0.4)
+	player.set_yaw(PI)
+	await _wait(0.8)
+	await _shot("roupas_2_coroa.png")
+	get_tree().quit()
+
+
+## Copa de Kart (item 10 da lista de melhorias): o pódio com o círculo; B começa a copa no kart com dois rivais e duas
+## voltas; os pontos de cada corrida; a 2ª ao contrário (largada virada, marcas invertidas, rivais correndo para o
+## outro lado); a cena do pódio com o campeão no bloco do meio, moedas e a taça; descer do kart cancela; a campanha
+## guarda a melhor. Uso: godot --headless --path . -- --copa
+func _run_cup_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	all_ok = _check("pódio com três blocos, a placa e o círculo, sem taça ainda", copa._blocos.size() == 3 and not copa._taca.visible
+			and copa._placa.visible) and all_ok
+	await _stand(copa.ponto_do_circulo() + Vector3.UP * 0.3)
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso chama para a copa", "Copa de Kart" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.4)
+	all_ok = _check("B começa a copa: no kart, contagem da corrida 1 de duas voltas, com dois rivais", copa.rodando
+			and kart_race.state == "contagem" and kart_race.voltas == 2 and not kart_race.reverso and kart_race.rivals.size() == 2
+			and "Copa 1/3" in kart_race.hud_text(), "(%s)" % kart_race.hud_text()) and all_ok
+	var frente_normal: Vector3 = kart_race.kart.forward()
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	kart_race._finish()
+	all_ok = _check("chegando em 1º na corrida 1: 3 pontos", copa.pontos.voce == 3 and copa.corrida == 1, str(copa.pontos)) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "contagem", 8.0)
+	await _wait(0.2)
+	all_ok = _check("a corrida 2 é ao contrário: largada virada e marcas na ordem inversa", kart_race.reverso
+			and kart_race.kart.forward().dot(frente_normal) < -0.8 and kart_race.gates_da_volta()[0] == kart_race.gates[kart_race.gates.size() - 2]
+			and "ao contrário" in kart_race.hud_text()) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	await _wait(5.0)
+	var runs: Array = kart_race.rivals.map(func(r: Dictionary) -> float: return float(r.run))
+	all_ok = _check("ao contrário, os rivais correm para o outro lado sem empacar", runs.size() == 2 and runs.all(func(m: float) -> bool: return m > 30.0)
+			and kart_race.rival_resets <= 1, "(%s m, %d voltas para a pista)" % [str(runs), kart_race.rival_resets]) and all_ok
+	for r in kart_race.rivals:
+		r.done = true
+		r.time = 1.0
+	kart_race._finish()
+	all_ok = _check("chegando em 3º na corrida 2: 1 ponto", copa.pontos.voce == 4 and copa.corrida == 2, str(copa.pontos)) and all_ok
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 12.0)
+	all_ok = _check("a corrida 3 volta para o lado de sempre", not kart_race.reverso) and all_ok
+	var moedas := story.coins
+	kart_race._finish()
+	await _wait_until(func() -> bool: return copa.na_cena, 8.0)
+	await _wait(1.5)
+	var bloco1: Node3D = copa._blocos[1].no
+	all_ok = _check("a cena do pódio: câmera do pódio, campeão no bloco do meio, os rivais nos outros e 40 moedas", copa.lugar_final == 1
+			and get_viewport().get_camera_3d() == copa.camera and player.global_position.distance_to(bloco1.global_position) < 1.6
+			and copa._convidados.size() == 2 and story.coins == moedas + CopaKart.MOEDAS[0], "(%dº, %s)" % [copa.lugar_final, copa.placar()]) and all_ok
+	await _wait_until(func() -> bool: return not copa.rodando, 10.0)
+	await _wait(0.8)
+	all_ok = _check("depois da cena: de volta a pé, com a taça de ouro no pedestal", get_viewport().get_camera_3d() == player.camera
+			and player.input_enabled and copa._taca.visible and copa.melhor == 1 and not kart_race.copa_ativa and kart_race.voltas == KartRace.LAPS) and all_ok
+	await _stand(copa.ponto_do_circulo() + Vector3.UP * 0.3)
+	await _wait(0.3)
+	copa.comecar()
+	await _wait(0.5)
+	kart_race.leave()
+	await _wait(0.3)
+	all_ok = _check("descer do kart no meio da copa cancela", not copa.rodando and not kart_race.copa_ativa and not kart_race.reverso) and all_ok
+	all_ok = _check("a campanha guarda a melhor copa", story.snapshot().get("copa", {}).get("melhor", 0) == 1) and all_ok
+	print("COPA OK" if all_ok else "COPA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da copa (copa_1 a copa_3): o pódio com o círculo, a largada ao contrário e a cena do pódio.
+## Uso: godot --path . -- --copa-captura
+func _run_cup_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	player.using_gamepad = true
+	var c := copa.ponto_do_circulo()
+	await _stand(c + CopaKart.FRENTE * 5.0 + Vector3(0, 0.3, 3.0))
+	var olhar: Vector3 = CopaKart.PODIO + Vector3.UP * 1.5 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.2)
+	await _shot("copa_1_podio.png")
+	await _stand(c + Vector3.UP * 0.3)
+	copa.comecar()
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	kart_race._finish()
+	await _wait_until(func() -> bool: return kart_race.state == "contagem", 8.0)
+	await _wait(1.0)
+	await _shot("copa_2_ao_contrario.png")
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 5.0)
+	kart_race._finish()
+	await _wait_until(func() -> bool: return kart_race.state == "correndo", 12.0)
+	kart_race._finish()
+	await _wait_until(func() -> bool: return copa.na_cena, 8.0)
+	await _wait(2.5)
+	await _shot("copa_3_podio_cena.png")
+	get_tree().quit()
+
+
+## Revanche dos guardiões (item 9 da lista de melhorias): só no pós-jogo; o quadro com os seis e o círculo no cemitério;
+## B abre a escolha; o guardião de verdade sobe, com o relógio e sem a Festa sem fim começar; vencer rápido dá 3
+## estrelas, moedas e o troféu de ouro; ficar tonto encerra sem estrela; o Mestre sai depois de sentar; as estrelas
+## pelo tempo; salvar e carregar; os seis no ouro dão o troféu grandão. Uso: godot --headless --path . -- --revanche
+func _run_rematch_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	all_ok = _check("antes do fim não tem revanche", get_node_or_null("Revanche/QuadroDaRevanche") == null and not revanche.pode_comecar()) and all_ok
+	_skip_to_post_game()
+	await _wait(0.5)
+	var quadro := get_node_or_null("Revanche/QuadroDaRevanche") as Node3D
+	all_ok = _check("no pós-jogo, o quadro da revanche fica no cemitério, sem troféu ainda", quadro != null
+			and quadro.global_position.distance_to(story.defenses.cemiterio.center) < 14.0
+			and revanche._trofeus.values().all(func(t: Node3D) -> bool: return not t.visible)) and all_ok
+	await _stand(revanche.ponto_do_circulo())
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso chama para a revanche", "revanche" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("B abre a escolha com os seis guardiões", menu_state == "revanche" and revanche_panel.visible
+			and revanche_panel.cartoes.size() == 6 and get_viewport().gui_get_focus_owner() == revanche_panel.cartoes.oeste.botao) and all_ok
+	await _joy_button(JOY_BUTTON_A)
+	await _wait(0.5)
+	var g: Boss = revanche.guardiao
+	all_ok = _check("A escolhe o Ossão: ele sobe no gramado, com o relógio no alto", menu_state == "" and revanche.rodando()
+			and g is BossOssao and "Revanche: Ossão" in wave_label.text and in_combat() and story.objective_icon == "ossao",
+			"(%s)" % wave_label.text) and all_ok
+	await _stand(story.defenses.cemiterio.center)
+	await _wait(1.6)
+	all_ok = _check("no meio do gramado, a Festa sem fim não começa durante a revanche",
+			party_mode.state == EndlessParty.State.PARADA) and all_ok
+	await _stand(story.defenses.cemiterio.center + Vector3(0, 0, 9))
+	await _wait_until(func() -> bool: return g.phase == Boss.Phase.LUTANDO, 8.0)
+	var moedas := story.coins
+	await _derrubar(g)
+	await _wait(0.4)
+	all_ok = _check("vencer rápido dá 3 estrelas, 40 moedas, o troféu de ouro e as estrelas na tela", not revanche.rodando()
+			and revanche.ultima.get("estrelas", 0) == 3 and revanche.melhores.oeste.estrelas == 3 and story.coins == moedas + 40
+			and revanche._trofeus.oeste.visible and revanche.estrelas_hud.visible, "(%s, %d moedas)" % [revanche.ultima, story.coins - moedas]) and all_ok
+	all_ok = _check("as estrelas pelo tempo", Revanche.estrelas_para("oeste", 40.0) == 3 and Revanche.estrelas_para("oeste", 60.0) == 2
+			and Revanche.estrelas_para("oeste", 90.0) == 1) and all_ok
+	await _wait(3.0)
+	revanche.comecar("leste")
+	await _wait(0.5)
+	var mira: Boss = revanche.guardiao
+	player.god_mode = false
+	player._invulnerable = 0.0
+	player.hearts = 1
+	player.take_damage(1, player.global_position + Vector3(1, 0, 0))
+	await _wait(0.5)
+	all_ok = _check("tonto na revanche: encerra sem estrela e o guardião sai", not revanche.rodando() and revanche.ultima.get("estrelas", -1) == 0
+			and not is_instance_valid(mira) and not revanche.melhores.has("leste")) and all_ok
+	player.god_mode = true
+	await _wait(4.0)
+	revanche.comecar("cemiterio")
+	var mestre: Boss = revanche.guardiao
+	await _wait_until(func() -> bool: return mestre.phase == Boss.Phase.LUTANDO, 8.0)
+	await _derrubar(mestre)
+	await _wait(5.5)
+	all_ok = _check("o Mestre senta e depois sai do gramado", not revanche.rodando() and not is_instance_valid(mestre)
+			and revanche.melhores.has("cemiterio")) and all_ok
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda a melhor de cada um", foto.get("revanche", {}).get("oeste", {}).get("estrelas", 0) == 3) and all_ok
+	var todos := {}
+	for id in Revanche.ORDEM:
+		todos[id] = {"estrelas": 3, "tempo": 30.0}
+	todos["fantasma"] = {"estrelas": 3}
+	revanche.carregar(todos)
+	all_ok = _check("os seis no ouro dão o troféu grandão (e o que não é guardião fica de fora)", revanche._trofeu_grande.visible
+			and revanche.melhores.size() == 6) and all_ok
+	print("REVANCHE OK" if all_ok else "REVANCHE COM FALHAS")
+	get_tree().quit()
+
+
+## Derruba um guardião nos testes: golpe forte por cima da cabeça (passa do escudo) em cada parte, e explosão.
+func _derrubar(b: Boss) -> void:
+	for k in 12:
+		if not is_instance_valid(b) or b.phase != Boss.Phase.LUTANDO:
+			return
+		var hb: Hurtbox = b.hurtboxes[k % b.hurtboxes.size()]
+		b.take_hit(999.0, b.global_position + Vector3.UP * 4.0, hb)
+		b.take_explosion(999.0, b.global_position)
+		await get_tree().physics_frame
+
+
+## Fotos da revanche (revanche_1 a revanche_3): o quadro com os troféus, a escolha e a luta com o relógio.
+## Uso: godot --path . -- --revanche-captura
+func _run_rematch_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(1.0)
+	player.using_gamepad = true
+	revanche.carregar({"oeste": {"estrelas": 3, "tempo": 38.0}, "leste": {"estrelas": 2, "tempo": 61.0}, "clareira": {"estrelas": 1, "tempo": 120.0}})
+	var c := revanche.ponto_do_circulo()
+	await _stand(c + Vector3(1.5, 0.3, 3.0))
+	var olhar := revanche._quadro.global_position + Vector3.UP * 2.0 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.2)
+	await _shot("revanche_1_quadro.png")
+	open_menu("revanche")
+	await _wait(0.6)
+	await _shot("revanche_2_escolha.png")
+	close_menus()
+	revanche.comecar("ventos")
+	await _wait(4.0)
+	await _shot("revanche_3_luta.png")
+	get_tree().quit()
+
+
+## Esqueleto dourado (item 8 da lista de melhorias): não aparece antes do fim do prólogo nem pescando; sai do chão na
+## frente, num chão livre, com a faixa e a seta "Dourado"; foge do aventureiro e cansa de vez em quando; derrotado dá
+## 25 moedas e a figurinha; sem pegar, afunda e some. Uso: godot --headless --path . -- --dourado
+func _run_golden_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	all_ok = _check("antes do prólogo acabar, não aparece", not caca.pode_aparecer()) and all_ok
+	story.stage = "cidade"
+	await _stand(_ground_point(Vector3(0, 0, 170)))
+	await _wait(0.2)
+	player.pescando = true
+	var pescando := caca.pode_aparecer()
+	player.pescando = false
+	all_ok = _check("depois do prólogo pode aparecer, mas pescando não", caca.pode_aparecer() and not pescando) and all_ok
+	var lugares_ok := true
+	for k in 5:
+		player.set_yaw(k * TAU / 5.0)
+		await _wait(0.1)
+		if not caca.aparecer():
+			continue
+		var d: SkeletonEnemy = caca.dourado
+		lugares_ok = lugares_ok and d.global_position.y >= -0.05 and d.global_position.distance_to(player.global_position) > 15.0
+		d.queue_free()
+		caca.dourado = null
+		await _wait(0.1)
+	all_ok = _check("aparece longe e no chão, para qualquer lado que olhe", lugares_ok) and all_ok
+	player.set_yaw(0.0)
+	await _wait(0.2)
+	all_ok = _check("aparece na frente", caca.aparecer()) and all_ok
+	var e: SkeletonEnemy = caca.dourado
+	await _wait_until(func() -> bool: return e.state == SkeletonEnemy.State.PERSEGUINDO, 4.0)
+	await _wait(0.2)
+	all_ok = _check("é dourado, com a seta \"Dourado\"", e.config.get("dourado", false) and dourado_marker.visible
+			and dourado_marker.rotulo == "Dourado" and "dourado" in banner_title.text.to_lower(), "(%s)" % banner_title.text) and all_ok
+	var perto := e.global_position + (player.global_position - e.global_position).normalized() * 5.0
+	await _stand(Vector3(perto.x, e.global_position.y + 0.3, perto.z))
+	var antes := Vector2(e.global_position.x - player.global_position.x, e.global_position.z - player.global_position.z).length()
+	e._correndo = 0.0
+	await _wait(2.4)
+	var depois := Vector2(e.global_position.x - player.global_position.x, e.global_position.z - player.global_position.z).length()
+	all_ok = _check("foge do aventureiro", depois > antes + 4.0, "(%.1f -> %.1f m)" % [antes, depois]) and all_ok
+	perto = e.global_position + (player.global_position - e.global_position).normalized() * 6.0
+	await _stand(Vector3(perto.x, e.global_position.y + 0.3, perto.z))
+	e._correndo = 5.2
+	await _wait_until(func() -> bool: return e._cansado > 0.0, 3.0)
+	all_ok = _check("perto, depois de correr um tempo, cansa e para um pouquinho", e._cansado > 0.0) and all_ok
+	var moedas := story.coins
+	e._apply_damage(20.0, e.global_position + Vector3.UP, false)
+	await _wait(0.3)
+	all_ok = _check("pego: 25 moedas, a figurinha da turma e some a seta", story.coins == moedas + CacaDourada.MOEDAS
+			and story.derrotados.has("Dourado") and caca.dourado == null and caca.pegos == 1) and all_ok
+	await _wait(0.4)
+	caca.aparecer()
+	var outro: SkeletonEnemy = caca.dourado
+	caca._vida = CacaDourada.FUGA + 1.0
+	await _wait(0.3)
+	all_ok = _check("sem pegar a tempo, afunda e volta outra hora", caca.dourado == null and outro.state == SkeletonEnemy.State.AFUNDANDO
+			and caca._espera >= CacaDourada.ENTRE.x) and all_ok
+	print("DOURADO OK" if all_ok else "DOURADO COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do esqueleto dourado (dourado_1 e dourado_2): saindo do chão com a faixa e correndo, com a seta.
+## Uso: godot --path . -- --dourado-captura
+func _run_golden_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	story.stage = "cidade"
+	await _stand(_ground_point(Vector3(30, 0, 60)))
+	player.set_yaw(PI * 0.75)
+	await _wait(0.4)
+	caca.aparecer()
+	await _wait(1.2)
+	await _shot("dourado_1_aparece.png")
+	var e: SkeletonEnemy = caca.dourado
+	await _wait_until(func() -> bool: return e.state == SkeletonEnemy.State.PERSEGUINDO, 4.0)
+	var perto := e.global_position + (player.global_position - e.global_position).normalized() * 6.0
+	await _stand(Vector3(perto.x, e.global_position.y + 0.3, perto.z))
+	var olhar := e.global_position - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(0.9)
+	await _shot("dourado_2_foge.png")
+	get_tree().quit()
+
+
+## Álbum de figurinhas e bilhetes pela ilha (item 7 da lista de melhorias): as figurinhas geradas; a pausa com o botão
+## do Álbum; o álbum vazio no começo; esqueleto derrotado, guardião vencido, peixe e esconde-esconde aparecendo; os oito
+## bilhetes no chão, pegar um (cartão, moedas, álbum); salvar e carregar (com os tipos das regiões já vencidas).
+## Uso: godot --headless --path . -- --album
+func _run_album_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	var faltam := []
+	for id in Album.GUARDIOES:
+		if not ResourceLoader.exists(Album.FIGURAS % ("guardiao_" + id)):
+			faltam.append(id)
+	for t: Dictionary in Album.TURMA:
+		if not ResourceLoader.exists(Album.FIGURAS % ("tipo_" + t.id)):
+			faltam.append(t.id)
+	for p: Dictionary in Pescaria.PEIXES:
+		if not ResourceLoader.exists(Album.FIGURAS % ("peixe_" + p.id)):
+			faltam.append(p.id)
+	all_ok = _check("as figurinhas dos guardiões, da turma e dos peixes existem", faltam.is_empty(), str(faltam)) and all_ok
+	var total := Album.contagem(self)
+	all_ok = _check("o álbum tem 48 figurinhas e começa vazio", total == Vector2i(0, 48), str(total)) and all_ok
+	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
+	var no_chao := bilhetes_nos.filter(func(b: Bilhete) -> bool: return b.global_position.y > -0.3 and b.visible)
+	all_ok = _check("os oito bilhetes estão no chão, à vista", bilhetes_nos.size() == 8 and no_chao.size() == 8) and all_ok
+	open_menu("pausa")
+	await _wait(0.2)
+	await _joy_button(JOY_BUTTON_DPAD_LEFT)
+	all_ok = _check("na pausa, o direcional para a esquerda chega no Álbum", get_viewport().gui_get_focus_owner() == _pause_album) and all_ok
+	await _joy_button(JOY_BUTTON_A)
+	await _wait(0.2)
+	all_ok = _check("A abre o álbum na página dos guardiões, com tudo apagado", menu_state == "album" and album_panel.visible
+			and album_panel.pagina == "guardioes" and album_panel.cartas.size() == 6 and "0 de 48" in album_panel.titulo_conta.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.2)
+	all_ok = _check("B volta para a pausa com o Álbum marcado", menu_state == "pausa" and get_viewport().gui_get_focus_owner() == _pause_album) and all_ok
+	close_menus()
+	await _wait(0.3)
+	var e := spawn_wave_enemy("Skeleton_Rogue", player.global_position + Vector3(30, 0, 0))
+	await _wait(0.2)
+	e.defeated.emit(e)
+	story.defenses.oeste.state = Defense.State.VENCIDA
+	pescaria.carregar({"Koi": 1})
+	esconde.figurinhas.append("Lobinho")
+	all_ok = _check("derrotar, vencer, pescar e achar no esconde-esconde contam no álbum", story.derrotados.has("Skeleton_Rogue")
+			and Album.contagem(self) == Vector2i(4, 48), str(Album.contagem(self))) and all_ok
+	var b: Bilhete = bilhetes_nos[1]
+	var moedas := story.coins
+	await _stand(b.global_position + Vector3.UP * 0.3)
+	await _wait(0.4)
+	all_ok = _check("encostar no bilhete pega: cartão com o texto, moedas e o bilhete some", "sitio" in story.bilhetes and not b.visible
+			and bilhete_cartao.visible and "cavalos" in bilhete_cartao.texto() and story.coins == moedas + Album.MOEDAS_BILHETE) and all_ok
+	await _stand(player.global_position + Vector3(6, 0, 0))
+	open_menu("album")
+	await _wait(0.2)
+	(album_panel.abas.bilhetes as Button).grab_focus()
+	await _wait(0.2)
+	await _joy_button(JOY_BUTTON_DPAD_DOWN)
+	await _joy_button(JOY_BUTTON_DPAD_RIGHT)
+	all_ok = _check("no álbum, o segundo bilhete mostra o texto inteiro e o primeiro ainda falta", album_panel.pagina == "bilhetes"
+			and "cavalos" in album_panel.descricao_texto.text and "5 de 48" in album_panel.titulo_conta.text, "(%s)" % album_panel.descricao_texto.text) and all_ok
+	await _joy_button(JOY_BUTTON_DPAD_LEFT)
+	all_ok = _check("a figurinha que falta mostra só \"???\"", album_panel.descricao_nome.text == "???") and all_ok
+	close_menus()
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda os derrotados e os bilhetes", foto.get("derrotados", {}).has("Skeleton_Rogue") and "sitio" in foto.get("bilhetes", [])) and all_ok
+	foto.derrotados = {}
+	foto.bilhetes = ["ponte", "nada"]
+	foto.vencidas = ["praca", "oeste"]
+	story.restore(foto)
+	await _wait(0.3)
+	all_ok = _check("carregando: os tipos das regiões vencidas contam e o bilhete salvo some do chão", story.derrotados.has("Skeleton_Pistoleiro")
+			and story.derrotados.has("Skeleton_Warrior") and story.bilhetes == ["ponte"] and not bilhetes_nos[0].visible and bilhetes_nos[1].visible) and all_ok
+	print("ALBUM OK" if all_ok else "ALBUM COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do álbum (album_1 a album_5): um bilhete no chão, o cartão do bilhete, a pausa com o Álbum e as páginas da
+## turma e dos peixes com algumas achadas. Uso: godot --path . -- --album-captura
+func _run_album_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.8)
+	player.using_gamepad = true
+	await _wait_until(func() -> bool: return bilhetes_nos.all(func(b: Bilhete) -> bool: return b.pronto()), 3.0)
+	var b: Bilhete = bilhetes_nos[1]
+	await _stand(_ground_point(b.global_position + Vector3(-4.5, 0, 3.5)))
+	var olhar := b.global_position + Vector3.UP * 1.0 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.0)
+	await _shot("album_1_bilhete.png")
+	await _stand(b.global_position + Vector3.UP * 0.3)
+	await _wait(0.6)
+	await _shot("album_2_cartao.png")
+	bilhete_cartao.hide()
+	for t in ["Skeleton_Minion", "Skeleton_Warrior", "Skeleton_Rogue", "Lobinho", "Skeleton_Mage"]:
+		story.derrotados[t] = 3
+	story.defenses.oeste.state = Defense.State.VENCIDA
+	story.defenses.leste.state = Defense.State.VENCIDA
+	pescaria.carregar({"Koi": 1, "Clownfish": 2, "Puffer": 1, "BlueTang": 1, "Goldfish": 1, "MandarinFish": 1})
+	esconde.figurinhas.append_array(["Skeleton_Minion", "Lobinho"])
+	open_menu("pausa")
+	await _wait(0.3)
+	_pause_album.grab_focus()
+	await _wait(0.4)
+	await _shot("album_3_pausa.png")
+	open_menu("album")
+	await _wait(0.3)
+	(album_panel.abas.turma as Button).grab_focus()
+	await _wait(0.3)
+	album_panel.cartas[2].grab_focus()
+	await _wait(0.4)
+	await _shot("album_4_turma.png")
+	(album_panel.abas.peixes as Button).grab_focus()
+	await _wait(0.3)
+	album_panel.cartas[14].grab_focus()
+	await _wait(0.4)
+	await _shot("album_5_peixes.png")
+	get_tree().quit()
+
+
+## Esconde-esconde dos esqueletos amigos (item 6 da lista de melhorias): só no pós-jogo, com o Ossinho e o círculo
+## na praia; lugares em cada região (atrás das coisas, no chão, espalhados); B conta 3, 2, 1 e cinco se escondem; o
+## termômetro esquenta perto; o sininho toca; chegar perto acha (moedas, carinha acesa, balão); a seta aparece depois
+## de um tempo sem achar; os cinco dão a figurinha e mais moedas; a campanha guarda; a rodada seguinte é no sítio.
+## Uso: godot --headless --path . -- --esconde
+func _run_hide_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.5)
+	all_ok = _check("antes do fim não tem esconde-esconde", get_node_or_null("OssinhoDoEsconde") == null and not esconde.pode_comecar()) and all_ok
+	_skip_to_post_game()
+	await _wait(0.5)
+	all_ok = _check("no pós-jogo, o Ossinho e o círculo ficam na praia do cais", is_instance_valid(esconde.anfitriao)
+			and esconde.anfitriao.global_position.distance_to(EscondeEsconde.ANFITRIAO) < 1.5) and all_ok
+	for a: Dictionary in EscondeEsconde.AREAS:
+		var lugares := esconde.lugares_para(a)
+		var ok := lugares.size() == EscondeEsconde.QUANTOS
+		var menor := INF
+		for i in lugares.size():
+			var pos: Vector3 = lugares[i].pos
+			ok = ok and pos.y > -0.2 and Vector2(pos.x - a.centro.x, pos.z - a.centro.y).length() < a.raio + 6.0
+			for j in i:
+				menor = minf(menor, pos.distance_to(lugares[j].pos))
+		all_ok = _check("lugares para esconder %s: cinco, no chão e espalhados" % a.nome, ok and menor > 4.0,
+				"(%d, o mais perto a %.0f m)" % [lugares.size(), menor]) and all_ok
+	await _stand(EscondeEsconde.CIRCULO)
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso chama para brincar", "esconde-esconde" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.4)
+	all_ok = _check("B começa a contagem com a tela escura e cinco escondidos na cidade", esconde.estado == EscondeEsconde.Estado.CONTANDO
+			and esconde.numero.visible and fade.modulate.a > 0.5 and esconde.escondidos.size() == 5 and esconde.area.id == "cidade") and all_ok
+	await _wait_until(func() -> bool: return esconde.estado == EscondeEsconde.Estado.BUSCANDO, 5.0)
+	await _wait(0.5)
+	all_ok = _check("lá vou eu: carinhas no alto, objetivo com a figura e ainda sem seta", esconde.hud.visible and not esconde.numero.visible
+			and "Ache os amigos escondidos na cidade (0 de 5)" == story.objective_text and story.objective_icon == "esconde"
+			and story.objective_target == Vector3.INF, "(%s)" % story.objective_text) and all_ok
+	var alvo: Townsperson = esconde.escondidos[0]
+	var olhar: Vector3 = alvo.get_meta("olhar")
+	# Longe de todos (o sítio fica a mais de 100 m da cidade): frio de verdade.
+	await _stand(_ground_point(Vector3(-120, 0, -6)))
+	await _wait(0.3)
+	var frio := esconde.calor()
+	await _stand(alvo.global_position - olhar * 7.0 + Vector3.UP * 0.2)
+	Sfx.played.clear()
+	await _wait(4.5)
+	var quente := esconde.calor()
+	all_ok = _check("o termômetro esquenta perto e o sininho toca", quente.r > quente.b and (frio.b > frio.r or frio.r < quente.r)
+			and "sino" in Sfx.played, "(frio %s, quente %s)" % [frio.to_html(false), quente.to_html(false)]) and all_ok
+	var moedas := story.coins
+	await _stand(alvo.global_position - olhar * 1.6 + Vector3.UP * 0.2)
+	await _wait(0.4)
+	all_ok = _check("chegando perto, acha: comemora, dá moedas e acende a carinha", esconde.achados == 1 and alvo.has_meta("achado")
+			and story.coins == moedas + EscondeEsconde.MOEDAS_ACHOU and story.objective_text.ends_with("(1 de 5)")) and all_ok
+	esconde.dica_teste = 0.5
+	await _wait(1.0)
+	var resto := esconde.escondidos.filter(func(h: Townsperson) -> bool: return is_instance_valid(h) and not h.has_meta("achado"))
+	all_ok = _check("sem achar ninguém por um tempo, a seta aponta para um escondido", story.objective_target != Vector3.INF
+			and resto.any(func(h: Townsperson) -> bool: return h.global_position.distance_to(story.objective_target) < 2.0)) and all_ok
+	esconde.dica_teste = -1.0
+	await _wait(7.5)
+	all_ok = _check("o achado vai embora de balão", not is_instance_valid(alvo)) and all_ok
+	moedas = story.coins
+	for h: Townsperson in resto:
+		var o: Vector3 = h.get_meta("olhar")
+		await _stand(h.global_position - o * 1.6 + Vector3.UP * 0.2)
+		await _wait(0.3)
+	await _wait(0.3)
+	all_ok = _check("achando os cinco: figurinha nova, mais moedas e o cartão", esconde.estado == EscondeEsconde.Estado.PARADO
+			and esconde.rodadas == 1 and esconde.figurinhas == ["Skeleton_Minion"] and esconde.cartao.visible
+			and story.coins == moedas + EscondeEsconde.MOEDAS_ACHOU * 4 + EscondeEsconde.MOEDAS_RODADA, "(%d moedas)" % (story.coins - moedas)) and all_ok
+	var foto := story.snapshot()
+	all_ok = _check("a campanha guarda as rodadas e as figurinhas", foto.get("esconde", {}).get("rodadas", 0) == 1
+			and "Skeleton_Minion" in foto.esconde.figurinhas) and all_ok
+	await _wait(5.0)
+	await _stand(EscondeEsconde.CIRCULO)
+	await _wait(0.3)
+	await _joy_button(JOY_BUTTON_B)
+	await _wait(0.3)
+	all_ok = _check("a rodada seguinte é no sítio", esconde.area.id == "sitio" and esconde.escondidos.size() == 5) and all_ok
+	esconde._cancelar()
+	fade.modulate.a = 0.0
+	esconde.carregar({"rodadas": 2, "figurinhas": ["Lobinho", "Fantasma"]})
+	all_ok = _check("carregando, ignora figurinha que não existe", esconde.rodadas == 2 and esconde.figurinhas == ["Lobinho"]) and all_ok
+	print("ESCONDE OK" if all_ok else "ESCONDE COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos do esconde-esconde (esconde_1 a esconde_5): o Ossinho e o círculo na praia, a contagem, um escondido atrás de
+## alguma coisa com o termômetro quente, o "Achou!" e o cartão da figurinha. Uso: godot --path . -- --esconde-captura
+func _run_hide_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(0.5)
+	_skip_to_post_game()
+	await _wait(1.0)
+	player.using_gamepad = true
+	var circulo := EscondeEsconde.CIRCULO
+	await _stand(_ground_point(circulo + Vector3(-5.5, 0, 3.5)))
+	var olhar := EscondeEsconde.ANFITRIAO + Vector3(0, 0, 2.0) - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.2)
+	await _shot("esconde_1_ossinho.png")
+	await _stand(circulo)
+	esconde.comecar()
+	await _wait(0.8)
+	await _shot("esconde_2_contagem.png")
+	await _wait_until(func() -> bool: return esconde.estado == EscondeEsconde.Estado.BUSCANDO, 5.0)
+	await _wait(4.5)
+	var alvo: Townsperson = esconde.escondidos[0]
+	var de_lado: Vector3 = alvo.get_meta("olhar")
+	await _stand(alvo.global_position - de_lado * 6.0 + de_lado.cross(Vector3.UP) * 2.0 + Vector3.UP * 0.2)
+	olhar = alvo.global_position - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.5)
+	await _shot("esconde_3_quente.png")
+	await _stand(alvo.global_position - de_lado * 3.6 + Vector3.UP * 0.2)
+	player.set_yaw(atan2(-de_lado.x, -de_lado.z))
+	await _wait(0.3)
+	await _stand(alvo.global_position - de_lado * 2.6 + Vector3.UP * 0.2)
+	await _wait(0.6)
+	await _shot("esconde_4_achou.png")
+	for h: Townsperson in esconde.escondidos.duplicate():
+		if is_instance_valid(h) and not h.has_meta("achado"):
+			var o: Vector3 = h.get_meta("olhar")
+			await _stand(h.global_position - o * 1.6 + Vector3.UP * 0.2)
+			await _wait(0.3)
+	await _wait(1.0)
+	await _shot("esconde_5_figurinha.png")
+	get_tree().quit()
+
+
+## Pescaria na ponta do cais e o aquário da praia (item 5 da lista de melhorias): o círculo com o aviso, B pega a vara
+## (câmera do cais, boia na água), o peixe morde e o A grande aparece, A fisga, A sem parar enche a barra, o peixe
+## pula, o cartão mostra o novo, as moedas entram e o aquário ganha o peixe; o que escapa volta a lançar; o repetido
+## dá menos moedas; B guarda a vara; a coleção vai para o salvamento e o sorteio prefere os que faltam.
+## Uso: godot --headless --path . -- --pescaria
+func _run_fishing_test() -> void:
+	var all_ok := true
+	story.fast = true
+	player.god_mode = true
+	Sfx.logging = true
+	await _wait(0.6)
+	all_ok = _check("ponta do cais com círculo, balde, placar e aquário vazio na praia", is_instance_valid(pescaria)
+			and pescaria.balde.is_inside_tree() and "0 de 17" in pescaria.placar.text and aquario.peixes.is_empty()
+			and "0 de 17" in aquario.placar.text and aquario.global_position.y > -1.0, "(aquário em y %.2f)" % aquario.global_position.y) and all_ok
+	await _stand(Pescaria.PONTO + Vector3(0, 0, -1.2))
+	await _wait(0.3)
+	all_ok = _check("no círculo, o aviso ensina a pescar", hint_label.visible and "pescar" in hint_label.text, "(%s)" % hint_label.text) and all_ok
+	pescaria.forcar = "Koi"
+	await _joy_button(JOY_BUTTON_B)
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 4.0)
+	var cam := get_viewport().get_camera_3d()
+	var linha := pescaria._linha()
+	all_ok = _check("B pega a vara: câmera do cais, boia na água, vara na mão, sem mira nem seta", cam == pescaria.camera
+			and player.pescando and is_instance_valid(player.vara) and player.vara.visible and not player.input_enabled
+			and absf(pescaria.boia.global_position.y - Pescaria.AGUA) < 0.2 and not crosshair.visible and not objective_marker.visible
+			and linha != null and linha.global_basis.y.length() > 2.0, "(boia em y %.2f)" % pescaria.boia.global_position.y) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.FISGAR, 6.0)
+	await _wait(0.1)
+	all_ok = _check("o peixe morde: a boia afunda, o A grande aparece e toca o alerta", pescaria.fase == Pescaria.Fase.FISGAR
+			and pescaria.botao_a.visible and pescaria.boia.global_position.y < Pescaria.AGUA - 0.1 and "alerta" in Sfx.played) and all_ok
+	var moedas := story.coins
+	await _joy_button(JOY_BUTTON_A)
+	all_ok = _check("A fisga: aparece a barra", pescaria.fase == Pescaria.Fase.PUXANDO and pescaria.barra.visible) and all_ok
+	var apertos := 0
+	while pescaria.fase == Pescaria.Fase.PUXANDO and apertos < 20:
+		await _joy_button(JOY_BUTTON_A)
+		apertos += 1
+	all_ok = _check("A sem parar enche a barra e o peixe pula", pescaria.fase == Pescaria.Fase.PEGOU and apertos <= 10,
+			"(%d apertos)" % apertos) and all_ok
+	await _wait(0.7)
+	all_ok = _check("o cartão mostra a carpa koi nova, as moedas entram e o aquário ganha o peixe", pescaria.cartao.visible
+			and pescaria.cartao_nome.text == "Carpa koi" and pescaria.cartao_novo.visible
+			and story.coins == moedas + Pescaria.MOEDAS_NOVO[3] and pescaria.pegos.get("Koi", 0) == 1
+			and aquario.peixes.has("Koi") and "1 de 17" in aquario.placar.text and "1 de 17" in pescaria.placar.text,
+			"(%d moedas)" % (story.coins - moedas)) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 6.0)
+	all_ok = _check("o peixe vai para o balde e a boia volta para a água", pescaria.fase == Pescaria.Fase.ESPERANDO
+			and is_instance_valid(pescaria.no_balde) and not pescaria.cartao.visible) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESCAPOU, 10.0)
+	all_ok = _check("sem apertar, o peixe escapa", pescaria.fase == Pescaria.Fase.ESCAPOU and pescaria.pegos.Koi == 1) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 4.0)
+	all_ok = _check("e a boia volta sozinha para a água", pescaria.fase == Pescaria.Fase.ESPERANDO) and all_ok
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.FISGAR, 6.0)
+	moedas = story.coins
+	await _joy_button(JOY_BUTTON_A)
+	apertos = 0
+	while pescaria.fase == Pescaria.Fase.PUXANDO and apertos < 20:
+		await _joy_button(JOY_BUTTON_A)
+		apertos += 1
+	await _wait(0.3)
+	all_ok = _check("a segunda koi não é nova e dá menos moedas", pescaria.pegos.Koi == 2 and not pescaria.cartao_novo.visible
+			and story.coins == moedas + Pescaria.MOEDAS_REPETIDO and aquario.peixes.size() == 1) and all_ok
+	await _joy_button(JOY_BUTTON_B)
+	await _wait_until(func() -> bool: return not pescaria.pescando(), 3.0)
+	await _wait(0.4)
+	all_ok = _check("B guarda a vara: câmera do aventureiro, mira, blasters e controle de volta", get_viewport().get_camera_3d() == player.camera
+			and not player.pescando and not player.vara.visible and player.input_enabled and crosshair.visible
+			and not pescaria.boia.visible) and all_ok
+	var foto := story.snapshot()
+	all_ok = _check("a coleção vai para o salvamento", foto.get("peixes", {}).get("Koi", 0) == 2) and all_ok
+	pescaria.carregar({"Clownfish": 3, "Puffer": 1, "Bota": 2})
+	all_ok = _check("carregando, o aquário recebe os peixes salvos (e ignora o que não é peixe)", pescaria.pegos.size() == 2
+			and aquario.peixes.has("Puffer") and "2 de 17" in pescaria.placar.text) and all_ok
+	var novos := 0
+	for i in 300:
+		if not pescaria.pegos.has(pescaria.sortear()):
+			novos += 1
+	all_ok = _check("o sorteio prefere os peixes que faltam", novos > 180, "(%d de 300)" % novos) and all_ok
+	var dentro := true
+	for id in aquario.peixes:
+		var f: Fish = aquario.peixes[id]
+		var local := f.global_position - aquario.global_position
+		dentro = dentro and absf(local.x) < Aquario.LARGURA * 0.5 and absf(local.z) < Aquario.FUNDO * 0.5 \
+				and local.y > Aquario.MESA + Aquario.BORDA and f.global_position.y < aquario.agua_y()
+	all_ok = _check("os peixes nadam dentro do aquário", dentro) and all_ok
+	Ajustes.facil = true
+	pescaria.peixe_id = "Puffer"
+	all_ok = _check("no Modo Fácil, mais tempo para fisgar e menos apertos", pescaria.janela() > Pescaria.JANELA
+			and pescaria.puxoes() == Pescaria.PUXOES[3] - 2) and all_ok
+	Ajustes.padrao()
+	await _stand(Pescaria.PONTO + Vector3(0, 0, -1.2))
+	player.pull_phone()
+	await _wait(0.2)
+	all_ok = _check("com o celular na mão, não pega a vara", not pescaria.pode_entrar()) and all_ok
+	player.put_phone_away()
+	print("PESCARIA OK" if all_ok else "PESCARIA COM FALHAS")
+	get_tree().quit()
+
+
+## Fotos da pescaria (pesca_1 a pesca_6): a ponta do cais com o círculo e o pescador, a boia esperando, o A grande, a
+## barra, o cartão do peixe novo e o aquário da praia com oito peixes. Uso: godot --path . -- --pescaria-captura
+func _run_fishing_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	player.using_gamepad = true
+	await _stand(Pescaria.PONTO + Vector3(1.0, 0, -6.0))
+	var olhar := Pescaria.PONTO - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.0)
+	await _shot("pesca_1_cais.png")
+	await _stand(Pescaria.PONTO + Vector3(0, 0, -1.0))
+	pescaria.forcar = "Clownfish"
+	pescaria.entrar()
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.ESPERANDO, 4.0)
+	await _wait(1.4)
+	await _shot("pesca_2_espera.png")
+	await _wait_until(func() -> bool: return pescaria.fase == Pescaria.Fase.FISGAR, 6.0)
+	await _wait(0.2)
+	await _shot("pesca_3_fisgar.png")
+	for i in 4:
+		await _joy_button(JOY_BUTTON_A)
+		await _wait(0.1)
+	await _wait(0.2)
+	await _shot("pesca_4_puxar.png")
+	var apertos := 0
+	while pescaria.fase == Pescaria.Fase.PUXANDO and apertos < 30:
+		await _joy_button(JOY_BUTTON_A)
+		apertos += 1
+	await _wait(0.9)
+	await _shot("pesca_5_cartao.png")
+	pescaria.sair()
+	await _wait_until(func() -> bool: return not pescaria.pescando(), 3.0)
+	pescaria.carregar({"Clownfish": 1, "Goldfish": 1, "BlueTang": 1, "YellowTang": 1, "Koi": 1, "Puffer": 1, "ButterflyFish": 1,
+			"MandarinFish": 1})
+	var frente := aquario.global_position + Vector3(-1.5, 0, -5.5)
+	await _stand(_ground_point(frente))
+	olhar = aquario.global_position + Vector3.UP * 1.4 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(2.0)
+	await _shot("pesca_6_aquario.png")
+	get_tree().quit()
+
+
+## Fotos do objetivo com figura (objetivo_1 a objetivo_3): a seta com o esqueleto da praia, a seta com a lanterna
+## da cidade e a pausa com a figura ao lado do texto. Uso: godot --path . -- --objetivo-captura
+func _run_objective_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	var fotos := [["antes", Vector3(28, 0, -30), "objetivo_1_praia.png"], ["cidade", Vector3(-26, 0, 30), "objetivo_2_lanterna.png"]]
+	for f in fotos:
+		story.stage = f[0]
+		story._refresh_objective()
+		var alvo: Vector3 = story.objective_target
+		await _stand(_ground_point(alvo + f[1]))
+		var olhar := alvo - player.global_position
+		player.set_yaw(atan2(-olhar.x, -olhar.z))
+		await _wait(1.0)
+		await _shot(f[2])
+	open_menu("pausa")
+	await _wait(0.6)
+	await _shot("objetivo_3_pausa.png")
+	get_tree().quit()
+
+
+## Fotos do farol mirante (mirante_1 a mirante_5): o farol aceso visto da praia, a porta com o aviso, a vista do
+## binóculo com os nomes, de perto e os Ajustes por cima. Uso: godot --path . -- --farol-captura
+func _run_lighthouse_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	await _wait(1.0)
+	var praia := farol.porta() - FarolIlha.DIRECAO * 22.0 + Vector3(-5, 0, 5)
+	await _stand(_ground_point(praia))
+	var olhar := farol.global_position + Vector3.UP * 9.0 - player.global_position
+	player.set_yaw(atan2(-olhar.x, -olhar.z))
+	await _wait(1.0)
+	await _shot("mirante_1_farol.png")
+	await _stand(farol.porta() + Vector3.UP * 0.2)
+	await _wait(0.4)
+	await _shot("mirante_2_porta.png")
+	farol.subir()
+	await _wait_until(func() -> bool: return farol.no_mirante and not farol._trocando, 3.0)
+	await _wait(1.2)
+	await _shot("mirante_3_binoculo.png")
+	farol._fov = FarolIlha.FOV_PERTO
+	farol._yaw += 0.35
+	await _wait(0.6)
+	await _shot("mirante_4_de_perto.png")
+	open_menu("pausa")
+	_pause_ajustes.pressed.emit()
+	await _wait(0.6)
+	await _shot("mirante_5_ajustes.png")
+	get_tree().quit()
+
+
+## Fotos dos menus (u01 a u07): início, escolha de personagem, pausa, comandos e a confirmação.
+## Uso: godot --path . -- --menus-captura
+func _run_menus_capture() -> void:
+	story.fast = true
+	player.god_mode = true
+	# O cursor fica no canto, longe dos botões (passar o mouse por cima marca o botão).
+	Input.warp_mouse(Vector2.ZERO)
+	open_menu("inicio")
+	await _wait(1.0)
+	await _shot("u01_inicio.png")
+	open_menu("escolha")
+	await _wait(1.0)
+	await _shot("u02_escolha_no_comeco.png")
+	_choose_character("menino")
+	await _wait(1.0)
+	open_menu("pausa")
+	await _wait(1.0)
+	await _shot("u04_pausa.png")
+	open_menu("comandos")
+	await _wait(0.4)
+	await _shot("u04b_comandos_criancas.png")
+	open_menu("ajustes")
+	await _wait(0.6)
+	await _shot("u05_ajustes.png")
+	open_menu("pausa")
+	_new_campaign_from_pause()
+	await _wait(0.4)
+	await _shot("u07_confirmar.png")
+	get_tree().quit()
 
 
 ## Fotografa a cena com uma câmera própria num SubViewport do tamanho pedido (a interface não entra).

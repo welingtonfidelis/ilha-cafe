@@ -76,8 +76,14 @@ var stage := "antes"
 var defenses := {}
 var lanterns := {}
 var rewards: Array[RewardPickup] = []
+## A figura de cada defesa em andamento: o guardião dela (na praia, um esqueleto qualquer).
+const OBJECTIVE_ICONS := {"praca": "esqueleto", "oeste": "ossao", "leste": "mira_torta", "clareira": "torre", "ventos": "minionzao",
+	"vila": "planta", "cemiterio": "mestre"}
 var objective_text := ""
 var objective_target := Vector3.INF
+## Figura do objetivo (um dos desenhos do MenuIcon), para quem ainda não lê: vai na seta do objetivo e na pausa
+## (item 4 da lista de melhorias, 2026-11-10).
+var objective_icon := ""
 ## Testes: ondas e intervalos curtos.
 var fast := false
 ## Fotos do álbum: {legenda, arquivo, imagem} (a imagem só fica na memória; o arquivo vai para user://album/).
@@ -100,6 +106,12 @@ var deliveries: Array[Delivery] = []
 const GUARDIAN_COINS := {"oeste": 50, "leste": 50, "clareira": 50, "ventos": 50, "vila": 50, "cemiterio": 100}
 ## Recordes: ondas na "Festa sem fim" e acertos na barraca de tiro.
 var records := {"festa": 0, "tiro": 0}
+## Álbum de figurinhas (item 7 da lista de melhorias): quantos de cada tipo de esqueleto já foram derrotados e os
+## bilhetes achados pela ilha.
+var derrotados := {}
+var bilhetes: Array[String] = []
+## Roupinhas compradas na lojinha (chapéus e pinturas).
+var roupas: Array[String] = []
 ## Legenda da foto tirada quando cada região é vencida.
 const PHOTO_CAPTIONS := {
 	"praca": "A primeira defesa, na praia do cais",
@@ -166,6 +178,7 @@ func start() -> void:
 	_set_fast()
 	defenses.praca.activate()
 	game.banner("Véspera da Festa do Cafuné", "Os esqueletos estão chegando pela praia! Vá até o cais e defenda a festa.")
+	Vozes.falar(game, "prologo")
 	_refresh_objective()
 	save()
 
@@ -194,12 +207,14 @@ func _on_defense_won(d: Defense) -> void:
 		get_tree().create_timer(1.6 if not fast else 0.1, false).timeout.connect(func() -> void: take_photo(PHOTO_CAPTIONS[d.id]))
 	if d.id == "vila":
 		_celebrate(d)
+		Vozes.falar(game, "conseguimos")
 		_spawn_reward(spec.recompensa, d.center + Vector3(0, 0, 3.0))
 		game.banner("Desafio vencido!", "O Guerreiro Planta reconheceu você como amigo da mata.", Color("#c9f7a0"))
 		_refresh_objective()
 		save()
 		return
 	_celebrate(d)
+	Vozes.falar(game, "lanterna" if spec.lanterna != "" else "conseguimos")
 	game.activate_checkpoint(spec.bandeira)
 	if spec.lanterna != "":
 		_set_lantern_look(spec.lanterna, false, true)
@@ -501,46 +516,65 @@ func running_defense() -> Defense:
 
 func _refresh_objective() -> void:
 	var text := ""
+	var icon := ""
 	var target := Vector3.INF
 	var player: Player = game.player
 	var running := running_defense()
 	if running:
 		text = ("Desafio: %s" if running.id == "vila" else "Defenda: %s") % running.nome
+		icon = OBJECTIVE_ICONS.get(running.id, "esqueleto")
 	elif not rewards.is_empty():
 		text = "Pegue a recompensa"
+		icon = "presente"
 		target = rewards[0].global_position + Vector3.UP * 2.0
 	else:
 		match stage:
 			"antes", "prologo":
 				text = "Vá até a praia do cais e defenda a festa"
+				icon = "esqueleto"
 				target = defenses.praca.center
 			"cidade":
 				var left := CITY.filter(func(id: String) -> bool: return defenses[id].state != Defense.State.VENCIDA)
 				text = "Apague as lanternas da cidade (%d de 2)" % (2 - left.size())
+				icon = "lanterna"
 				target = _nearest(left)
 			"mata":
 				var left := FOREST.filter(func(id: String) -> bool: return defenses[id].state != Defense.State.VENCIDA)
 				if south_of_river(player.global_position):
 					text = "Atravesse a ponte para a mata"
+					icon = "ponte"
 					target = BRIDGE_NORTH
 				else:
 					text = "Apague as lanternas da mata (%d de 2)" % (2 - left.size())
+					icon = "lanterna"
 					target = _nearest(left)
 			"cemiterio":
 				text = "Suba o Morro até o cemitério"
+				icon = "cemiterio"
 				target = CEMETERY + Vector3.UP * 2.0
 			"festa":
 				text = "Aproveite a festa! Fique no círculo dourado na frente do palco para ver o álbum"
+				icon = "festa"
 				target = Ending.CREDITS_SPOT + Vector3.UP * 1.5
 			"fim":
 				if is_instance_valid(game.party_mode) and game.party_mode.running():
 					text = game.party_mode.objective_text()
+					icon = "esqueleto"
+				elif game.revanche and game.revanche.rodando():
+					text = "Revanche: vença o guardião %s" % Album.GUARDIOES[game.revanche.regiao].nome
+					icon = OBJECTIVE_ICONS.get(game.revanche.regiao, "esqueleto")
+				elif game.esconde and game.esconde.rodando():
+					text = game.esconde.texto_objetivo()
+					icon = "esconde"
+					target = game.esconde.alvo_da_dica()
 				else:
 					text = "Festa sem fim no cemitério, ou explore a ilha à vontade!"
+					icon = "festa"
 					target = defenses.cemiterio.center + Vector3.UP * 2.0
 	objective_target = target
-	if text != objective_text:
+	if text != objective_text or icon != objective_icon:
 		objective_text = text
+		objective_icon = icon
 		objective_changed.emit(text)
 
 
@@ -563,6 +597,15 @@ func snapshot() -> Dictionary:
 		"loja_visitada": shop_visited, "melhorias": upgrades, "equipados": player.equipped, "entregas": _deliveries_now(),
 		"segunda_pistola": player.second_pistol,
 		"fotos": photos.map(func(p: Dictionary) -> Dictionary: return {"legenda": p.legenda, "arquivo": p.arquivo}),
+		"hora": game.day_night.t if game.day_night else DayNight.MORNING,
+		"peixes": game.pescaria.pegos.duplicate() if game.pescaria else {},
+		"esconde": game.esconde.dados_salvos() if game.esconde else {},
+		"derrotados": derrotados.duplicate(),
+		"revanche": game.revanche.dados_salvos() if game.revanche else {},
+		"copa": game.copa.dados_salvos() if game.copa else {},
+		"fim_de_ano": game.fim_de_ano.dados_salvos() if game.fim_de_ano else {},
+		"roupas": {"tem": roupas.duplicate(), "chapeu": player.chapeu, "pintura": player.pintura},
+		"bilhetes": bilhetes.duplicate(),
 	}
 
 
@@ -579,6 +622,24 @@ func _deliveries_now() -> Array:
 
 
 ## Ganha moedas (guardião vencido, onda da Festa sem fim). A primeira vez avisa da lojinha.
+## Um esqueleto (de qualquer tipo) foi derrotado: conta para o álbum. A primeira vez de cada tipo avisa.
+func marcar_derrota(tipo: String) -> void:
+	var primeira := not derrotados.has(tipo)
+	derrotados[tipo] = int(derrotados.get(tipo, 0)) + 1
+	if primeira and Album.TURMA.any(func(t: Dictionary) -> bool: return t.id == tipo):
+		game.show_message("Figurinha nova no álbum!", Color("#ffd23f"), 1.6)
+		Vozes.falar(game, "figurinha")
+
+
+## Achou um bilhete pela ilha: vai para o álbum, dá moedas e salva.
+func pegar_bilhete(id: String, at: Vector3) -> void:
+	if id in bilhetes:
+		return
+	bilhetes.append(id)
+	add_coins(Album.MOEDAS_BILHETE, at)
+	save()
+
+
 func add_coins(n: int, at: Vector3) -> void:
 	var first := not coins_ever
 	coins += n
@@ -788,6 +849,40 @@ func restore(data: Dictionary) -> void:
 		records[k] = float(saved_records[k]) if k == "kart" else int(saved_records[k])
 	if game.gallery:
 		game.gallery.set_hits(records.tiro)
+	if game.pescaria:
+		game.pescaria.carregar(data.get("peixes", {}))
+	if game.esconde:
+		game.esconde.carregar(data.get("esconde", {}))
+	if game.revanche:
+		game.revanche.carregar(data.get("revanche", {}))
+	if game.copa:
+		game.copa.carregar(data.get("copa", {}))
+	if game.fim_de_ano:
+		game.fim_de_ano.carregar(data.get("fim_de_ano", {}))
+	var guardadas: Dictionary = data.get("roupas", {})
+	roupas.clear()
+	for id in guardadas.get("tem", []):
+		if not Roupas.dados(String(id)).is_empty():
+			roupas.append(String(id))
+	var chapeu_salvo := String(guardadas.get("chapeu", ""))
+	var pintura_salva := String(guardadas.get("pintura", ""))
+	player.vestir_chapeu(chapeu_salvo if chapeu_salvo in roupas else "")
+	player.pintar_blasters(pintura_salva if pintura_salva in roupas else "")
+	derrotados.clear()
+	var salvos: Dictionary = data.get("derrotados", {})
+	for tipo in salvos:
+		derrotados[String(tipo)] = int(salvos[tipo])
+	# Campanha de antes do álbum: os tipos das ondas das regiões vencidas já contam como derrotados.
+	for id in data.get("vencidas", []):
+		for onda in REGIONS.get(id, {}).get("ondas", []):
+			for par in onda:
+				if not derrotados.has(par[0]):
+					derrotados[par[0]] = 1
+	bilhetes.clear()
+	for id in data.get("bilhetes", []):
+		if not Album.bilhete(String(id)).is_empty():
+			bilhetes.append(String(id))
+	game.atualizar_bilhetes()
 	game.activate_checkpoint(data.get("bandeira", "Praca"))
 	player.respawn(game.current_checkpoint.spawn_position())
 	_set_fast()
@@ -795,6 +890,9 @@ func restore(data: Dictionary) -> void:
 		game.ending.start_epilogue(false)
 	elif stage == "fim":
 		game.ending.post_game(false)
+	if game.day_night:
+		game.day_night.t = float(data.get("hora", DayNight.MORNING))
+		game.day_night.apply()
 	_refresh_objective()
 
 

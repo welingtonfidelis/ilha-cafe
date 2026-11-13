@@ -1,11 +1,17 @@
 class_name KartRace
 extends Node3D
-## Box da pista de kart, a leste do Morro (pedidos do usuário em 2026-10-26). Os veículos ficam estacionados
-## nas vagas do box, vazios: chegar perto de um e apertar B (ou E) entra e já sai dirigindo (sem contagem).
-## Dá para passear pela ilha inteira com ele. A corrida começa quando o veículo entra na pista pela abertura
-## marcada "LARGADA" (a reta oeste, de frente para o box), vindo de fora da pista: o carro é posto na largada,
-## contagem 3, 2, 1, "Já!" e três voltas contra o relógio (cada volta só vale passando pelas três marcas do
-## meio das retas). Na chegada mostra o tempo, guarda o recorde e dá moedas (15, mais 10 com recorde novo).
+## Box da pista de kart, a leste do Morro (pedidos do usuário em 2026-10-26; a pista virou um 8 com ponte em
+## 2026-10-29, scripts/kart_circuit.gd). Os veículos ficam estacionados nas vagas do box, vazios: chegar perto
+## de um e apertar B (ou E) entra e já sai dirigindo (sem contagem). Dá para passear pela ilha inteira com ele.
+## A corrida começa quando o veículo entra na pista pela abertura da mureta marcada "LARGADA" (na reta da
+## largada, de frente para o box), vindo de fora da pista: o carro é posto na largada, contagem 3, 2, 1, "Já!"
+## e três voltas contra o relógio (cada volta só vale passando pelo alto da volta norte, pela ponte e pelo
+## fundo da volta sul). Na chegada mostra o tempo, guarda o recorde e dá moedas (15, mais 10 com recorde novo).
+## Dois rivais correm junto (pedido do usuário em 2026-10-29, "pilotando com IA"): dois karts do box largam ao
+## lado, com a outra criança e o Mago no banco, seguindo a linha do meio da pista cada um na sua faixa. São
+## fantasmas (não batem em ninguém) e têm elástico: na frente do jogador aliviam um pouco, atrás apertam um
+## pouco. A faixa de cima mostra a posição; chegar em 1º dá mais 5 moedas. Depois da chegada eles voltam para
+## as vagas.
 ## Descer (B ou E): dentro da pista, o aventureiro vai para fora dela e o veículo volta para a vaga; fora da
 ## pista, o veículo fica onde parou e volta sozinho para a vaga quando o aventureiro se afasta 50 m. Cair no
 ## mar também manda o veículo de volta. Dirigindo, os esqueletos atacam do mesmo jeito: cada golpe tira um
@@ -13,21 +19,26 @@ extends Node3D
 ## vaga.
 
 const LAPS := 3
-const GATE_RADIUS := 7.0
+## As marcas valem em toda a largura da pista.
+const GATE_RADIUS := 9.0
 const COINS := 15
 const RECORD_BONUS := 10
+const WIN_BONUS := 5
+## Rivais: quantos, quem vai no banco (além da outra criança), a velocidade máxima de cada um (o kart do jogador
+## chega a 17 m/s), a faixa de cada um (metros para o lado da linha do meio) e quantas amostras (de 1 m) ele olha
+## à frente para virar.
+const RIVALS := 2
+## O Mago fica numa pasta própria: a `assets/characters/adventurers/` não vai na build (export_presets.cfg) e, de lá,
+## o `load` vinha nulo no PC e o jogo fechava ao começar a corrida.
+const RIVAL_PILOTS := ["res://assets/characters/pilotos/Mage.glb"]
+const RIVAL_SPEEDS := [15.8, 16.5]
+const RIVAL_LANES := [3.0, -3.0]
+const RIVAL_LOOK := 11
 ## Distância para entrar num veículo estacionado.
 const ENTER_RADIUS := 3.4
 ## Longe assim do veículo deixado pela ilha, ele volta para a vaga.
 const RETURN_DISTANCE := 50.0
 const SEA_LEVEL := -0.6
-## A pista (igual a KART, KART_TILE, KART_W, KART_L e KART_ENTRY de tools/gerar_ilha.gd): oval de 6 x 10
-## pedaços de 8 m; a entrada é o pedaço 6 da reta oeste.
-const CENTER := Vector2(125, 15)
-const TILE := 8.0
-const W := 6
-const L := 10
-const ENTRY := 6
 ## piloto: onde o aventureiro senta (y é a altura do banco, onde fica a cintura); piloto_escala: tamanho dele.
 const KART := {"modelo": "kart-oopi", "escala": 1.6, "piloto": Vector3(0, 0.42, -0.15), "piloto_escala": 0.75, "velocidade": 17.0}
 ## Um por vaga: [nome, modelo base, cor].
@@ -39,15 +50,30 @@ const GARAGE := [
 	["Kart Limão", KART, Color("#ffe066")],
 ]
 
+## A corrida da Copa de Kart acabou (item 10 da lista de melhorias): o lugar do jogador e a ordem de chegada
+## ("voce", "0" e "1" para os rivais).
+signal corrida_terminou(lugar: int, ordem: Array)
+
 var game: Node
 var story: Story
+## Copa de Kart (CopaKart): pista ao contrário, quantas voltas, o começo da faixa de cima e se a chegada é da copa
+## (sem recorde nem moedas: a copa paga no fim).
+var reverso := false
+var voltas := LAPS
+var prefixo := ""
+var copa_ativa := false
 ## Para onde o aventureiro vai ao descer dentro da pista (no box, entre as vagas e a pista).
 var paddock := Vector3.ZERO
 var start := Transform3D.IDENTITY
 ## Vagas do box (marcadores "Vagas").
 var spots: Array[Transform3D] = []
-## Marcas na ordem da volta (meio da reta de cima, da direita, de baixo) e a linha de chegada.
+## Marcas na ordem da volta (alto da volta norte, ponte, fundo da volta sul) e a linha de chegada, na altura de
+## projeto do asfalto (a da ponte só vale em cima dela).
 var gates: Array[Vector3] = []
+## Meio da abertura da mureta (a entrada da corrida), na pista.
+var entry_center := Vector3.ZERO
+## Para fora da pista, a partir da abertura (o lado do box).
+var entry_out := Vector3.ZERO
 var vehicles: Array[Kart] = []
 ## Veículo que o aventureiro está dirigindo (nulo a pé).
 var kart: Kart
@@ -60,15 +86,27 @@ var _next_gate := 0
 var _count := 0.0
 var _armed := false
 var _prompt: Label3D
-var _entry_zone := Rect2()
+## Rivais da corrida: {kart, i (amostra da pista), run (metros desde a largada), lane, speed, done, time, stuck}.
+var rivals: Array[Dictionary] = []
+## Posição do jogador na corrida (1 é o primeiro), contando os rivais.
+var place := 1
+## Progresso do jogador na pista, contado como o dos rivais.
+var _player_i := 0
+var _player_run := 0.0
+## Depois da chegada, os rivais ainda andam um pouco antes de voltar para as vagas.
+var _rivals_home_in := 0.0
+## Quantas vezes um rival preso ou fora da pista voltou para o meio dela (os testes conferem).
+var rival_resets := 0
 
 
 func _ready() -> void:
-	var o := CENTER - Vector2(W, L) * TILE * 0.5
-	for g in [Vector2(W * 0.5, 0.5), Vector2(W - 0.5, L * 0.5), Vector2(W * 0.5, L - 0.5), Vector2(0.5, 5.5)]:
-		var p: Vector2 = o + g * TILE
-		gates.append(Vector3(p.x, 0, p.y))
-	_entry_zone = Rect2(o + Vector2(0, ENTRY) * TILE, Vector2(TILE, TILE))
+	for k in KartCircuit.GATES:
+		gates.append(KartCircuit.at_point(k).pos)
+	gates.append(KartCircuit.from_start(0.0).pos)
+	var e := KartCircuit.from_start(-(KartCircuit.ENTRY_FROM + KartCircuit.ENTRY_TO) * 0.5)
+	entry_center = e.pos
+	var left := Vector3(e.dir.z, 0, -e.dir.x)
+	entry_out = left if (paddock - entry_center).dot(left) > 0.0 else -left
 	for k in mini(spots.size(), GARAGE.size()):
 		var spec: Array = GARAGE[k]
 		var base: Dictionary = spec[1]
@@ -107,15 +145,15 @@ func _ready() -> void:
 
 ## A abertura da pista: faixa dourada no asfalto e a placa "LARGADA" em cima.
 func _build_entry_mark() -> void:
-	var c := _entry_zone.get_center()
 	var stripe := MeshInstance3D.new()
 	var box := BoxMesh.new()
-	box.size = Vector3(TILE - 0.6, 0.04, TILE - 0.6)
+	box.size = Vector3(KartCircuit.WIDTH - 1.0, 0.04, KartCircuit.ENTRY_FROM - KartCircuit.ENTRY_TO)
 	box.material = Defense.glow(Color(1.0, 0.82, 0.25, 0.32))
 	stripe.mesh = box
 	stripe.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(stripe)
-	stripe.global_position = Vector3(c.x, 0.2, c.y)
+	stripe.global_position = entry_center + Vector3.UP * 0.06
+	stripe.look_at(stripe.global_position + Vector3(entry_out.z, 0, -entry_out.x), Vector3.UP)
 	var sign := Label3D.new()
 	sign.text = "LARGADA\nentre aqui para correr"
 	sign.font_size = 80
@@ -125,7 +163,7 @@ func _build_entry_mark() -> void:
 	sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sign.pixel_size = 0.008
 	add_child(sign)
-	sign.global_position = Vector3(c.x - TILE * 0.5, 3.2, c.y)
+	sign.global_position = entry_center + entry_out * (KartCircuit.WIDTH * 0.5 + 1.0) + Vector3.UP * 3.6
 
 
 func running() -> bool:
@@ -138,17 +176,22 @@ func driving() -> bool:
 
 ## Dentro da pista (com a entrada), onde descer manda o veículo de volta para a vaga.
 func on_track(p: Vector3) -> bool:
-	var o := CENTER - Vector2(W, L) * TILE * 0.5
-	return Rect2(o, Vector2(W, L) * TILE).grow(1.0).has_point(Vector2(p.x, p.z))
+	return KartCircuit.on_track(p, 1.0)
 
+
+## Na abertura da mureta, já em cima da pista.
+func in_entry(p: Vector3) -> bool:
+	return Vector2(p.x - entry_center.x, p.z - entry_center.z).length() < KartCircuit.WIDTH * 0.5
 
 func hud_text() -> String:
 	match state:
 		"contagem":
-			return "Prepare-se!"
+			return prefixo + "  ·  Prepare-se!" if prefixo != "" else "Prepare-se!"
 		"correndo":
 			var best: float = story.records.get("kart", 0.0)
-			return "Volta %d de %d  ·  %s%s" % [mini(lap + 1, LAPS), LAPS, format_time(time), "  ·  recorde %s" % format_time(best) if best > 0.0 else ""]
+			var where := "  ·  %dº de %d" % [place, rivals.size() + 1] if not rivals.is_empty() else ""
+			var recorde := "  ·  recorde %s" % format_time(best) if best > 0.0 and not copa_ativa else ""
+			return "%sVolta %d de %d  ·  %s%s%s" % [prefixo + "  ·  " if prefixo != "" else "", mini(lap + 1, voltas), voltas, format_time(time), where, recorde]
 		"dirigindo":
 			return "%s  ·  B (ou E): descer" % kart.display_name
 	return ""
@@ -166,14 +209,14 @@ func _physics_process(delta: float) -> void:
 	_prompt.visible = player.global_position.distance_to(paddock) < 120.0 and state == "a_pe"
 	# Veículo deixado pela ilha: longe dele, volta para a vaga.
 	for v in vehicles:
-		if v != kart and is_instance_valid(v) and not v.is_home():
+		if v != kart and is_instance_valid(v) and not v.is_home() and not is_rival(v):
 			if v.global_position.distance_to(player.global_position) > RETURN_DISTANCE:
 				Fx.confetti(game, v.global_position + Vector3.UP, 20, 3.0)
 				v.go_home()
 	match state:
 		"a_pe":
 			nearest = null
-			if player.visible and not player.dizzy and not player.skating:
+			if player.visible and not player.dizzy:
 				var best := ENTER_RADIUS
 				for v in vehicles:
 					var d := v.global_position.distance_to(player.global_position)
@@ -192,14 +235,25 @@ func _physics_process(delta: float) -> void:
 				return
 			var p := kart.global_position
 			if state == "dirigindo":
+				# Depois da chegada, os rivais terminam a volta e vão para as vagas.
+				if not rivals.is_empty():
+					_drive_rivals(delta)
+					_rivals_home_in -= delta
+					if _rivals_home_in <= 0.0:
+						_send_rivals_home()
 				if not on_track(p):
 					_armed = true
-				elif _armed and _entry_zone.has_point(Vector2(p.x, p.z)):
+				elif _armed and in_entry(p) and not copa_ativa:
+					reverso = false
+					voltas = LAPS
+					prefixo = ""
 					_start_race()
 			elif state == "contagem":
 				_countdown(delta)
 			else:
 				time += delta
+				_track_player()
+				_drive_rivals(delta)
 				_check_gates()
 
 
@@ -231,6 +285,7 @@ func enter(v: Kart) -> void:
 ## veículo fica onde parou. send_home (caiu no mar ou ficou tonto): o veículo volta para a vaga e o
 ## aventureiro fica ali mesmo.
 func leave(send_home := false) -> void:
+	_send_rivals_home()
 	var v := kart
 	kart = null
 	if state in ["contagem", "correndo"] and not send_home:
@@ -253,19 +308,41 @@ func leave(send_home := false) -> void:
 		game.exit_vehicle(spot + Vector3.UP * 0.3)
 
 
+## A largada: a de sempre, ou virada para trás na pista ao contrário.
+func largada() -> Transform3D:
+	return Transform3D(start.basis.rotated(Vector3.UP, PI), start.origin) if reverso else start
+
+
+## As marcas de uma volta, na ordem: ao contrário, o fundo da volta sul vem primeiro (a chegada é sempre a última).
+func gates_da_volta() -> Array[Vector3]:
+	if not reverso:
+		return gates
+	var g: Array[Vector3] = []
+	for k in range(gates.size() - 2, -1, -1):
+		g.append(gates[k])
+	g.append(gates[gates.size() - 1])
+	return g
+
+
 func _start_race() -> void:
 	state = "contagem"
 	_armed = false
-	kart.global_transform = start
+	kart.global_transform = largada()
 	kart.speed = 0.0
 	kart.velocity = Vector3.ZERO
 	kart.input_enabled = false
 	_count = 3.0
 	lap = 0
 	_next_gate = 0
+	_place_rivals()
+	_player_i = _nearest_index(kart.global_position)
+	_player_run = 0.0
+	place = 1
 	game.show_message("3", Color("#ffd23f"), 0.7)
 	Sfx.play(game, "alerta", 0.0, 0.0)
-	game.banner("Corrida!", "%d voltas contra o relógio. Frente (ou RT) acelera, trás (ou LT) freia." % LAPS, Color("#ffd23f"), 2.6)
+	if not copa_ativa:
+		game.banner("Corrida!", "%d voltas contra %d rivais. Frente (ou RT) acelera, trás (ou LT) freia." % [voltas, rivals.size()] if not rivals.is_empty()
+				else "%d voltas contra o relógio. Frente (ou RT) acelera, trás (ou LT) freia." % voltas, Color("#ffd23f"), 2.6)
 
 
 func _countdown(delta: float) -> void:
@@ -284,16 +361,18 @@ func _countdown(delta: float) -> void:
 
 func _check_gates() -> void:
 	var p := kart.global_position
-	var gate: Vector3 = gates[_next_gate]
-	if Vector2(p.x - gate.x, p.z - gate.z).length() > GATE_RADIUS:
+	var marcas := gates_da_volta()
+	var gate: Vector3 = marcas[_next_gate]
+	# A ponte passa em cima do começo da reta: a marca dela só vale lá em cima.
+	if Vector2(p.x - gate.x, p.z - gate.z).length() > GATE_RADIUS or absf(p.y - gate.y) > 3.0:
 		return
 	_next_gate += 1
-	if _next_gate < gates.size():
+	if _next_gate < marcas.size():
 		return
 	_next_gate = 0
 	lap += 1
-	if lap < LAPS:
-		game.show_message("Volta %d!" % (lap + 1) if lap < LAPS - 1 else "Última volta!", Color("#ffd23f"), 1.2)
+	if lap < voltas:
+		game.show_message("Volta %d!" % (lap + 1) if lap < voltas - 1 else "Última volta!", Color("#ffd23f"), 1.2)
 		Sfx.play(game, "ui_ok", 0.0, 0.0)
 		return
 	_finish()
@@ -303,12 +382,155 @@ func _check_gates() -> void:
 func _finish() -> void:
 	state = "dirigindo"
 	_armed = false
+	if copa_ativa:
+		place = 1 + rivals.filter(func(r: Dictionary) -> bool: return r.done).size()
+		_rivals_home_in = 4.0
+		Fx.confetti(game, kart.global_position + Vector3.UP * 2.0, 60, 6.0)
+		corrida_terminou.emit(place, ordem_de_chegada())
+		return
 	var best: float = story.records.get("kart", 0.0)
 	var record := best <= 0.0 or time < best
 	if record:
 		story.records["kart"] = time
-	game.banner("Chegada!", "Tempo: %s.%s" % [format_time(time), " Novo recorde!" if record else " Recorde: %s." % format_time(best)],
+	place = 1 + rivals.filter(func(r: Dictionary) -> bool: return r.done).size()
+	var where := "%dº lugar! " % place if not rivals.is_empty() else ""
+	game.banner("Chegada!", "%sTempo: %s.%s" % [where, format_time(time), " Novo recorde!" if record else " Recorde: %s." % format_time(best)],
 		Color("#c9f7a0"), 3.4)
-	story.add_coins(COINS + (RECORD_BONUS if record else 0), kart.global_position + Vector3.UP * 3.0)
+	var won := place == 1 and not rivals.is_empty()
+	story.add_coins(COINS + (RECORD_BONUS if record else 0) + (WIN_BONUS if won else 0), kart.global_position + Vector3.UP * 3.0)
+	_rivals_home_in = 4.0
 	Fx.confetti(game, kart.global_position + Vector3.UP * 2.0, 60, 6.0)
 	story.save()
+
+
+## Quem chegou primeiro: os rivais que já chegaram (pelo tempo), o jogador e os que ainda correm (pelo tanto andado).
+func ordem_de_chegada() -> Array:
+	var lista := [{"quem": "voce", "t": time, "run": INF}]
+	for k in rivals.size():
+		var r: Dictionary = rivals[k]
+		lista.append({"quem": str(k), "t": float(r.time) if r.done else INF, "run": float(r.run)})
+	lista.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a.t < b.t if a.t != b.t else a.run > b.run)
+	return lista.map(func(e: Dictionary) -> String: return e.quem)
+
+
+# --- rivais ------------------------------------------------------------------
+
+func is_rival(v: Kart) -> bool:
+	return rivals.any(func(r: Dictionary) -> bool: return r.kart == v)
+
+
+## Põe dois karts do box no grid, um de cada lado do jogador e um pouco atrás, com a outra criança e o Mago no
+## banco. Eles esperam a contagem (sem acelerador) e saem no "Já!".
+func _place_rivals() -> void:
+	_send_rivals_home()
+	var free := vehicles.filter(func(v: Kart) -> bool: return v != kart and v.is_home())
+	var me: String = game.player.character_name
+	var pilots: Array = [Player.CHARACTERS["menino" if me == "menina" else "menina"]] + RIVAL_PILOTS
+	var base := largada()
+	for k in mini(RIVALS, free.size()):
+		var v: Kart = free[k]
+		var xf := base
+		xf.origin += base.basis.x.normalized() * 4.2 * (1.0 if k % 2 == 0 else -1.0) - base.basis.z.normalized() * 3.0
+		v.global_transform = xf
+		v.drive_ai(load(pilots[k % pilots.size()]).instantiate())
+		v.max_speed = RIVAL_SPEEDS[k]
+		rivals.append({"kart": v, "i": _nearest_index(xf.origin), "run": 0.0, "lane": RIVAL_LANES[k], "speed": RIVAL_SPEEDS[k],
+				"done": false, "time": 0.0, "stuck": 0.0})
+
+
+func _send_rivals_home() -> void:
+	for r in rivals:
+		var v: Kart = r.kart
+		if is_instance_valid(v):
+			Fx.confetti(game, v.global_position + Vector3.UP, 20, 3.0)
+			v.go_home()
+	rivals.clear()
+
+
+## Cada rival olha um ponto da linha do meio uns metros à frente (deslocado para a faixa dele) e vira para lá;
+## nas curvas fechadas tira o pé. Preso parado ou fora da pista, volta para o meio dela ali mesmo.
+func _drive_rivals(delta: float) -> void:
+	var samples := KartCircuit.samples()
+	var n := samples.size()
+	for r in rivals:
+		var v: Kart = r.kart
+		if not is_instance_valid(v):
+			continue
+		var p := v.global_position
+		var near := _advance(r.i, p, reverso)
+		r.i = near.i
+		r.run += near.step
+		var ahead: Dictionary = samples[(int(r.i) + (-RIVAL_LOOK if reverso else RIVAL_LOOK) + n) % n]
+		var dir: Vector3 = -ahead.dir if reverso else ahead.dir
+		var to: Vector3 = ahead.pos + Vector3(-dir.z, 0, dir.x) * float(r.lane) - p
+		to.y = 0.0
+		var fwd := v.forward()
+		fwd.y = 0.0
+		var angle := fwd.signed_angle_to(to, Vector3.UP)
+		v.ai_steer = clampf(angle * 2.5, -1.0, 1.0)
+		v.ai_throttle = 1.0 if absf(angle) < 0.6 else 0.5
+		# Elástico: na frente do jogador alivia, atrás aperta (até 10% e 8%).
+		v.max_speed = float(r.speed) * (1.0 + clampf((_player_run - float(r.run)) / 300.0, -0.1, 0.08))
+		r.stuck = float(r.stuck) + delta if v.speed < 1.5 else 0.0
+		if float(r.stuck) > 2.5 or p.y < SEA_LEVEL - 0.9 or float(near.dist) > KartCircuit.WIDTH:
+			_reset_rival(r)
+		if not r.done and float(r.run) >= voltas * KartCircuit.length():
+			r.done = true
+			r.time = time
+	if state == "correndo":
+		place = 1 + rivals.filter(func(r: Dictionary) -> bool: return r.done or float(r.run) > _player_run).size()
+
+
+## Rival preso ou fora da pista: volta para a faixa dele na amostra em que estava, de frente para a pista.
+func _reset_rival(r: Dictionary) -> void:
+	var v: Kart = r.kart
+	var sm: Dictionary = KartCircuit.samples()[int(r.i)]
+	var dir: Vector3 = -sm.dir if reverso else sm.dir
+	v.global_transform = Transform3D(Basis(Vector3.UP.cross(dir).normalized(), Vector3.UP, dir), sm.pos + Vector3(-dir.z, 0, dir.x) * float(r.lane)
+			+ Vector3.UP * 0.6)
+	v.speed = 0.0
+	v.velocity = Vector3.ZERO
+	r.stuck = 0.0
+	rival_resets += 1
+
+
+func _track_player() -> void:
+	var near := _advance(_player_i, kart.global_position, reverso)
+	_player_i = near.i
+	_player_run += near.step
+
+
+## A amostra da pista mais perto de `p` (no plano, com a altura desempatando).
+static func _nearest_index(p: Vector3) -> int:
+	var samples := KartCircuit.samples()
+	var best := 0
+	var best_d := INF
+	for j in samples.size():
+		var d: float = (samples[j].pos as Vector3).distance_squared_to(p)
+		if d < best_d:
+			best_d = d
+			best = j
+	return best
+
+
+## Anda a contagem de quem estava na amostra `i` e agora está em `p`: procura só um pouco atrás e à frente (no
+## cruzamento do 8 valem as duas pistas). Ao contrário, procura para trás e conta para a frente do mesmo jeito.
+## Devolve {i, step (metros andados), dist (até a linha do meio)}.
+static func _advance(i: int, p: Vector3, ao_contrario := false) -> Dictionary:
+	var samples := KartCircuit.samples()
+	var n := samples.size()
+	var best := i
+	var best_d := INF
+	for k in (range(-25, 5) if ao_contrario else range(-4, 26)):
+		var j: int = (i + int(k) + n) % n
+		var d := Vector2(samples[j].pos.x - p.x, samples[j].pos.z - p.z).length()
+		if d < best_d:
+			best_d = d
+			best = j
+	var step := (best - i + n) % n
+	if step > n / 2:
+		step -= n
+	if ao_contrario:
+		step = -step
+	return {"i": best, "step": step * KartCircuit.length() / n, "dist": best_d}

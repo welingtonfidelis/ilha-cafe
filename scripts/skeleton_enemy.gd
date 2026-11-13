@@ -48,6 +48,13 @@ const BALLOON_GONE := 7.0
 ## model / weapon_dir: quem não é esqueleto (ver model_path). anims: troca de animações para quem não é
 ## esqueleto (andar, sair do chão, dormir). skin: outra textura para o modelo.
 const TYPES := {
+	# Esqueleto dourado (item 8 da lista de melhorias, 2026-11-10): raro, não ataca, foge do aventureiro (cansa de
+	# tempos em tempos e para um instante) e, derrotado, solta um monte de moedas (CacaDourada).
+	"Dourado": {
+		"kind": "foge", "health": 8.0, "speed": 5.0, "range": 0.0, "windup": 99.0, "cooldown": 99.0,
+		"attack": "luta/Melee_Unarmed_Attack_Punch_A", "right": "", "left": "", "dourado": true,
+		"model": "res://assets/characters/skeletons/Skeleton_Minion.glb",
+	},
 	"Skeleton_Minion": {
 		"kind": "melee", "health": 5.0, "speed": 2.4, "range": 1.8, "windup": 0.5, "cooldown": 1.6,
 		"attack": "luta/Melee_Unarmed_Attack_Punch_A", "right": "", "left": "",
@@ -122,7 +129,7 @@ const TYPES := {
 ## Nomes para as faixas e testes.
 const NAMES := {"Skeleton_Minion": "Minion", "Skeleton_Warrior": "Guerreiro", "Skeleton_Rogue": "Arqueiro", "Skeleton_Mage": "Mago",
 	"Skeleton_Golem": "Golem de Ossos", "Skeleton_Pistoleiro": "Pistoleiro", "Lobinho": "Lobinho", "Conde": "Conde",
-	"Grandalhao": "Grandalhão", "GolemDeGelo": "Golem de Gelo"}
+	"Grandalhao": "Grandalhão", "GolemDeGelo": "Golem de Gelo", "Dourado": "Esqueleto Dourado"}
 ## Investida do Grandalhão e bote do Lobinho.
 const CHARGE_SPEED := 10.0
 const CHARGE_TIME := 0.8
@@ -185,14 +192,33 @@ var _blink_spot := Vector3.ZERO
 var _blink_mark: MeshInstance3D
 ## Contorna o pilar da lanterna, troncos e pedras em vez de empacar empurrando de frente.
 var _detour := Detour.new()
+## Golpes do Faísca (pedido do usuário em 2026-10-29: ele luta na Festa sem fim): soco, giro, pisão e laser
+## chamam receber_golpe, como nas Bolotas das fases. Desmontado ou dormindo não conta como alvo.
+var raio_golpe := 0.7
+var derrotado: bool:
+	get:
+		return state in [State.INDO_EMBORA, State.ACORDANDO, State.DORMINDO, State.AFUNDANDO, State.SUMIDO]
+var _correndo := 0.0
+var _cansado := 0.0
+var _preso := 0.0
+var _desvio := Vector3.ZERO
+var _desvio_t := 0.0
+var _last_punch := -10.0
 var _want := Vector3.ZERO
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity") * 2.0
 
 
 func _ready() -> void:
-	config = TYPES[type_name]
+	add_to_group(Alvo.GRUPO)
+	config = TYPES[type_name].duplicate()
+	# Modo Fácil (Ajustes): anda mais devagar, demora mais no "!" e espera mais entre um golpe e outro.
+	if Ajustes.facil:
+		config.speed *= 0.8
+		config.windup *= 1.35
+		config.cooldown *= 1.3
 	health = config.health
 	_size = config.get("size", 1.0)
+	raio_golpe = 0.7 * _size
 	collision_layer = 1 << 2
 	collision_mask = 1 | (1 << 1) | (1 << 2)
 	var shape := CollisionShape3D.new()
@@ -210,6 +236,8 @@ func _ready() -> void:
 	visual.add_child(model)
 	if config.has("skin"):
 		_apply_skin(model, load(config.skin))
+	if config.get("dourado", false):
+		_dourar(model)
 	if _large():
 		ap = AnimUtil.make_player(model, ["geral", "mov", "luta"], "Large")
 	else:
@@ -335,6 +363,69 @@ func _attach_blaster(id: String) -> void:
 	holder.add_child(_muzzle)
 
 
+## Esqueleto dourado: corre para longe do aventureiro; a cada 5,5 s cansa e para 1,3 s olhando para trás (a chance
+## de chegar perto). Longe (mais de 24 m) só anda devagar, esperando. Perto da costa, puxa para o meio da ilha.
+func _fugir(delta: float, to_target: Vector3, dist: float) -> void:
+	_correndo += delta
+	if _cansado > 0.0:
+		_cansado -= delta
+		_move(Vector3.ZERO)
+		var parado := _anim("especial/Skeletons_Idle")
+		if ap.current_animation != parado:
+			ap.play(parado, 0.2)
+		if dist < INF and dist > 0.01:
+			_face(to_target / dist, delta)
+		return
+	if _correndo > 5.5 and dist < 24.0:
+		_correndo = 0.0
+		_cansado = 1.3
+		Fx.popup_text(get_parent(), global_position + Vector3.UP * 2.4, "ufa!", Color("#ffe9a8"))
+		return
+	var fuga: Vector3 = -to_target / dist if dist < INF and dist > 0.01 else visual.global_basis.z
+	# A ilha é uma elipse de uns 380 x 490 m: perto da costa (80% do caminho do meio até a beira), puxa para dentro.
+	var plano := Vector3(global_position.x, 0, global_position.z)
+	var beira := Vector2(plano.x / 185.0, plano.z / 240.0).length()
+	if beira > 0.8:
+		fuga = (fuga - plano.normalized() * (beira - 0.8) * 6.0).normalized()
+	var rapidez: float = config.speed if dist < 24.0 else 1.6
+	# Preso numa parede (quer correr e quase não sai do lugar): desvia de lado por um segundo.
+	var real := get_real_velocity()
+	real.y = 0.0
+	_preso = _preso + delta if rapidez > 3.0 and real.length() < 1.5 else 0.0
+	if _preso > 0.4:
+		_preso = 0.0
+		_desvio = fuga.cross(Vector3.UP) * (1.0 if randf() < 0.5 else -1.0)
+		_desvio_t = 1.0
+	if _desvio_t > 0.0:
+		_desvio_t -= delta
+		fuga = _desvio
+	_move(fuga * rapidez)
+	_face(fuga, delta)
+	var correr := _anim("mov/Running_A" if rapidez > 3.0 else "especial/Skeletons_Walking")
+	if ap.current_animation != correr:
+		ap.play(correr, 0.2)
+
+
+## Todas as malhas em dourado brilhante, e uma luzinha amarela em volta.
+func _dourar(root: Node) -> void:
+	var ouro := StandardMaterial3D.new()
+	ouro.albedo_color = Color("#ffcf3a")
+	ouro.metallic = 0.85
+	ouro.roughness = 0.3
+	ouro.emission_enabled = true
+	ouro.emission = Color("#ffb400")
+	ouro.emission_energy_multiplier = 0.25
+	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
+		for i in mi.mesh.get_surface_count():
+			mi.set_surface_override_material(i, ouro)
+	var luz := OmniLight3D.new()
+	luz.light_color = Color("#ffd23f")
+	luz.light_energy = 1.2
+	luz.omni_range = 4.0
+	luz.position.y = 1.2
+	add_child(luz)
+
+
 ## Troca a textura de todas as malhas (o Lobinho de pelo cinza).
 func _apply_skin(root: Node, tex: Texture2D) -> void:
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
@@ -441,6 +532,12 @@ func _physics_process(delta: float) -> void:
 
 	if state in [State.PERSEGUINDO, State.ESPERANDO] and _too_far(dist):
 		_enter(State.VOLTANDO, "especial/Skeletons_Walking")
+
+	if config.kind == "foge" and state in [State.PERSEGUINDO, State.ESPERANDO, State.COMEMORANDO, State.VOLTANDO]:
+		_fugir(delta, to_target, dist)
+		move_and_slide()
+		_detour.update(self, _want, delta)
+		return
 
 	match state:
 		State.DORMINDO:
@@ -849,6 +946,22 @@ func take_hit(amount: float, point: Vector3, hb: Hurtbox) -> void:
 			Sfx.play_at(get_parent(), "escudo", point)
 			return
 	_apply_damage(amount, point, hb.multiplier > 1.0)
+
+
+## Golpe do Faísca: cada ponto do golpe vale 1,5 de dano (um soco tira mais que um tiro da Paçoca, mas o soco
+## é mais lento e precisa chegar perto). O escudo não segura; o empurrão não mexe nos pesados. Um instante de
+## imunidade dá o ritmo do laser, que encosta em todo quadro.
+func receber_golpe(dano: int, de: Vector3, forca := 6.0, _tipo := "") -> bool:
+	var now := Time.get_ticks_msec() / 1000.0
+	if derrotado or now - _last_punch < 0.3:
+		return false
+	_last_punch = now
+	if not config.get("heavy", false):
+		var away := global_position - de
+		away.y = 0.0
+		velocity += (away.normalized() if away.length() > 0.05 else Vector3.ZERO) * forca * 0.6 + Vector3.UP * 2.0
+	_apply_damage(dano * 1.5, global_position + Vector3.UP * 1.6 * _size, false)
+	return true
 
 
 ## Explosão da granada: o escudo não segura, e o dano já vem com a distância descontada.

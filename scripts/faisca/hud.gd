@@ -1,0 +1,883 @@
+class_name Hud
+extends CanvasLayer
+## Interface do Faísca, quase sem texto: corações, estrelinhas pegas, os Faisquinhas salvos (as cabecinhas), o
+## balão de dica do vovô (o rosto dele e o desenho do botão) e a tela de fim da fase.
+## O A na tela de fim emite `jogar_de_novo` (na Ilha, volta para o farol).
+
+signal jogar_de_novo
+
+const DURACAO_DICA := 5.0
+
+var fim_aberto := false
+var dica_atual := ""
+var _coracoes: Array[IconeCoracao] = []
+var _contador: Label
+var _moedas: Label
+## A vida do chefe (item 5): o nome e um coração roxo por fase que falta, no alto, no meio.
+var _chefe: Control
+var _chefe_nome: Label
+var _chefe_coracoes: Array[IconeCoracao] = []
+var _luzes: Array[IconeFaisquinha] = []
+var _balao: Control
+var _desenho_dica: DesenhoDica
+var _fim: Control
+var _fim_nome: Label
+var _fim_estrelas: Label
+var _fim_luzes: Array[IconeFaisquinha] = []
+var _tempo_dica := 0.0
+
+
+func _ready() -> void:
+	layer = 5
+	# Corações, estrelinhas e Faisquinhas no canto de cima à direita, no mesmo lugar e tamanho dos corações e
+	# das moedas das crianças (pedido do usuário em 2026-10-29: "padronizar o hud entre os personagens").
+	var canto := VBoxContainer.new()
+	canto.anchor_left = 1.0
+	canto.anchor_right = 1.0
+	# O coração da direita fica com o meio a 36 px da borda e a 34 px do topo, como o das crianças.
+	canto.offset_right = -17
+	canto.offset_top = 14
+	canto.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	canto.add_theme_constant_override("separation", 4)
+	canto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(canto)
+	var linha := HBoxContainer.new()
+	linha.size_flags_horizontal = Control.SIZE_SHRINK_END
+	linha.add_theme_constant_override("separation", 8)
+	# Na ilha os corações dele somem (ficam os das crianças, no mesmo lugar): a linha guarda a altura para as
+	# estrelinhas não subirem por cima deles.
+	linha.custom_minimum_size = Vector2(0, 38)
+	canto.add_child(linha)
+	for i in Jogador.VIDA_MAX:
+		var c := IconeCoracao.new()
+		c.custom_minimum_size = Vector2(38, 38)
+		linha.add_child(c)
+		_coracoes.append(c)
+	# O número fica à esquerda da estrela, como o das moedas.
+	var estrelas := HBoxContainer.new()
+	estrelas.size_flags_horizontal = Control.SIZE_SHRINK_END
+	estrelas.add_theme_constant_override("separation", 8)
+	canto.add_child(estrelas)
+	_contador = _rotulo(32)
+	estrelas.add_child(_contador)
+	var estrela := IconeEstrela.new()
+	estrela.custom_minimum_size = Vector2(38, 38)
+	estrela.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	estrelas.add_child(estrela)
+
+	# As moedas da carteira (item 4 da lista do Faísca), embaixo das estrelinhas, do mesmo jeito.
+	var moedas := HBoxContainer.new()
+	moedas.size_flags_horizontal = Control.SIZE_SHRINK_END
+	moedas.add_theme_constant_override("separation", 8)
+	canto.add_child(moedas)
+	_moedas = _rotulo(28)
+	moedas.add_child(_moedas)
+	var moeda := IconeMoeda.new()
+	moeda.custom_minimum_size = Vector2(34, 34)
+	moeda.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	moedas.add_child(moeda)
+
+	var luzes := HBoxContainer.new()
+	luzes.size_flags_horizontal = Control.SIZE_SHRINK_END
+	luzes.add_theme_constant_override("separation", 6)
+	canto.add_child(luzes)
+	for i in 6:
+		var v := IconeFaisquinha.new()
+		v.cor = Faisquinha.cor_de(i)
+		v.custom_minimum_size = Vector2(30, 34)
+		luzes.add_child(v)
+		_luzes.append(v)
+	_montar_balao()
+	_montar_fim()
+	_montar_chefe()
+	mostrar_estrelas(0)
+	mostrar_moedas(0)
+
+
+func _process(delta: float) -> void:
+	if _tempo_dica > 0.0:
+		_tempo_dica -= delta
+		_desenho_dica.queue_redraw()
+		if _tempo_dica <= 0.0:
+			var tw := create_tween()
+			tw.tween_property(_balao, "modulate:a", 0.0, 0.3)
+			tw.tween_callback(func(): _balao.hide(); dica_atual = "")
+	if fim_aberto and Input.is_action_just_pressed("pular"):
+		jogar_de_novo.emit()
+
+
+func mostrar_vida(vida: int) -> void:
+	for i in _coracoes.size():
+		var cheio := i < vida
+		if _coracoes[i].cheio and not cheio:
+			var tw := create_tween()
+			tw.tween_property(_coracoes[i], "scale", Vector2.ONE * 1.3, 0.08)
+			tw.tween_property(_coracoes[i], "scale", Vector2.ONE, 0.15)
+		_coracoes[i].cheio = cheio
+		_coracoes[i].pivot_offset = _coracoes[i].custom_minimum_size / 2.0
+		_coracoes[i].queue_redraw()
+
+
+## Na ilha o Faísca usa os corações das crianças (os do canto direito, do main.gd): os três dele somem.
+func mostrar_coracoes(on: bool) -> void:
+	for c in _coracoes:
+		c.visible = on
+
+
+func mostrar_estrelas(pegas: int) -> void:
+	_contador.text = str(pegas)
+
+
+func mostrar_moedas(n: int) -> void:
+	if _moedas.text != str(n) and _moedas.text != "":
+		var tw := create_tween()
+		_moedas.pivot_offset = _moedas.size * 0.5
+		tw.tween_property(_moedas, "scale", Vector2.ONE * 1.25, 0.06)
+		tw.tween_property(_moedas, "scale", Vector2.ONE, 0.1)
+	_moedas.text = str(n)
+
+
+func moedas_texto() -> String:
+	return _moedas.text
+
+
+func _montar_chefe() -> void:
+	_chefe = VBoxContainer.new()
+	_chefe.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_chefe.offset_top = 16
+	_chefe.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_chefe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_chefe)
+	_chefe_nome = _rotulo(28)
+	_chefe_nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_chefe.add_child(_chefe_nome)
+	var linha := HBoxContainer.new()
+	linha.alignment = BoxContainer.ALIGNMENT_CENTER
+	linha.add_theme_constant_override("separation", 10)
+	_chefe.add_child(linha)
+	for i in 3:
+		var c := IconeCoracao.new()
+		c.roxo = true
+		c.custom_minimum_size = Vector2(46, 46)
+		linha.add_child(c)
+		_chefe_coracoes.append(c)
+	_chefe.hide()
+
+
+## O chefe com `restam` fases (corações cheios) de `total`; com 0, some um instante depois.
+func mostrar_chefe(nome_do: String, restam: int, total := 3) -> void:
+	_chefe_nome.text = nome_do
+	_chefe.show()
+	for i in _chefe_coracoes.size():
+		_chefe_coracoes[i].visible = i < total
+		var cheio := i < restam
+		if _chefe_coracoes[i].cheio and not cheio:
+			var tw := create_tween()
+			_chefe_coracoes[i].pivot_offset = _chefe_coracoes[i].custom_minimum_size / 2.0
+			tw.tween_property(_chefe_coracoes[i], "scale", Vector2.ONE * 1.4, 0.1)
+			tw.tween_property(_chefe_coracoes[i], "scale", Vector2.ONE, 0.2)
+		_chefe_coracoes[i].cheio = cheio
+		_chefe_coracoes[i].queue_redraw()
+	if restam <= 0:
+		var tw := create_tween()
+		tw.tween_interval(2.0)
+		tw.tween_callback(_chefe.hide)
+
+
+func esconder_chefe() -> void:
+	_chefe.hide()
+
+
+func chefe_restam() -> int:
+	if not _chefe.visible:
+		return -1
+	return _chefe_coracoes.filter(func(c: IconeCoracao) -> bool: return c.cheio).size()
+
+
+## Quantos Faisquinhas há na fase (os outros espaços somem) e quantos já foram salvos.
+func mostrar_faisquinhas(achados: int, total: int) -> void:
+	for i in _luzes.size():
+		_luzes[i].visible = i < total
+		_luzes[i].aceso = i < achados
+		_luzes[i].queue_redraw()
+
+
+## Balão do Vovô Farol: "pulo_alto", "flutuar", "laser", "tocha", "golpe", "argolas"...
+func mostrar_dica(qual: String) -> void:
+	dica_atual = qual
+	_desenho_dica.qual = qual
+	_desenho_dica.queue_redraw()
+	_tempo_dica = DURACAO_DICA
+	_balao.show()
+	_balao.modulate.a = 0.0
+	create_tween().tween_property(_balao, "modulate:a", 1.0, 0.25)
+
+
+func mostrar_fim(nome: String, pegas: int, total: int, achados: int, total_faisquinhas: int) -> void:
+	_fim_nome.text = nome
+	_fim_estrelas.text = "%d / %d" % [pegas, total]
+	for i in _fim_luzes.size():
+		_fim_luzes[i].visible = i < total_faisquinhas
+		_fim_luzes[i].aceso = i < achados
+		_fim_luzes[i].queue_redraw()
+	_fim.show()
+	_fim.modulate.a = 0.0
+	create_tween().tween_property(_fim, "modulate:a", 1.0, 0.5)
+	# Meio segundo antes de aceitar o A, para quem ainda está apertando não pular a tela.
+	await get_tree().create_timer(0.6).timeout
+	fim_aberto = true
+
+
+## Fecha a tela de fim (na Ilha, o A volta para o farol).
+func esconder_fim() -> void:
+	fim_aberto = false
+	_fim.hide()
+
+
+func _montar_balao() -> void:
+	_balao = PanelContainer.new()
+	var estilo := StyleBoxFlat.new()
+	estilo.bg_color = Color(1, 1, 1, 0.92)
+	estilo.set_corner_radius_all(28)
+	estilo.border_color = Color("2b2140")
+	estilo.set_border_width_all(5)
+	estilo.content_margin_left = 16
+	estilo.content_margin_right = 16
+	estilo.content_margin_top = 12
+	estilo.content_margin_bottom = 12
+	_balao.add_theme_stylebox_override("panel", estilo)
+	_balao.anchor_left = 1.0
+	_balao.anchor_right = 1.0
+	_balao.anchor_top = 1.0
+	_balao.anchor_bottom = 1.0
+	_balao.offset_left = -420
+	_balao.offset_right = -28
+	_balao.offset_top = -190
+	_balao.offset_bottom = -28
+	add_child(_balao)
+	var linha := HBoxContainer.new()
+	linha.add_theme_constant_override("separation", 14)
+	_balao.add_child(linha)
+	var rosto := RostoVovo.new()
+	rosto.custom_minimum_size = Vector2(120, 130)
+	linha.add_child(rosto)
+	_desenho_dica = DesenhoDica.new()
+	_desenho_dica.custom_minimum_size = Vector2(230, 130)
+	linha.add_child(_desenho_dica)
+	_balao.hide()
+
+
+func _montar_fim() -> void:
+	_fim = ColorRect.new()
+	_fim.color = Color(0.12, 0.09, 0.25, 0.72)
+	_fim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_fim)
+	var coluna := VBoxContainer.new()
+	coluna.set_anchors_preset(Control.PRESET_CENTER)
+	coluna.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	coluna.grow_vertical = Control.GROW_DIRECTION_BOTH
+	coluna.alignment = BoxContainer.ALIGNMENT_CENTER
+	coluna.add_theme_constant_override("separation", 18)
+	_fim.add_child(coluna)
+	var grande := IconeEstrela.new()
+	grande.custom_minimum_size = Vector2(170, 170)
+	grande.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	coluna.add_child(grande)
+	_fim_nome = _rotulo(40)
+	_fim_nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	coluna.add_child(_fim_nome)
+	var linha := HBoxContainer.new()
+	linha.alignment = BoxContainer.ALIGNMENT_CENTER
+	linha.add_theme_constant_override("separation", 12)
+	coluna.add_child(linha)
+	var estrela := IconeEstrela.new()
+	estrela.custom_minimum_size = Vector2(56, 56)
+	linha.add_child(estrela)
+	_fim_estrelas = _rotulo(44)
+	linha.add_child(_fim_estrelas)
+	var vao := Control.new()
+	vao.custom_minimum_size = Vector2(30, 0)
+	linha.add_child(vao)
+	for i in 6:
+		var v := IconeFaisquinha.new()
+		v.cor = Faisquinha.cor_de(i)
+		v.custom_minimum_size = Vector2(46, 52)
+		linha.add_child(v)
+		_fim_luzes.append(v)
+	var botao := BotaoA.new()
+	botao.custom_minimum_size = Vector2(90, 90)
+	botao.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	coluna.add_child(botao)
+	_fim.hide()
+
+
+func _rotulo(tamanho: int) -> Label:
+	var r := Label.new()
+	r.add_theme_font_size_override("font_size", tamanho)
+	r.add_theme_color_override("font_color", Color.WHITE)
+	r.add_theme_color_override("font_outline_color", Color("2b2140"))
+	r.add_theme_constant_override("outline_size", 10)
+	return r
+
+
+## Estrela desenhada na tela (a fonte padrão da Godot não tem o ★).
+class IconeEstrela extends Control:
+	func _draw() -> void:
+		var pts := PackedVector2Array()
+		var c := size / 2.0
+		for i in 10:
+			var a := -PI / 2.0 + i * PI / 5.0
+			pts.append(c + Vector2(cos(a), sin(a)) * (size.x * 0.5 if i % 2 == 0 else size.x * 0.22))
+		draw_colored_polygon(pts, Color("ffd23f"))
+		pts.append(pts[0])
+		draw_polyline(pts, Color("2b2140"), maxf(size.x * 0.07, 3.0), true)
+
+
+## Moeda dourada desenhada: o disco com a borda mais escura e uma estrelinha no meio, como a do pacote.
+class IconeMoeda extends Control:
+	func _draw() -> void:
+		var c := size / 2.0
+		var r := minf(size.x, size.y) * 0.46
+		draw_circle(c, r, Color("e0a21c"))
+		draw_circle(c, r * 0.8, Color("ffd23f"))
+		var pts := PackedVector2Array()
+		for i in 10:
+			var a := -PI / 2.0 + i * PI / 5.0
+			pts.append(c + Vector2(cos(a), sin(a)) * (r * 0.5 if i % 2 == 0 else r * 0.22))
+		draw_colored_polygon(pts, Color("fff3b0"))
+		draw_arc(c, r, 0, TAU, 32, Color("2b2140"), maxf(r * 0.14, 2.5), true)
+
+
+## Coração cheio (vermelho) ou vazio (só o contorno, clarinho).
+class IconeCoracao extends Control:
+	var cheio := true
+	## Roxo: os do chefe.
+	var roxo := false
+
+	func _draw() -> void:
+		var pts := PackedVector2Array()
+		var c := size / 2.0 + Vector2(0, size.y * 0.04)
+		for i in 40:
+			var t := TAU * i / 40.0
+			var x := 16.0 * pow(sin(t), 3)
+			var y := 13.0 * cos(t) - 5.0 * cos(2.0 * t) - 2.0 * cos(3.0 * t) - cos(4.0 * t)
+			pts.append(c + Vector2(x, -y) * size.x / 36.0)
+		draw_colored_polygon(pts, (Color("b066ff") if roxo else Color("ff4d6d")) if cheio else Color(1, 1, 1, 0.35))
+		pts.append(pts[0])
+		draw_polyline(pts, Color("2b2140"), 4.0, true)
+		if cheio:
+			draw_circle(c + Vector2(-size.x * 0.17, -size.y * 0.12), size.x * 0.07, Color(1, 1, 1, 0.7))
+
+
+## Cabecinha do Faisquinha: salvo, o capacete branco com a tela preta, os olhos ciano, as orelhas e a luzinha da
+## antena na cor dele; ainda preso, só o contorno clarinho (como o coração vazio).
+class IconeFaisquinha extends Control:
+	var aceso := false
+	var cor := Color("ff7a22")
+
+	func _draw() -> void:
+		var r := minf(size.x, size.y) * 0.36
+		var c := Vector2(size.x / 2.0, size.y - r - 2.0)
+		var contorno := Color("2b2140")
+		var antena := c + Vector2(0, -r * 1.55)
+		if aceso:
+			draw_circle(c, r * 1.35, Color(cor, 0.3))
+		draw_line(c + Vector2(0, -r * 0.9), antena, contorno, 3.0)
+		draw_circle(antena, r * 0.24, Color("c6ff4a") if aceso else Color(1, 1, 1, 0.3))
+		for lado in [-1.0, 1.0]:
+			draw_circle(c + Vector2(r * 0.98 * lado, 0), r * 0.26, cor if aceso else Color(1, 1, 1, 0.3))
+		draw_circle(c, r, Color("f4f5f9") if aceso else Color(1, 1, 1, 0.3))
+		draw_arc(c, r, 0, TAU, 32, contorno, 3.0, true)
+		if aceso:
+			var tela := Rect2(c + Vector2(-r * 0.68, -r * 0.45), Vector2(r * 1.36, r * 0.86))
+			draw_rect(tela, Color("15121f"))
+			for lado in [-1.0, 1.0]:
+				draw_line(c + Vector2(r * 0.28 * lado, -r * 0.2), c + Vector2(r * 0.28 * lado, r * 0.15), Color("8ff3ff"), maxf(r * 0.2, 2.0))
+
+
+## Rosto do Vovô Farol no rádio: cabeça redonda azul-acinzentada, visor com olhos bondosos,
+## bigodão branco e a luzinha amarela no alto.
+class RostoVovo extends Control:
+	func _draw() -> void:
+		var c := Vector2(size.x / 2.0, size.y * 0.58)
+		var r := size.x * 0.42
+		draw_line(c + Vector2(0, -r), c + Vector2(0, -r - 14), Color("2b2140"), 5.0)
+		draw_circle(c + Vector2(0, -r - 18), 9, Color("ffd23f"))
+		draw_circle(c, r, Color("8fa3c7"))
+		draw_arc(c, r, 0, TAU, 48, Color("2b2140"), 4.0, true)
+		var visor := Rect2(c + Vector2(-r * 0.72, -r * 0.55), Vector2(r * 1.44, r * 0.8))
+		draw_rect(visor, Color("1b1d2a"))
+		for lado in [-1.0, 1.0]:
+			draw_arc(c + Vector2(r * 0.3 * lado, -r * 0.12), r * 0.15, PI, TAU, 12, Color("8ff3ff"), 5.0, true)
+		for lado in [-1.0, 1.0]:
+			draw_circle(c + Vector2(r * 0.22 * lado, r * 0.42), r * 0.24, Color.WHITE)
+		draw_circle(c + Vector2(0, r * 0.3), r * 0.1, Color("ff8fa3"))
+
+
+## Botão A do controle (verde, com a letra), que pode estar "segurado".
+class BotaoA extends Control:
+	func _draw() -> void:
+		var c := size / 2.0
+		var r := size.x * 0.45
+		draw_circle(c + Vector2(0, 4), r, Color("1f7a3a"))
+		draw_circle(c, r, Color("3ccf6a"))
+		draw_arc(c, r, 0, TAU, 40, Color("2b2140"), 4.0, true)
+		var fonte := ThemeDB.fallback_font
+		var t := int(r * 1.2)
+		var largura := fonte.get_string_size("A", HORIZONTAL_ALIGNMENT_LEFT, -1, t).x
+		draw_string(fonte, c + Vector2(-largura / 2.0, t * 0.36), "A", HORIZONTAL_ALIGNMENT_LEFT, -1, t, Color.WHITE)
+
+
+## Desenho da dica: o botão A sendo segurado (a barrinha enche) e o que acontece.
+##   pulo_alto: o Faísca pulando bem alto; flutuar: o laser na descida; laser: o feixe na flor;
+##   tocha: o feixe na tocha, que pega fogo. No golpe é o X apertado três vezes, na parede rachada.
+##   quicar: a nuvem rosa amassa e joga para cima; balao: o balão de chiclete enche, sobe e estoura (2-2).
+##   dado: o soco tomba o dado; ioio: X no ar perto da argola laranja puxa o Faísca até ela (2-3).
+##   gelo: o analógico empurra e o Faísca escorrega no gelo azul; luva: X joga a bola de neve até o sino laranja (3-1).
+##   esteira: a faixa com as setas andando leva o Faísca; pisca: os blocos lilases se revezam e ele pula de um para o
+##   outro; martelo: X no ar, ele desce reto com o martelinho e o pino laranja afunda; tinta: pular de lata em lata, sem
+##   encostar na tinta rosa (3-2). registro: X na roda vermelha, que gira; a água sobe e a esponja boia junto (2-1).
+##   confeitos: X no pote rosa, que vira lá no alto e chove confeito; três confeitos grandes viram degraus (2-2).
+##   vento: A segurado, o Faísca flutua dentro dos riscos do vento e é levado por cima do vão; argola: no vento, ele
+##   passa por dentro do aro laranja e o sino toca; pipa: A segurado em cima da grade, a pipa abre e a coluna leva para
+##   cima; catavento: X no cata-vento parado, que gira; freio e janela: X no ferrolho laranja, que abre e solta o vento
+##   (3-3).
+class DesenhoDica extends Control:
+	var qual := ""
+
+	func _draw() -> void:
+		var tempo := Time.get_ticks_msec() / 1000.0
+		var enche := fmod(tempo, 1.6) / 1.2
+		var b := Vector2(52, size.y * 0.42)
+		var golpe := qual in ["golpe", "alavanca", "dado", "ioio", "luva", "martelo", "registro", "confeitos", "catavento", "freio", "janela"]
+		# O botão de cada dica: X (azul) nos golpes, Y (amarelo) no agarrar, A (verde) no resto.
+		var letra := "X" if golpe or qual == "giro_forte" else ("Y" if qual == "agarrar" else "A")
+		var cores := {"X": [Color("1d4f9a"), Color("4a90e2")], "Y": [Color("a8800c"), Color("f5c518")], "A": [Color("1f7a3a"), Color("3ccf6a")]}
+		# No golpe o botão pulsa a cada toque; nos outros fica apertado enquanto a barrinha enche.
+		var toque := fmod(tempo, 1.6) < 1.2 and fmod(tempo * 2.5, 1.0) < 0.35 if golpe else false
+		var raio := 32.0 if toque else 36.0
+		if qual == "gelo":
+			# No gelo não tem botão: o analógico empurrado para o lado e solto.
+			var empurra := fmod(tempo, 2.0) < 0.8
+			draw_circle(b + Vector2(0, 4), 36, Color("4a4658"))
+			draw_circle(b, 36, Color("6a6478"))
+			draw_arc(b, 36, 0, TAU, 40, Color("2b2140"), 4.0, true)
+			var pino := b + Vector2(16.0 if empurra else 0.0, 0)
+			draw_circle(pino, 18, Color("2b2140"))
+			draw_circle(pino, 14, Color("8a84a0"))
+			_dica_do_gelo(Vector2(170, size.y * 0.5), tempo)
+			return
+		if qual in ["esteira", "tinta"]:
+			# Sem botão: só o desenho, no meio do balão.
+			_dica_sem_botao(Vector2(120, size.y * 0.5), tempo)
+			return
+		draw_circle(b + Vector2(0, 4), raio, cores[letra][0])
+		draw_circle(b, raio, cores[letra][1])
+		draw_arc(b, raio, 0, TAU, 40, Color("2b2140"), 4.0, true)
+		var fonte := ThemeDB.fallback_font
+		draw_string(fonte, b + Vector2(-13, 15), letra, HORIZONTAL_ALIGNMENT_LEFT, -1, 42, Color.WHITE)
+		if golpe:
+			var vezes := mini(int(fmod(tempo, 1.6) * 2.5) + 1, 3)
+			for i in 3:
+				draw_circle(b + Vector2(-24 + i * 24, 58), 8, Color("ffd23f") if i < vezes else Color(0, 0, 0, 0.15))
+				draw_arc(b + Vector2(-24 + i * 24, 58), 8, 0, TAU, 16, Color("2b2140"), 2.5, true)
+		else:
+			var barra := Rect2(b + Vector2(-40, 50), Vector2(80, 14))
+			draw_rect(barra, Color(0, 0, 0, 0.15))
+			draw_rect(Rect2(barra.position, Vector2(80 * clampf(enche, 0, 1), 14)), Color("ffd23f"))
+			draw_rect(barra, Color("2b2140"), false, 3.0)
+		var f := Vector2(170, size.y * 0.5)
+		match qual:
+			"pulo_alto":
+				var alto := 40.0 * sin(clampf(enche, 0, 1) * PI)
+				draw_line(f + Vector2(-30, 44), f + Vector2(30, 44), Color("2b2140"), 4.0)
+				_faisca(f + Vector2(0, 20 - alto))
+				draw_line(f + Vector2(42, 30), f + Vector2(42, -40), Color("ff8c42"), 5.0)
+				draw_colored_polygon(PackedVector2Array([f + Vector2(32, -36), f + Vector2(52, -36), f + Vector2(42, -52)]), Color("ff8c42"))
+			"flutuar":
+				var p := f + Vector2(0, -12 + sin(tempo * 3.0) * 4.0)
+				_faisca(p)
+				for lado in [-8.0, 8.0]:
+					draw_line(p + Vector2(lado, 22), p + Vector2(lado, 52), Color("8ff3ff"), 6.0)
+				draw_arc(f + Vector2(0, 30), 50, PI * 1.1, PI * 1.9, 16, Color("ff8c42"), 4.0)
+			"laser":
+				var p := f + Vector2(0, -30)
+				_faisca(p)
+				for lado in [-8.0, 8.0]:
+					draw_line(p + Vector2(lado, 22), f + Vector2(lado, 36), Color("8ff3ff"), 5.0)
+				for i in 6:
+					var a := TAU * i / 6.0
+					draw_circle(f + Vector2(cos(a), sin(a) * 0.5) * 14 + Vector2(0, 42), 8, Color("ff8fc8"))
+				draw_circle(f + Vector2(0, 42), 7, Color("ffe066"))
+			"tocha":
+				var p := f + Vector2(0, -34)
+				_faisca(p)
+				for lado in [-8.0, 8.0]:
+					draw_line(p + Vector2(lado, 22), f + Vector2(lado, 26), Color("8ff3ff"), 5.0)
+				draw_rect(Rect2(f + Vector2(-5, 30), Vector2(10, 26)), Color("8a5a36"))
+				draw_rect(Rect2(f + Vector2(-9, 26), Vector2(18, 8)), Color("6a6478"))
+				if enche > 0.5:
+					var chama := 1.0 + sin(tempo * 14.0) * 0.12
+					draw_colored_polygon(PackedVector2Array([f + Vector2(-9, 26), f + Vector2(9, 26), f + Vector2(0, 26 - 22 * chama)]), Color("ff9a2e"))
+					draw_colored_polygon(PackedVector2Array([f + Vector2(-5, 26), f + Vector2(5, 26), f + Vector2(0, 26 - 13 * chama)]), Color("ffe066"))
+			"tampa":
+				# Em cima da tampa da panela, que treme e pula levando o Faísca lá para o alto.
+				var ciclo := fmod(tempo, 2.0)
+				var sobe := 0.0 if ciclo < 1.2 else sin((ciclo - 1.2) / 0.8 * PI) * 50.0
+				var treme := sin(tempo * 40.0) * 2.0 if ciclo > 0.8 and ciclo < 1.2 else 0.0
+				draw_rect(Rect2(f + Vector2(-30, 36), Vector2(60, 20)), Color("8a8fa8"))
+				draw_rect(Rect2(f + Vector2(-34 + treme, 30 - sobe * 0.15), Vector2(68, 7)), Color("c9cede"))
+				draw_circle(f + Vector2(treme, 28 - sobe * 0.15), 5, Color("6a6478"))
+				_faisca(f + Vector2(0, 4 - sobe))
+				if ciclo > 0.8:
+					for i in 3:
+						draw_circle(f + Vector2(-26 + i * 26, 22 - fmod(tempo * 30.0 + i * 7.0, 24.0)), 5, Color(1, 1, 1, 0.7))
+			"botao":
+				# Pula e cai em cima do botão vermelho, que afunda.
+				var pulo := absf(sin(tempo * 3.0))
+				var em_cima := pulo < 0.15
+				draw_line(f + Vector2(-44, 52), f + Vector2(44, 52), Color("2b2140"), 4.0)
+				draw_rect(Rect2(f + Vector2(-26, 42), Vector2(52, 10)), Color("6a6478"))
+				draw_rect(Rect2(f + Vector2(-18, 36 if em_cima else 30), Vector2(36, 12 if em_cima else 14)), Color("ff5d5d"))
+				_faisca(f + Vector2(0, 2 - pulo * 46))
+				if em_cima:
+					for i in 3:
+						var a := -PI * 0.15 - i * PI * 0.35
+						draw_line(f + Vector2(0, 34) + Vector2(cos(a), sin(a)) * 30, f + Vector2(0, 34) + Vector2(cos(a), sin(a)) * 42, Color("ffd23f"), 3.0)
+			"argolas":
+				# Voa pela argola e uma das quatro luzinhas do canhão acende (item 12: a rolha só sai com as quatro).
+				var t := fmod(tempo, 2.4) / 2.4
+				var cores_das := [Color("ff4d4d"), Color("ffd23f"), Color("3fa7ff"), Color("4cd964")]
+				draw_arc(f + Vector2(0, 6), 26, 0, TAU, 32, Color("ff8c42"), 7.0, true)
+				_faisca(f + Vector2(-60 + t * 120, 0))
+				var acesas := int(t * 4.0) + 1
+				for i in 4:
+					var c := f + Vector2(-36 + i * 24, 54)
+					draw_circle(c, 9, cores_das[i] if i < acesas else Color("4a4658"))
+					draw_arc(c, 9, 0, TAU, 16, Color("2b2140"), 2.5, true)
+			"alavanca":
+				# Soca a alavanca: o cabo vira e a grade sobe.
+				var bate := fmod(tempo * 1.2, 1.0) < 0.3
+				var p := f + Vector2(-28 + (8.0 if bate else 0.0), 10)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(28 if bate else 20, 6), Color("ff7a22"), 7.0)
+				draw_rect(Rect2(f + Vector2(14, 40), Vector2(26, 10)), Color("6a6478"))
+				var vira := 0.6 if fmod(tempo * 1.2, 1.0) > 0.3 else -0.6
+				var cabo := f + Vector2(27, 40)
+				draw_line(cabo, cabo + Vector2(sin(vira), -cos(vira)) * 30, Color("ffd23f"), 6.0)
+				draw_circle(cabo + Vector2(sin(vira), -cos(vira)) * 30, 6, Color("ff5d5d"))
+			"registro":
+				# Soca a roda vermelha (ela gira), a água sobe e a esponja boia com ela até perto do Faísca (2-1).
+				var ciclo := fmod(tempo, 2.4)
+				var bate := ciclo < 0.6 and fmod(tempo * 2.5, 1.0) < 0.35
+				var p := f + Vector2(-34 + (6.0 if bate else 0.0), -4)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(26 if bate else 20, 6), Color("ff7a22"), 7.0)
+				var roda := f + Vector2(8, 4)
+				draw_rect(Rect2(roda + Vector2(-4, 6), Vector2(8, 22)), Color("8a8fa8"))
+				var giro := clampf(ciclo / 0.9, 0.0, 1.0) * TAU * 2.0
+				draw_arc(roda, 13, 0, TAU, 24, Color("e2304a"), 5.0, true)
+				for i in 2:
+					var a := giro + PI / 2.0 * i
+					draw_line(roda - Vector2(cos(a), sin(a)) * 12, roda + Vector2(cos(a), sin(a)) * 12, Color("e2304a"), 3.0)
+				draw_circle(roda, 4, Color("ffd23f"))
+				# A água sobe do fundo e a esponja vem junto.
+				var sobe := clampf((ciclo - 0.6) / 1.4, 0.0, 1.0)
+				var nivel := 58.0 - sobe * 26.0
+				draw_rect(Rect2(f + Vector2(-50, nivel), Vector2(110, 60 - nivel + 4)), Color(0.42, 0.72, 1.0, 0.85))
+				var esponja := f + Vector2(42, nivel - 9)
+				draw_rect(Rect2(esponja + Vector2(-14, 0), Vector2(28, 10)), Color("ffd84a"))
+				draw_rect(Rect2(esponja + Vector2(-14, -3), Vector2(28, 4)), Color("5fc46a"))
+				for i in 3:
+					draw_circle(f + Vector2(-30 + i * 34, nivel + 3 + sin(tempo * 4.0 + i) * 1.5), 3, Color(1, 1, 1, 0.8))
+			"confeitos":
+				# Soca o pote rosa; ele sobe, vira de boca para baixo, chove confeito e três redondos viram a escadinha.
+				var ciclo := fmod(tempo, 3.0)
+				var bate := ciclo < 0.6 and fmod(tempo * 2.5, 1.0) < 0.35
+				var p := f + Vector2(-40 + (6.0 if bate else 0.0), 12)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(26 if bate else 20, 6), Color("ff7a22"), 7.0)
+				var sobe := clampf((ciclo - 0.6) / 0.5, 0.0, 1.0)
+				var pote := f + Vector2(-4 + sobe * 30, 26 - sobe * 46)
+				var virado := sobe >= 1.0
+				draw_rect(Rect2(pote + Vector2(-10, -12), Vector2(20, 24)), Color("ff8fc8"))
+				draw_rect(Rect2(pote + Vector2(-11, 10.0 if virado else -18.0), Vector2(22, 8)), Color("fff6fb"))
+				var cores_dos := [Color("e2304a"), Color("ffd23f"), Color("3f8fe0"), Color("4cc27a"), Color("ff8a2a")]
+				if virado and ciclo < 2.6:
+					for i in 10:
+						var queda := fmod(tempo * 60.0 + i * 13.0, 46.0)
+						draw_circle(pote + Vector2(-14 + (i * 7) % 30, 22 + queda), 3.0, cores_dos[i % cores_dos.size()])
+				# Os três degraus aparecem um depois do outro, subindo.
+				for k in 3:
+					if ciclo > 1.4 + k * 0.4:
+						var d := f + Vector2(10 + k * 18, 52 - k * 12)
+						draw_rect(Rect2(d + Vector2(-9, -3), Vector2(18, 7)), cores_dos[(k * 2) % cores_dos.size()])
+			"agarrar":
+				# A Bolota tonta (estrelinhas girando); segura Y: o Faísca gira com ela pendurada pela antena;
+				# solta: ela voa longe.
+				var ciclo := fmod(tempo, 2.0)
+				_faisca(f + Vector2(0, 8))
+				if ciclo < 0.5:
+					var bola := f + Vector2(46, 10 + sin(tempo * 9.0) * 2.0)
+					_bolota(bola)
+					for i in 3:
+						var a := tempo * 6.0 + i * TAU / 3.0
+						var e := bola + Vector2(cos(a) * 14, -26 + sin(a) * 4)
+						draw_circle(e, 4, Color("ffd23f"))
+						draw_arc(e, 4, 0, TAU, 12, Color("2b2140"), 1.5, true)
+				elif ciclo < 1.6:
+					var a := (ciclo - 0.5) * TAU * 1.4
+					var bola := f + Vector2(cos(a) * 46, 10 + sin(a) * 14)
+					draw_line(f + Vector2(0, 12), bola + (f + Vector2(0, 12) - bola).normalized() * 12, Color("2b2140"), 3.0)
+					_bolota(bola)
+				else:
+					var voo := (ciclo - 1.6) / 0.4
+					_bolota(f + Vector2(46 + voo * 50, 10 - sin(voo * PI) * 26))
+			"giro_forte":
+				# Segura X: carrega (anel dourado crescendo) e gira de braços abertos, jogando as Bolotas longe.
+				var ciclo := fmod(tempo, 1.6)
+				if ciclo < 1.2:
+					var treme := sin(tempo * 50.0) * 2.0 * ciclo
+					draw_arc(f + Vector2(0, 40), 14 + 30 * ciclo / 1.2, 0, TAU, 32, Color("ffd23f"), 4.0)
+					_faisca(f + Vector2(treme, 8))
+					for lado in [-1.0, 1.0]:
+						_bolota(f + Vector2(52 * lado, 24))
+				else:
+					var giro := (ciclo - 1.2) / 0.4
+					for i in 3:
+						var a := tempo * 18.0 + i * TAU / 3.0
+						draw_arc(f + Vector2(0, 14), 34, a, a + 1.2, 12, Color("8ff3ff"), 4.0)
+					_faisca(f + Vector2(0, 8))
+					draw_line(f + Vector2(-26, 8), f + Vector2(26, 8), Color("f4f5f9"), 6.0)
+					for lado in [-1.0, 1.0]:
+						_bolota(f + Vector2((52 + giro * 30) * lado, 24 - sin(giro * PI) * 20))
+			"quicar":
+				# Cai na nuvem rosa, ela amassa e joga o Faísca lá para cima.
+				var pulo := absf(sin(tempo * 2.6))
+				var amassa := 1.0 - maxf(0.0, 0.25 - pulo) * 1.6
+				for bola in [[Vector2(0, 46), 34.0], [Vector2(-24, 42), 20.0], [Vector2(24, 42), 20.0]]:
+					draw_set_transform(f + bola[0], 0.0, Vector2(1.0, 0.45 * amassa))
+					draw_circle(Vector2.ZERO, bola[1], Color("ffb3d9"))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				_faisca(f + Vector2(0, 14 - pulo * 50))
+				if pulo < 0.2:
+					for lado in [-1.0, 1.0]:
+						draw_line(f + Vector2(30 * lado, 30), f + Vector2(42 * lado, 18), Color("ff7a22"), 3.0)
+			"balao":
+				# Segurando A no ar, o balão de chiclete enche e o Faísca sobe devagar; soltando, estoura.
+				var ciclo := fmod(tempo, 1.6)
+				var sobe := clampf(ciclo / 1.2, 0.0, 1.0)
+				var p := f + Vector2(0, 34 - sobe * 46 + (maxf(ciclo - 1.2, 0.0) / 0.4) * 30.0)
+				_faisca(p)
+				if ciclo < 1.2:
+					var r := 8.0 + 12.0 * minf(sobe * 3.0, 1.0)
+					draw_line(p + Vector2(0, -22), p + Vector2(0, -30), Color("c2407e"), 2.0)
+					draw_circle(p + Vector2(0, -30 - r), r, Color("ff79bd"))
+					draw_circle(p + Vector2(-r * 0.4, -30 - r * 1.4), r * 0.2, Color(1, 1, 1, 0.7))
+				else:
+					for i in 6:
+						var a := TAU * i / 6.0
+						draw_line(p + Vector2(0, -46) + Vector2(cos(a), sin(a)) * 8, p + Vector2(0, -46) + Vector2(cos(a), sin(a)) * 18, Color("ff79bd"), 3.0)
+			"dado":
+				# Soca o dado, e ele tomba para o lado (vira em volta da aresta de baixo).
+				var ciclo := fmod(tempo, 1.6)
+				var bate := ciclo > 0.2 and ciclo < 0.45
+				var p := f + Vector2(-34 + (8.0 if bate else 0.0), 10)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(28 if bate else 20, 6), Color("ff7a22"), 7.0)
+				draw_line(f + Vector2(-50, 52), f + Vector2(60, 52), Color("2b2140"), 4.0)
+				var gira := clampf((ciclo - 0.45) / 0.4, 0.0, 1.0) * PI * 0.5
+				var pivo := f + Vector2(36, 52)
+				var cantos := PackedVector2Array()
+				for c in [Vector2(-28, 0), Vector2(0, 0), Vector2(0, -28), Vector2(-28, -28)]:
+					cantos.append(pivo + c.rotated(gira))
+				draw_colored_polygon(cantos, Color("f4f5f9"))
+				cantos.append(cantos[0])
+				draw_polyline(cantos, Color("2b2140"), 3.0)
+				draw_circle(pivo + Vector2(-14, -14).rotated(gira), 4, Color("2b2140"))
+			"ioio":
+				# No ar, X perto da argola laranja: o fio estica e puxa o Faísca até ela.
+				var ciclo := fmod(tempo, 1.6)
+				var argola := f + Vector2(40, -34)
+				draw_arc(argola, 12, 0, TAU, 24, Color("ff7a22"), 5.0)
+				var puxa := clampf((ciclo - 0.4) / 0.8, 0.0, 1.0)
+				var p := (f + Vector2(-30, 24)).lerp(argola + Vector2(0, 22), puxa)
+				_faisca(p)
+				if ciclo > 0.3:
+					draw_line(p + Vector2(10, -10), argola, Color("ff7a22"), 2.5)
+			"luva":
+				# X: a bola de neve sai da mão, faz a curvinha e acerta o sino laranja lá no alto, que balança.
+				var ciclo := fmod(tempo, 1.6)
+				var sino := f + Vector2(44, -40)
+				var bateu := ciclo > 0.75
+				var balanca := sin(tempo * 14.0) * 0.35 if bateu else 0.0
+				draw_line(sino + Vector2(-16, -12), sino + Vector2(16, -12), Color("3a3150"), 3.0)
+				draw_set_transform(sino + Vector2(0, -12), balanca, Vector2.ONE)
+				draw_colored_polygon(PackedVector2Array([Vector2(-6, 0), Vector2(6, 0), Vector2(14, 22), Vector2(-14, 22)]), Color("ff7a22") if not bateu else Color("ffb13d"))
+				draw_circle(Vector2(0, 24), 4, Color("ffd23f"))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				var p := f + Vector2(-34, 24)
+				_faisca(p)
+				if ciclo > 0.15 and not bateu:
+					var t := (ciclo - 0.15) / 0.6
+					var bola := (p + Vector2(14, -8)).lerp(sino + Vector2(0, 8), t) + Vector2(0, -sin(t * PI) * 24)
+					draw_circle(bola, 7, Color.WHITE)
+					draw_arc(bola, 7, 0, TAU, 16, Color("9fb4d2"), 2.0)
+				elif bateu:
+					for i in 5:
+						var a := TAU * i / 5.0 + tempo
+						draw_line(sino + Vector2(cos(a), sin(a)) * 22, sino + Vector2(cos(a), sin(a)) * 30, Color("ffd23f"), 3.0)
+			"vento", "argola":
+				# A: o Faísca flutua dentro dos riscos brancos do vento, que o levam de uma beira à outra por cima do vão
+				# (na argola, ele passa pelo aro laranja e o sino toca).
+				var ciclo := fmod(tempo, 2.2) / 2.2
+				draw_rect(Rect2(f + Vector2(-52, 38), Vector2(22, 12)), Color("8fd36a"))
+				draw_rect(Rect2(f + Vector2(30, 38), Vector2(22, 12)), Color("8fd36a"))
+				for i in 6:
+					var x := -46.0 + fmod(i * 17.0 + tempo * 60.0, 80.0)
+					var y := -18.0 + (i % 3) * 14.0
+					draw_line(f + Vector2(x, y), f + Vector2(x + 16, y), Color(1, 1, 1, 0.9), 3.0)
+				if qual == "argola":
+					var passou := ciclo > 0.5
+					draw_arc(f + Vector2(0, -6), 22, 0, TAU, 28, Color("ffd23f") if passou else Color("ff7a22"), 5.0, true)
+					draw_colored_polygon(PackedVector2Array([f + Vector2(-6, -34), f + Vector2(6, -34), f + Vector2(9, -26), f + Vector2(-9, -26)]), Color("ffd23f"))
+				var p := f + Vector2(lerpf(-40, 40, ciclo), -6 + sin(ciclo * PI) * -6)
+				_faisca(p)
+				for lado in [-6.0, 6.0]:
+					draw_line(p + Vector2(lado, 22), p + Vector2(lado, 40), Color("8ff3ff"), 4.0)
+			"pipa":
+				# A: em cima da grade escura com o aro laranja, a pipa abre e as fitas levam o Faísca para cima.
+				var ciclo := fmod(tempo, 2.0) / 2.0
+				draw_rect(Rect2(f + Vector2(-26, 44), Vector2(52, 8)), Color("55607a"))
+				draw_rect(Rect2(f + Vector2(-30, 42), Vector2(60, 4)), Color("ff7a22"))
+				for i in 4:
+					var y := 40.0 - fmod(i * 22.0 + tempo * 50.0, 88.0)
+					draw_line(f + Vector2(-16 + i * 11, y), f + Vector2(-16 + i * 11, y - 10), Color(1, 1, 1, 0.9), 3.0)
+				var p := f + Vector2(0, 20 - 52 * ciclo)
+				_faisca(p)
+				var k := p + Vector2(22, -40)
+				draw_line(p + Vector2(8, -6), k + Vector2(0, 12), Color("3a3150"), 2.0)
+				draw_colored_polygon(PackedVector2Array([k + Vector2(0, -14), k + Vector2(10, -2), k + Vector2(0, 14), k + Vector2(-10, -2)]), Color("ff7a22"))
+				draw_colored_polygon(PackedVector2Array([k + Vector2(0, -14), k + Vector2(10, -2), k + Vector2(-10, -2)]), Color("fff8ee"))
+			"catavento":
+				# X: o soco no cata-vento parado, que começa a girar.
+				var ciclo := fmod(tempo, 1.6)
+				var gira := ciclo > 0.6
+				var c := f + Vector2(24, -14)
+				draw_line(c, c + Vector2(0, 58), Color("2b2140"), 4.0)
+				var ang := tempo * 9.0 if gira else 0.0
+				for i in 4:
+					var a := ang + i * PI / 2.0
+					var d := Vector2(cos(a), sin(a))
+					var lado := Vector2(-d.y, d.x)
+					draw_colored_polygon(PackedVector2Array([c, c + d * 22, c + d * 22 + lado * 12]), Color("ff7a22") if i % 2 == 0 else Color("fff8ee"))
+				draw_circle(c, 5, Color("ffd23f"))
+				_faisca(f + Vector2(-26, 24))
+			"freio", "janela":
+				# X: o soco no ferrolho laranja (no alto, do lado da coluna de vento), que abre e solta o vento.
+				var ciclo := fmod(tempo, 1.6)
+				var abre := ciclo > 0.6
+				var placa := Rect2(f + Vector2(6, -30), Vector2(36, 36))
+				draw_rect(placa, Color("3a3150"))
+				draw_set_transform(placa.get_center(), -PI / 2.0 if abre else 0.0, Vector2.ONE)
+				draw_rect(Rect2(Vector2(-16, -5), Vector2(32, 10)), Color("ff7a22"))
+				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+				if abre:
+					for i in 3:
+						var y := 30.0 - fmod(i * 18.0 + tempo * 60.0, 54.0)
+						draw_line(f + Vector2(-44 + i * 10, y), f + Vector2(-44 + i * 10, y - 10), Color(1, 1, 1, 0.9), 3.0)
+				_faisca(f + Vector2(-26, 10))
+			"pisca":
+				# Os dois blocos lilases se revezam (o da esquerda pisca antes de sumir) e o Faísca pula para o outro.
+				var ciclo := fmod(tempo, 2.4)
+				var esq := ciclo < 1.5 and (ciclo < 1.1 or int(tempo * 10.0) % 2 == 0)
+				var dir := ciclo > 0.9
+				for spec in [[Vector2(-40, 30), esq], [Vector2(40, 30), dir]]:
+					var r := Rect2(f + spec[0] - Vector2(22, 0), Vector2(44, 18))
+					if spec[1]:
+						draw_rect(r, Color("c9a7ff"))
+					draw_rect(r, Color("7d55d0"), false, 3.0)
+				var t := clampf((ciclo - 0.9) / 0.5, 0.0, 1.0)
+				_faisca(f + Vector2(-40 + 80 * t, 10 - sin(t * PI) * 28))
+			"martelo":
+				# X no ar: o Faísca desce reto com o martelinho e o pino laranja afunda.
+				var ciclo := fmod(tempo, 1.6)
+				var desce := clampf((ciclo - 0.35) / 0.25, 0.0, 1.0)
+				var bateu := ciclo > 0.6
+				var pino_alto := 8.0 if bateu else 30.0
+				draw_line(f + Vector2(-50, 52), f + Vector2(50, 52), Color("2b2140"), 4.0)
+				draw_rect(Rect2(f + Vector2(-12, 52 - pino_alto), Vector2(24, pino_alto)), Color("ff7a22"))
+				draw_rect(Rect2(f + Vector2(-15, 48 - pino_alto), Vector2(30, 6)), Color("fff6ec"))
+				var p := f + Vector2(0, lerpf(-34.0, 28.0 - pino_alto, desce))
+				_faisca(p)
+				var mao := p + Vector2(18, -4)
+				var ponta := mao + Vector2(0, -26).rotated(-1.2 + desce * 1.9)
+				draw_line(mao, ponta, Color("ffd23f"), 4.0)
+				draw_circle(ponta, 9, Color("e94f4f"))
+				if bateu:
+					for i in 5:
+						var a := -PI + i * PI / 4.0
+						var c := f + Vector2(0, 46)
+						draw_line(c + Vector2(cos(a), sin(a)) * 30, c + Vector2(cos(a), sin(a)) * 40, Color("ffd23f"), 3.0)
+			"golpe":
+				var bate := fmod(tempo * 2.5, 1.0) < 0.35
+				var p := f + Vector2(-26 + (8.0 if bate else 0.0), 10)
+				_faisca(p)
+				draw_line(p + Vector2(14, 6), p + Vector2(28 if bate else 20, 6), Color("ff7a22"), 7.0)
+				var parede := Rect2(f + Vector2(16, -38), Vector2(30, 84))
+				draw_rect(parede, Color("8a90a8"))
+				draw_rect(parede, Color("2b2140"), false, 3.0)
+				draw_polyline(PackedVector2Array([f + Vector2(31, -38), f + Vector2(24, -12), f + Vector2(36, 4), f + Vector2(26, 28), f + Vector2(32, 46)]), Color("2b2140"), 3.0)
+				if bate:
+					for i in 4:
+						var a := -0.8 + i * 0.5
+						draw_line(f + Vector2(14, 16), f + Vector2(14, 16) + Vector2(cos(a + PI), sin(a + PI)) * 14, Color("ffd23f"), 3.0)
+
+	## Dicas sem botão da 3-2: a esteira (as setas andam e levam o Faísca) e a tinta (pular de lata em lata).
+	func _dica_sem_botao(f: Vector2, tempo: float) -> void:
+		if qual == "esteira":
+			var faixa := Rect2(f + Vector2(-90, 34), Vector2(180, 16))
+			draw_rect(faixa, Color("36405a"))
+			draw_rect(faixa, Color("2b2140"), false, 3.0)
+			for i in 6:
+				var c := f + Vector2(fposmod(i * 30.0 + tempo * 40.0, 180.0) - 90.0, 42)
+				draw_polyline(PackedVector2Array([c + Vector2(-5, -6), c + Vector2(4, 0), c + Vector2(-5, 6)]), Color.WHITE, 3.0)
+			_faisca(f + Vector2(-60 + fmod(tempo, 2.0) * 60.0, 12))
+			return
+		draw_rect(Rect2(f + Vector2(-100, 40), Vector2(200, 18)), Color("ff5fae"))
+		for x in [-70.0, 70.0]:
+			draw_rect(Rect2(f + Vector2(x - 22, 22), Vector2(44, 30)), Color("f4f6fb"))
+			draw_rect(Rect2(f + Vector2(x - 22, 22), Vector2(44, 30)), Color("2b2140"), false, 3.0)
+		var ciclo := fmod(tempo, 1.6) / 1.6
+		_faisca(f + Vector2(-70 + 140 * ciclo, 2 - sin(ciclo * PI) * 40))
+
+	## O gelo: chão azul riscado, e o Faísca escorrega para o lado, deixando os risquinhos (continua indo depois de soltar).
+	func _dica_do_gelo(f: Vector2, tempo: float) -> void:
+		var ciclo := fmod(tempo, 2.0)
+		draw_rect(Rect2(f + Vector2(-70, 44), Vector2(140, 12)), Color("d8f1ff"))
+		draw_rect(Rect2(f + Vector2(-70, 44), Vector2(140, 12)), Color("2b2140"), false, 3.0)
+		for i in 3:
+			draw_line(f + Vector2(-60 + i * 44, 50), f + Vector2(-40 + i * 44, 48), Color.WHITE, 2.0)
+		var x := -50.0 + 100.0 * (1.0 - pow(1.0 - clampf(ciclo / 1.6, 0.0, 1.0), 2.0))
+		var p := f + Vector2(x, 18)
+		_faisca(p)
+		for i in 3:
+			draw_line(p + Vector2(-20 - i * 10, 22 - i * 6), p + Vector2(-34 - i * 10, 22 - i * 6), Color("8fd0ff"), 2.5)
+
+	## Bolota em miniatura: bolinha roxa de um olho, com a antena de bolinha vermelha.
+	func _bolota(p: Vector2) -> void:
+		draw_line(p + Vector2(0, -10), p + Vector2(0, -18), Color("3d2e5c"), 3.0)
+		draw_circle(p + Vector2(0, -19), 3.5, Color("ff5a6e"))
+		draw_circle(p, 11, Color("9b5de5"))
+		draw_arc(p, 11, 0, TAU, 24, Color("2b2140"), 2.5, true)
+		draw_circle(p + Vector2(0, -2), 4, Color.WHITE)
+		draw_circle(p + Vector2(0, -2), 2, Color("1b1530"))
+
+	## O Faísca em miniatura: cabeça branca com o visor e o corpinho laranja.
+	func _faisca(p: Vector2) -> void:
+		draw_circle(p + Vector2(0, 10), 10, Color("ff7a22"))
+		draw_rect(Rect2(p + Vector2(-16, -22), Vector2(32, 26)), Color("f4f5f9"))
+		draw_rect(Rect2(p + Vector2(-16, -22), Vector2(32, 26)), Color("2b2140"), false, 3.0)
+		draw_rect(Rect2(p + Vector2(-11, -17), Vector2(22, 14)), Color("1b1d2a"))
+		for lado in [-5.0, 5.0]:
+			draw_line(p + Vector2(lado, -14), p + Vector2(lado, -8), Color("8ff3ff"), 3.0)

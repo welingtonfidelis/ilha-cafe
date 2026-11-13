@@ -150,6 +150,9 @@ func _on_body_entered(body: Node) -> void:
 	# quem está nele.
 	if body is Kart:
 		hit = (body as Kart).driver
+	# O Faísca na ilha divide os corações com a criança guardada.
+	elif body is Jogador:
+		hit = (body as Jogador).crianca
 	if is_instance_valid(hit):
 		hit.take_damage(damage, global_position - direction, ["flecha", "bolha", "dardo"][kind])
 	pop()

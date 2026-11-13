@@ -1,5 +1,5 @@
 extends SceneTree
-## Peças de pista e de skate vistas de cima, com seta vermelha para +Z e azul para +X.
+## Peças de pista vistas de cima, com seta vermelha para +Z e azul para +X.
 func _init() -> void:
 	var world := Node3D.new()
 	root.add_child(world)
@@ -10,7 +10,7 @@ func _init() -> void:
 	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.environment.ambient_light_color = Color(0.9, 0.9, 0.95)
 	world.add_child(env)
-	var items := ["pista/road-straight-barrier", "pista/road-bend-barrier", "pista/road-curve-barrier", "pista/road-end-barrier", "skate/half-pipe", "skate/ramp", "skate/bowl-side", "skate/bowl-corner-outer", "skate/slope-smooth", "skate/steps-rail", "skate/structure-platform", "skate/obstacle-box-grind"]
+	var items := ["pista/road-straight-barrier", "pista/road-bend-barrier", "pista/road-curve-barrier", "pista/road-end-barrier"]
 	for i in items.size():
 		var m: Node3D = load("res://assets/%s.glb" % items[i]).instantiate()
 		m.position = Vector3((i % 4) * 3.0, 0, (i / 4) * 3.0)

@@ -5,7 +5,7 @@ Jogo: **Ilha Cafuné** (título provisório): tiro em terceira pessoa infantil, 
 Motor: Godot 4.7 (3D), com exportação para Windows (`.exe`) e macOS.
 Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os blasters vêm do Kenney, porque o KayKit não tem armas de fogo. Lista completa na seção 8.
 
-**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26).** Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 30 efeitos sonoros e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
+**Estado atual: jogo completo do começo ao fim, com desfecho, festa à noite, créditos com álbum, pós-jogo e campanha salva (2026-10-26). Em 2026-10-28 começou a Parte 2 (seção 11):** depois dos créditos, o Faísca (o robozinho do projeto Faísca) entra na troca de personagem e entra no farol da ponta sudeste, o hub das fases de plataforma. A primeira rodada está no branch `parte-2-faisca`: o farol, a abertura, o hub e a fase 1-1. Em 2026-10-29 o hub virou uma torre de quatro andares com escada em espiral, com as portas das fases que ainda vão ser feitas, e a fase 1-2 Túneis do Morro ficou pronta. No mesmo dia, o voo do Faísca passou a mostrar só o laser, durar 1 s e acertar num círculo em volta dele. Os menus foram refeitos para criança (cartões com o boneco 3D na escolha de personagem e botões com ícone na pausa). O Faísca passou a andar de kart e de skate e a lutar na Festa sem fim (só não compra), e a porta do farol passou a pedir o Faísca na escolha de personagem. A pista de kart virou um 8 com ponte, subidas e descidas. O Faísca ganhou um visual mais caprichado: tela de vidro com olhos de LED que mudam de cara, friso laranja na tela, LEDs de voo nas costas e o corpo no jeito do Astro Bot (feijão branco, braços e coxas gordinhos, mão de luva, pernas com ponta), em branco e laranja. Projeto Godot 4.7.2 na raiz desta pasta, versionado em git (branch `main`, publicado em github.com/welingtonfidelis/ilha-cafe, público). Pedidos do usuário em 2026-10-26 depois de testar: luta do prólogo na praia do cais, cais de madeira, cavalos, correr (Shift / L3), lenhador partindo tronco, bandeira com raio maior, chefes mais difíceis (menos o Mestre Ossinho, que estava bom), Morro dos Ventos com topo plano e o portão do cemitério que abre. O jogo abre na ilha de verdade (`scenes/ilha.tscn`, seção 3.1). Já dá para jogar o prólogo na praça, as duas defesas da cidade (Ossão e Mira-Torta), atravessar a ponte e as duas da mata (Torre de Ossinhos e Minionzão), ganhando o Granulado, a Pipoqueira, +1 coração e o Pé-de-Moleque, até a cúpula do cemitério cair. A praça tem a festa montada (palco com banda e o urso do violão, mesas de comida e doces, presentes, barraca dos fazendeiros, barraca de poções da bruxa, barraca de tiro ao alvo e o cantinho do palhaço) e 22 moradores na festa e pela ilha (inclusive lenhador e pescador) que falam, torcem nas ondas e comemoram; cada região vencida ganha convidados e uma mesa de festa. O Golem de Ossos aparece nas ondas da mata, e o Bosque das Copas tem o desafio opcional do Guerreiro Planta. Com a cúpula caída, a defesa final no meio do cemitério do Morro traz 3 ondas e o Mestre Ossinho (o Necromancer do KayKit) em três fases; derrotado, ele senta, tira a coroa e as crianças entregam o convite numa cena com câmera própria. Na noite seguinte vem a Festa do Cafuné na praça (esqueletos convidados descendo de balão, luzinhas, lua, estrelas e fogos); ficar 3 s no círculo dourado na frente do palco abre os créditos com o álbum de fotos da partida, e depois a ilha fica em festa de dia, com os esqueletos amigos e a "Festa sem fim" (ondas de verdade) no cemitério (seção 4). Guardiões e ondas dão moedas para a **lojinha no celular** (Select ou C, fora de luta), que vende 17 blasters (todos menos a Paçoca), munição e 2 melhorias, e entrega tudo de balão na frente do aventureiro; com duas pistolas, a seta de cima de novo põe uma em cada mão (seção 8). Desde 2026-10-27 as ondas também trazem o Esqueleto Pistoleiro, o Lobinho, o Conde, o Grandalhão e o Golem de Gelo (seção 7). A campanha salva sozinha; o menu inicial tem Continuar e Nova campanha (seção 4, "Campanha salva e menu inicial"). Aventureiro escolhível, câmera em terceira pessoa, 4 blasters com pente, recarga e estoque limitado, granada e caixas de munição, controle com auxílio de mira; esqueletos com brinquedos e doces nas mãos (nada de lâmina) que atacam cada um do seu jeito, vida em corações, tonto com estrelinhas, pontos de retorno e coração que cai (modelos do Platformer Pack); 52 efeitos sonoros (21 deles do Faísca, desde 2026-10-29) e música de fundo gerados por síntese. Pacotes brutos em `vendor/` (fora do git e com `.gdignore`), só os arquivos usados copiados para `assets/`. Como rodar e o que falta: seção 9.1. O `README.md` da raiz apresenta o jogo no GitHub com a capa e 16 fotos em `docs/imagens/` (JPEG de 1280 px tirados das capturas de teste de `tools/capturas/`, que ficam fora do git; a capa é a `capa_horizontal` da Steam; feito em 2026-10-27 e refeito em 2026-10-28, a pedido do usuário, com a lojinha no celular, a entrega de balão, as duas pistolas, os dardos de espuma, os inimigos novos com brinquedos, o círculo dos créditos e a Festa sem fim; `docs/imagens/` tem `.gdignore`).
 
 ## Índice
 
@@ -19,6 +19,7 @@ Arte: **só pacotes prontos e CC0**, quase tudo do KayKit (Kay Lousberg). Os bla
 8. [Blasters, itens e pacotes de arte](#8-blasters-itens-e-pacotes-de-arte)
 9. [Notas técnicas na Godot](#9-notas-técnicas-na-godot)
 10. [Decisões em aberto](#10-decisões-em-aberto)
+11. [Parte 2: Faísca e o Céu Apagado](#11-parte-2-faísca-e-o-céu-apagado)
 
 ---
 
@@ -76,7 +77,7 @@ A ilha é a cena `scenes/ilha.tscn`, gerada uma vez por `tools/gerar_ilha.gd` e 
 | Lugar | Onde | Como é |
 |---|---|---|
 | Ilha | elipse de ~380 x 490 m com costa recortada | praia de areia em volta; terreno low-poly em grade de 4 m com cores por região |
-| Cidade | sul, x de −60 a 60, z de 110 a 190 (terreno plano até a beira, mesmo no canto sudeste, onde antes a costa afundava o chão e as ruas flutuavam) | ruas do City Builder Bits em grade (4 x 3), prédios em volta dos quarteirões virados para a rua, carros, postes, lixeiras, caixa-d'água | As peças de rua ficam 4,5 cm afundadas: o asfalto do modelo está a 7 cm e a calçada a 10 cm, e o personagem pisa no terreno, a 0; assim o pé quase encosta no asfalto. Caixas e lixeiras soltas não caem em cima das ruas, e os postes de balão da comemoração não nascem na rua nem na água.
+| Cidade | sul, x de −60 a 60, z de 110 a 190 (terreno plano até a beira, mesmo no canto sudeste, onde antes a costa afundava o chão e as ruas flutuavam) | ruas do City Builder Bits em grade (4 x 3), prédios em volta dos quarteirões virados para a rua, com uma viela de 10 m de norte a sul no meio de cada quarteirão até o jardinzinho (desde 2026-10-29), carros, postes, lixeiras, caixa-d'água | As peças de rua ficam 4,5 cm afundadas: o asfalto do modelo está a 7 cm e a calçada a 10 cm, e o personagem pisa no terreno, a 0; assim o pé quase encosta no asfalto. Caixas e lixeiras soltas não caem em cima das ruas, e os postes de balão da comemoração não nascem na rua nem na água.
 | Praça da festa | quarteirão central do sul (x −20 a 20, z 150 a 190; as ruas ocupam 5 m de cada lado, então o miolo livre vai de −15 a 15 e tudo da festa fica dentro dele) | palco vermelho e azul, arco amarelo, 8 balões em postes, bancos e árvores; o jogo começa aqui |
 | Cais | sai da praia para o mar (z 206 a 255) | módulos de madeira do Animated Cute Fish Pack (Quaternius, CC0), pedido do usuário: dois `Dock_Long` e o `Dock_Wide` na ponta, a 0,75x, com estacas enfiadas na água e corda de corrimão; piso a 0,45 m (o piso do módulo fica 3,8 m acima do pé das estacas). Colisão: caixa no piso, paredes invisíveis no lugar da corda e uma rampa na areia. O pescador fica na ponta: a linha da vara (`fishing_rod_line`, com a boia e o anzol) é esticada até a água, a boia balança na superfície e o anzol fica embaixo |
 | Praia do Cais | a oeste do cais (−30, 212) | areia aberta, sem enfeites: é onde acontece a defesa do prólogo (pedido do usuário: na praça, com a festa, a luta ficava confusa) |
@@ -223,7 +224,13 @@ Ideias para depois: coletáveis (estrelas escondidas, bilhetes dos esqueletos), 
 
 - **Pacote:** KayKit Mystery Monthly Series 5 (vendido no itch.io; licença CC0, como todo o KayKit). Traz 14 personagens; só usamos os dois Protagonists. Em 2026-10-25 o usuário trouxe a Coleção Completa do KayKit v6.1 (clone em `Projects/others/kaykit-complete-v6-1-assets`, com os arquivos no Git LFS; só os pacotes usados foram baixados com `git lfs pull --include`).
 - **No jogo (desde 2026-10-25):** `assets/characters/protagonists/Protagonist_B.glb` é o menino e `Protagonist_A.glb` é a menina (a de óculos). Usam o mesmo `Rig_Medium` dos esqueletos, com os mesmos 23 ossos (só a ordem muda, e as animações acham os ossos pelo nome), então animações, encaixe do blaster e regiões de impacto valeram sem mudança. Antes, o Ranger e a Rogue do Adventurers grátis seguravam o lugar; eles saíram da build (`exclude_filter` do `export_presets.cfg`) e só ficam para as ferramentas de inspeção.
-- **Escolher e trocar:** o jogo abre na tela "Escolha quem vai jogar". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário). Na primeira versão a diferença é só visual.
+- **Escolher e trocar:** o jogo abre na tela "Quem vai jogar?". Depois, só pelo menu de pausa (Esc ou Tab / Start) > "Trocar de personagem" (decisão do usuário), ou clicando no boneco da pausa. Na primeira versão a diferença é só visual.
+- **Tela de escolha (refeita em 2026-10-29, pedido do usuário: "está apenas textual, uma criança teria dificuldades"):**
+  - Cada personagem é um cartão grande (`scripts/character_menu.gd`) com o boneco 3D de verdade, num fundo da cor dele (azul o menino, rosa a menina, laranja o Faísca), o nome embaixo e uma linha do que faz, com a miniatura de um blaster ou uma estrela.
+  - O cartão marcado (direcional, setas ou o mouse andando por cima) cresce, ganha a borda dourada e o boneco dá tchau; os outros ficam parados respirando.
+  - Quem já está jogando tem a etiqueta verde "Jogando agora" e vem marcado ao abrir.
+  - O Faísca só aparece com a Parte 2 aberta.
+  - O botão "Voltar" (ou B / Esc) leva à pausa, ou ao menu inicial no começo do jogo.
 - **Nomes:** ainda por decidir.
 
 ### Moradores (feitos em 2026-10-26)
@@ -381,6 +388,7 @@ Diamantes (moeda), corações (energia), estrelas (coletável), bandeiras (check
 | Halloween Bits, Forest Nature Pack, Medieval Hexagon | KayKit | completos, da Coleção Completa v6.1 | 1,1 + 5,6 + 0,1 MB (só os usados) | cemitério do Morro (`assets/props/cemiterio/`); árvores e arbustos nas cores 2, 3, 5, 6, 7 e 8 (`assets/env/forest/corN/`), formatos Tree 5, 6 e 7 e morrinhos `Hill_*`; ponte de pedra (`assets/props/ponte/`) |
 | Prototype Bits, RPG Tools Bits | KayKit | completos, da Coleção Completa v6.1 | poucos KB cada | alvos da barraca de tiro (`assets/props/tiro/`), vara e caixa de pesca (`assets/props/pesca/`) |
 | Ultimate Animated Animal Pack, Animated Cute Fish Pack | Quaternius (quaternius.com, pastas do Google Drive) | CC0 | 65 MB brutos em `vendor/quaternius/` | baixados em 2026-10-26 com autorização do usuário: 10 animais em glTF com andar, galope, comer e parado (`assets/animais/`), 17 peixes em FBX com nado e pulo fora d'água (`assets/peixes/`) e os módulos de cais (`assets/props/cais_peixes/`). O KayKit não tem animais além dos cavalos de tabuleiro do Medieval Hexagon, que saíram. O Farm Animal Pack (porco, ovelha, lhama, pug) também foi baixado, mas saiu: o usuário não gostou do visual nem do comportamento (só tinham animação parada) |
+| Cute Monsters Pack (Cute Animated Monsters, ago. 2020) | Quaternius (quaternius.com/packs/cutemonsters.html, pasta do Google Drive) | CC0 | 55 MB em `vendor/quaternius/cute-monsters/` | o Alien foi baixado em 2026-10-30 para o teste; o pacote inteiro, o usuário baixou no mesmo dia (o Drive barrava os downloads seguidos). São 21 monstros em glTF, com a textura dentro do arquivo. Os 17 que andam têm Idle, Walk, Jump, Bite_Front, Bite_InPlace, HitRecieve, Death, No, Yes e Dance (a Árvore não tem Death). Os 4 que voam (Morcego, Abelha, Cthulhu e Dragão Amarelo) têm só Flying, Bite_Front, HitRecieve e Death. O jogo usa as cópias em `assets/faisca/monstros/` |
 | Mystery Monthly (inimigos novos) | KayKit | 1.1, da Coleção Completa v6.1 | 2,1 MB + armas | 2026-10-27: Vampire, Werewolf_Wolf (com a pele `werewolf_B`), FrostGolem e Monstrosity em `assets/characters/inimigos/`; porta do Monstrosity (versão `_Large`) em `assets/weapons/inimigos/`; a espada do vampiro, o forcado e o machado de gelo ficam lá, sem uso desde 2026-10-28 |
 | Brinquedos dos inimigos | KayKit | Holiday Bits 1.0, RPG Tools Bits 1.0, Mystery Monthly 4 (Palhaço) e 5 (Ajudantes), da Coleção Completa v6.1 | 0,2 MB | 2026-10-28: `candycane_large`, `clown_hammer`, `mallet` e `Hammer` (com as texturas) em `assets/weapons/brinquedos/`; o `Hammer`, a `mallet` e a textura dos Ajudantes vieram do Git LFS (`git lfs pull --include=...`) |
 | Mystery Monthly (mais personagens) | KayKit | 1.1, da Coleção Completa v6.1 | ~2 MB | Animatronic, Witch, Superhero, Space Ranger, Caveman, Werewolf (humano) em `assets/characters/moradores/`; Plant Warrior em `assets/characters/guardioes/` com as armas em `assets/weapons/planta/`; boneco de treino do Avian Swordsman |
@@ -435,7 +443,7 @@ godot -e --path .
 
 **Testes automáticos:**
 - `godot --headless --path . -- --smoke` atira num esqueleto sem abrir janela e imprime os estados.
-- `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 22 pontos (escolha inicial, analógicos, L3 correndo, pulo, mira, auxílio de mira, tiro, direcional e Y trocando de blaster, X, RB, R3 com o Pirulitão, Back, pausa com Start, trocar de personagem pela pausa, B e Start fechando a pausa); termina com "CONTROLE OK".
+- `godot --headless --path . -- --controle` joga só com eventos de controle simulados e confere 25 pontos (escolha inicial, analógicos, L3 correndo, pulo, mira, auxílio de mira, tiro, direcional e Y trocando de blaster, X, RB, R3 com o Pirulitão, Back, pausa com Start, a escolha marcando quem está jogando, o Voltar da escolha, trocar de personagem pela pausa, B e Start fechando a pausa); termina com "CONTROLE OK".
 - `godot --headless --path . -- --combate` deixa os esqueletos atacarem de verdade e confere 13 pontos (soco, flecha e bolha acertam; invulnerabilidade; tiro estoura a bolha; tonto; comemoração; volta na bandeira com vida cheia; troca de bandeira; coração no chão; coração que cai); termina com "COMBATE OK". Leva cerca de 1 minuto.
 - `godot --headless --path . -- --som` confere que os 20 efeitos carregam, que a música repete e que cada evento do jogo dispara o som certo (11 pontos); termina com "SOM OK". O teste não ouve nada: o `Sfx` anota o nome de cada som tocado quando `Sfx.logging` está ligado.
 - `godot --headless --path . -- --ilha` confere a ilha (10 pontos): aventureiro no chão da praça, 18 esqueletos dormindo, bandeiras, acordar só quem está perto, voltar para casa, subir a encosta do Morro, atravessar a ponte, tchibum no rio e bandeira do topo; termina com "ILHA OK".
@@ -445,7 +453,7 @@ godot -e --path .
 - `godot --headless --path . -- --cemiterio` parte do atalho com a cúpula caída e confere 15 pontos: defesa ativa, entrar no cemitério começa a defesa, Mestre Ossinho na última onda com barra, dois minions chamados, bolha, tiro na cabeça, escudo de 6 bolhas, golpe bloqueado com escudo, tiro que estoura bolha do escudo, tonto com dano em dobro, escudo some na fase 3, bolha gigante que vira três, senta e tira a coroa sem balão, defesa vencida começando o desfecho em cena. Termina com "CEMITERIO OK".
 - `godot --headless --path . -- --final` vence a defesa final e confere 14 pontos do fim: desfecho com câmera de cena, sem controle e sem interface; esqueletos saindo do chão; noite seguinte na praça; foto do desfecho; 13 convidados chegando de balão; esqueletos da ilha viram amigos; todos pousam e a interface volta; Mestre sem coroa no banco com o vovô; foto da festa e objetivo no círculo dourado; o círculo na frente do palco e subir no palco não abrindo mais os créditos; o disco enchendo com a contagem; 3 s no círculo abrem os créditos; pós-jogo de dia com lanternas de festa e a brincadeira na praia. Termina com "FINAL OK".
 - `godot --headless --path . -- --festa-sem-fim` pula para o pós-jogo e confere 7 pontos da Festa sem fim: no cemitério com o Mestre e 8 rachaduras, o círculo começa a onda 1 com esqueletos de verdade, onda vencida dá moedas, recorde, munição e coração, onda 2 maior com Rogue, guardião na onda 5, tonto acaba com recorde e dá para recomeçar. Termina com "FESTA-SEM-FIM OK".
-- `godot --headless --path . -- --atividades` confere 33 pontos das atividades extras: barcos; 5 karts vazios nas vagas, cada um de uma cor; aviso para dirigir perto de um; B / E entra e já dirige com o aventureiro da cintura para cima no banco; a câmera gira e volta; sai da vaga; entrar pela LARGADA começa a corrida; três voltas com recorde e moedas; descer na pista leva o aventureiro para fora e o carrinho para a vaga; entrar em outro carrinho; descer pela ilha deixa o carro lá; a 30 m ele fica e a mais de 50 m volta; no kart, golpe tira coração, dá tranco e o piloto pisca; o tempo invulnerável passa; flecha que acerta o kart tira coração; sem corações, fica tonto, desce e o kart volta para a vaga; cair no mar; pista de skate perto da cidade; aviso para pegar o skate; pegar; o pé desce até o chão no impulso e o skate anda; golpe no skate tira coração e tira o embalo, sem empurrão; câmera livre no skate; marca SESSÃO; half-pipe; pontos; tombo; fim da sessão; descer deixa o skate no chão; longe, volta para a pista. Termina com "ATIVIDADES OK". `godot --path . -- --veiculos-captura` tira as vagas vazias e karts com a menina e com o menino no banco (`v01` a `v07`) e 8 quadros do impulso no skate de lado (`v10` a `v17`). Antes desses pontos, a primeira versão desta lista checava: B / E entra na largada com a câmera do kart; acelera para o norte; a mureta segura; três voltas pelas marcas dão tempo, recorde e moedas; B / E sai e volta no box; B / E sobe no skate e começa a sessão; no half-pipe o skate sobe a rampa e volta; giro 360 vale pontos; tombo não vale; fim da sessão com recorde e moedas; B / E desce. Termina com "ATIVIDADES OK". `godot --path . -- --atividades-captura` tira as fotos `a01` a `a13` (pista de kart de cima, largada e curva, pista de skate de cima, de lado e o half-pipe, barcos no cais, os 3 navios, o kart andando e na curva, o aviso do skate, o skate no ar e no half-pipe, a pista de skate com a cidade e a fazenda nova). `godot --path . -- --mapa-captura` tira a ilha inteira de cima com marcas a cada 50 m.
+- `godot --headless --path . -- --atividades` confere 33 pontos das atividades extras: barcos; 5 karts vazios nas vagas, cada um de uma cor; aviso para dirigir perto de um; B / E entra e já dirige com o aventureiro da cintura para cima no banco; a câmera gira e volta; sai da vaga; entrar pela LARGADA começa a corrida; três voltas com recorde e moedas; descer na pista leva o aventureiro para fora e o carrinho para a vaga; entrar em outro carrinho; descer pela ilha deixa o carro lá; a 30 m ele fica e a mais de 50 m volta; no kart, golpe tira coração, dá tranco e o piloto pisca; o tempo invulnerável passa; flecha que acerta o kart tira coração; sem corações, fica tonto, desce e o kart volta para a vaga; cair no mar; pista de skate perto da cidade; aviso para pegar o skate; pegar; o pé desce até o chão no impulso e o skate anda; golpe no skate tira coração e tira o embalo, sem empurrão; câmera livre no skate; marca SESSÃO; half-pipe; pontos; tombo; fim da sessão; descer deixa o skate no chão; longe, volta para a pista. Termina com "ATIVIDADES OK". `godot --path . -- --veiculos-captura` tira as vagas vazias e karts com a menina e com o menino no banco (`v01` a `v07`) e 8 quadros do impulso no skate de lado (`v10` a `v17`). Antes desses pontos, a primeira versão desta lista checava: B / E entra na largada com a câmera do kart; acelera para o norte; a mureta segura; três voltas pelas marcas dão tempo, recorde e moedas; B / E sai e volta no box; B / E sobe no skate e começa a sessão; no half-pipe o skate sobe a rampa e volta; giro 360 vale pontos; tombo não vale; fim da sessão com recorde e moedas; B / E desce. Termina com "ATIVIDADES OK". `godot --path . -- --atividades-captura` tira as fotos `a01` a `a13` (pista de kart de cima, a ponte, a largada com o box e a volta sul com a lombada desde a pista em 8, pista de skate de cima, de lado e o half-pipe, barcos no cais, os 3 navios, o kart andando e na curva, o aviso do skate, o skate no ar e no half-pipe, a pista de skate com a cidade e a fazenda nova). `godot --path . -- --mapa-captura` tira a ilha inteira de cima com marcas a cada 50 m.
 - `godot --headless --path . -- --loja` confere 25 pontos da lojinha no celular (2026-10-27): sem barraca e sem seta antes da primeira moeda; aviso do botão; Select puxa o celular e abre o menu pausado; foco no mais barato que dá para pedir; A abre a prévia e A compra (vira pedido); o que está a caminho, sem moedas e munição cheia não se compram; Select guarda e a entrega desce na frente, num lugar livre; pousa com o nome e a seta; encostar pega; munição enche tudo; com obstáculo na frente a entrega cai do lado; com esqueleto perto o celular não abre; +1 Brigadeiro de balão; entrega no salvamento; prévia; Jujuba e Paçoca; salvamento. `godot --path . -- --loja-captura` tira 9 fotos (`l01` a `l09`: aviso, celular na mão, lojinha no celular, prévia, pedido, cartão a caminho, balão descendo, entrega no chão, Granulado na mão).
 - `godot --headless --path . -- --minionzao` (6 pontos): o guardião sobe fora do pilar, anda até o aventureiro dos quatro lados e contorna o pilar da lanterna.
 - `godot --headless --path . -- --inimigos` (14 pontos, na arena): Pistoleiro (rajada e andar de lado), Arqueiro atirando com a besta apontada para o aventureiro (2026-10-28), Lobinho (bote), Conde (some, círculo, reaparece e golpeia), Grandalhão (porta segura de frente, costas valem, investida com faixa, tonto sem escudo), Golem de Gelo (bola de neve), nomes e modelos, novos nas ondas da história e da Festa sem fim. `godot --path . -- --inimigos-captura` tira 6 fotos (`i00` a `i05`).
@@ -497,6 +505,15 @@ godot -e --path .
 | Regiões de impacto | F3 | Back / Share |
 
 **Auxílio de mira (só no controle e mirando):** um alvo a até 7° do centro da mira freia o giro do analógico pela metade e puxa a mira de leve para o corpo do esqueleto. Logo que aperta o gatilho de mira o puxão é mais forte por 0,25 s. A cabeça (dano em dobro) fica por conta de quem mira. Os valores ficam no grupo "Controle" do `player.gd` (`aim_assist_angle_deg`, `aim_assist_pull`, `aim_assist_snap`, `stick_speed`). A vibração é curta no tiro e mais forte no acerto.
+
+**Menus (refeitos em 2026-10-29, pedido do usuário).** Pensados para criança, como a lojinha do celular:
+- **Visual comum** (`scripts/menu_kit.gd`): a tela escura e opaca da lojinha, com borda e título dourados (as faixas do jogo não aparecem mais por trás das letras), e botões grandes com um ícone redondo colorido à esquerda (`scripts/menu_icon.gd`, desenhado por código). Cada ação tem a sua cor: verde continuar, azul voltar para a ilha ou sair da fase (casinha), roxo trocar de personagem, verde-água comandos (controle), laranja nova campanha (brilho), vermelho sair (desligar), cinza voltar (seta).
+- **Pausa:** à esquerda, o cartão de quem está jogando, com o boneco de verdade (`scripts/portrait.gd`, o mesmo retrato dos cartões) e o nome; com o Faísca, também as estrelinhas. A bolinha roxa de trocar no canto da foto avisa que clicar no boneco leva à troca de personagem. À direita, os botões. Embaixo, o objetivo numa faixa com o ícone de alvo.
+- **Comandos:** duas colunas, o que faz à esquerda e o botão ou a tecla numa etiqueta amarela à direita.
+- **Mouse:** passar o mouse por cima marca o botão, igual ao direcional. Só conta movimento de verdade (mais de 2 px, o mesmo limite do `Player.detect_device`): o menu que abre embaixo do cursor parado, de quem joga de controle, não perde o botão marcado.
+- **Direcional na escolha:** os vizinhos de cada cartão são fixos. Sem isso, o direcional para a esquerda saindo da menina caía no "Voltar", que fica no meio, embaixo.
+- **Retratos:** cada um tem o seu mundinho (`SubViewport` com `own_world_3d`), luz, câmera de três quartos e uma sombrinha redonda. Escondido, o boneco para de animar.
+- `godot --path . -- --menus-captura` tira as fotos `u01` a `u07` em `tools/capturas/`: menu inicial, escolha no começo, escolha com o Faísca, pausa, comandos das crianças, pausa com o Faísca, comandos do Faísca e a confirmação de nova campanha.
 
 **Detalhe da Godot 4.7:** as ações de menu `ui_accept` e `ui_cancel` não vêm ligadas aos botões A e B do controle; o `main.gd` liga.
 
@@ -569,16 +586,73 @@ Feitas com os pacotes do Kenney (Car Kit, City Kit Roads, Mini Skate e Watercraf
 **Ajuste depois do primeiro teste do usuário (2026-10-26, "não consegui correr nos karts nem andar de skate"):** o B só funcionava em cima do tapete dourado (a uns 8 m dos karts estacionados) e só na entrada do skate, e o único aviso era uma placa no ar. Agora o B funciona a até 15 m do box (karts estacionados incluídos) ou em cima da pista de kart, e na entrada ou em qualquer lugar dentro da pista de skate; aparece um aviso fixo embaixo na tela ("Aperte B para correr de kart" / "Aperte E ..." no teclado) e as placas "PISTA DE KART" e "PISTA DE SKATE" ficaram maiores, mais altas e visíveis a até 120 m. A pista de skate foi para perto da cidade (pedido do usuário) e a fazenda foi para o lugar dela.
 
 - **Barcos no mar** (`scripts/sea_traffic.gd`, sem colisão, é paisagem): 10 barcos ancorados perto da costa (pesqueiros, a remo, veleiros, rebocador, lancha), balançando na água; 6 têm um pescador de vara. Boias perto do cais. Três navios (galeão, transatlântico e cargueiro) dão a volta na ilha bem devagar, a uns 450 m, no horizonte.
-- **Pista de kart** (gerada por `tools/gerar_ilha.gd`, na campina a leste do Morro, centro (125, 15)): oval de 48 x 80 m (uns 200 m por volta) com peças de estrada de 8 m; o pedaço com mureta do City Kit Roads é só a mureta, então cada pedaço leva o asfalto e a mureta por cima, com colisão no formato da peça. Na reta, o asfalto do pacote (e a faixa de pedestre) corre num sentido e a mureta no outro: o asfalto vai girado 90° a mais. Antes ele ia no mesmo giro da mureta e as faixas apareciam atravessadas na pista a cada pedaço (o usuário viu em 2026-10-26). O pedaço 6 da reta oeste, de frente para o box, não tem a mureta de fora (a peça do pacote traz as duas muretas juntas, então ali vai só o asfalto e uma mureta de dentro feita à parte): é a **entrada da pista**, com faixa dourada e a placa "LARGADA". Arco quadriculado de chegada logo ao norte, postes de luz, cones nas curvas e o box ao lado com 5 vagas (marcadores `Diversao/Vagas`), pneus e caixa. A área fica sem árvores, pedras e grama (tiradas depois do sorteio, então o resto da ilha não muda).
+- **Pista de kart em 8 (refeita em 2026-10-29, pedido do usuário: "mais emocionante com subidas e descidas, curvas e retas", e larga para caber dois carros com folga):**
+  - **Traçado:** `scripts/kart_circuit.gd`, um 8 na campina a leste do Morro, entre a trilha do Morro e a praia. Tem 18 pontos de controle numa curva Catmull-Rom fechada, 13 m de asfalto (o oval tinha 8 m) e uns 420 m por volta (o dobro).
+  - **Percurso:** a volta norte é plana. Saindo dela, a pista sobe por uma rampa até a ponte do cruzamento, a 6,5 m de altura. Depois desce para a volta sul, que tem uma lombada perto da praia. A reta comprida passa por baixo da ponte e chega na largada.
+  - **Montagem:** o gerador da ilha (`_kart_circuit`) monta a pista numa malha só, com cores por vértice e `vertex_color_is_srgb` (sem ele as cores saem desbotadas). Tem asfalto, zebras vermelhas e brancas nas beiradas, faixa tracejada no meio, faixa quadriculada na chegada e muretas vermelhas e brancas de 0,9 m dos dois lados.
+  - **Altura e ponte:** o asfalto nunca fica a menos de 12 cm do chão embaixo e é suavizado. Onde a pista sobe, as paredes descem até o chão. No cruzamento, a pista de cima vira ponte, sem parede embaixo, com cabeceiras.
+  - **Malha e colisão:** ficam em `assets/terrain/pista_kart.res` e `pista_kart_colisao.res`.
+  - **Entrada e box:** a mureta de fora da reta da largada (o lado do Morro) tem uma abertura de 10 m, a entrada que vem do box.
+    - O box fica a 16 m dela, com as 5 vagas ao longo da reta e viradas para a abertura.
+    - Ajuste depois do teste do usuário (2026-10-29: "não consegui subir na pista", e os pneus e a caixa flutuavam ou afundavam):
+      - a abertura ganhou uma rampa de 4 m, do asfalto até o chão (antes era um degrau de 30 cm de parede reta, que o kart não sobe);
+      - o chão do box é aplainado pelo gerador (`height()`, raio de 15 m), porque ali já começava a subida do Morro;
+      - os pneus e a caixa medem o chão cada um no seu lugar.
+  - **Volta:** as marcas são o alto da volta norte, a ponte e o fundo da volta sul. A da ponte só vale lá em cima, porque a reta passa embaixo dela no mesmo lugar do mapa.
+  - **Área livre:** sem árvores e sem grama numa faixa de 7 m para cada lado da pista e em volta do box (uma grade de 4 m marcada uma vez).
+  - **Teste:** `--pista-kart` sai da vaga dirigindo, sobe a rampa da abertura e corre de verdade no piloto automático, uma volta valendo, por cima da ponte e por baixo dela.
+  - **O kart segue o chão (2026-10-29, pedido do usuário: subindo morro, o corpo do kart "flutuava"):** quatro raios embaixo das rodas (frente, trás e lados) dão a inclinação e a altura. O desenho do kart inclina junto e desce até as rodas encostarem. A cápsula deitada da colisão encosta no chão só por uma ponta na subida e deixava o meio no ar. Estacionado, ele fica encostado no chão de onde parou.
+- **Pista de kart antiga (2026-10-26 a 2026-10-29),** na campina a leste do Morro, centro (125, 15): oval de 48 x 80 m (uns 200 m por volta) com peças de estrada de 8 m; o pedaço com mureta do City Kit Roads é só a mureta, então cada pedaço leva o asfalto e a mureta por cima, com colisão no formato da peça. Na reta, o asfalto do pacote (e a faixa de pedestre) corre num sentido e a mureta no outro: o asfalto vai girado 90° a mais. Antes ele ia no mesmo giro da mureta e as faixas apareciam atravessadas na pista a cada pedaço (o usuário viu em 2026-10-26). O pedaço 6 da reta oeste, de frente para o box, não tem a mureta de fora (a peça do pacote traz as duas muretas juntas, então ali vai só o asfalto e uma mureta de dentro feita à parte): é a **entrada da pista**, com faixa dourada e a placa "LARGADA". Arco quadriculado de chegada logo ao norte, postes de luz, cones nas curvas e o box ao lado com 5 vagas (marcadores `Diversao/Vagas`), pneus e caixa. A área fica sem árvores, pedras e grama (tiradas depois do sorteio, então o resto da ilha não muda).
 - **Veículos do box** (`scripts/kart.gd`, `scripts/kart_race.gd`; refeitos depois do segundo teste do usuário): cinco karts, estacionados **vazios** nas vagas (o piloto alienígena do kart é uma malha separada, escondida): Morango (vermelho), Mirtilo (azul), Hortelã (verde), Uva (roxo) e Limão (amarelo). São o mesmo modelo pintado (cor multiplicando a textura da carroceria), todos a 17 m/s. Os dois carros de corrida do pacote (o Fórmula `race` e o Foguete `race-future`) entraram e saíram: o usuário preferiu só karts. Chegar a 3,4 m de um e apertar B / E **entra e já sai dirigindo** de onde ele está. **O aventureiro aparece no banco da cintura para cima** (uma cópia do modelo dele com pernas e mochila escondidas, na pose `Holding_A`, de quem segura o volante, com o respirar dela; a cintura fica na altura do banco). Tentativas que não agradaram: só a cabeça (num esqueleto parado na pose de T, com falhas e parecendo flutuar) e um capacete montado por código. As rodas giram com a velocidade e as da frente esterçam; o corpo inclina nas curvas. Frente / RT acelera, trás / LT freia e dá ré, esquerda e direita viram. Bater de frente em parede perde velocidade e faz "bonk". Dá para passear pela ilha inteira (as defesas não começam com o aventureiro dentro do veículo). **Dentro do veículo os esqueletos atacam do mesmo jeito** (pedido do usuário em 2026-10-26; antes o aventureiro ficava imune): o golpe de perto, a onda do chão e as flechas e bolhas que acertam o veículo tiram coração de quem dirige. Cada golpe faz o veículo perder o embalo e dar um tranco, e o piloto no banco pisca enquanto dura a invulnerabilidade. Os esqueletos miram no piloto, mais baixo que o peito do aventureiro a pé. Sem corações, o aventureiro fica tonto, desce ali mesmo, o veículo volta para a vaga e ele reaparece na bandeira como sempre.
 - **Câmera** (pedido do usuário): no veículo e no skate, o analógico direito (ou o mouse) gira a câmera em volta; 1,5 s depois de soltar, ela volta devagar para trás.
-- **Corrida**: entrar na pista pela LARGADA, vindo de fora, põe o veículo na largada (logo ao sul do arco, virado para o norte), com contagem 3, 2, 1, "Já!" e **3 voltas contra o relógio**; cada volta só conta passando pelas 3 marcas do meio das retas (sem atalho), e a chegada é no arco. Na chegada: tempo, recorde (salvo) e **15 moedas, mais 10 com recorde novo**; depois continua dirigindo (andar na pista não começa outra corrida; para correr de novo, sair e entrar pela LARGADA). Descer no meio da corrida cancela.
+- **Corrida**: entrar na pista pela LARGADA, vindo de fora, põe o veículo na largada (logo depois do arco, virado para a frente da pista), com contagem 3, 2, 1, "Já!" e **3 voltas contra o relógio** (uns 25 s por volta na pista em 8); cada volta só conta passando pelas 3 marcas (sem atalho), e a chegada é no arco. Na chegada: tempo, recorde (salvo) e **15 moedas, mais 10 com recorde novo**; depois continua dirigindo (andar na pista não começa outra corrida; para correr de novo, sair e entrar pela LARGADA). Descer no meio da corrida cancela.
 - **Descer** (B / E): **dentro da pista**, o aventureiro vai para fora dela (no box) e o veículo volta para a vaga; **pela ilha**, o veículo fica onde parou, o aventureiro desce do lado, e o veículo **volta sozinho para a vaga quando o aventureiro se afasta 50 m** (com confete). Cair no mar com o veículo: ele volta para a vaga e o aventureiro faz o "tchibum" de sempre.
 - A colisão do veículo é uma cápsula deitada (uma caixa enganchava nas emendas das peças). Estacionado, ele fica na camada do mundo (o aventureiro esbarra); dirigindo, bate em parede, mureta, outros veículos e moradores.
+- **A pista de skate e o skate saíram em 2026-10-29** (pedido do usuário: "remove a pista de skate e o skate"). Os três itens abaixo ficam como registro.
 - **Pista de skate** (gerada, ao lado da cidade, a noroeste, centro (−98, 66), uns 40 m da esquina da cidade, com a entrada virada para as ruas; antes ficava na campina a oeste do Morro, onde agora está a fazenda): 40 x 40 m de concreto com cerca e entrada no sul, half-pipe de 4 m de altura e 20 m de comprimento (dois quarter-pipes de frente), duas rampas de pulo, caixote, corrimão, escada com corrimão e uma rampa longa; bancos do lado de fora. Peças de 1 m do Mini Skate ampliadas 5x, com colisão no formato delas.
 - **Skate** (`Player.start_skating`, `scripts/skate_park.gd`, `scripts/skate_rider.gd`; refeito depois do segundo teste do usuário): o skate fica no chão na entrada da pista. Chegar perto (ou estar dentro da pista com ele lá) e apertar B / E **pega o skate** (some do chão e aparece debaixo dos pés) e **dá para andar pela ilha inteira**. Descer (B / E) deixa o skate no chão onde parou; **longe dele (50 m), ele volta para a entrada da pista** (com confete). Cair no mar ou ficar tonto também manda o skate de volta. No skate, o golpe dos esqueletos tira coração do mesmo jeito, mas sem o empurrão de quem está a pé: o skate perde o embalo. Andar para a frente dá impulso, para trás freia, esquerda e direita viram; a ladeira puxa (no half-pipe vai e volta sozinho), rampas de até 76° viram chão e o aventureiro inclina junto com a rampa. Pular (A / espaço) faz o ollie; no ar, esquerda e direita giram. Saindo pela borda do half-pipe, sobe reto e volta para a rampa. Pousar atravessado é tombo ("Caiu!").
 - **Perna empurrando** (pedido do usuário; o KayKit não tem animação de skate): `SkateRider`, um `SkeletonModifier3D` por cima da animação parada. Os quadris baixam (joelhos dobrados), o pé esquerdo fica firme na tábua e, ao dar impulso, o direito desce para o chão ao lado do skate, arrasta para trás e volta para a tábua (ciclo de 0,75 s); os pés são encaixados com conta de perna de duas partes (coxa e canela), joelho dobrando para a frente, e ficam retos. O skate só ganha velocidade enquanto o pé está no chão: uns 4 empurrões até a velocidade máxima, e perdendo um pouco de embalo ele empurra de novo. No ar, os dois pés ficam na tábua e o corpo encolhe. (O modificador aplica a pose e depois a desfaz; quem quiser medir o pé de fora usa `SkateRider.right_foot_drop`.)
 - **Sessão de pontos**: passar de skate pela marca dourada "SESSÃO" dentro da pista começa **60 s** em que cada pulo pousado vale 200 pontos por segundo no ar mais 100 por meia volta ("Giro 360" = 400 com 1 s no ar); sair de perto da pista cancela. No fim, recorde salvo e **1 moeda a cada 100 pontos (até 25)**, e continua no skate. A mira e o painel de armas somem enquanto se anda.
+
+### Ajustes na ilha (pedido do usuário em 2026-10-29)
+
+O pedido: "a cerca dos animais está sem física", "alguns cubos verdes, pilastra com balão em cima, também não têm física", "remove a pista de skate e o skate", "na cidade é possível andar entre os prédios? apenas se isso não gerar bugs de câmera e colisão" e "é possível colocar mais 1 ou 2 corredores na pista? pilotando com IA".
+
+- **O que o jogador atravessava:** o `tools/sem_fisica.gd` listava as peças da ilha com tamanho de obstáculo que nenhuma colisão cobria. Em 2026-10-30 ele deu lugar ao `tools/revisor_fisica.gd`, que confere a ilha, o farol e as fases do Faísca (seção 11, "Revisor de física"). Ganharam colisão no gerador:
+  - a cerca do pasto (o corpo fica sem escala e a caixa acompanha a madeira esticada);
+  - as bolas em cima dos postes da praça (o Faísca pula e flutua até lá);
+  - os presentes e o trenzinho da festa, os pneus empilhados do box;
+  - o arco amarelo da praça e o arco do palhaço, com colisão no formato (dá para passar por dentro).
+  - Continuam sem colisão, de propósito: arbustos da mata, as esferas mágicas das lanternas, a vassoura da bruxa e o arco de chegada da pista de kart. Desde 2026-10-30 as esferas, a vassoura e o arco levam o meta `enfeite`, para o revisor não cobrar.
+  - Na revisão de 2026-10-30 ganharam colisão também os pinos de malabares e a bola do palhaço, e o balde do pescador.
+- **Sem skate:** saíram a pista (o gerador não monta mais, e o marcador `Skate` sumiu), `scripts/skate_park.gd`, `scripts/skate_rider.gd`, o skate do `Player`, os avisos, as fotos e os testes de skate, e as peças em `assets/skate/`. A campina continua limpa, sem árvores nem grama, para o sorteio do resto da ilha não mudar.
+- **Vielas na cidade:** em cada quarteirão saíram os dois prédios do meio dos lados norte e sul. Fica uma viela de 10 m de rua a rua, passando pelo jardinzinho do miolo. O sorteio do modelo de cada prédio continua sendo feito, para o resto da ilha ficar igual.
+  - A ilha regenerada foi comparada peça por peça com a anterior: só sumiram a pista de skate e os 10 prédios.
+  - A câmera é um `SpringArm3D` que encosta nas paredes, então não entra nos prédios. O `--ilha` confere isso andando pela viela de uma rua à outra.
+- **Rivais na corrida de kart:** dois karts do box largam ao lado do jogador, com a outra criança e o Mago no banco (`Kart.drive_ai`; o `Kart` lê `ai_throttle` e `ai_steer` em vez do controle).
+  - A `KartRace` guia cada um para um ponto da linha do meio 11 m à frente, na faixa dele (3 m para cada lado), e tira o pé nas curvas fechadas.
+  - O progresso na pista é contado procurando a amostra só um pouco à frente da última, porque no cruzamento do 8 valem as duas pistas.
+  - São fantasmas: ficam na camada de quem dirige e não batem em ninguém.
+  - Velocidades de 15,8 e 16,5 m/s (o kart do jogador vai a 17), com elástico: até 10% mais devagar na frente do jogador e até 8% mais rápido atrás.
+  - Preso parado por 2,5 s ou fora da pista, o rival volta para o meio dela ali mesmo.
+  - A faixa de cima mostra a posição ("2º de 3"). A chegada mostra o lugar, e o 1º lugar dá mais 5 moedas.
+  - Depois da chegada, os rivais andam mais 4 s e voltam para as vagas. Saindo da corrida, voltam na hora.
+  - O `--pista-kart` confere: os rivais no grid, a volta inteira deles junto com o jogador (pela ponte, sem sair da pista nem precisar voltar ao meio), a posição na faixa, o 3º lugar sem o bônus e a volta para as vagas.
+- **Fotos:** `--atividades-captura` ganhou `a03d_largada_com_rivais`, `a16_vielas_da_cidade` e `a17_dentro_da_viela`, e perdeu as do skate.
+
+### Dia e noite (2026-10-29, pedido do usuário)
+
+`scripts/day_night.gd` (nó "DiaENoite" do `main.gd`, só na ilha).
+- **Duração:** um dia inteiro leva 16 minutos. São uns 9 min de dia, 1 de entardecer, 3,5 de noite e 1 de amanhecer. O jogo começa no meio da manhã.
+- **O que muda:** o ciclo mistura as cores do céu, do mar no horizonte, da névoa e da luz ambiente entre os momentos do dia.
+  - **Sol e lua:** o sol anda de leste a oeste num arco. À noite, a mesma luz vira uma lua azulada. Na troca, a luz quase apaga por um instante, para a sombra não pular.
+  - **Estrelas:** as mesmas da noite da festa (`DayNight.stars_texture`), aparecendo aos poucos.
+  - **Postes:** os 12 da cidade e os 9 da pista de kart acendem no entardecer e apagam no amanhecer.
+- **Noite para criança:** clara o bastante para brincar, com luz ambiente forte e a lua ainda fazendo sombra.
+- **Desempenho:** o céu é refeito a cada 0,25 s, não a cada quadro, porque mudar as cores do céu refaz a luz dele. Ele usa `Sky.PROCESS_MODE_INCREMENTAL`.
+- **Quando para:** com o jogo pausado, na noite da festa e na abertura da Parte 2 (o Desfecho põe a noite ele mesmo), nas cenas e dentro do farol (a ilha fica parada e escondida lá). Depois da noite da festa, o ciclo volta de manhã.
+- **Salvamento:** a hora fica na campanha ("hora").
+- **Testes:** os testes e as fotos dos outros modos ficam no dia de sempre, sem o ciclo. `godot --headless --path . -- --dia-e-noite` confere 10 pontos. `godot --path . -- --dia-e-noite-captura` tira `d01` a `d06` (a cidade e o Morro de manhã, à tarde, no entardecer, à noite e amanhecendo, e a pista de kart à noite).
 
 ### Escorregador (2026-10-27, feito e removido)
 
@@ -586,8 +660,2368 @@ Um escorregador gigante do cemitério do Morro até a mata, por cima do rio, che
 
 ## 10. Decisões em aberto
 
+### Lista de melhorias da ilha (2026-11-10)
+
+Pedida pelo usuário depois da separação dos jogos: "faz uma avaliação e cria uma lista de sugestões de melhorias ou novidades para implementar no jogo da ilha". A avaliação: história completa e boa de jogar; com o Faísca fora, o pós-jogo encolheu e o farol virou porta trancada; muito texto para quem não lê; sem tela de ajustes; nada para colecionar pela ilha; uma dificuldade só. Tamanho: P (um dia ou menos), M (alguns dias), G (maior).
+
+| # | Melhoria | Tamanho | Situação |
+|---|---|---|---|
+| 1 | **Ajustes:** volume da música e dos efeitos, rapidez da câmera, câmera invertida e vibração, no menu principal e nas pausas | P | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
+| 2 | **Farol com uso:** mirante com binóculo, no lugar da porta trancada | P/M | feito em 2026-11-10 (ver "Ajustes e o farol mirante") |
+| 3 | **Modo Fácil:** mais corações, esqueletos mais lentos, mira mais ajudada | P/M | feito em 2026-11-10 (ver "Modo Fácil") |
+| 4 | **Objetivo com figura:** desenho do lugar ou do guardião na faixa e na pausa, e som de chegada | P/M | feito em 2026-11-10 (ver "Objetivo com figura") |
+| 5 | **Pescaria no cais:** com o pescador, coleção dos 17 peixes do Quaternius que já estão no jogo, aquário na praça | M | feito em 2026-11-10 (ver "Pescaria no cais"); o aquário ficou na praia, ao lado da entrada do cais |
+| 6 | **Esconde-esconde dos esqueletos amigos** depois do final, com figurinha e moedas | M | feito em 2026-11-10 (ver "Esconde-esconde dos esqueletos amigos") |
+| 7 | **Álbum de figurinhas** dos esqueletos e guardiões, e bilhetes pela ilha | M | feito em 2026-11-10 (ver "Álbum de figurinhas e bilhetes") |
+| 8 | **Esqueleto dourado:** raro, foge e solta muitas moedas | P/M | feito em 2026-11-10 (ver "Esqueleto dourado") |
+| 9 | **Revanche dos guardiões** no cemitério, com 1 a 3 estrelas pelo tempo e troféus | M | feito em 2026-11-10 (ver "Revanche dos guardiões") |
+| 10 | **Copa de kart:** 3 corridas, pista ao contrário, pódio e troféu | M | feito em 2026-11-10 (ver "Copa de Kart") |
+| 11 | **Roupinhas na lojinha:** chapéus e acessórios para as crianças, cores dos blasters | M/G | feito em 2026-11-10 (ver "Roupinhas"): 10 chapéus e 5 pinturas |
+| 12 | **Festa de fim de ano** em dezembro, com o Holiday Bits | M | feito em 2026-11-10 (ver "Festa de fim de ano") |
+| 13 | **Vozes** gravadas para os momentos principais | M | feito em 2026-11-10 (ver "Vozes"): 22 falas com a voz do Mac, para trocar por gravações |
+| 14 | **Pressão nos gatilhos do DualSense** quando ele estiver conectado (pedido do usuário em 2026-11-10): gatilho duro no Pé-de-Moleque, tremidinho na rajada, estalo na escopeta | M | feito em 2026-11-10 (ver "Gatilhos do DualSense"); falta conferir no PC com o controle |
+
+**Sobre o item 14 (feito; ver "Gatilhos do DualSense"):** a Godot 4.7 não tem nada para os gatilhos adaptáveis. Conferido no `extension_api.json`: o `Input` tem vibração, a luz do controle (`set_joy_light`, `has_joy_light`) e os sensores de movimento (giroscópio). O efeito de gatilho precisa mandar o relatório de saída do DualSense direto ao controle: pelo hidraw no Linux do PC Bazzite (USB e Bluetooth têm formatos diferentes, o Bluetooth com CRC), ou por uma extensão (GDExtension) com o `SDL_SendGamepadEffect` do SDL3. Os bytes já foram conferidos com o SDL e o fork do KytyPS5 na página de teste do usuário (`Projects/others/teste-dualsense`). A luz do controle (por exemplo, vermelha com pouco coração) e mirar com o giroscópio já dariam para fazer só com a Godot.
+
+Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+### Gatilhos do DualSense (item 14 da lista, feito em 2026-11-10)
+
+`scripts/dualsense.gd`, um nó do main (só na ilha; o Faísca ainda não usa).
+
+- **Como funciona:** a Godot 4.7 não tem nada para os gatilhos adaptáveis. O jogo escreve o relatório de saída direto no controle, pelo `/dev/hidrawN` do Linux:
+  - procura nos `hidraw0` a `hidraw31` o `HID_ID` da Sony (054C) com o DualSense (0CE6) ou o DualSense Edge (0DF2), por USB (0003) ou Bluetooth (0005);
+  - confere se pode escrever (`test -w`; as regras da Steam no Bazzite já deixam) e abre um `dd` ao lado (`OS.execute_with_pipe`, com o bloco do tamanho do relatório e `iflag=fullblock`), que recebe os relatórios pelo cano e escreve cada um inteiro no controle;
+  - **por que o `dd`:** a `FileAccess` da Godot só abre arquivo comum (até o `/dev/null` dá erro 12). A primeira versão abria o hidraw com ela, nunca escrevia nada, e o usuário não sentiu diferença no PC (2026-11-11);
+  - sem o controle, em outro sistema ou sem permissão, não faz nada e procura de novo a cada 5 s; se o `dd` sai (controle desligado), procura de novo;
+  - **o log que crescia:** o Linux diz que os arquivos do `/sys` têm 4096 bytes (o `uevent` do DualSense tem 184). O `get_file_as_string` da Godot lia os 4096, e o resto, lixo da memória, virava centenas de "Unicode parsing error" no log a cada procura (1 MB em 7 minutos no PC, com a primeira versão, que nunca achava o controle e procurava sem parar). Agora `DualSense.ler_texto` lê só os bytes de verdade (`get_buffer`). Prova no PC: `--dualsense-uevent` lê cada `uevent` 200 vezes dos dois jeitos e conta as leituras com lixo.
+- **Os bytes** são os da página de teste do usuário (`Projects/others/teste-dualsense`, conferidos com o SDL e o fork do KytyPS5):
+  - o bloco comum de 47 bytes, só com as bandeiras dos dois gatilhos (0x04 e 0x08), para não mexer nos motores, que continuam com a Godot;
+  - o R2 no byte 10 e o L2 no 21, 11 bytes cada;
+  - no USB, o relatório 0x02 (48 bytes com o id); no Bluetooth, o 0x31 (78 bytes, com o cabeçalho 0x02 do SDL e o CRC32 de [0xA2, 0x31] e dos 73 primeiros bytes no fim). O CRC foi conferido com o zlib do Python.
+- **No jogo** (manda só quando muda):
+  - **R2:** estalinho na pistola (arma 0x25, zonas 4 e 6, força 4); tremidinho na metralhadora (vibração 0x26 a partir da zona 3, amplitude 6, 14 Hz), que só treme apertando; estalo forte na escopeta (arma, zonas 3 e 6, força 8); gatilho duro no rifle, onde fica o Pé-de-Moleque (resistência 0x21 a partir da zona 2, força 7);
+  - **L2:** resistência leve para mirar;
+  - **no kart:** o R2 acelera macio e o L2 freia duro;
+  - **tudo solto:** com menu aberto, tonto, pescando, no celular, jogando no teclado ou com a vibração desligada nos Ajustes; ao sair do jogo, solta os dois.
+- **No PC (2026-11-11):** o DualSense por Bluetooth aparece como `/dev/hidraw4`. `./IlhaCafune.x86_64 --headless -- --dualsense-pc` acha o controle, deixa o R2 duro e o L2 tremendo por 8 s e solta (respondeu `caminho '/dev/hidraw4' bluetooth true`). Falta o usuário confirmar que sente os efeitos no jogo.
+- **Testes:** `-- --dualsense` confere 8 pontos: o CRC32; os efeitos; o relatório USB; o relatório Bluetooth; o `HID_ID`; sem o controle; o que cada blaster faz; menu e vibração desligada.
+
+### Vozes (item 13 da lista, feito em 2026-11-10)
+
+`scripts/vozes.gd` toca uma fala curta nos momentos principais; os arquivos ficam em `assets/audio/vozes/<id>.wav`.
+
+- **As 22 falas:** o prólogo começando, a lanterna apagada, cada guardião aparecendo (Ossão, Mira-Torta, Torre, Minionzão, Guerreiro Planta, Mestre), "Conseguimos!", o convite, a festa, fisgar e peixe novo, "Lá vou eu!" e "Achei você!" no esconde-esconde, o esqueleto dourado, a figurinha nova, o bilhete, campeão da copa, três estrelas, o presente de fim de ano e ficar tonto.
+- **De onde vêm:** por enquanto, da voz brasileira do Mac (Luciana), por `bash tools/gerar_vozes.sh` (com `say` e `afconvert`, mono, 22 kHz). São provisórias: cada arquivo pode ser trocado por uma gravação de verdade com o mesmo nome (a voz da família, por exemplo), e a lista dos textos está no próprio script.
+- **Como toca:** uma fala por vez (a nova corta a anterior), no canal dos efeitos, um pouco mais alta. A mesma fala colada na anterior não repete.
+- **Ajustes:** a linha nova "Vozes" (Sim/Não), com o ícone do balão de fala, guardada em `user://ajustes.json`.
+- **Testes:** `-- --vozes` confere 6 pontos: os arquivos; o prólogo; o bilhete; tonto; desligada; a linha dos Ajustes.
+
+### Festa de fim de ano (item 12 da lista, feito em 2026-11-10)
+
+`scripts/festa_fim_de_ano.gd`.
+
+- **Quando:** em dezembro e no dia 1º de janeiro, pela data do computador. Nos testes, a data não vale: só liga com `-- --natal`.
+- **Na praia, ao lado do aquário** (22, 203), com o Holiday Bits do KayKit, copiado para `assets/props/festa/doces/`:
+  - a árvore de Natal enfeitada, 3,4 vezes maior, com uma luz quente e o tronco que segura quem esbarra;
+  - oito presentes em volta da árvore;
+  - dois bonecos de neve;
+  - a casinha de biscoito com três bonequinhos de gengibre.
+- **Neve:** flocos fininhos caindo numa caixa de 50 m que acompanha o aventureiro.
+- **Gorros:** os moradores e os esqueletos amigos que não têm chapéu ganham o gorro de duende das roupinhas. No teste foram 15.
+- **Presente do dia:** o presente dourado grandão na frente da árvore, brilhando e girando. B abre: confete, 10 moedas (25 nos dias 24, 25 e 31) e "Feliz fim de ano! Amanhã tem outro!". Depois fica baixinho e sem brilho até o dia seguinte.
+- **Fogos:** nos dias 31 de dezembro e 1º de janeiro, à noite, sobem fogos da praia a cada 2,5 a 5 s.
+- **Campanha:** a chave "fim_de_ano" guarda o dia do último presente aberto.
+- **Testes:**
+  - `-- --natal` confere 8 pontos: a época; a árvore e o resto no chão (um tronco escalado junto com a árvore chegou a erguer os presentes a 20 m, e o teste pega isso); os gorros; o aviso; abrir; o dia especial; os fogos do dia 31; salvar;
+  - `-- --natal-captura` (com janela) tira duas fotos: `natal_1_arvore` e `natal_2_presente`.
+
+### Roupinhas (item 11 da lista, feito em 2026-11-10)
+
+`scripts/roupas.gd` (os dados e como vestir), `scripts/painel_roupas.gd` (o guarda-roupa) e o botão "Roupinhas" no celular da lojinha.
+
+- **Os chapéus (10)** vêm dos personagens do KayKit, que usam todos o mesmo esqueleto:
+  - coroa (do Mestre Ossinho, 60 moedas), chapéu de mago (40), chapéu de bruxa (40), chapéu de palhaço (30), chapéu de palha (25), chapéu de soldadinho (35), chapéu de trilha (25), gorro de urso (50), elmo de cavaleiro (50) e gorro de duende (35);
+  - a malha do chapéu sai do modelo de origem e vai para o osso da cabeça de quem joga, no mesmo lugar em relação ao osso;
+  - conferido em `tools/foto_chapeus.gd` (fotos `chapeus_<menino|menina>_<id>`): todos servem nas duas crianças sem ajuste. O campo `ajuste` fica para quando precisar;
+  - o Barbarian, o Knight e o Helper_A foram copiados para `assets/characters/roupas/`, porque a pasta dos aventureiros não vai na build.
+- **As pinturas dos blasters (5):** rosa-chiclete, azul-piscina, verde-limão e roxo-uva (20 cada) e dourado (50). Elas tingem as malhas dos blasters que estão na mão, as duas pistolas inclusive, e continuam ao trocar de blaster.
+- **O guarda-roupa:**
+  - no celular, "Roupinhas" fica ao lado de "Guardar o celular";
+  - à esquerda, o retrato de quem joga, que já prova o chapéu marcado (`Portrait.vestir`); à direita, os cartões dos chapéus (miniaturas de `tools/gerar_roupas.gd` em `assets/ui/roupas/`) e das pinturas (a silhueta da Paçoca na cor);
+  - cada cartão mostra o preço, "é seu" ou "usando", e "Sem chapéu" e "Sem pintura" tiram;
+  - A compra (se der as moedas) e já veste; no que é seu, A veste ou tira; sem moedas, avisa quantas faltam. B volta para a lojinha.
+- **Onde aparece:** o chapéu fica na cabeça do aventureiro na ilha e no retrato da pausa, e vai junto ao trocar de personagem.
+- **Campanha:** a chave "roupas" guarda o que é seu, o chapéu e a pintura em uso.
+- **Testes:**
+  - `-- --roupas` confere 12 pontos: o guarda-roupa; a prova; sem moedas; comprar e vestir; tirar; a pintura; trocar de blaster; voltar; trocar de personagem; a pausa; salvar; carregar;
+  - `-- --roupas-captura` (com janela) tira duas fotos: `roupas_1_guarda_roupa` e `roupas_2_coroa`.
+
+### Copa de Kart (item 10 da lista, feito em 2026-11-10)
+
+`scripts/copa_kart.gd`, com a pista ao contrário e o número de voltas no `KartRace`.
+
+- **Onde:** no gramado a oeste das vagas do box (79, -13):
+  - o pódio de três blocos (ouro no meio, prata e bronze dos lados, com os números);
+  - a placa "COPA DE KART, 3 corridas";
+  - o pedestal com a taça da melhor copa, da cor do melhor lugar;
+  - um círculo dourado na frente.
+- **Como joga:** no círculo, B (ou E) começa: o aventureiro entra num kart do box e corre três corridas de 2 voltas contra os dois rivais (a outra criança e o Mago). Cada corrida tem contagem, e a faixa de cima diz "Copa 2/3 · ao contrário".
+- **A 2ª corrida é ao contrário:**
+  - a largada vem virada e as marcas da volta valem na ordem inversa (`gates_da_volta`);
+  - os rivais seguem a linha do meio para trás (`_advance` procura para trás e conta para a frente);
+  - nos testes, cada rival correu uns 60 m em 5 s sem voltar para a pista nenhuma vez.
+- **Pontos:** 3 para o 1º, 2 para o 2º e 1 para o 3º em cada corrida. A faixa mostra o lugar e o placar ("Você 7 · Ana 6 · Mago 5"). Quem somar mais ganha, e no empate fica o jogador.
+- **A cena do pódio:**
+  - a tela escurece, e o aventureiro e os dois rivais sobem nos blocos pela classificação;
+  - uma câmera própria mostra o pódio, com confete, fogos e a taça girando em cima do campeão, sem a interface;
+  - a faixa diz "Campeão da Copa de Kart!" (ou o 2º ou o 3º lugar), com os pontos;
+  - depois de 6 s, volta a pé ao lado do círculo, e a taça do pedestal muda se for a melhor.
+- **Moedas:** 40, 25 ou 15 pelo lugar final. Na copa, as corridas não mexem no recorde nem dão as moedas da corrida avulsa.
+- **Cancelar:** descer do kart, cair no mar ou ficar tonto no meio da copa cancela. A corrida avulsa (entrar pela LARGADA) continua igual, com 3 voltas.
+- **Campanha:** a chave "copa" guarda a melhor colocação.
+- **Testes:**
+  - `-- --copa` confere 12 pontos: o pódio; o aviso; a largada da copa; os pontos; a corrida ao contrário; os rivais ao contrário; o 3º lugar; a 3ª corrida do lado de sempre; a cena do pódio; a volta a pé com a taça; cancelar; salvar;
+  - `-- --copa-captura` (com janela) tira três fotos: `copa_1_podio`, `copa_2_ao_contrario` e `copa_3_podio_cena`.
+
+### Revanche dos guardiões (item 9 da lista, feito em 2026-11-10)
+
+`scripts/revanche.gd`, só no pós-jogo.
+
+- **Onde:** no gramado do cemitério do Morro, ao lado da Festa sem fim, perto da cripta. Um quadro de madeira "REVANCHE" mostra os seis guardiões (as figurinhas do álbum). Em cima de cada um fica o troféu da melhor revanche: bronze com 1 estrela, prata com 2 e ouro com 3. Na frente do quadro, um círculo cor de salmão.
+- **Escolher:** no círculo, B abre a escolha (`Revanche.Painel`): os seis em cartões grandes, cada um com a figurinha, o nome, as três estrelas da melhor e o melhor tempo. A escolhe e B volta.
+- **A luta:**
+  - o aventureiro vai para a beira do gramado, e o guardião de verdade sobe no meio: a mesma classe da história, com a barra de vida, os esqueletos que ele chama e a vida menor do Modo Fácil;
+  - no alto, "Revanche: Ossão · 0:42";
+  - o objetivo da pausa mostra a figura do guardião;
+  - conta como luta: sem celular e sem coração voltando no Modo Fácil;
+  - a Festa sem fim não começa enquanto isso.
+- **Estrelas pelo tempo:** 3 até o tempo do guardião, 2 até 1,6 vez esse tempo, 1 depois. Os tempos de 3 estrelas são 45 s para o Ossão e a Mira-Torta, 55 s para a Torre, 60 s para o Minionzão e o Guerreiro Planta, e 90 s para o Mestre. Ainda falta ajustar jogando.
+- **Vencer:**
+  - as estrelas aparecem grandes no meio da tela, uma a uma, com a faixa "Revanche vencida! 3 estrelas! em 0:38";
+  - dá 10 moedas mais 10 por estrela;
+  - o troféu do quadro muda se for a melhor;
+  - o guardião vai embora de balão, e o Mestre senta e sai uns segundos depois.
+- **Perder:** ficar tonto encerra com "Quase! Tenta de novo." O guardião e os esqueletos que ele chamou somem, e o aventureiro volta na bandeira como sempre.
+- **Troféu grandão:** com os seis no ouro, aparece uma taça grande em cima do quadro.
+- **Campanha:** a chave "revanche" guarda a melhor de cada um (estrelas e tempo).
+- **Testes:**
+  - `-- --revanche` confere 12 pontos: sem revanche antes do fim; o quadro sem troféu; o aviso; a escolha; o Ossão com o relógio; a Festa sem fim parada; 3 estrelas com moedas, troféu e estrelas na tela; as estrelas pelo tempo; tonto encerra; o Mestre sai; salvar; o troféu grandão;
+  - `-- --revanche-captura` (com janela) tira três fotos: `revanche_1_quadro`, `revanche_2_escolha` e `revanche_3_luta`.
+
+### Esqueleto dourado (item 8 da lista, feito em 2026-11-10)
+
+`scripts/caca_dourada.gd` (quem faz ele aparecer) e o tipo "Dourado" do `SkeletonEnemy` (o jeito de fugir).
+
+- **Quando aparece:**
+  - depois do prólogo, andando pela ilha;
+  - nunca com luta por perto, menu aberto, dirigindo, pescando, no celular, no binóculo, no esconde-esconde ou durante o desfecho;
+  - o primeiro vem em 90 s desse tempo livre, e os outros a cada 2,5 a 4 min.
+- **Como aparece:** sai do chão a uns 20 a 30 m, na frente da câmera, num chão livre (fora d'água e de dentro das coisas). A faixa diz "Um esqueleto dourado! Pegue ele antes que fuja: ele solta um monte de moedas!", e a seta de moeda "Dourado · N m" aponta para ele (a mesma da entrega da lojinha, com o rótulo novo `ObjectiveMarker.rotulo`). Toca um sininho a cada 1,1 s.
+- **O jeito dele:**
+  - o Ossinho todo dourado e brilhante, com uma luzinha; não ataca, tem 8 de vida e corre a 5 m/s (4 no Modo Fácil), menos que o aventureiro correndo (6);
+  - a cada 5,5 s de corrida, cansa: para 1,3 s olhando para trás ("ufa!"), a chance de chegar perto;
+  - longe (mais de 24 m) só anda devagar, esperando;
+  - perto da costa puxa para o meio da ilha (a ilha é uma elipse de uns 380 x 490 m);
+  - preso numa parede, desvia de lado por 1 s.
+  - Leva tiro, pirulitão e granada como os outros esqueletos.
+- **Pegou:** vai de balão, soltando 25 moedas e confete dourado, com a faixa "Pegou o esqueleto dourado!", e entra na figurinha "Esqueleto Dourado" da turma no álbum.
+- **Fugiu:** em 50 s sem pegar (70 s no Modo Fácil), afunda de volta no chão: "O esqueleto dourado fugiu! Ele volta outra hora."
+- **Testes:**
+  - `-- --dourado` confere 9 pontos: não aparecer antes do prólogo nem pescando; aparecer longe e no chão para todos os lados; dourado e com a seta; fugir; cansar; pegar (moedas e figurinha); fugir no tempo;
+  - `-- --dourado-captura` (com janela) tira duas fotos: `dourado_1_aparece` e `dourado_2_foge`.
+
+### Álbum de figurinhas e bilhetes (item 7 da lista, feito em 2026-11-10)
+
+Pedido do usuário depois do esconde-esconde: "commita e segue, vou testar quando terminarmos tudo".
+
+- **Onde abre:** na pausa da ilha, o botão "Álbum" fica embaixo do cartão de quem joga. De qualquer botão da pausa, o direcional para a esquerda chega nele.
+- **Páginas:** 48 figurinhas no total, cada aba com a conta:
+  - **Guardiões (6):** Ossão, Mira-Torta, Torre de Ossinhos, Minionzão, Guerreiro Planta e Mestre Ossinho. Cada um entra quando a região dele fica vencida.
+  - **Turma (11):** Ossinho, Guerreiro, Arqueiro, Mago, Pistoleiro, Golem de Ossos, Lobinho, Conde, Grandalhão, Golem de Gelo e, desde o item 8, o Esqueleto Dourado. Cada tipo entra no primeiro que for derrotado (`Story.derrotados`, contado no `_on_enemy_defeated`), com o aviso "Figurinha nova no álbum!".
+  - **Esconde-esconde (6):** as figurinhas do item 6, com moldura dourada.
+  - **Peixes (17):** os da pescaria, com quantas vezes foi pescado e a raridade.
+  - **Bilhetes (8):** cada bilhete achado; marcado, mostra o texto inteiro.
+- **A tela** (`scripts/painel_album.gd`):
+  - no alto, o título e "N de 48", e as abas com ícone;
+  - no meio, as figurinhas: a achada colorida, com o nome; a que falta, só a sombra com "?";
+  - embaixo, o nome e o texto da figurinha marcada ("???" na que falta);
+  - o direcional anda pelas figurinhas; para cima chega nas abas, e marcar uma aba já troca a página. B volta para a pausa.
+- **As imagens** saem de `tools/gerar_figurinhas.gd` (com janela), em `assets/ui/figurinhas/`:
+  - os guardiões e a turma são montados pelas próprias classes do jogo (`Boss` e `SkeletonEnemy`), parados na pose de espera; o Pistoleiro aparece mirando, para o blaster de quindim aparecer;
+  - os peixes saem de perfil;
+  - o confete que os bonecos soltam ao nascer é tirado antes da foto.
+- **Bilhetes pela ilha** (`scripts/bilhete.gd`):
+  - são oito: na ponta norte da ponte, no sítio (perto do poço), na praia do farol, na Clareira, na entrada do Bosque das Copas, no Morro dos Ventos, na pista de kart e no pé do Morro;
+  - cada um é um envelope branco grande com selo de coração, flutuando e girando sobre um anel dourado com luz, e procura chão livre perto do ponto marcado;
+  - encostar pega: confete, 5 moedas e o cartão de papel com a figura do lugar, "Bilhete N de 8", o texto e quem escreveu (para um adulto ler junto). O cartão some com A ou em 10 s;
+  - os textos são dos amigos: o Minionzão com medo da ponte, o Lobinho e os cavalos, o vovô e o farol, a Torre olhando a festa, o Guerreiro Planta e as plantinhas, a Mira-Torta e o vento, o Conde e o freio do kart, o Mestre fingindo que não tem festa.
+- **Campanha:** as chaves "derrotados" e "bilhetes" do salvamento. Numa campanha de antes do álbum, os tipos das ondas das regiões já vencidas contam como derrotados, e os bilhetes salvos somem do chão.
+- **Testes:**
+  - `-- --album` confere 12 pontos: as imagens; o álbum com 48 e vazio; os 8 bilhetes no chão; o Álbum na pausa pelo direcional; A abre, B volta; derrotar, vencer, pescar e esconder contando; pegar um bilhete; o texto do bilhete e o "???"; salvar; carregar com os tipos das regiões vencidas;
+  - `-- --album-captura` (com janela) tira cinco fotos: `album_1_bilhete` até `album_5_peixes`.
+
+### Esconde-esconde dos esqueletos amigos (item 6 da lista, feito em 2026-11-10)
+
+Pedido do usuário depois da pescaria: "pode commitar e seguir". Só existe no pós-jogo (etapa "fim"); `scripts/esconde_esconde.gd`.
+
+- **Onde começa:** na praia, a oeste da entrada do cais, o Ossinho do esconde-esconde fica ao lado de um círculo dourado com a placa "ESCONDE-ESCONDE". O Ossinho diz "Vamos brincar de esconde-esconde? Fique no círculo dourado!". No círculo, B (ou E) começa.
+- **Contagem:** a tela escurece e conta 3, 2, 1, "Lá vou eu!". Enquanto isso, cinco amigos se escondem numa região, uma por rodada e nessa ordem: a cidade, o sítio e o pé do Morro.
+- **Onde se escondem:** os lugares saem das coisas da própria ilha:
+  - prédios e enfeites da cidade (carros, postes, caçambas), as construções e os fardos do sítio, as árvores e as pedras do Morro;
+  - o lugar fica do lado de longe do meio da região, encostado na coisa;
+  - só vale com chão firme, fora d'água e espaço livre para um amigo sentado;
+  - os cinco ficam espalhados: pelo menos 16 m na cidade, 8 m no sítio e 18 m no Morro, e a distância encolhe se faltar lugar.
+  - O amigo fica sentado no chão, virado para a coisa.
+- **Para achar:**
+  - cada amigo toca um sininho de 2,5 a 4 s, ouvido até 26 m; perto (12 m) solta um "hihi" no ar;
+  - no alto da tela, cinco carinhas de caveira tapando os olhos (apagadas até achar);
+  - o termômetro ao lado vai do azul (longe) ao amarelo e ao vermelho pulando (pertinho), pelo mais perto;
+  - passados 45 s sem achar ninguém (20 s no Modo Fácil), a seta do objetivo aponta para o mais perto;
+  - o objetivo da pausa diz "Ache os amigos escondidos na cidade (2 de 5)", com a figura da caveirinha.
+- **Achou:** a 3 m, o amigo levanta, vira para o aventureiro e comemora "Achou!" com confete. Dá 3 moedas, a carinha acende e, 2 s depois, ele vai embora de balão.
+- **Os cinco:** "Achou todo mundo!", mais 15 moedas (30 na rodada) e o cartão da **figurinha nova**: o amigo de verdade comemorando num retrato, o nome e a tira das seis figurinhas. As seis são Ossinho, Guerreiro, Arqueiro, Mago, Lobinho e Conde, uma por rodada na ordem; depois das seis, o cartão só mostra quem foi achado.
+- **Campanha:** a chave "esconde" do salvamento guarda as rodadas (para a região seguinte) e as figurinhas, que o álbum do item 7 vai usar. Rodada largada no meio não fica salva.
+- **Testes:**
+  - `-- --esconde` confere 16 pontos: sem esconde-esconde antes do fim; o Ossinho na praia; os cinco lugares de cada região; o aviso; a contagem; o objetivo sem seta; o termômetro e o sininho; achar um; a seta depois do tempo; o balão; os cinco com a figurinha e as moedas; o salvamento; a rodada no sítio; carregar;
+  - `-- --esconde-captura` (com janela) tira cinco fotos: `esconde_1_ossinho` até `esconde_5_figurinha`.
+
+### Pescaria no cais (item 5 da lista, feito em 2026-11-10)
+
+Depois do item 4, o usuário pediu "commita e vamos seguir", e a lista seguiu na ordem sugerida.
+
+- **Onde:**
+  - na ponta do cais, ao lado do pescador: um círculo dourado no chão, o balde, a caixa de pesca e o placar "PESCARIA, N de 17 peixes" (`Pescaria.PONTO`, piso do cais a 0,45 m);
+  - o pescador ganhou a fala "Pegue a vara no círculo dourado e venha pescar comigo!".
+- **Como joga** (`scripts/pescaria.gd`):
+  1. No círculo, B (ou E) pega a vara do KayKit. O aventureiro guarda os blasters e fica na pose `Fishing_Idle` (o nó `pesca` na árvore de animação do `Player`). A câmera vai para trás e à direita dele, olhando o mar.
+  2. A boia voa para a água, a uns 5 m. Um peixe vem nadando por baixo, belisca a boia duas vezes e puxa.
+  3. Quando ele puxa, a boia afunda, toca o alerta, o controle vibra e aparece o **A grande** em cima da boia (no teclado, a tecla "Espaço"). A, ou atirar, fisga. O tempo para isso é 1,8 s, ou 3 s no Modo Fácil.
+  4. **Apertar A sem parar** enche a barra: 6, 8 ou 10 apertos pela raridade, dois a menos no Modo Fácil. A barra esvazia devagar, mas nunca até o fim. A boia e o peixe vêm chegando para o cais, se debatendo.
+  5. O peixe pula na frente da câmera, girando.
+  6. Aparece o **cartão** do peixe:
+     - o peixe de verdade num retrato;
+     - o nome;
+     - de 1 a 3 estrelas;
+     - "NOVO!" quando é o primeiro daquele;
+     - as moedas;
+     - a tira com as 17 bolinhas da coleção;
+     - "Aquário: N de 17".
+  7. Com A (ou sozinho, em 3,4 s), o peixe vai para o balde, fica com o rabo para fora até o próximo, e a boia volta para a água.
+  8. B guarda a vara.
+- **Sem perder:** quem não aperta a tempo vê o peixe escapar, e a boia volta sozinha. Na barra, o peixe não foge.
+- **Bloqueios:** com esqueleto por perto não pega a vara. Pescando, o celular não abre, e a seta do objetivo e a mira somem. A pausa devolve o aventureiro parado (`_parado_no_lugar()`, o mesmo do binóculo). Trocar de personagem pescando passa a vara para a mão do novo.
+- **Os 17 peixes** são os do Animated Cute Fish Pack (Quaternius), os mesmos do mar, com nome em português e raridade:
+  - 8 de uma estrela: palhaço, dourado, azul, tetra, cardeal, betta e os dois cirurgiões;
+  - 5 de duas: borboleta, grama-real, palhaço-zebra, peixe-vaca e papagaio;
+  - 4 de três: ídolo-mouro, carpa koi, mandarim e baiacu.
+- **Sorteio:** 60% das vezes, só entre os que faltam. Os raros saem menos (pesos 6, 3 e 1,5). A coleção anda sempre.
+- **Moedas:** peixe novo dá 5, 8 ou 12 moedas; repetido dá 2. A primeira moeda da campanha pode vir daqui (aparece o aviso da lojinha).
+- **Aquário** (`scripts/aquario.gd`):
+  - um tanque de vidro numa mesa de madeira, na areia ao lado da entrada do cais, de frente para a praça (10, 200), fora do círculo da defesa da praia;
+  - tem água azulzinha, areia, pedrinhas e algas;
+  - cada peixe novo vem nadar ali em oval (`Fish.squash`, com `water_y` próprio e fora do grupo "peixes" do mar);
+  - o placar conta "N de 17" e vira "AQUÁRIO COMPLETO!" no fim.
+- **Campanha:** a chave "peixes" do salvamento guarda quantos de cada; carregar põe os peixes no aquário. Cada peixe pego salva a campanha.
+- **Testes:**
+  - `-- --pescaria` confere 18 pontos: o aviso, a câmera e a vara, a mordida com o A, o fisgar, a barra em até 10 apertos, o cartão e as moedas, o balde, o peixe que escapa, o repetido, sair, salvar e carregar, o sorteio, os peixes dentro do aquário, o Modo Fácil e o celular;
+  - `-- --pescaria-captura` (com janela) tira seis fotos: `pesca_1_cais` até `pesca_6_aquario`.
+
+### Objetivo com figura (item 4 da lista, feito em 2026-11-10)
+
+Para quem ainda não lê saber para onde a seta leva.
+
+- **A figura:** cada objetivo tem um desenho no estilo dos ícones dos menus (`MenuIcon`, cores em `MenuKit.ICON_COLORS`). Fica na `Story`, em `objective_icon`, escolhido junto com o texto em `_refresh_objective`:
+  - **cada luta tem o seu guardião** (`OBJECTIVE_ICONS`): esqueleto na praia, Ossão na Lanterna Oeste, Mira-Torta na Leste, torre na Clareira, Minionzão nos Ventos, planta no desafio da vila e Mestre Ossinho no cemitério;
+  - **cada etapa tem o seu lugar:** esqueleto antes e no prólogo, lanterna na cidade e na mata, ponte enquanto falta atravessar o rio, cemitério na subida do Morro, festa no final e na Festa sem fim;
+  - **presente** quando há recompensa no chão.
+- **Onde aparece:**
+  - em cima do losango roxo da seta (`ObjectiveMarker.icone`, 44 px); colada na borda de cima da tela, a figura vai para o lado;
+  - na pausa, ao lado do texto do objetivo (no lugar do alvo fixo de antes);
+  - a seta da entrega de balão (moeda) segue sem figura.
+- **Chegada:** quando o jogador chega a 8 m do objetivo (onde a seta some), toca a "estrelinha" e solta um confete em cima da cabeça. É uma vez por lugar: andar para longe e voltar ao mesmo ponto não repete. Com menu aberto ou desfecho em cena não toca.
+- **Testes:**
+  - `-- --objetivo` confere 13 pontos: a figura de cada etapa, da luta do Ossão e do presente, na seta e na pausa, a ponte e a lanterna dos dois lados do rio, a figura com a seta longe, e o "plim" uma vez por lugar;
+  - `-- --objetivo-captura` (com janela) tira três fotos: `objetivo_1_praia`, `objetivo_2_lanterna` e `objetivo_3_pausa`.
+
+### Modo Fácil (item 3 da lista, feito em 2026-11-10)
+
+Depois de salvar a maquete da 3-3, o usuário pediu "vamos trabalhar nas melhorias e novidades que sugeriu antes", e a lista seguiu na ordem sugerida.
+
+- **Onde:** a última linha dos Ajustes, "Modo fácil", com o coração verde de "mais" (`MenuIcon` "facil"). Vale para os dois jogos, fica em `user://ajustes.json` (`Ajustes.facil`) e pode ser ligado e desligado a qualquer hora.
+- **Na ilha:**
+  - **corações que voltam:** fora de luta (sem onda, Festa sem fim, guardião nem esqueleto acordado perto), um coração volta a cada 6 s (`REGEN_FACIL`, no `main.gd`), com um som baixinho;
+  - **mais tempo piscando** depois de um golpe: 1,6 vez (1,92 s em vez de 1,2);
+  - **esqueletos mais calmos:** os que nascem com o modo ligado andam a 80%, ficam 35% mais tempo no "!" antes de bater e esperam 30% mais entre um golpe e outro (cada esqueleto copia a tabela do tipo e mexe na cópia);
+  - **guardiões com um quarto a menos de vida** (o Ossão vai de 56 para 42);
+  - **mira mais ajudada no controle:** o auxílio pega de mais longe do centro (1,6 vez o ângulo) e puxa 40% mais forte.
+- **No Faísca:** cair no vazio só leva de volta ao posto, sem perder coração, e as Bolotas andam a 80%.
+- **Testes:** `-- --facil` confere 5 pontos na ilha (esqueleto, guardião, tempo piscando, coração que volta e que não volta no normal); o `--faisca-jogo` confere a queda sem perder coração.
+
+### Ajustes e o farol mirante (itens 1 e 2 da lista, escolhidos pelo usuário em 2026-11-10)
+
+**Ajustes** (`scripts/ajustes.gd`, `scripts/painel_ajustes.gd`):
+- **O que dá para mudar:** música e efeitos (de 0, mudo, a 10, o volume de sempre), rapidez da câmera (de 1 a 9; 5 é a de sempre, e cada passo multiplica por uns 19%, de 0,5 a 2 vezes), câmera invertida (para cima e para baixo), vibração e, desde o item 3, o Modo Fácil.
+- **Onde:** botão "Ajustes" no menu principal (ao lado do Sair), na pausa da ilha (depois de Comandos) e na pausa do Faísca (depois de Sair da fase). É o mesmo painel nos três: uma linha por ajuste com o ícone colorido (engrenagem, nota, alto-falante, olho, setas e controle tremendo, desenhados no `MenuIcon`), barras grossas que o direcional para os lados muda, chaves de Sim e Não, e o Voltar. B ou Esc também voltam, para onde estava, com o botão dos Ajustes marcado.
+- **Vale na hora:** a música abaixa enquanto se mexe, os efeitos tocam um som de amostra e a vibração treme um pouquinho ao ligar.
+- **Valem para os dois jogos:** ficam em `user://ajustes.json`, fora da campanha e do save do Faísca, e são lidos uma vez por partida (`Ajustes.carregar`). Fechar o painel grava.
+- **Quem lê:** o `Sfx` (os volumes, por cima do volume de sempre de cada canal), o `Player`, o `Jogador` e o `Kart` (a câmera, no mouse e no analógico, e a vibração) e o binóculo do farol.
+- Nos testes ficam os valores de sempre e nada é gravado, a não ser com outro arquivo.
+
+**O farol mirante** (`scripts/faisca/farol_ilha.gd`):
+- O farol da ilha fica aceso e sem cadeado, com um binóculo de praça de brinquedo na sacada, virado para a ilha (pé amarelo, corpo azul-piscina, canos brancos, feito por código: a coleção KayKit não tem binóculo).
+- Na porta, o aviso de baixo ensina: "Aperte B para subir no farol e olhar no binóculo". Subindo, a tela escurece e a vista passa a ser a do binóculo, lá do alto: máscara de dois círculos, os nomes dos lugares (Praça da Festa, as lanternas, o Bosque das Copas, o cemitério e a pista de kart) e a seta do objetivo. Os analógicos giram a vista; mirar (LT ou o botão direito) aproxima. B de novo desce, de volta para a porta.
+- A sacada de verdade é estreita (uns 60 cm entre a salinha da lâmpada e a beirada, a 13,6 m), então o aventureiro não anda lá em cima: fica na porta, sem controle e sem mira, enquanto olha (a pausa não devolve o controle).
+- Não dá para subir em luta ("Agora não! Tem esqueleto por perto."). O vovô agora diz: "Lá do alto do farol dá para ver a ilha inteira!".
+- Os nomes têm tamanho fixo na tela, mas o "fixo" da Godot não conta o zoom do binóculo: o tamanho acompanha o campo de visão. A câmera fica do lado de fora do vidro da lâmpada (1,9 m de raio), que pintava a tela toda de azul.
+
+**Testes e fotos:**
+- `-- --farol` confere 12 pontos: farol aceso com o binóculo, os avisos, subir com o B, girar, aproximar, pausa e Ajustes lá de cima, a câmera mais rápida valendo, descer, e a câmera invertida no aventureiro.
+- `-- --menu-principal` ganhou 5 pontos dos Ajustes (abrir, abaixar a música na hora, ligar a câmera invertida, fechar gravando); `-- --faisca-jogo` confere os Ajustes na pausa do Faísca.
+- Fotos: `-- --farol-captura` (`mirante_1` a `mirante_5`), `m_ajustes` no `--menu-principal-captura` e `u05_ajustes` no `--menus-captura`.
+
+
 
 - **Título:** "Ilha Cafuné" é provisório.
 - **Nomes do menino e da menina:** ainda por decidir.
 - **Habilidades por classe:** na primeira versão a escolha é só visual.
 - **Animação de tiro:** resolvida no papel, pelo KayKit Character Animations; falta baixar e conferir na Godot.
+
+## 11. Parte 2: Faísca e o Céu Apagado
+
+> **Desde 2026-11-10 o Faísca é um jogo à parte, escolhido no menu principal** (ver "Menu principal: dois jogos" logo abaixo). O que esta seção conta sobre o farol aberto na ilha, a abertura depois dos créditos, o Faísca na troca de personagem e andando pela ilha (kart, Festa sem fim, corações divididos) é história: saiu do jogo. O hub, as portas, as fases, os monstros e as regras de level design continuam valendo.
+
+### Menu principal: dois jogos (pedido do usuário em 2026-11-10)
+
+O pedido: "vamos reviver o projeto, ficou estranho termos o jogo de tiro contra os esqueletos e dentro dele o jogo de plataforma com acesso direto. Pensei em ter um menu principal do jogo que o jogador pode escolher se quer jogar o jogo de tiro contra esqueletos ou o jogo do de plataforma do faisca". Perguntado o que fica do Faísca na ilha, o usuário escolheu **ilha só de tiro**.
+
+- **Menu principal** (`scenes/menu_principal.tscn`, `scripts/menu_principal.gd`, a cena que abre o jogo):
+  - título "Ilha Cafuné" num fundo de noite com estrelinhas piscando;
+  - dois cartões grandes, com o boneco 3D de verdade (`Portrait`), que cresce e dá tchau quando marcado: **Festa na Ilha** (o menino; "Blasters de doce contra os esqueletos") e **Faísca** (o robô; "Pula, voa e acende as estrelas");
+  - embaixo de cada cartão, onde parou: "Continuar · etapa" da campanha ou as estrelinhas e Estrelas Grandes do Faísca ("Começar" sem save);
+  - "Sair do jogo" embaixo. O direcional anda entre os cartões sem dar a volta e desce ao Sair;
+  - escolher escurece a tela e troca de cena. Os dois jogos voltam pela pausa ("Menu principal"); a ilha também pelo menu inicial dela (no lugar do "Sair do jogo");
+  - também é a porta dos testes: quem roda com `-- --algum-teste` vai direto para a cena dele (a ilha ou o Faísca).
+- **Controles:** as ações saíram do `main.gd` para `scripts/controles.gd` (`Controles.configurar()`, uma vez só), porque o InputMap vale para todas as cenas.
+- **O jogo do Faísca** (`scenes/faisca.tscn`, `scripts/faisca/faisca_jogo.gd`, `FaiscaJogo`) ficou com o que era da `Parte2` (que saiu) sobre o farol e as fases:
+  - **Abertura, na primeira vez:** de noite, no mar, sem a ilha. O mesmo `FarolIlha` numa ilhota, o céu da noite do `Ending` com as estrelas pintadas, a nave passando e sugando as estrelas, a lâmpada acendendo e o Faísca saindo pela porta. Termina no térreo do farol com a faixa "Faísca e o Céu Apagado".
+  - **Hub e fases** como antes (`FaiscaJogo.FASES`), menos a porta do sul, que voltava para a ilha: o hub não tem mais saída.
+  - **Pausa própria** (Start ou Esc): Continuar, Sair da fase (só numa fase), Ajustes, Novo jogo (desde 2026-11-12), Menu principal e Sair do jogo. Não abre durante a tela de fim, a abertura nem as trocas de lugar.
+  - **Novo jogo** (pedido do usuário em 2026-11-12: "o jogador consegue iniciar um novo jogo do faisca como temos pra ilha cafuné?"), como a "Nova campanha" da ilha:
+    - **a tela de início:** quem já tem jogo salvo entra vendo o térreo do farol parado atrás e um painel com "Faísca e o Céu Apagado", o resumo do jogo (as figuras da pausa: estrelinhas, Faisquinhas, Estrelas Grandes e moedas) e Continuar (marcado), Novo jogo e Menu principal. B e Start não fazem nada nela. Sem jogo salvo, entra direto na abertura, como antes;
+    - **na pausa:** o botão Novo jogo, depois dos Ajustes;
+    - **a confirmação**, a mesma para os dois: o brilho do "novo", o aviso do que será apagado (estrelinhas, Estrelas Grandes, Faisquinhas, moedas, figurinhas, tintas e chefes vencidos), a linha das figuras zeradas e "Sim, começar do zero" ou Voltar. O Voltar vem marcado, para um A sem querer não apagar, e volta para onde estava; B e Start também voltam;
+    - **zerar** (`FaiscaJogo.novo_jogo`) acontece sem recarregar a cena: desmonta o farol ou a fase, grava um save zerado e devolve o Faísca com os 3 corações, sem poder e na cor de fábrica. Depois a abertura da nave toca de novo e termina no farol. Os Ajustes ficam como estão;
+    - **o save zerado não é apagado:** sem o arquivo, o `FaiscaSave.migrar` traria de volta a Parte 2 guardada na campanha da ilha. O menu principal mostra "Começar" para um save sem progresso (`FaiscaSave.tem_progresso`);
+    - **o teste** (`--faisca-jogo`): a pausa e a tela de início, a confirmação e o Voltar, tudo zerado com a abertura de novo, o Continuar e o save que fica. Fotos `j04b_novo_jogo_confirmar` e `j04c_tela_de_inicio` no `--faisca-jogo-captura`.
+  - **Save próprio** (`scripts/faisca/faisca_save.gd`, `user://faisca.json`): estrelinhas por fase e da escada, Estrelas Grandes, vaga-lumes e se a abertura passou. **Migração:** quem jogou a Parte 2 dentro da ilha (campanha versão 3, chave "parte2") ganha esse progresso uma vez; o menu principal faz isso ao abrir, antes de a ilha salvar a campanha sem a chave.
+- **A ilha só de tiro:**
+  - o farol da ponta sudeste ficou de enfeite, de cadeado (encostar mostra "O farol está fechado"), e o vovô ainda fala dele;
+  - sem a abertura depois dos créditos: os créditos vão direto para o pós-jogo;
+  - o Faísca saiu da troca de personagem e da pausa; a lojinha, o kart, a Festa sem fim, a seta e o "tchibum" não olham mais para ele;
+  - a pausa troca "Voltar para a ilha" por "Menu principal", e o menu inicial troca "Sair do jogo" por "Menu principal";
+  - a campanha não guarda mais a chave "parte2".
+- **Testes:**
+  - `-- --menu-principal` confere 14 pontos (os cartões, o direcional, cada cartão levando à cena certa, o progresso com saves de teste e, desde os Ajustes, o painel deles); `-- --menu-principal-captura` tira `m_ilha` e `m_faisca` em `tools/capturas/menu/`;
+  - `-- --faisca-jogo` confere 25 pontos (a migração, a abertura, o hub sem saída, a escada andando, a pausa no farol e na fase, as estrelinhas, a Estrela Grande, o save e a 1-2 abrindo com 30); `-- --faisca-jogo-captura` tira `j01` a `j05` em `tools/capturas/faisca/jogo/`;
+  - o `--parte2` e o `--faisca-ilha` (e as fotos deles) saíram com o que testavam; a parte do farol e das fases foi para o `--faisca-jogo`.
+
+**Aprovada pelo usuário em 2026-10-28; a primeira rodada foi feita no mesmo dia, no branch `parte-2-faisca`** (ver "Primeira rodada" abaixo). A Parte 2 vem do projeto Faísca (`Projects/others/faisca`). É um jogo de plataforma 3D no estilo do Astro Bot, feito para o filho do usuário, que já tem o robozinho, uma base de fases reaproveitável e a fase 1-1 jogável. O usuário decidiu juntar o Faísca à Ilha. Decisões dele:
+
+- **O farol fica fixo na ilha desde o começo,** mas fechado durante a campanha contra os esqueletos (a Parte 1, que é a história das seções 4 e 5).
+- **Terminada a campanha, abre a Parte 2,** e o Faísca entra na troca de personagem.
+- **Só o Faísca entra no farol,** que é o hub das fases.
+- **Cada fase pede um número mínimo de estrelas para abrir.**
+- **Tem fases no chão também,** não só no céu.
+
+O modelo é o Clank do Ratchet & Clank, que já está nas inspirações (seção 1): as crianças atiram na ilha e o robozinho pula nas fases. As regras de tom da seção 2 valem iguais.
+
+### História
+
+**Premissa:** toda noite, as estrelas do céu da Ilha Cafuné são acesas por um robozinho que quase ninguém conhece. É o Faísca, que mora no farol velho da ponta sudeste e acende as estrelas com o laser dos pés. Quem o construiu foi o vovô da praça, quando ainda era o faroleiro.
+
+**Durante a Parte 1:** o farol fica lá, de porta trancada e lâmpada apagada. Chegando perto, aparece um cadeado. O vovô da praça solta uma pista: "O farol? Está fechado desde que eu me aposentei...".
+
+**Abertura da Parte 2:** uma cena curta, sem controle, logo depois dos créditos, ainda na noite da festa.
+1. Os fogos acabam.
+2. Uma nave roxa enorme, o Aspiratrão do Rei Bolotão, passa e suga as estrelas, e o céu fica preto.
+3. Na fuga, o saco de estrelas rasga. Elas caem espalhadas pelas ilhas do céu e por lugares no chão, e as Bolotas descem para catar.
+4. A lâmpada do farol acende, a porta abre e o Faísca sai pulando.
+5. A faixa "Parte 2!" aparece, e o Faísca passa a estar na troca de personagem.
+
+Depois amanhece como no pós-jogo de hoje. Uma campanha que já estava em "Depois do final", como a do Bazzite, mostra a cena uma vez ao carregar e abre a Parte 2.
+
+**Vovô:** o vovô da praça muda para o farol e dá as dicas das fases pelo rádio. Ele ocupa o lugar do Vovô Farol robô do projeto Faísca, e fica um vovô só.
+
+**Vilões:** as Bolotas, bolotas roxas de um olho só, e o Rei Bolotão, que tem medo do escuro e não conta para ninguém. Bolota derrotada estoura, solta as estrelinhas que escondia e sai quicando pequenininha. Os esqueletos, que já são amigos, aparecem torcendo e dando dicas.
+
+**Cada fase:** termina com a Estrela Grande presa num baú das Bolotas. Três golpes abrem o baú, e a estrela volta para o céu.
+
+**Final:**
+- Na nave, o Faísca vence o Rei Bolotão.
+- O Rei se esconde e chora: só queria uma luzinha para dormir.
+- O Faísca devolve as estrelas e dá a ele uma estrelinha de bolso.
+- As crianças entregam um convite para a Festa do Cafuné, que fecha com a mensagem da seção 4: às vezes falta só um convite.
+- Vem uma segunda festa, com o céu aceso de novo e as Bolotas convidadas.
+
+### O farol na ilha
+
+- **Onde:** na ponta sudeste, a uns 160 m a leste da praça. Fica numa ilhota de pedra perto de (165, 165), ligada à praia por uma passarela de madeira, como o cais. Dá para ver da praça e do cais.
+  - Fica a uns 80 m da Lanterna Leste, que é a defesa mais perto.
+  - O barco mais perto é a lancha ancorada em (150, 240).
+- **Como é:** o KayKit não tem farol pronto, mas as torres redondas do Medieval Hexagon servem. A `building_tower_base` vai embaixo e a `building_tower_B` em cima (a de varanda com telhado cônico; o pacote tem telhado azul, verde, vermelho e amarelo), ampliadas. Faixas branca e laranja, as cores do Faísca, tapam a emenda e a porta da torre de cima. A lâmpada ciano (a cor dos olhos dele) e o facho de luz girando são feitos por código. A base pode levar pedras do Forest.
+  - Um rascunho foi montado em 2026-10-28 numa cena à parte.
+  - Falta deixar a lâmpada à vista: dentro da varanda, a salinha da torre a esconde.
+- **Na Parte 1:** a porta tem colisão e cadeado.
+- **Na Parte 2:** só o Faísca abre a porta. Desde 2026-10-29 (pedido do usuário), a criança que encosta na porta vê a escolha de personagem já com o Faísca marcado e o aviso "Só o Faísca entra no farol! Escolha o Faísca:". Escolhendo, ele aparece ali e entra no farol. O "Voltar" fecha a escolha e volta ao jogo. De kart ou de skate, fica só o aviso.
+
+### O Faísca na ilha
+
+- **Controle:** o mesmo das fases. Anda e corre pela inclinação do analógico, pula mais alto segurando o botão e flutua com os jatos segurando o pulo na descida. Tem golpes (socos alternando os braços, giro forte, giro no ar, pisão), agarra e arremessa Bolotas, dança e tem o laser dos pés. A câmera é a dele.
+- **Na água:** cair no mar ou no rio faz o "tchibum" de sempre e volta na bandeira.
+- **O que ele faz como as crianças (desde 2026-10-29, pedido do usuário: "as mesmas interações no mundo, apenas não deve poder comprar"):**
+  - **Kart e skate:** quem anda é a criança guardada, vestida de Faísca (`Player.set_robo_skin`). O modelo dela vira o Robo, no mesmo esqueleto do KayKit, então o volante, o impulso e as manobras do skate funcionam iguais. No banco do kart aparece o robô sem as pernas. O Faísca some até ela descer e volta onde ela desceu.
+  - **Festa sem fim:** é o próprio Faísca que luta, com soco, giro, pisão e laser. Esqueletos e guardiões entram no grupo dos alvos dele (`receber_golpe`, 1,5 de dano por ponto de golpe, sem o bloqueio do escudo).
+  - **Corações:** na ilha, ele e a criança guardada dividem os corações, os do canto direito. Os três dele somem. O golpe que chega na criança tira o coração dela e empurra o Faísca, que pisca. Flechas, bolhas e dardos que batem nele e os corações que ele pega vão para ela. Sem corações, ele solta fumacinha e para, e os dois voltam na bandeira. No farol e nas fases, ele volta a ter os três corações dele.
+  - **Interface:** com ele na ilha ficam os corações e a faixa de cima (ondas, corrida, sessão de skate).
+  - **Troca de personagem:** de kart ou de skate, a pausa não troca (desce primeiro).
+- **O que fica só com as crianças:** comprar. A lojinha no celular avisa para trocar de personagem. A barraca de tiro também continua delas, porque os alvos são de blaster e o Faísca não usa blaster.
+- **Por dentro:** o menino ou a menina fica guardado, invisível e sem colisão, acompanhando o Faísca. Assim moradores, bichos e a seta do objetivo continuam funcionando sem mexer no resto do jogo. O `Player` é usado em quase todos os sistemas da Ilha (só o `main.gd` tem 639 usos), por isso trocar a classe do jogador seria bem mais arriscado.
+- **Ideia extra:** estrelinhas caídas pela ilha em lugares que só o Faísca alcança, como telhados da cidade, copas das árvores gigantes do Bosque e o alto da cripta. Elas contam para abrir as portas.
+
+### O hub dentro do farol
+
+- **Entrada:** a porta leva para dentro, que é maior do que parece por fora, com uma transição curta de luz.
+- **Andares:** o farol tem andares redondos. Cada andar é um mundo, com portas para fases do chão e do céu. Uma escada em espiral sobe entre eles (pedido do usuário em 2026-10-29); a ideia antiga era um caminho de plataformas, como treino de pulo.
+- **Portas:**
+  - Cada uma mostra a imagem da fase, um ícone (nuvem para céu, casinha para chão) e quantas estrelinhas pede.
+  - Fechada, a porta mostra o cadeado com quantas estrelinhas faltam.
+  - Vencida, a fase ganha a Estrela Grande na moldura e uma luzinha para cada vaga-lume achado.
+- **Topo:** a sala da lâmpada, com teto de céu estrelado. Cada Estrela Grande devolvida acende uma constelação, e o teto vira o mapa do progresso. Ali fica a última porta, para a nave do Rei Bolotão.
+- **Saída:** a porta do térreo volta para a ilha.
+
+### Estrelas que abrem as portas
+
+- **O que conta:** as estrelinhas, que são as pequenas, espalhadas pela fase e soltas pelas Bolotas. Cada uma conta uma vez e fica guardada mesmo saindo no meio da fase. Jogando de novo, as que já foram pegas aparecem transparentes.
+- **Os números:** cada porta pede mais ou menos metade das estrelinhas que existem até ali. Quem só segue o caminho abre a próxima, e quem explora abre mais rápido. A 1-1 tem 67 estrelinhas, e a segunda porta pediria 30.
+- **A porta final** pede todas as Estrelas Grandes.
+
+### Mapa das fases (rascunho; o jogo cresce uma fase por vez)
+
+| Andar | Fase | Onde | Arte (KayKit) | Novidade | Pede |
+|---|---|---|---|---|---|
+| 1 Ilhas Fofas | 1 Pulinhos nas Nuvens | céu | Platformer, Forest, nuvens do Medieval | pular, flutuar, golpes, laser (pronta no projeto Faísca) | 0 |
+| 1 | 2 Túneis do Morro | chão | Dungeon Pack | por baixo do Morro dos esqueletos; o laser acende tochas para clarear o caminho | 30 |
+| 2 Doces e Brinquedos | 3 Cozinha Gigante (pronta em 2026-10-29) | chão | Restaurant Bits ampliado | o Faísca pequenininho entre panelas, pratos e bolos; tampas que pulam | 60 |
+| 2 | 4 Nuvens de Algodão-Doce (pronta em 2026-10-30) | céu | Holiday Bits (doces, bengalas, casinhas de biscoito), pirulitos do Halloween Bits, Platformer | nuvens que quicam e o Balão de Chiclete | 90 |
+| 2 | 5 Quarto de Brinquedos (pronta em 2026-10-30) | chão | Furniture Bits e Board Game Bits ampliados, trenzinho do Holiday | dados que tombam com um soco e o Ioiô | 120 |
+| 3 Frio e Vento | 6 Pico Gelado (feita em 2026-10-30) | céu | Holiday Bits (bonecos e bolas de neve, sino, pinheiro), blocos de neve feitos por código | gelo que escorrega, bolas de neve e a Luva de Neve | 150 |
+| 3 | 7 Fábrica de Blocos (feita em 2026-10-31) | chão | Block Bits (blocos, caixotes), esteiras, alavancas e arcos do Platformer | esteiras, blocos-pisca e o Martelinho de Apito | 180 |
+| 3 | 8 Moinhos do Vento (maquete em 2026-11-10) | céu | moinho e nuvens do Medieval Hexagon, Platformer | vento que leva quem flutua e a Pipa | 210 |
+| Topo | 9 Nave Aspiratrão | céu | Space Base Bits, cristais roxos do Resource Bits | o Rei Bolotão | todas as Estrelas Grandes |
+
+- Todos esses pacotes estão na Coleção Completa do KayKit v6.1. As prévias de cada pacote foram olhadas em 2026-10-28 (veja "Arte da coleção" abaixo); as peças de cada fase são conferidas quando ela for planejada.
+- Os números do "Pede" se ajustam conforme as fases ficam prontas.
+
+### Arte da coleção (conferida em 2026-10-28)
+
+A pedido do usuário, olhei os 22 pacotes da Coleção Completa do KayKit v6.1 (`Projects/others/kaykit-complete-v6-1-assets`). Ainda faltava baixar quase todos os arquivos `.bin` do Git LFS; as prévias e os `.gltf` de texto já estavam lá.
+
+**Platformer Pack completo (525 arquivos; a 1-1 usa só uma parte):**
+- Servem para as fases:
+  - martelos e blocos-martelo;
+  - varredores que giram (`swiper`);
+  - esteiras;
+  - canhão com bola e bombinhas;
+  - botões e alavancas;
+  - argolas para atravessar flutuando;
+  - molas e tapete de mola;
+  - redes que quicam;
+  - canos;
+  - correntes;
+  - arcos e placas de chegada;
+  - baús, diamantes, corações, estrelas e bandeiras.
+- Cada peça vem em 4 cores.
+- Ficam de fora pelo tom da seção 2: serras, espinhos, bolas e rolos de espinho.
+
+**Céu e farol:**
+- **Medieval Hexagon:**
+  - nuvens prontas (`cloud_big`, `cloud_small`), para plataformas de nuvem e enfeite do céu;
+  - ilhotas com árvores;
+  - moinho (`building_windmill`);
+  - as torres do farol;
+  - navios e cais, que dariam uma fase no mar com um navio das Bolotas.
+
+**Pacotes para as fases do chão:**
+- **Dungeon Pack:** paredes, portas, escadas, tochas, andaimes e barris.
+- **Restaurant Bits:** cozinha inteira com fogão, geladeira, pia, comida e piso xadrez.
+- **Furniture Bits:** cama, sofá, mesa, estante e abajur.
+- **Board Game Bits:** dados (de 4, 6 e 20 lados), peões, cartas e hexágonos.
+- **Block Bits:** blocos de grama, terra, tijolo, pedra, neve e água, e caixotes.
+
+**Doces, neve e final:**
+- **Holiday Bits:** casinha de biscoito, balas, bengalas de doce, árvore de Natal, bonecos de neve, bolas de neve, presentes e trilhos com trenzinho.
+- **Resource Bits:** cristais roxos e azuis, para a caverna do Rei ou para enfeitar a nave.
+- **Space Base Bits:** módulos brancos e laranja, foguetes e robozinhos.
+
+### Primeira rodada (feita em 2026-10-28)
+
+O plano aprovado foi este. O que saiu diferente está em "Como ficou", logo depois da lista.
+
+1. **Branch próprio na Ilha** (`parte-2-faisca`). O Bazzite só recebe a build no fim, já testada.
+2. **Código e arte do Faísca:**
+   - o código vai para `scripts/faisca/`;
+   - o `AnimUtil` repetido sai (é igual ao da Ilha), e nenhum outro nome de classe se repete;
+   - as peças usadas vão para `assets/faisca/`, e os corpos do Tripo ficam de fora;
+   - o laser muda para uma camada de colisão livre, porque a camada 4 é a dos pontos de impacto da Ilha;
+   - a pasta `faisca` vira arquivo.
+3. **O farol** na ponta sudeste, com as torres do Medieval Hexagon, fechado na Parte 1.
+4. **Abertura da Parte 2** depois dos créditos, também para campanhas já terminadas. O Faísca entra na troca de personagem e anda pela ilha.
+5. **O hub com o primeiro andar** (a torre com os outros andares veio em 2026-10-29): a porta da 1-1 aberta, a dos Túneis do Morro trancada (pede 30) e a porta de saída. A fase troca o céu, a luz e a interface pelos dela e, no fim, devolve os da ilha.
+6. **Salvamento versão 3:** Parte 2 aberta, estrelinhas pegas em cada fase, Estrelas Grandes e vaga-lumes. As campanhas antigas continuam valendo.
+7. **Testes:**
+   - os testes do Faísca viram `--faisca-fase` e `--faisca-controle`;
+   - um teste novo, `--parte2`, confere a abertura, a troca de personagem, o farol fechado para as crianças, a entrada no hub, a porta trancada, a 1-1 e a volta para a ilha com as estrelinhas guardadas;
+   - fotos novas com `--parte2-captura`;
+   - todos os testes da Ilha continuam passando.
+
+A fase 2 fica para a rodada seguinte, planejada à parte, como foi a 1-1.
+
+### Como ficou
+
+**Arquivos (`scripts/faisca/`):**
+
+| Arquivo | O que é |
+|---|---|
+| `parte2.gd` (`Parte2`) | cuida de tudo: o farol, a abertura, o Faísca na ilha, o hub, as fases e o salvamento |
+| `farol_ilha.gd`, `farol_modelo.gd` | o farol na ilha e o modelo da torre (também usado ao longe nas fases) |
+| `hub_farol.gd` | o hub, com as portas (`PortaFase`) |
+| `aspiratrao.gd` | a nave da abertura |
+| `faisca_solo.gd` | o antigo `main.gd` do projeto Faísca, para os testes sem a ilha |
+| `jogador.gd`, `robo.gd`, `forma.gd`, `fase.gd`, `fases/fase_1_1.gd`, `hud.gd`, `bolota.gd`, `alvo.gd`, `posto.gd`, `bau.gd`, `vaga_lume.gd`, `flor_de_luz.gd`, `fase_teste.gd`, `teste_fase.gd` | vieram do projeto Faísca |
+
+- O `robo.gd` veio sem o corpo do Tripo.
+- **Peças:** em `assets/faisca/`, com `plataforma/` e `floresta/` da 1-1, `farol/` com as duas torres do Medieval Hexagon e a textura, e `portas/` com a foto da 1-1.
+- **Ações novas:** `golpe` (X, F, J ou clique) e `recomecar` (Back ou R), no `_setup_input` do `main.gd`.
+- **Camadas de colisão:** o laser do Faísca acende o que está na camada 6 (`Fase.CAMADA_LUZ`). O Faísca esbarra nos moradores (camada 5).
+
+**O farol na ilha:**
+- A ilhota de pedra fica em (161,5; 161,5), com 7 m de raio e o topo na altura da passarela, 0,45 m.
+- A passarela é um módulo `Dock_Long` só, da beira da ilhota até a areia, com rampa no fim.
+- O farol tem a escala 4,5 (uns 18 m) e a porta virada para a praia.
+- O vovô da praça ganha a fala "O farol? Está fechado desde que eu me aposentei...".
+- O Faísca aparece 3 m para fora da porta, fora da área que faz entrar. Na primeira versão ele aparecia dentro dela e entrava de novo sozinho ao carregar a campanha.
+
+**A abertura:**
+- Toca depois dos créditos, entre o fim deles e o pós-jogo, ainda de noite.
+- Primeiro, uma câmera na praça mostra a nave passando e as estrelas (as do céu pintado e umas estrelinhas que voam até o bocal) sumindo.
+- Depois, a câmera vai para a passarela: a lâmpada acende e o Faísca sai pulando e comemora.
+- Por último, a faixa "Parte 2 liberada!" ensina a escolher o Faísca na pausa.
+- Uma campanha salva em "Depois do final" sem a Parte 2 vê a cena uma vez ao continuar: a noite é só durante a cena.
+
+**O Faísca na ilha:**
+- Entra pelo botão "Faísca" na troca de personagem, que só aparece com a Parte 2 aberta.
+- O menino ou a menina fica guardado (`Player.parked`): invisível, sem colisão e sem controle, acompanhando o Faísca.
+- Os corações, os blasters, a mira e as moedas das crianças somem. O HUD do Faísca mostra os 3 corações e o total de estrelinhas.
+- **HUD no mesmo lugar para todos (pedido do usuário em 2026-10-29: "padronizar o hud entre os personagens"):**
+  - Os corações do Faísca ficam no canto de cima à direita, no lugar, no tamanho e no espaçamento dos das crianças.
+  - Logo embaixo vêm o contador de estrelinhas, com o número à esquerda da estrela como nas moedas, e os vaga-lumes da fase.
+  - Na ilha, os corações dele somem e ficam os das crianças (divididos), no mesmo lugar. A linha deles guarda a altura, então as estrelinhas ficam embaixo dos corações das crianças, onde ficariam as moedas.
+- A seta do objetivo aponta a porta do farol.
+- O celular avisa que é das crianças.
+- O kart e o skate não oferecem o B, porque pedem o aventureiro visível.
+- As defesas (o Guerreiro Planta) e a Festa sem fim não começam.
+- Cair na água faz o "tchibum" do `main.gd`, e o Faísca volta na bandeira junto com o aventureiro guardado.
+- As bandeiras da ilha acendem com o Faísca também (desde 2026-10-29; antes só com as crianças).
+
+**Dentro do farol:**
+- A ilha inteira fica pausada e escondida: os filhos do `main`, menos a interface, a música e a Parte 2, ficam com `PROCESS_MODE_DISABLED`, o que tira a colisão. O `WorldEnvironment` da ilha sai da árvore até a volta.
+- **O hub** é uma torre redonda de 16 m de raio (12 m até 2026-11-12; ver "Farol mais largo por dentro", logo abaixo) e 27 m de parede, com o domo em cima (versão de 2026-10-29, pedido do usuário: "podemos usar uma rampa ou escada dentro do farol pra subir os níveis e entrar nas fases seguintes?"). Tem:
+  - **quatro andares:** o térreo (0 m), o 2º (7 m), o 3º (14 m) e o topo (21 m). Os de cima são sacadas de madeira que vão da parede até 7,5 m do meio, com murinha creme e borda laranja na beira; o meio fica aberto, e dá para ver a torre inteira de baixo;
+  - **a escada em espiral** no vão do meio, entre 4,5 e 7,5 m do eixo. São três lances de 35 degraus, cada um girando 150°, e cada lance termina num patamar de 30° colado na sacada de cima (por ali se entra nela). O primeiro sai do térreo a oeste-noroeste, longe das portas, e sobe pelo norte; os patamares ficam a leste (2º andar e topo) e a oeste (3º). Por baixo dos degraus, a colisão é uma rampa lisa que passa no meio de cada degrau, para o Faísca subir sem tropeçar;
+  - **murinhas** dos dois lados da escada e na beira das sacadas (menos no patamar), com uma parede invisível de 3,2 m em cima. O pulo com os jatos chega a uns 2,5 m, então o Faísca não cai no vão. Desde 2026-11-12 a parte invisível fica na `CAMADA_LIMITE`: o Faísca esbarra nela e a câmera não;
+  - **as 8 estrelinhas do farol** na escada: 4 no primeiro lance e 2 em cada um dos outros. Elas contam como "farol", com os mesmos nomes de antes (0 a 7), e as campanhas salvas continuam valendo;
+  - o eixo listrado no meio, do chão até o topo, com a lâmpada ciano e o telhado vermelho em cima;
+  - um tapete de faixas no térreo, uma faixa laranja e 4 janelas em cada andar;
+  - o teto escuro com as constelações, uma para cada fase de 1-1 a 3-3.
+- **A colisão da parede** fica 35 cm para dentro da parede que se vê. Assim o braço da câmera, raspando de lado numa sacada, para antes dela; senão a câmera ia para fora da torre e um lado da tela ficava azul-escuro.
+- **Farol mais largo por dentro** (pedido do usuário em 2026-11-12: "tem muitos problemas de câmera quando chego perto da galeria de prêmios pela câmera empurrada pela escada"):
+  - **o porquê:** o primeiro lance da escada sobe justamente por cima da estante (325°) e do cabide (354°). De frente para eles, a câmera (a 7,5 m) ficava atrás do Faísca, dentro da escada, e o braço batia nos degraus e, mais ainda, nas paredes invisíveis de 3,2 m em cima das murinhas, que estavam na mesma camada de tudo;
+  - **o raio** foi de 12 para 16 m. A escada ficou onde estava, e o que fica encostado na parede foi junto com ela, 4 m para fora: a máquina (13,4 m), a estante (15,25 m), o cabide (15 m, mais perto da parede que antes, porque fica embaixo da parte mais alta do lance), o elevador (`ElevadorFarol.DENTRO` 12,2 m), as placas dos prêmios, as luzes e as vagas dos moradores. As sacadas vão de 7,5 m até a parede, agora com 8,5 m;
+  - **as paredes invisíveis** das murinhas foram para a `CAMADA_LIMITE` (só o Faísca esbarra; a parte que se vê continua sólida para tudo);
+  - **a câmera mais perto dentro da torre** (`Jogador.distancia_camera`, que o `HubFarol._aproximar_camera` muda a cada quadro): 6 m em todo o farol e 4,8 m no térreo, do lado de fora da escada (a galeria). O giro continua livre. Saindo do farol, volta aos 7,5 m;
+  - **o teste:** o `--faisca-jogo` põe o Faísca de frente para a máquina, a estante e o cabide, a 1,6 m e a 2,6 m, e confere que o braço da câmera fica esticado. Antes do cabide ir para 15 m, ele ainda batia a 2,6 m do cabide (4,3 de 4,8 m).
+- **As portas** (as fases do mapa abaixo, com os nomes e números de lá; mudam quando cada fase for planejada):
+  - térreo: a 1-1 a oeste, os Túneis do Morro (pedem 30) a leste e a saída para a ilha ao sul;
+  - 2º andar: Cozinha Gigante (60) ao sul, Nuvens de Algodão-Doce (90) a oeste e Quarto de Brinquedos (120) ao norte;
+  - 3º andar: Pico Gelado (150) ao norte, Fábrica de Blocos (180) a leste e Moinhos do Vento (210) ao sul;
+  - topo: a Nave Aspiratrão a oeste, de moldura roxa e ícone de disco voador. Ela pede as 8 Estrelas Grandes, com uma estrela grande do lado do número, e encostar mostra "Faltam N Estrelas Grandes".
+- **Porta trancada:**
+  - mostra o cadeado, o número e uma estrelinha;
+  - encostar balança o cadeado e mostra "Faltam N";
+  - se o total chega lá com o Faísca no hub, o cadeado cai na hora.
+- **Porta sem fase:** a de fase ainda não feita mostra "Em breve".
+- **Fase vencida:** a porta mostra a Estrela Grande dourada e as luzinhas dos vaga-lumes.
+- **Na pausa:**
+  - "Voltar para a ilha" no hub;
+  - "Sair da fase" numa fase, que volta para a frente da porta guardando o que pegou;
+  - "Trocar de personagem" some dentro do farol.
+- **O fim da fase:** o A na tela de fim volta para o farol.
+
+**Estrelinhas e salvamento:**
+- Cada estrelinha tem um nome: a ordem em que a fase cria, ou "b<Bolota>_<n>" nas que as Bolotas soltam. Vaga-lumes também.
+- As já pegas aparecem transparentes, o contador da fase começa com elas e pegar de novo não conta.
+- A campanha (versão 3) guarda em "parte2" se ela está aberta, se o Faísca está em uso, onde ele estava, as estrelinhas por fase (e "farol"), as Estrelas Grandes e os vaga-lumes.
+- Quem salvou dentro do farol volta com o Faísca na porta dele, na ilha.
+
+**Postos de recarga (pedido do usuário em 2026-10-28):**
+- O problema: "os pontos de checkpoint do jogo não devem ficar próximos demais de beiras/quedas, porque o jogador nasce e cai direto por eles". Na 1-1, os dois postos devolviam o Faísca 1,8 m à frente da bandeira, fora da ilha: 0,3 m além da beira no primeiro e 0,65 m no segundo.
+- A correção: agora cada `Posto` procura sozinho, depois de dois quadros de física, um ponto de chão firme perto da bandeira. Começa pela frente e vai girando de 45 em 45 graus, a 1,8, 2,6, 1,2 e 3,4 m. O ponto precisa ter chão também a `Posto.MARGEM` (1,6 m) em oito direções, sem degrau.
+- O `--faisca-fase` confere que todos os postos e o começo da fase passam nessa conta, e que depois de cair o Faísca fica de pé no posto.
+- A mesma correção foi para o `posto.gd` do projeto Faísca separado.
+- **Área maior (pedido do usuário em 2026-10-29: "a area que ativa a bandeira de checkpoint precisa aumentar"):** a área que acende o posto passou de 1,6 m de raio e 3 m de altura para `Posto.RAIO_AREA` (3,2 m) e `ALTURA_AREA` (6 m), começando 1 m abaixo do pé da bandeira. Passar a 3 m da bandeira já acende; antes precisava chegar a uns 2 m. O `--faisca-fase` confere isso, e a mudança também foi para o projeto Faísca separado.
+- **Área ainda maior (pedido do usuário em 2026-10-30: "aumenta mais o raio de acionamento dos checkpoints"):** agora são 5 m de raio e 8 m de altura, começando 1,5 m abaixo do pé da bandeira (`Posto.ABAIXO_AREA`). É mais que as bandeiras da ilha, que têm 4 m. O `--faisca-fase` confere que passar a 4,6 m já acende.
+- **Bandeiras da ilha:** com o Faísca, elas não acendiam, porque só reconheciam o `Player`, que fica guardado e sem colisão. Agora o `Checkpoint` aceita o `Jogador` também, e o `--parte2` confere.
+
+**Como testar** (o `--faisca-ilha`, o `--parte2` e as fotos deles saíram em 2026-11-10, com a separação dos jogos; ver "Menu principal: dois jogos"):
+- `godot --headless --path . -- --faisca-ilha` confere 16 pontos do Faísca na ilha (2026-10-29): corações divididos; aviso, entrada e saída do kart com o robô no banco; a pausa sem troca dirigindo; o skate; a Festa sem fim começando com ele; socos e laser nos esqueletos; o golpe que tira coração e empurra; o tempo invulnerável; o tonto e a volta na bandeira; a lojinha só das crianças. `godot --path . -- --faisca-ilha-captura` tira `v20` a `v24` (kart, kart de lado, skate, Festa sem fim e a porta do farol pedindo o Faísca).
+- `godot --headless --path . -- --pista-kart` confere 6 pontos da pista em 8: o tamanho, sair da vaga e subir a rampa da abertura dirigindo, e uma volta de verdade no piloto automático, que conta na chegada, sobe a ponte com o corpo do kart inclinado e não enrosca.
+- `godot --headless --path . -- --parte2` confere 44 pontos de ponta a ponta (com a entrada na 1-2 pela porta e, desde a pausa nova, o cartão do Faísca na pausa e na troca). Termina com "PARTE2 OK" e leva uns 2 minutos. Desde 2026-10-29 ele também sobe a escada do farol andando de verdade (o analógico simulado segue a curva), do térreo ao topo. No caminho, confere a sacada do 2º andar, a murinha (empurrando para o vão e pulando), as 8 estrelinhas, a porta da nave e a bandeira da ilha acesa pelo Faísca.
+- `godot --path . -- --parte2-captura` tira as fotos `t01` a `t12` em `tools/capturas/`. Do hub: `t05` a entrada, `t06` e `t07` as portas do térreo, `t08` a escada, `t09` a sacada do 2º andar, `t10` o topo com a porta da nave e `t12` a constelação da 1-1 vista do topo.
+- Os testes do projeto Faísca rodam sem montar a ilha, pelo `FaiscaSolo`:
+  - `-- --faisca-controle` (29 pontos, com o laser só, o voo de 1 s e o laser acertando de lado);
+  - `-- --faisca-fase` (38 pontos: a 1-1 de ponta a ponta, com os postos, a área maior e os trechos novos);
+  - `-- --faisca-fase-1-2` (49 pontos: a 1-2 de ponta a ponta, com os trechos novos), `-- --faisca-fase-1-2-captura` (fotos em `tools/capturas/faisca/fase_1_2/`) e `-- --faisca-jogar-1-2` (a 1-2 direto, para jogar sem o farol);
+  - `-- --faisca-smoke`;
+  - `-- --faisca-captura` e `-- --faisca-fase-captura`, com fotos em `tools/capturas/faisca/`.
+- `godot --path . -s tools/foto_farol.gd` fotografa o farol apagado e aceso.
+
+**Ainda não feito ou não conferido:**
+- Ninguém jogou a Parte 2 com controle de verdade.
+- Os andares de cima do farol existem, mas as fases deles ainda não. As portas mostram o cadeado e, quando o número chegar, "Em breve".
+- A 1-2 foi feita e testada por script, mas ninguém jogou com controle.
+- O Faísca não tem sons próprios.
+- Em 2026-10-29 a build com a 1-2 e o laser novo foi para o PC Bazzite (código conferido pelo hash). O jogo estava aberto lá desde 2026-10-28 e quebrou: depois da troca do executável, os blasters não carregaram e ele fechou. A Godot lê as peças do próprio executável enquanto roda, então a troca só pode ser feita com o jogo fechado.
+
+### Fase 1-2: Túneis do Morro (aprovada e construída em 2026-10-29)
+
+> **Substituído em 2026-10-29:** a fase foi refeita no padrão de playgrounds (ver "Padrão de level design das fases", mais abaixo). O texto desta seção fica como registro de como ela era.
+
+**Como ficou:**
+- **Código:** `scripts/faisca/fases/fase_1_2.gd` (`Fase12`), uma função por trecho, com as peças da caverna no fim:
+  - `rocha`: a pedra escura sólida;
+  - `chao`: os módulos do chão;
+  - `parede_z` e `parede_x`: as paredes;
+  - `tablado`: o andaime com tábuas;
+  - `elevador` e `caixote`;
+  - `_ossinho`: o esqueleto mineiro acenando.
+- **Peças novas e reaproveitáveis:**
+  - `Tocha` (`tocha.gd`);
+  - `ParedeRachada` (`parede_rachada.gd`);
+  - no `Fase`: `tocha`, `parede_rachada`, `porta_das_tochas` (a porta de madeira do `wall_doorway` gira) e `ponte_da_tocha`;
+  - o baú dourado (`Bau.dourado`);
+  - os desenhos "tocha" e "golpe" no balão do Vovô.
+- **Paredes:** só o desenho do pacote, com a colisão em caixas. Em cima delas, paredes invisíveis na camada `Fase.CAMADA_LIMITE` (a 5): o Faísca esbarra nelas e a câmera não, porque as molas jogam alto e a fase não tem teto.
+- **Números:** 89 estrelinhas (53 no caminho e 36 das 12 Bolotas), 16 tochas (5 já acesas, de enfeite), 3 pontes, 2 postos e 3 vaga-lumes.
+- **No hub:** a porta abre com 30 estrelinhas e mostra a foto da mina de ouro (`assets/faisca/portas/fase_1_2.jpg`).
+
+**O que mudou do plano na construção:**
+- **P1:** fica no alto do poço, na beirada do abismo. Assim, cair no abismo não obriga a subir os andaimes de novo.
+- **Andaimes:** ficam um de frente para o outro, com folga, e terminam numa passarela até a beirada. O atalho é uma mola ao lado da passarela.
+- **Vãos do abismo:** com o voo de 1 s, o pulo mais longo flutuando passa de 12 m. Por isso os vãos ficaram com 14, 14 e 13 m, e o resto da fase andou 6 m para a frente. O teste confere que, sem a ponte, o Faísca desce da altura da beirada uns 2 m antes do pilar.
+- **A porta:** em vez de uma grade que sobe, é a porta de madeira do vão do Dungeon Pack, que gira e abre.
+- **Os caixotes da última tocha:** o degrau fica encostado na pilha alta, que segura quem pula longe demais.
+
+O texto abaixo é o plano original.
+
+Pedido do usuário: "seguir para fase 2". É a porta do leste do térreo, que pede 30 estrelinhas. Um rascunho com as peças foi montado em `tools/rascunho_tuneis.gd`; as fotos `tuneis_1` a `tuneis_3` estão em `tools/capturas/`.
+
+**A história:** as Bolotas cavaram por baixo do Morro dos Ventos e esconderam a segunda Estrela Grande na mina velha dos Ossinhos. Os esqueletos, amigos desde a Parte 1, tinham deixado tochas pelo caminho, mas estão todas apagadas. Na boca do túnel, um Ossinho mineiro acena e aponta para dentro (é só enfeite; ninguém fala na fase).
+
+**O que a fase ensina de novo:**
+- **Tochas:** o laser dos pés acende, como as flores de luz da 1-1. Cada tocha acesa clareia em volta com luz laranja, e algumas fazem coisas:
+  - três tochas juntas abrem um portão de grade;
+  - as tochas do abismo fazem a ponte de tábuas subir do escuro até a próxima tocha.
+- **Paredes rachadas:** três golpes quebram e mostram um segredo. O Vovô Farol ganha um desenho novo, o do golpe (X).
+- **Elevadores:** plataformas de madeira subindo e descendo.
+
+**Tamanho:** 5 a 7 minutos. Umas 45 estrelinhas no caminho e as das Bolotas (3 cada), 3 vaga-lumes e a Estrela Grande.
+
+**Postos:** P1 no começo do poço dos andaimes, P2 na mina de ouro.
+
+Caminho:
+
+```
+                [8] Câmara do Baú   (Estrela Grande)
+                          ^
+                [7] Portão das três tochas
+                          ^
+                [6] Elevadores de madeira
+                          ^
+                [5] Mina de ouro  P2   (coração extra)
+                          ^
+                [4] Abismo escuro: a ponte aparece com as tochas   V3 embaixo da última ponte
+                          ^
+                [3] Poço dos andaimes  P1   V2 numa viga lá no alto
+                          ^
+                [2] Corredor das tochas   V1 atrás da parede rachada
+                          ^
+                [1] Boca do túnel (o Ossinho acena)
+```
+
+Trechos:
+
+1. **Boca do túnel.** O Faísca desce flutuando logo depois da entrada. Atrás dele fica o arco claro da saída, com a luz do dia. Tem barris, caixotes, uma trilha de estrelinhas e uma Bolota dormindo.
+2. **Corredor das tochas.** Um corredor de mina com andaimes de madeira atravessados, cada vez mais escuro. A primeira tocha apagada fica bem no caminho, e o Vovô Farol mostra o desenho do laser. Cada tocha acesa clareia o pedaço seguinte. Uma parede rachada no meio esconde o V1, e o Vovô mostra o desenho do golpe na primeira vez.
+3. **Poço dos andaimes (P1).** Um salão alto com andaimes de madeira em degraus, para subir pulando, com uma mola e uma Bolota em cada patamar. O V2 fica numa viga lá no alto.
+4. **Abismo escuro.** Um vão grande e escuro, sem ponte. Três tochas em cima de pilares, em linha: cada uma acesa faz subir a ponte de tábuas até a próxima. Cair tira um coração e volta no P1. O V3 fica numa beiradinha embaixo da última ponte, para quem descer flutuando.
+5. **Mina de ouro (P2).** Uma caverna larga, com pedras de ouro, baldes com picaretas e caixotes. Bolotas acordadas, para os socos e o pisão. Tem um coração extra.
+6. **Elevadores.** Duas plataformas de madeira subindo e descendo num poço, até uma passarela alta.
+7. **Portão das três tochas.** O portão de grade fechado, com três tochas apagadas na frente; uma fica em cima de caixotes altos e pede pulo alto e flutuar. Com as três acesas, a grade sobe.
+8. **Câmara do Baú.** O baú dourado da masmorra, com três Bolotas de guarda. Três golpes abrem, a Estrela Grande sai, o Faísca pega e comemora, e vem a tela de fim.
+
+**Regras:**
+- O perigo é só cair no abismo e as Bolotas, como na 1-1.
+- O escuro nunca é breu: a luz da caverna é azulada e fraca, as estrelinhas brilham mais e o caminho sempre aparece. As tochas deixam tudo mais claro e quente.
+- **Sem teto:** em cima, o escuro faz a vez da rocha. Assim a câmera do Faísca fica solta, sem bater num teto baixo.
+
+**Peças:**
+- **Dungeon Pack** (já baixado do LFS e copiado em `assets/faisca/masmorra/`):
+  - paredes de pedra, inclusive a rachada e a de grade;
+  - chão de terra, de pedra e de tábuas;
+  - andaimes de madeira, colunas e pilares;
+  - tochas, pedras de ouro, barris, caixotes, balde com picaretas e o baú dourado.
+- **Escala:** as peças de construção ficam em 1,5x, então os módulos de 4 m viram 6 m e as paredes ficam com 6 m de altura. Os enfeites ficam em 1x. O rascunho confere isso ao lado do Faísca.
+- **Ficam de fora pelo tema infantil:**
+  - o chão de espinhos;
+  - espadas e escudos;
+  - o baú mímico;
+  - o andaime com suportes de tocha, que de longe parecem mãos de garra.
+- **Do Platformer:** molas, corações e as bandeiras dos postos.
+- **Feitos por código:** a chama das tochas, a ponte que sobe, as Bolotas e as estrelinhas.
+
+**O que construir, nesta ordem:**
+1. A `Tocha` (como a `FlorDeLuz`), o portão de grade que abre com tochas e a ponte que aparece.
+2. A parede rachada e o desenho do golpe no balão do Vovô.
+3. O ambiente de caverna: luz azulada e fraca, névoa leve, sem céu nem nuvens.
+4. Os trechos, um por um, jogando cada um.
+5. A foto da 1-2 para a porta do hub; a porta passa a abrir a fase com 30 estrelinhas.
+6. Testes:
+   - `--faisca-fase-1-2`: tochas, ponte, parede, portão, baú e fim;
+   - o `--parte2` entrando na 1-2 pela porta.
+
+### Fases mais compridas (pedido do usuário em 2026-10-29: "as fases do faisca estão muito curtas")
+
+> **Substituído em 2026-10-29:** a 1-1 e a 1-2 foram refeitas no padrão de playgrounds (ver "Padrão de level design das fases", mais abaixo). O texto desta seção fica como registro de como ela era.
+
+As duas fases tinham uns 130 m (1-1) e 200 m (1-2): quem já sabe jogar passava cada uma em 1 a 2 minutos, e o plano era de 4 a 7. Cada uma ganhou cinco trechos novos no meio do caminho, com brincadeiras novas (peças do Platformer Pack que faltavam: esteira, argola, botão, alavanca e canhão; o resto feito por código). Os trechos antigos andaram para a frente sem mudar por dentro. As próximas fases já nascem nesse tamanho.
+
+**1-1 Pulinhos nas Nuvens (de uns 130 m para uns 300 m, 3 postos, 101 estrelinhas):**
+- **Ilha das Esteiras** (depois da ponte):
+  - duas esteiras lado a lado: a verde leva para a frente e a vermelha, para trás, tem as estrelinhas;
+  - uma esteira atravessada que empurra para o lado, com uma mureta no fim, de modo que quem não anda é empurrado contra ela, sem cair.
+  - `Esteira`: corpo parado com `constant_linear_velocity` e setinhas brancas andando por cima. A faixa fica 3 cm acima das plataformas do lado, porque na mesma altura a emenda segurava o Faísca parado.
+- **Argolas no Céu** (depois do vão grande): da ilhinha onde o vão chega, quatro nuvens firmes subindo, com uma argola em cada vão (`Argola`). Os pulos passam por dentro delas; acesas as quatro, cai uma roda de 8 estrelinhas em cima da última nuvem.
+- **Botões Coloridos** (depois do portão do Jardim): três botões no chão (`Botao`), que afundam e acendem quando ele cai em cima. Com os três apertados, sobem do vão as três plataformas da ponte (`Fase.ponte_dos_botoes`). O vão é comprido demais até para flutuar. A dica do Vovô desenha o pulo em cima do botão.
+- **Nuvens que Somem** (depois das plataformas que se mexem): o P3 numa plataforma e cinco nuvens lilases em zigue-zague (`NuvemQueSome`). Cada uma treme 0,8 s depois de pisada, some e volta 3 s depois.
+- **Canhão de Nuvem**: entrando no canhão (`Canhao`), o Faísca é lançado num arco alto (12 m) até a Ilha do Baú, girando. As 5 estrelinhas do voo ficam no caminho.
+- O farol de fundo foi para z -390, para continuar ao longe.
+
+**1-2 Túneis do Morro (de uns 200 m para uns 380 m, 4 postos, umas 140 estrelinhas, quatro níveis: 0, 8, 16 e 28 m):**
+- **Carrinho de Mina** (depois da mina de ouro):
+  - o carrinho (`CarrinhoDeMina`, feito por código; os pacotes não têm um) espera na estação, com um caixote de degrau e uma estrelinha em cima;
+  - pulando dentro, ele leva o Faísca por um túnel de 60 m com tochas e vigas;
+  - as estrelinhas baixas vêm sozinhas; as altas pedem pulo, e pulando ele continua indo junto;
+  - na chegada fica o P3, e o carrinho volta vazio para o começo.
+  - Tropeço: a posição do corpo animado tem que ir antes de entrar na cena. Senão, ele fica no zero do mundo até começar a andar.
+- **Sala Escura**: a luz da caverna quase apaga ao entrar (a sala baixa a luz ambiente e a de cima, e devolve ao sair). O caminho é uma passarela de tábuas em zigue-zague em cima de um buraco, com uma tocha apagada em cada curva.
+- **Alavancas** (depois da porta das três tochas):
+  - três grades de ferro (`Grade`) nas portas do corredor, cada uma aberta por um soco na alavanca dela (`Alavanca`, no grupo dos alvos dos golpes);
+  - a primeira alavanca fica ao lado, a segunda em cima de um caixote e a terceira guardada por duas Bolotas.
+  - Nova dica do Vovô: o soco na alavanca.
+- **Poço dos Cristais**: de 16 a 28 m. Cristais azuis que jogam para o alto como molas (`Fase.mola_de_cristal`) levam do chão para uma beirada, dela para outra e dela para a arena.
+- **Arena da Bolotona**: o P4 e a Bolotona (`Bolotona`, duas vezes maior, 8 de vida, dormindo). Derrotada, ela se desfaz em três Bolotas pequenas, que já existiam escondidas, para as estrelinhas contarem no total. Vencidas as quatro, a grade do fundo abre.
+- **Câmara do Baú**, agora a 28 m e sem os guardas (quem guarda é a Bolotona).
+
+**Testes e fotos:**
+- `--faisca-fase` confere 38 pontos, 11 a mais: os trechos novos, a esteira levando até a plataforma, a mureta segurando, argolas e prêmio, botões e ponte, nuvem sumindo e voltando, e o canhão pousando com as estrelinhas do voo.
+- `--faisca-fase-1-2` confere 49 pontos, 15 a mais: carrinho, P3, sala escura, alavancas e grades, cristal, Bolotona e grade da arena. Ele acha as tochas da porta pela própria porta, não pela ordem.
+- `--faisca-fase-captura` ganhou as fotos `03b`, `07b`, `09b`, `09c` e `10b` a `10d`. O `--faisca-fase-1-2-captura` ganhou `09b` a `09e` e `12b` a `12d`.
+
+### Fase 2-1: Cozinha Gigante (feita em 2026-10-29, pedido do usuário: "pode fazer a próxima fase")
+
+> **Substituído em 2026-10-29:** a fase foi refeita no padrão de playgrounds (ver "Padrão de level design das fases", mais abaixo). O texto desta seção fica como registro de como ela era.
+
+A porta do 2º andar do farol, que pede 60 estrelinhas. `scripts/faisca/fases/fase_2_1.gd`, com as peças do Restaurant Bits (em `assets/faisca/cozinha/`) ampliadas 8 vezes: a bancada tem 8 m, o prato 7,6 m e a geladeira 20 m. A faca ficou de fora (tema infantil).
+- **O caminho:**
+  - vai por cima dos móveis, de uns 230 m;
+  - o chão xadrez fica lá embaixo, e cair nele conta como cair (`limite_queda` 3 m, volta no posto);
+  - a sala tem paredes creme, uma janela grande com a luz do dia e a parede de azulejo atrás da bancada.
+- **A novidade, as tampas que pulam** (`TampaQuePula`): a panela ferve e a tampa fica 2 s quieta (dá para ficar em pé nela), treme 0,8 s soltando vapor e pula. Quem estiver em cima vai lá para o alto, como na mola, só que no tempo dela. A dica do Vovô desenha isso.
+- **Os trechos:**
+  1. **Mesa do Café:** pratos de degrau, uma tigela com estrelinhas dentro, uma Bolota dormindo e o V1 escondido atrás do pote grande, no canto.
+  2. **Tábua de Cortar:** a ponte até a bancada.
+  3. **Bancada das Panelas (P1):** uma pilha de pratinhos sobe até a primeira tampa. As duas primeiras levam às estrelinhas do alto, e a terceira joga o Faísca até a prateleira, a 19 m.
+  4. **Prateleira dos Potes:** potes gigantes em zigue-zague. O V2 fica em cima do pote mais alto, e a tampa de uma panelinha ali do lado leva até ele.
+  5. **Fogão:** quatro bocas que acendem e apagam (`BocaDoFogao`). O anel fica laranja um instante antes de acender. Acesa, encostar tira um coração e dá um pulinho para fora.
+  6. **Pia (P2):** a cuba comprida de água com espuma (`Fase.agua`; encostar é cair). Para atravessar, há dois pratos boiando, que sobem e descem, e duas bolhas de sabão, que estouram e voltam (a nuvem que some, com o desenho de bolha). Esponjas altas nas bordas não deixam ir andando por cima.
+  7. **Bancada da Massa:** dois rolos de macarrão (`RoloDeMassa`) rolando de um lado para o outro, com 1,9 m de altura para dar para pular. Encostar tira um coração.
+  8. **Pizza Giratória (P3):** a pizza de 16 m girando devagar na mesa redonda (`PizzaGiratoria`), levando o Faísca e as Bolotas. Ketchup e mostarda fecham as beiradas dos lados.
+  9. **Geladeira:** um sorvete de casquinha na beirada da mesa joga o Faísca lá para cima. No alto ficam o baú, duas Bolotas e o V3, atrás da caixa do canto.
+- **Números:** 3 postos, 3 vaga-lumes, 10 Bolotas e umas 80 estrelinhas.
+- **Correção que vale para todas as fases:** as molas (a mola, o cristal da 1-2 e o sorvete) passaram a usar `AreaDeMola`, que confere a cada quadro quem está dentro. Antes, quem pulava em cima entrava na área subindo, pousava já dentro e ficava parado sem ser jogado.
+- **Outras correções:**
+  - a água às vezes avisava duas vezes no mesmo mergulho, e agora conta uma queda só a cada 0,6 s (`Jogador.cair`);
+  - o fundo da cuba fica abaixo do limite da queda, para ninguém ficar preso lá.
+- **Porta e testes:**
+  - a foto da porta, `assets/faisca/portas/fase_2_1.jpg`, é a da pizza;
+  - `--faisca-fase-2-1` confere 20 pontos: contagens, descida na mesa, V1, as tampas (para o alto e até a prateleira), a boca acesa, P2, o prato boiando, a bolha, a água, o rolo, P3, a pizza levando, o sorvete até a geladeira, baú, Estrela Grande e fim;
+  - `--faisca-fase-2-1-captura` tira 11 fotos em `tools/capturas/faisca/fase_2_1/`;
+  - `--faisca-jogar-2-1` abre a fase direto.
+
+### O laser e o voo do Faísca (pedido do usuário em 2026-10-29)
+
+O pedido: "dos pés do faísca saem um tipo de fogo de jato + o laser, talvez sair apenas o laser fique melhor visualmente, e o raio de dano desse laser parece pequeno, preciso quase estar no centro do inimigo pra atingir com o laser por cima, e a duração do voo pode aumentar um pouco".
+
+- **Só o laser:** o `Jogador` não liga mais os jatos de fogo do `Robo`. Os nós continuam lá, marcando a ponta de cada pé, de onde o laser sai. Isso vale também na descida do começo das fases.
+- **Área do laser:**
+  - Antes, só valia onde o fio do laser batia, então era preciso estar quase em cima do meio do inimigo.
+  - Agora, tudo num cilindro de `Jogador.RAIO_LASER` (1 m), dos pés até o chão, leva o laser: inimigos levam dano, e flores e tochas acendem.
+  - Um anel ciano no chão mostra o tamanho da área.
+  - Uma Bolota a 1,3 m de lado já leva; antes, ela precisava estar a menos de uns 0,8 m.
+- **Voo:** `tempo_flutuar` passou de 0,75 s para 1 s. O vão grande da 1-1 continua pedindo flutuar, como confere o `--faisca-fase`.
+- **Impulso do laser (pedido do usuário em 2026-10-29, "um pequeno impulso pra cima, sem exageros"):**
+  - Quando o laser liga, a velocidade vertical sobe para pelo menos `impulso_laser` (4 m/s), o que dá uns 30 cm a mais. Depois disso, o voo segue como antes.
+  - O impulso só vem uma vez por pulo: soltar e segurar de novo não dá outro. Ele volta a valer ao tocar o chão.
+  - Os testes do Faísca passaram com o impulso: `--faisca-controle`, `--faisca-fase`, `--faisca-fase-1-2` e `--faisca-fase-2-1`. O vão de 14 m da 1-2 continua impossível sem a ponte, mesmo flutuando.
+- **Fora do projeto separado:** essa mudança é só da cópia da Ilha. O projeto Faísca separado ficou como registro.
+
+### Visual novo do Faísca (pedido do usuário em 2026-10-29)
+
+O pedido: "viseira brilhante com olhos de LED que mudam de expressão, cantos arredondados e acabamento melhor". Antes, o usuário queria usar um modelo do Astro Bot do Sketchfab. Esse modelo não serve: é fan art de um personagem da Sony, não tem download nem licença, e o jogo é público. Então o Faísca continua sendo o `Robo` montado por código, mais caprichado.
+
+- **Tela do capacete:** `scripts/faisca/rosto_led.gdshader`.
+  - É um vidro preto envernizado, com borda de brilho e um reflexo pintado no canto de cima à esquerda (aparece mesmo onde a luz da cena não reflete).
+  - Os olhos são desenhados por distância (SDF) no espaço da malha da tela, então acompanham a curva dela. Têm halo de luz atrás do vidro, miolo mais claro e linhas de LED que só aparecem de perto.
+- **Expressões:** `Robo.expressao(nome, duracao)`. A troca vem com uma piscada, e com `duracao` a cara volta para a normal sozinha.
+
+  | Cara | Quando aparece |
+  |---|---|
+  | normal | o resto do tempo; pisca a cada 2 a 5 s e, parado, dá olhadinhas para os lados |
+  | bravo (pílula cortada em diagonal) | golpes e giro |
+  | dor (`> <`) | quando se machuca, nas fases e na ilha |
+  | tonto (espirais girando) | sem corações, no curto |
+  | surpreso (bolonas) | quando a mola ou o canhão lança, e quando cai |
+  | feliz (`^ ^`) | quando pega estrela, e durante as animações `festa/` (comemorar e acenar no cartão da escolha) |
+  | coração (rosa) | quando acha vaga-lume e quando ganha coração |
+
+  Com o laser ligado, os olhos olham para baixo (`Robo.olhando`).
+- **Friso da tela:** um tubo laranja (`Forma.tubo_fechado`) que segue a emenda entre a tela e o capacete. A emenda é calculada pelas fórmulas das duas superelipsoides em `Robo._borda_da_tela`. Uma moldura feita com outra casca saía serrilhada, porque as duas cascas se cruzavam num ângulo muito raso.
+- **Quinas redondas:** as orelhas, o pescoço e os punhos eram cilindros de quina viva. Agora são discos de quina redonda (`Robo._disco`, uma superelipsoide quase reta em cima e embaixo).
+- **Detalhes:**
+  - **Orelhas:** cada uma tem um LED que respira.
+  - **Peito:** uma estrelinha dourada acesa, porque ele é o acendedor de estrelas. O material dela não descarta faces, já que a `Forma.estrela` tem as faces viradas para dentro.
+  - **Costas:** como a câmera fica atrás dele quase o tempo todo, o capacete ganhou uma grade de ventilação e as costas ganharam uma placa (laranja desde o corpo novo) com três LEDs. Os LEDs apagam um a um enquanto ele flutua (`Robo.carga`).
+- **Corpo no jeito do Astro Bot (pedido do usuário no mesmo dia, depois de ver o rosto: "adorei as expressões e o visor que criou, mantenha isso. Mas o corpo, braços, pernas e pés queria algo mais próximo do astro bot"):**
+  - Vieram do Astro as proporções e o estilo:
+    - tronco em feijão, mais largo embaixo;
+    - braços e coxas gordinhos e redondos, sem junta aparente;
+    - anel prateado e faixa colorida no antebraço;
+    - mão de luva;
+    - pernas que afinam até uma ponta, sem bota.
+  - Ficou do Faísca o que é dele: branco com laranja (nada de azul), sem antena, a placa laranja com a estrela dourada no peito em vez do V, os LEDs de voo nas costas e a cabeça inteira.
+  - A ponta laranja dos pés tem um LED ciano embaixo, de onde sai o laser.
+  - As garrinhas saíram. A luva (`Robo._mao`) tem palma, três dedos e polegar, cada um numa dobradiça. O punho fecha nos golpes e na comemoração, como as garrinhas faziam.
+  - O prateado é só meio metálico (`metallic` 0,55). Bem metálico, sem céu para refletir (no estúdio e na sala escura da 1-2), ele fica preto.
+  - O `esconder_pernas` do kart continua igual: some tudo o que está nos ossos de perna e de pé.
+- **Placas do tronco:** a do peito e a das costas deitam como a superfície do tronco na altura delas (`Robo._no_tronco`, pela fórmula da `Forma.ovo`) e saem uns 2 cm por igual. O tronco é mais largo embaixo, então a frente vai para trás conforme sobe, e a placa reta afundava na parte de baixo (o usuário notou: "o detalhe laranja no peito dele está um pouco dentro do torso na região de baixo").
+- **Fotos de estúdio:** `godot --path . -s tools/foto_faisca.gd -- --prefixo=depois` salva em `tools/capturas/faisca/robo/`. As fotos:
+  - o corpo de frente, de lado, de costas e de três quartos, e as costas de perto;
+  - o rosto;
+  - socando, correndo, parado e comemorando;
+  - uma foto de perto para cada expressão.
+
+### Movimentos do Astro (pedido do usuário em 2026-10-29)
+
+O usuário mandou a tabela de movimentos do Astro Bot e pediu os três que mais serviam ao jogo. No meio do trabalho pediu também para tirar o chute.
+
+- **Socos alternando os braços:** o X no chão dá soco direito, soco esquerdo e um direito mais forte (2 de dano, empurra longe).
+  - O KayKit só tem o soco do braço direito. O esquerdo é ele espelhado (`AnimUtil.add_mirrored`): cada quadro é amostrado, e cada osso recebe o movimento do osso do outro lado, espelhado no espaço do esqueleto.
+  - O `Robo` cria esse soco como `luta/Soco_Esquerdo` antes de montar o AnimationPlayer.
+- **Giro forte (segurar X no chão):**
+  - O primeiro soco sai. Depois de 0,3 s segurando, ele firma os pés (pose de luta, tremendo, cara de bravo) e um anel dourado cresce no chão.
+  - Em 0,5 s a carga enche e ele gira sozinho por 1 s de braços abertos, com um redemoinho ciano. A cada 0,25 s acerta todo mundo a até 2,6 m (1 de dano e empurrão), e dá para andar devagar girando.
+  - Depois fica tontinho 0,5 s, sem golpear e com os olhos de espiral.
+  - Soltar antes de encher desiste. Para carregar de novo, tem que soltar o botão.
+- **Agarrar e arremessar (Y; no teclado E, K ou botão direito):**
+  - **Só a Bolota tonta** (o usuário achou o agarrar fácil demais; pediu que a tontura acontecesse por acaso nas lutas):
+    - Cada golpe que não derruba tem 25% de chance por ponto de dano de deixar a Bolota tonta por 3 s (`Alvo.chance_tontura` e `TEMPO_TONTA`). Num soco é 25%; no pisão, no soco forte ou numa Bolota arremessada, 50%.
+    - Tonta, ela para de andar, não machuca ao encostar, balança e mostra três estrelinhas douradas girando em cima, com o som de tonto.
+    - A Bolotona não fica tonta.
+  - Pega pela antena a Bolota tonta mais perto (até 2,2 m, mais ou menos na frente) e gira de braços abertos com ela pendurada na mão esquerda. Ele para no lugar ao agarrar e ao arremessar.
+  - A Bolota que gira na mão acerta quem estiver no caminho.
+  - Soltando Y (no mínimo 0,35 s, no máximo 2,5 s segurando), ele arremessa para onde o analógico aponta, ou para a frente da câmera.
+  - A Bolota voa rodando. Bate e estoura no primeiro alvo do caminho (2 de dano nele, inclusive na Bolotona, no baú, na parede rachada e na alavanca) ou onde cair.
+  - Se estourar em cima do vazio, as estrelinhas dela caem no último ponto do voo que tinha chão embaixo.
+  - Sem Bolota tonta perto, ele só fecha as mãos (`Robo.fechar_mao`), sem parar de andar. Antes fazia o gesto de pegar com o corpo todo, e andando parecia deslizar (o usuário notou).
+  - Levar golpe com a Bolota na mão solta ela.
+- **Dancinha (seta para baixo; no teclado V):**
+  - O `Robo` mexe os ossos por cima da animação de parado (o KayKit não tem dança): o quadril desce dobrando os joelhos a cada batida (120 por minuto), o corpo balança, e os braços trocam (um sobe aberto ao lado da cabeça, o outro vai para a frente).
+  - Ele fica de cara feliz, com notinhas douradas e cianas subindo. Dura 4 s; andar, pular ou golpear para.
+- **Dicas do Vovô na 1-1:** "agarrar" (o botão Y amarelo; a Bolota tonta com estrelinhas, depois o Faísca girando com ela) na Ilha das Molas, onde aparecem as primeiras Bolotas acordadas, e "giro_forte" (o X com a barrinha e o anel) na Ilha do Baú, com as três Bolotas.
+- **Na pausa:** os comandos do Faísca ganharam o giro forte, o agarrar e a dancinha.
+- **Testes e fotos:**
+  - O `--faisca-controle` confere os socos alternados e os movimentos novos. São a carga, o giro, o acerto em volta e o tontinho; não agarrar sem tontura e ficar tonta com o golpe; agarrar, girar, arremessar e acertar; a dancinha e parar andando.
+  - O `--faisca-fase` confere que a Bolota tonta não vem atrás do Faísca.
+  - O `--faisca-captura` tira de `10_carregando` a `17_dica_giro_forte` (com `12a_bolota_tonta`), e o `tools/foto_faisca.gd` tira o soco esquerdo e dois momentos da dança.
+
+### Movimento fluido no jeito do Astro (pedido do usuário em 2026-11-10)
+
+Pedido: "antes de irmos pra novas fases, queria melhorar a jogabilidade dele: movimentos mais fluidos e ágeis estilo o Astro Bot". O usuário escolheu os três pacotes (controle, câmera, corpo e efeitos). Tudo em `scripts/faisca/jogador.gd`.
+
+- **Controle:**
+  - **corrida em linha reta:** parado, arranca a 52 m/s²; correndo, a direção gira para o analógico a 16 rad/s sem perder o embalo, e a rapidez sobe ou desce em linha reta; soltar freia a 60 m/s² (`_acelerar`). Antes era uma aproximação suave que escorregava no fim. O gelo continua com o jeito antigo, que escorrega de propósito;
+  - **derrapada:** virar para trás correndo (mais de 110°) freia a 80 m/s² com poeira nos dois pés, o corpo para trás e um "chhh" baixinho, e já arranca para o outro lado;
+  - **o corpo vira na hora** (22 por segundo; era 12);
+  - **no ar**, vale 80% do controle (era 55%). Sem analógico, o embalo some devagar (`FREADA_NO_AR`), para o empurrão de um golpe continuar levando uns 0,9 m como antes;
+  - **topo do pulo:** segurando o pulo, nos últimos 2,2 m/s da subida a gravidade fica 25% mais leve, a pausinha do Astro. Só na subida: na descida, segurando, quem segura é o laser. A primeira versão valia também na descida e esticou o pulo longo de 11,9 para 12,7 m, perto demais dos vãos de 13 e 14 m;
+  - **quina amiga:** no ar, batendo de frente numa beirada até 30 cm acima dos pés, ele sobe nela (`_quina_amiga`).
+- **Câmera:**
+  - o pivô ficou solto do corpo e segue com um atrasinho no plano, olhando um pouco à frente da corrida;
+  - **segura a altura no pulo:** só acompanha quando ele pousa, cai abaixo de onde estava ou sobe mais de 3 m;
+  - correndo para a frente sem mexer na câmera por 1 s, ela volta devagar para trás dele. Isso só vale com o controle de verdade: os testes guiam pelo `forcar_direcao`, e lá não vale;
+  - correndo, o campo de visão abre de 60° para 66°.
+- **Corpo e efeitos** (só no `Robo`, dentro do `Visual`):
+  - inclina para dentro das curvas e um pouco para a frente correndo;
+  - achata e estica com uma mola: agacha e estica no pulo, que sai na hora porque é só desenho, e achata no pouso conforme a queda;
+  - **poeira** (`_poeira`, nuvenzinha que sobe e encolhe): nos passos correndo, um a cada 1,15 m alternando os pés, com um tique baixinho de robô; na derrapada; na saída do pulo; e no pouso (maior quanto mais alto).
+- **As medidas** (`-- --faisca-movimento`, numa pista lisa de 150 m montada só para o teste, com alvos que não deixam o pulo crescer):
+
+| medida | antes | agora |
+|---|---|---|
+| chegar a 90% da velocidade | 0,167 s | 0,117 s |
+| parar | 0,233 s em 0,40 m | 0,117 s em 0,30 m |
+| inverter a corrida | 0,100 s | 0,167 s (com a derrapada) |
+| o corpo virar para trás | 0,150 s | 0,083 s |
+| pulo curto / alto | 0,70 m / 2,21 m | 0,70 m / 2,23 m |
+| pulo mais longo, flutuando | 11,9 m | 12,1 m |
+
+- **Conserto que saiu junto:** o `Fx.dust` e o `Fx.bubble_pop` começavam soltando partículas assim que entravam na árvore, ainda na origem, antes de ir para o lugar certo. A poeira dos escudos e as bolhas dos peixes e da boia da pescaria nasciam no lugar errado. Agora começam desligados, como o confete.
+- **Testes:**
+  - todas as fases passam;
+  - a 1-2 mudou uma conferência: com a arrancada mais rápida, a corridinha antes do pulo do caixote da alavanca amarela às vezes pousa em cima da alavanca, que fica no próprio caixote, e as duas valem;
+  - `-- --faisca-movimento-captura` (com janela) tira quatro fotos em `tools/capturas/faisca/movimento/`: a curva, a derrapada, o pulo e o pouso.
+
+**Conserto do canhão (relato do usuário em 2026-11-11):** "na fase 1-1 quando faisca entra no canhao, a camera fica parada enquanto ele voa até a proxima plataforma".
+- Com o movimento fluido, a câmera ficou solta (`top_level`) e só segue o Faísca dentro do `_physics_process` dele. O canhão desliga esse processo durante o voo, e a câmera ficava no canhão.
+- Agora o canhão chama `Jogador.acompanhar_camera` a cada quadro, dentro do cano e no voo. Vale para os três canhões (1-1, 2-2 e 3-1).
+- O `--faisca-fase` confere que a câmera já saiu do canhão no meio do voo e chega junto com o Faísca.
+
+### Sons do Faísca (pedido do usuário em 2026-10-29: "faltam sons novos pro faisca lutando, voando, etc")
+
+O Faísca usava só uns poucos sons emprestados das crianças, e pegar estrelinha nem tinha som.
+
+- **De onde vêm:** os sons novos saem do `tools/gerar_sons.py` (função `make_faisca`), no mesmo jeito de desenho dos outros: servo, bipes e "boing".
+  - Têm semente própria e são gerados depois da música, então regerar não muda nenhum som antigo.
+  - Estão na lista `Sfx.ALL`, e o `--som` confere que os 52 carregam.
+- **Lutando:**
+
+  | Som | Quando toca |
+  |---|---|
+  | `faisca_soco` | os dois primeiros socos |
+  | `faisca_soco_forte` | o terceiro soco |
+  | `faisca_acerto` | o golpe pega alguém (também no giro e no giro forte) |
+  | `faisca_giro` | o giro no ar |
+  | `faisca_carga` | carregando o giro forte (motor subindo e um "plim"; para se ele desistir) |
+  | `faisca_piao` | o giro forte |
+  | `faisca_pisao` | o pisão |
+  | `faisca_agarra` | agarrar a Bolota |
+  | `faisca_arremesso` | arremessar a Bolota |
+  | `bolota_ai` | a Bolota apanhando |
+  | `bolota_estoura` | a Bolota estourando em estrelinhas |
+
+- **Voando e andando:**
+
+  | Som | Quando toca |
+  |---|---|
+  | `faisca_pulo` | o pulo |
+  | `faisca_pouso` | o pouso (só depois de 0,35 s no ar) |
+  | `faisca_laser_liga` | o laser ligando |
+  | `faisca_laser` | zumbido em repetição enquanto flutua |
+  | `faisca_mola` | a mola |
+
+- **O resto:**
+
+  | Som | Quando toca |
+  |---|---|
+  | `faisca_dor` | bipe de "ô-ou" ao perder coração, nas fases e na ilha |
+  | `faisca_curto` | o curto sem corações |
+  | `coracao` | o coração extra (já existia) |
+  | `estrelinha` | pegar estrelinha, nas fases, no hub e na cena de treino |
+  | `vaga_lume` | achar vaga-lume |
+  | `faisca_danca` | os 4 s de música da dancinha, a 120 batidas por minuto como a dança (para se ela parar) |
+
+- **O zumbido do laser:** o arquivo dura 1 s e fecha ciclos inteiros de todas as ondas, então emenda sem estalo. O `Jogador` liga a repetição na hora (`AudioStreamWAV.LOOP_FORWARD`).
+- **Testes e prévia:**
+  - O `--faisca-controle` confere que o zumbido toca e para com o voo, e que cada ação tocou o seu som (`Sfx.logging`).
+  - Uma prévia com todos os sons em sequência fica em `tools/capturas/faisca/sons_do_faisca.wav` (fora do git).
+
+### Padrão de level design das fases (aprovado pelo usuário em 2026-10-29)
+
+Toda fase do Faísca segue este padrão. O documento ilustrado está em `docs/level-design/molde-das-fases.html` (abre no navegador; também publicado como artifact privado em https://claude.ai/artifact/Vz5M6GjcTFuAMAJoK64VjM). As duas maquetes 3D em blocos que mostram o padrão também estão em `docs/level-design/`:
+- `maquete-2-2-nuvens-de-algodao-doce.html`, uma fase de céu (https://claude.ai/artifact/7VWLwjDfRYUUySyx7ppCog);
+- `maquete-2-3-quarto-de-brinquedos.html`, uma fase de chão (https://claude.ai/artifact/PhBdoJUs6Np1kR2iNop95V).
+- `maquete-3-1-pico-gelado.html`, a primeira já no tamanho maior, com cinco playgrounds (https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4).
+- `maquete-3-2-fabrica-de-blocos.html`, fase de chão com esteiras, blocos-pisca e o Martelinho de Apito (https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh); aprovada pelo usuário em 2026-10-31 ("continua, ficou bom") e construída no mesmo dia.
+- `maquete-3-3-moinhos-do-vento.html`, fase de céu com faixas de vento e a Pipa (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd); feita em 2026-11-10, aprovada e construída em 2026-11-12.
+- `maquete-nave-aspiratrao.html`, a fase final dentro da nave, com o Rei Bolotão (https://claude.ai/artifact/HxkhXhfEMYQbxKnYxumMxc); feita, aprovada ("maquete aprovada") e construída em 2026-11-12.
+
+As páginas carregam a three.js do jsDelivr, então precisam de internet. A pasta tem `.gdignore`.
+
+**Como se chegou nele:**
+- A primeira proposta era uma espinha de trechos, com uma praça e três galhos. O usuário achou que parecia "um trilho de trem, muito linear".
+- Ele mandou os princípios de level design do Astro Bot:
+  - playgrounds;
+  - caminho mostrado pelo cenário;
+  - marco para se orientar;
+  - poucos movimentos;
+  - nada ambíguo.
+- A versão em playgrounds foi aprovada ("ficou mais divertido").
+
+**O padrão:**
+- **Marco:** um objeto enorme do tema (bolo-montanha, castelo de blocos, torre de nuvens, geladeira), com a Estrela Grande no alto, visível de toda a fase.
+- **Quatro playgrounds em volta do marco, subindo em espiral.** Cada um tem 40 a 60 m, uma ideia só da novidade e um mini-marco próprio.
+  1. Apresenta: sem risco, com chão embaixo, e a dica do Vovô. Posto P0.
+  2. Desenvolve: risco leve e mais de um caminho. Vaga-lume 1. Posto P1.
+  3. Central: o maior, com coração extra e o poder da fase quando houver. Vaga-lume 2 num bolso alto. Posto P2.
+  4. Reviravolta: sobe pelo próprio marco e guarda o segredo com o vaga-lume 3. Posto P3.
+- **Arena:** no alto do marco, com três Bolotas ou um mini-chefe guardando o baú.
+- **Três viagens** entre os playgrounds (nuvem-carro, canhão, trenzinho, carrinho de mina...). Duram 10 a 20 s e não têm risco. A última vai e volta e serve de atalho.
+- **Dentro de cada playground:**
+  - posto na entrada;
+  - trilha creme no chão até um arco grande de saída, visível de qualquer ponto;
+  - uma fileira (postes, bengalas) apontando para a saída;
+  - estrelinhas como migalhas;
+  - bolsos em cima, embaixo e atrás das coisas;
+  - Bolotas em espaço aberto.
+- **Poucos movimentos:** pular, flutuar, socar, mais os extras que já existem (giro forte, agarrar a Bolota tonta, dança). Nada de botão novo. A variedade vem das peças de cada fase e de **um poder por fase**, pego no playground 3 e usado no 3 e no 4 (Balão de Chiclete na 2-2, Ioiô na 2-3, Luva de Neve na 3-1, Martelinho de Apito na 3-2). A 1-1, a 1-2 e a 2-1 não têm poder.
+- **Nada ambíguo:**
+  - sombra redonda de pouso sempre embaixo do Faísca;
+  - degrau de até 1,6 m no caminho (2 m nos bolsos);
+  - vão de 3 a 4 m pulando e de 7 a 9 m flutuando;
+  - plataforma de pouso de 3 × 3 m ou maior;
+  - mais de 4 m de altura sem mola tem que parecer claramente alto demais;
+  - Bolotas em lugar estreito só no playground 4;
+  - o que parece sólido é sólido: toda peça com tamanho de obstáculo ou de chão tem colisão. O que se atravessa de propósito (aro, chama, água, cabo, luz, o que fica alto demais) leva `Fase.so_enfeite`. O `tools/revisor_fisica.gd` confere (seção "Revisor de física").
+- **Cores com um papel só cada:**
+
+  | Cor | Quer dizer |
+  |---|---|
+  | creme | caminho |
+  | dourado | pega |
+  | laranja | mexe ou faz alguma coisa (molas, botões, arcos de saída, argolas do ioiô) |
+  | roxo | inimigo |
+  | lilás | cuidado, some |
+  | ciano | Faísca e lugar seguro |
+  | verde-limão | segredo por perto |
+
+- **Céu e chão:**
+  - Nas fases de céu, cair no vazio custa um coração.
+  - Nas fases de chão, o chão é a rede de segurança: cair de um móvel só faz descer, sem perder coração, e uma escada (livros, pratos, caixas) leva de volta.
+  - O risco no chão vem de uma brincadeira, como "o chão é lava": encostar conta como cair.
+- **Tamanho** (o usuário pediu fases maiores em 2026-10-30: as crianças passavam rápido demais; a 2-2 é a primeira nesse tamanho):
+  - cinco playgrounds em vez de quatro;
+  - cada saída só abre com uma tarefa (botões, flores, o poder da fase), não basta seguir o caminho;
+  - 10 a 12 min no caminho para uma criança;
+  - 110 a 150 estrelinhas, metade no caminho e metade nos bolsos (eram 80 a 100);
+  - 3 vaga-lumes, nos playgrounds 2, 3 e 4 (na 2-2, no 2, no 3 e no 5);
+  - 2 ou 3 Bolotas por playground, mais a arena;
+  - 1 ou 2 corações extras.
+
+**As fases prontas no padrão novo** (pedido do usuário no mesmo dia: "reconstrói as fases que já temos para atender o novo design"):
+
+| Parte | 1-1 Pulinhos nas Nuvens | 1-2 Túneis do Morro | 2-1 Cozinha Gigante |
+|---|---|---|---|
+| Marco | Torre de Nuvens, com a Ilha do Baú no alto | Poço do Cristal, um cristal gigante aceso no meio da caverna | a Geladeira |
+| Novidade | pular, flutuar e o laser | o laser acende tochas | tampas que pulam |
+| 1 · Apresenta | Ilha dos Pulinhos: pulo alto e esteiras | Salão das Tochas: três tochas abrem a porta | Mesa do Café: pratos de degrau e a primeira tampa |
+| 2 · Desenvolve | Ilhas das Argolas: flutuar sobre vãos e as primeiras Bolotas | Mina de Ouro: a ponte da tocha, os tablados e a parede rachada | Bancada das Panelas: rolos e a tampa do vão |
+| 3 · Central | Jardim das Flores: laser nas flores e botões | Sala das Alavancas, com a sala escura e o depósito como bolsos | Fogão e Pizza: a pizza que gira, as bocas e a tampa até os livros |
+| 4 · Reviravolta | nuvens que somem e plataformas que se mexem, subindo pela torre | cristais que jogam para o alto, subindo pelo poço | Pia e Prateleira: pratos e bolhas na pia, bolhas de degrau e o sorvete |
+| Arena | Ilha do Baú | a Bolotona | em cima da geladeira |
+
+**Como ficaram as três (refeitas e testadas em 2026-10-29; ninguém jogou com controle ainda):**
+- **Peças do padrão, no `Fase`:**
+  - `playground(nome, centro, raio, entrada)` registra cada playground (os testes usam);
+  - `trilha_creme(pontos)` desenha a trilha creme no chão, um quadro depois de montar, seguindo o relevo;
+  - `arco_de_saida(pe, giro, cor)` põe o arco do Platformer em 2x, e `saidas` guarda as saídas (na caverna, as saídas são a porta das tochas, o elevador e a grade amarela);
+  - `brilho_de_marco(base, altura)` faz a coluna de luz dourada do baú, que aparece de toda a fase;
+  - `chao_largo(tamanho, topo, escala)` estica um morro em X e Z.
+- **Sombra de pouso:** o Faísca tem uma sombra redonda embaixo dele (`Jogador._atualizar_sombra`), que diminui e clareia com a altura.
+- **Viagens que esperam:** `movel_peca` e o `elevador` da 1-2 ganharam `pausa` (o pedaço do vaivém parado em cada ponta). Sem isso, o prato voltava no instante em que chegava, e quem descia andando caía no vão.
+- **1-1 Pulinhos nas Nuvens:** marco na Torre de Nuvens, em (0, 0, -96), com a arena a 22 m. Tem 82 estrelinhas soltas (118 com as das Bolotas), 12 Bolotas, 3 postos, 5 esteiras, 4 argolas, 3 botões, 5 nuvens que somem, o canhão e 3 plataformas que se mexem. `--faisca-fase` confere 44 pontos.
+- **1-2 Túneis do Morro:**
+  - o marco é o Poço do Cristal, em (0, 0, -66): um prisma de cristal de 10 m de largura, aceso, do fundo do poço (-24 m) até a arena (30 m);
+  - Salão das Tochas no chão, carrinho subindo a rampa até a Mina de Ouro (8 m), elevador até a Sala das Alavancas (16 m), balsa até o Poço dos Cristais (16 m) e três cristais até a arena (desde 2026-11-11, a balsa deu lugar à Estação dos Trilhos e à fuga no carrinho; ver "Momentos especiais e fases mais longas");
+  - os lados das grades ganharam colisão (`_lados_da_grade`), e o chão passa por baixo das portas e das paredes rachadas;
+  - 83 estrelinhas soltas (122 com as das Bolotas), 13 Bolotas (com a Bolotona e as filhas), 19 tochas (12 já acesas), 2 paredes rachadas, 1 ponte, 3 postos;
+  - `--faisca-fase-1-2` confere 58 pontos, com os pulos de verdade nos caixotes, nos tablados do abismo, no caixote da alavanca e nos três cristais.
+- **2-1 Cozinha Gigante:**
+  - a geladeira fica no meio da cozinha, em (0, 0, -70), com a arena em cima (20 m);
+  - Mesa do Café ao sul, ponte de tábuas de cortar até a Bancada das Panelas (oeste), prato que leva até o Fogão e Pizza (norte), prato que vai e volta por trás da geladeira até a Pia e Prateleira (leste), e o sorvete na prateleira encostada na geladeira;
+  - a pizza fica afundada na mesa (`pizza` ganhou `escala`; em 6, com 12 m), para subir nela com um pulo;
+  - o V3 fica na prateleira que dobra atrás da geladeira (desde 2026-11-11, nas costas do patinho da Cozinha Alagando; atrás da geladeira ficou um coração);
+  - 81 estrelinhas soltas (108 com as das Bolotas), 9 Bolotas, 3 tampas, 4 bocas, 2 rolos, 4 pratos que se mexem, 5 bolhas, 3 postos;
+  - `--faisca-fase-2-1` confere 39 pontos, com os pulos de verdade na caixa de cereal, na pizza, nas três tampas, nas bolhas de degrau e no sorvete.
+- **Fotos:** `--faisca-fase-captura`, `--faisca-fase-1-2-captura` e `--faisca-fase-2-1-captura` tiram uma foto de cima da fase toda, uma de cada playground de cima e de dentro, e a da arena.
+- **Saves antigos:** as estrelinhas são contadas pela ordem em que a fase cria cada uma. Num save de antes, as já pegas aparecem apagadas em outros lugares, mas o total de cada fase continua certo.
+
+### Inimigos novos (pedido do usuário em 2026-10-30)
+
+O pedido: "precisamos de novos inimigos, cria prompts pra eu gerar em 2d assets iniciais pra validação de novos inimigos, não precisam ser muitos, uns 3 ou 4 inimigos base inspirados no do astro bot".
+
+Os prompts estão em `docs/inimigos/prompts-inimigos-faisca.md`, com a foto de referência `docs/inimigos/referencia-bolota.png` para anexar no gerador. A foto sai do `tools/foto_bolota.gd`, que precisa de janela.
+
+A folha com várias vistas é só para validar no 2D: mandada para o gerador 3D, ela vira vários modelos, um por figura (o usuário viu isso em 2026-10-30). O arquivo tem uma seção "Para o 3D" com um prompt de uma Bolota só para cada uma. A Rolona vai sem a bola, porque o 3D não faz plástico transparente.
+
+São quatro primas da Bolota, e cada uma ensina um jeito de vencer:
+- **Escudeira:** pirulito na frente como escudo; ensina a pisar.
+- **Confeitada:** espinhos de jujuba; ensina a socar, porque o pisão quica.
+- **Balão:** voa em três balões e solta chicletes; ensina o laser.
+- **Rolona:** dispara dentro de uma bola de hamster; ensina a desviar e a agarrar quando ela bate e fica tonta.
+
+**Substituído no mesmo dia:** o usuário preferiu usar o Cute Monsters Pack da Quaternius, e as regras desses quatro viraram as dos monstros do pacote (ver "A turma de monstros"). Os prompts ficam de registro.
+
+### A turma de monstros (pedidos do usuário em 2026-10-30)
+
+**Como começou:**
+- O usuário pediu "vamos fazer um teste com um desses personagens dentro desse pack https://quaternius.com/packs/cutemonsters.html".
+- O primeiro teste foi o Alien do Cute Monsters Pack (Quaternius, CC0) no lugar das Bolotas da 1-1. Foi escolhido por ser o mais parecido com a Bolota: roxo, de antenas e sobrancelha brava. Como todos os monstros do pacote, tem a boca aberta com dentinhos, e a textura é pintada à mão, diferente do plástico liso do resto do jogo.
+- O usuário gostou ("eu gostei, ficou bom") e aprovou usar o pacote. Ele lembrou que os de chifre ou espinho servem para a ideia de que nem todo inimigo apanha igual ("uns não pode pular em cima, outros não pode dar soco").
+- Escolha: o usuário ficou com a sugestão, 11 dos 21 monstros. A folha numerada saiu do `tools/foto_monstros.gd`, que fotografa cada modelo de `assets/faisca/monstros/` ao lado do Faísca.
+- Ficaram de fora: Alien Alto, Galinha, Panda, Veado, Demônio Verde, Yeti e Dragão Amarelo, que repetem regra; e Demônio, Caveira e Cthulhu, que são mais assustadores. Continuam no `vendor`.
+
+**A história não muda:** o Alien é a Bolota de sempre (o nome continua), e os outros são a turma do Rei Bolotão. A Bolotona da 1-2 virou um Alien grande.
+
+**Como é feito:** a `BolotaMonstro` (`scripts/faisca/bolota_monstro.gd`) herda da `Bolota` e troca o corpo pelo modelo. Por isso todos dormem, seguem, encostam, apanham, ficam tontos, são agarrados e arremessados como a Bolota.
+- `Fase.bolota(pos, dormindo, tipo)` cria o tipo pedido; o padrão é o Alien. A `Bolotona` herda da `BolotaMonstro`. A Bolota roxa feita por código ficou só como base e no treino da cena de teste.
+- Os modelos ficam em 0,8x: o corpo fica da largura da Bolota e, com as antenas, o Alien chega a 1,7 m.
+- O material do pacote vem sem luz. Aqui ganha luz e um brilho próprio da textura (0,45, multiplicando), porque a textura pintada ficava escura na fase. Quando apanha, o brilho sobe.
+- A bolotinha que sai quicando depois de derrotada é o próprio monstro pequenininho (o `Alvo` ganhou o `_mini()`).
+- **O golpe diz o tipo:** `receber_golpe(dano, de, forca, tipo)` recebe "soco", "giro", "pisao", "laser" ou "arremesso" (Bolota agarrada ou arremessada). Todo mundo que recebe golpe (baú, parede rachada, alavanca, esqueleto e chefe da ilha) aceita o quarto parâmetro.
+- **Animações:**
+
+  | Estado | Animação |
+  |---|---|
+  | parado | Idle |
+  | dormindo | Idle a 0,35x |
+  | seguindo o Faísca | Walk, mais rápida quanto mais rápido anda |
+  | encostou no Faísca | Bite_InPlace |
+  | levou golpe | HitRecieve |
+  | tonto | No (balança a cabeça) |
+  | agarrado | Jump (esperneia) |
+  | defendeu um golpe | Yes (faz que sim) |
+
+  Os que voam não têm Idle, Walk, Jump, No nem Bite_InPlace: tocam Flying, HitRecieve e Bite_Front no lugar (`SUBSTITUTAS`).
+
+**Os tipos e as regras:**
+
+| Tipo | Monstro | Regra |
+|---|---|---|
+| alien, cogumelo, pinguim | Alien, Mushroom, Penguin | apanham de tudo |
+| cacto, ciclope | Cactus, Cyclops | **espinhos:** pisar em cima espeta, o Faísca perde um coração e é jogado para fora; soco, giro e laser derrubam |
+| caranguejo | Crab | **garras:** soco e giro de frente (até 75° da frente dele) batem nas garras, fazem "escudo" e o Faísca volta; pisão, laser e golpe pelas costas derrubam. Ele vira devagar (`giro_olhar` 1,2), para dar a volta nele |
+| porco | Pig | **investida:** de 1,8 a 8 m do Faísca, pula no lugar 0,8 s e dispara em linha reta (8,5 m/s, até 1,4 s). Para na beirada e, batendo na parede ("bonk") ou cansando, fica tonto |
+| fantasma | Ghost | **fantasma:** meio transparente; soco, giro e pisão atravessam e ele some um instante; só o laser e Bolota arremessada acertam |
+| abelha, morcego | Bee, Bat | **voa:** flutua a 2,3 m da casa, longe do soco, seguindo o Faísca até 9 m da casa. Perto dele, dá um rasante até a altura dele, onde dá para bater e onde encostar machuca. Acertado, cai tonto no chão |
+| arvore | Tree | espinhos, com 2,3 m; reservada para mini-chefe de uma fase de bosque, ainda não usada |
+
+**Onde ficaram (as contagens e as estrelinhas das fases não mudaram, só o tipo):**
+- **1-1:** Cogumelos e Pinguins na ilha do meio, na subida e na arena. Duas Abelhas no Jardim das Flores, onde o Vovô ensina o laser.
+- **1-2:** um Ciclope e um Morcego na mina; o Fantasma perto da grade da sala escura; outro Ciclope na sala das alavancas; outro Morcego no Poço dos Cristais. A Bolotona é um Alien grande, e as filhas, Aliens.
+- **2-1:** o Porco e o Caranguejo na bancada; Cacto e Pinguim na mesa da pizza; outro Caranguejo na pia; outro Cacto na prateleira; Pinguim e Porco em cima da geladeira.
+
+**Testes e fotos:**
+- `-- --faisca-monstro` confere 21 pontos na 1-1: tipos das 12 Bolotas, modelo, animações, tamanho, cada estado, agarrar com o Y e estourar em 3 estrelinhas, e a regra de cada tipo. O cacto é testado com pisão de verdade; abelha e porco, com o comportamento de verdade.
+- `-- --faisca-monstro-captura` tira 8 fotos em `tools/capturas/faisca/monstro/`: a turma, o cacto espetando, o caranguejo defendendo, o fantasma atravessado pelo soco, o porco disparando e tonto, e a abelha no alto e no rasante.
+- A build com os monstros foi para o PC em 2026-10-30 (o executável de lá é igual ao `build/linux` do commit 4c20cdb).
+
+### Fase 2-2: Nuvens de Algodão-Doce (feita em 2026-10-30)
+
+Pedido do usuário: "vamos fazer as próximas fases" e "pode começar", seguindo a maquete aprovada (`docs/level-design/maquete-2-2-nuvens-de-algodao-doce.html`). No meio do trabalho veio o pedido de fases mais longas, então ela já nasceu maior que a maquete: cinco playgrounds em vez de quatro, e cada saída só abre com uma tarefa.
+
+A porta do 2º andar do farol pede 90 estrelinhas. O código fica em `scripts/faisca/fases/fase_2_2.gd`, e as peças dos doces em `assets/faisca/doces/` (Holiday Bits, os pirulitos do Halloween Bits e as nuvens do Medieval Hexagon). As ilhas, o bolo, a máquina de chiclete, a cereja e a vela são feitos por código.
+
+- **Marco:** o bolo-montanha no meio, com dois andares e flutuando numa nuvem rosa.
+  - O andar de baixo tem raio de 24 m e vai até 26 m de altura. O anel em cima dele, de 10 m de largura, é o chão do playground 5.
+  - O andar de cima tem raio de 14 m e vai até 40 m. A arena fica no topo.
+- **Novidade, a nuvem que quica** (`NuvemQueQuica`, rosa):
+  - quem cai em cima vai uns 5 m para o alto, com a mesma `AreaDeMola` da mola;
+  - a lilás (`some`) some logo depois do quique e volta 3 s depois, então não dá para quicar duas vezes nela.
+- **Poder da fase, o Balão de Chiclete** (`Jogador.balao_de_chiclete`):
+  - vem da bola de chiclete da máquina da praça e vale até sair da fase (o `Parte2` desliga ao entrar e ao sair);
+  - no ar, segurando o pulo na descida, o balão rosa enche em cima da cabeça e ele sobe devagar (3,6 m/s, por até 3,5 s, uns 12 m acima do pulo);
+  - soltando o botão, ou acabando o tempo, o balão estoura e ele cai, e ainda dá para flutuar com o laser;
+  - é um balão por pulo, e a mola ou a nuvem devolve o balão. Não tem botão novo.
+- **Os playgrounds:**
+  1. **Campo de Algodão** (y 0, ao sul, raio de 30 m, sem risco):
+     - nuvens que quicam espalhadas, e o Vovô mostra o quique (dica nova `quicar`);
+     - tarefa: os três botões, cada um no alto de um pilar de 4,5 m que só se alcança quicando na nuvem do lado. Eles levantam a ponte até a nuvem-carro;
+     - mini-marco: o pirulito gigante;
+     - bolsos: o morro de algodão (uma nuvem mais forte leva lá, com coração e estrelinhas) e a roda atrás do pirulito.
+  2. **Ilhas de Biscoito** (y 7 a 14, a oeste, P1):
+     - seis ilhas ligadas por 11 nuvens que quicam sobre o vazio, com dois caminhos;
+     - tarefa: as três flores, uma na ilha da direita, uma na da esquerda e uma na do fundo, abrem o portão da ponte do canhão;
+     - mini-marco: a casinha de gengibre na ilha do meio;
+     - bolso: a beirada embaixo da ilha do meio, com o V1 e uma nuvem forte de volta.
+  3. **Praça do Carrossel** (y 16, a noroeste, raio de 30 m, P2):
+     - o carrossel gira e leva quem sobe nele (`Carrossel`);
+     - a máquina de chiclete dá o balão, com a dica nova `balao`;
+     - tarefa: a estação do teleférico fica 10 m acima da praça, e só se chega com o balão;
+     - bolsos: o anel de chiclete a 12 m de altura, com o V2, e a aba do telhado do carrossel;
+     - tem coração e três Bolotas: porco, caranguejo e cogumelo.
+  4. **Céu de Chiclete** (y 14 a 26, de nordeste a leste do bolo, P3):
+     - quatro ilhas de chiclete subindo, ligadas por nuvens lilases que somem;
+     - Bolotas nas ilhas estreitas: o cacto na beirada de fora, o pinguim e o morcego;
+     - bolso: a ilha alta com coração, só com o balão;
+     - a saída é a ponte de wafer até o anel do bolo.
+  5. **Subida do Bolo** (y 26 a 40, P4):
+     - a cereja que quica no anel joga até o primeiro biscoito preso no bolo, e a vela que sobe e desce leva até o segundo;
+     - uma fileira de biscoitos a um pulo um do outro (com um pinguim no estreito) termina na cereja que joga para a arena (desde 2026-11-11, no pote de confeitos e na escadinha da chuva; ver "Momentos especiais e fases mais longas");
+     - quem cai dos biscoitos cai no anel, sem perder coração, e a cereja do outro lado devolve lá para cima;
+     - segredo: a casinha de biscoito no anel, com a parede rachada (três golpes) e o V3 dentro, com a dica do golpe.
+  - **Arena no topo do bolo:** o baú, três Bolotas (alien, porco e abelha) e a coluna de luz.
+- **Viagens:**
+  - a nuvem-carro e o teleférico são `Carona`: esperam o Faísca subir, saem sozinhos e param do outro lado;
+    - vazios por 8 s, voltam para o começo;
+    - descendo e subindo de novo, levam de volta, como atalho;
+  - entre as Ilhas de Biscoito e a praça, o canhão.
+- **Números:** 133 estrelinhas soltas (178 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 20 nuvens que quicam (4 somem), 3 cerejas e 1 vela.
+- **Cores:** as primeiras fotos saíram desbotadas (chão quase branco, com o Faísca branco em cima). A fase tem céu azul com horizonte rosa, menos neblina, saturação 1,15 e chão de algodão em rosa de verdade.
+- **Testes e fotos:**
+  - `--faisca-fase-2-2` confere 61 pontos, com quiques, balão, flutuar e pulos de verdade, das nuvens dos botões até a cereja da arena;
+  - `--faisca-fase-2-2-captura` tira 16 fotos em `tools/capturas/faisca/fase_2_2/`;
+  - `--faisca-jogar-2-2` abre a fase direto;
+  - a foto da porta, `assets/faisca/portas/fase_2_2.jpg`, é a do campo, com o pirulito e o bolo.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se a criança entende o balão;
+  - se os quiques sobre o vazio estão fáceis demais ou difíceis demais;
+  - se os 10 a 12 minutos do padrão batem com o tempo de verdade de uma criança.
+
+### Fase 2-3: Quarto de Brinquedos (feita em 2026-10-30)
+
+Pedido do usuário: "pode commitar, push, enviar pro pc e seguir pra próxima fase". Segue a maquete aprovada (`docs/level-design/maquete-2-3-quarto-de-brinquedos.html`), no tamanho maior da 2-2: cinco playgrounds, cada saída com uma tarefa.
+
+A porta do 2º andar do farol pede 120 estrelinhas. O código fica em `scripts/faisca/fases/fase_2_3.gd`.
+- **Peças:** em `assets/faisca/quarto/`. São os móveis do Furniture Bits (mesa, escrivaninha, abajur, cama, almofadas, tapete), as peças do Board Game Bits (dados, peões, rei de xadrez, cartas, tabuleiro, casinhas, bandeiras) e a locomotiva do Holiday Bits. Os arquivos foram baixados do LFS da coleção em 2026-10-30.
+- **Feito por código:** o castelo, os livros, o foguete, a garagem, a lava e a máquina dos dados.
+
+Fase de chão: o chão do quarto é a rede de segurança. Quem cai de um móvel só desce, e uma escada de livros leva de volta (há uma na mesa e outra na escrivaninha). A exceção é o tapete de lava do playground 4.
+
+- **Marco:** o castelo de blocos no meio do quarto.
+  - A muralha é feita de blocos de 4 m em dois andares, num quadrado de 28 x 28 m.
+  - Tem quatro torres redondas com telhado e bandeira.
+  - A torre do meio tem 12 x 12 m e 22 m de altura, com ameias em volta da arena.
+- **Novidade, o dado que tomba** (`DadoQueTomba`):
+  - um soco ou o giro tomba o dado um lado inteiro (1,8 m) para o lado do golpe, girando em volta da aresta de baixo. Ele vira degrau: dá para subir nele com um pulo e dele subir mais 1,6 m;
+  - com alguma coisa no caminho, ele só balança;
+  - tombando para fora de uma beirada, ele cai, e se cair mais de 1 m volta para a casa dele num puf, para a tarefa nunca ficar impossível;
+  - o pisão e o laser não tombam o dado;
+  - dica nova do Vovô: `dado`.
+- **Poder da fase, o Ioiô** (`Jogador.ioio`):
+  - vem da caixa de brinquedos da escrivaninha e vale até sair da fase (`Jogador.tirar_poderes`, chamado pelo `Parte2`);
+  - no ar, o golpe perto de uma argola laranja (`ArgolaDeIoio`, até 14 m) joga o ioiô, que prende na argola e puxa o Faísca até lá. Chegando, ele ganha um impulso para cima e para a frente e pode emendar outra argola;
+  - sem argola perto, o golpe no ar é o giro de sempre. Não tem botão novo;
+  - a argola acende e pulsa quando o Faísca tem o ioiô e está perto;
+  - dica nova: `ioio`.
+- **Outras peças novas:**
+  - `DadoRolando`: o dado que rola sozinho e dá carona;
+  - `CartaQueVira`: a carta gigante que treme e vira de ponta-cabeça;
+  - `PonteLevadica`;
+  - a lava, que conta como cair;
+  - a `Carona` agora segue um caminho com curvas e subidas, com o trem, o avião de papel e o carrinho de corda. Tropeço: mudar a posição e depois o giro do corpo animado no mesmo quadro fazia ele ficar só com o giro, e o trem não saía do lugar. Agora os dois vão juntos num `Transform3D`.
+- **Os playgrounds:**
+  1. **Tapete da Cidade** (no chão, ao sul, sem risco):
+     - tarefa: a estação do trenzinho fica num bloco de 3,4 m, alto demais para um pulo. Tombado quatro vezes até a marca amarela, o dado vira o degrau;
+     - mini-marco: o foguete de brinquedo;
+     - bolsos: a torre de blocos, com outro dado, e a garagem, com o coração;
+     - Bolotas: um cogumelo dormindo e um alien.
+  2. **Tabuleiro na Mesa** (6 m, a oeste, P1):
+     - a escada de livros sobe do trenzinho até a mesa;
+     - tarefa: tombar os três dados até as casas brilhantes. Cada dado trava quando chega, e com os três no lugar o avião de papel aparece na beira da mesa;
+     - os peões são pilares, e o rei de xadrez é o mini-marco;
+     - bolso: embaixo da mesa, o V1;
+     - três Bolotas.
+  3. **Escrivaninha** (12 m, ao norte, P2):
+     - a caixa de brinquedos dá o ioiô;
+     - tarefa: a torre de livros do carrinho, 8 m acima da mesa, só se alcança com a argola dela;
+     - bolsos: a prateleira alta, por três argolas em fila (V2), e o topo do abajur, por uma escadinha de livros e uma argola;
+     - coração e três Bolotas.
+  4. **O Chão É Lava** (a leste, P3):
+     - o caminho passa por almofadas, três cartas que viram e o dado que rola;
+     - tarefa: as três alavancas, cada uma numa almofada, abaixam a ponte levadiça do castelo;
+     - a faixa de 4 m junto ao castelo é chão firme;
+     - coração e duas Bolotas.
+  5. **Subida do Castelo** (P4):
+     - entra-se pela ponte levadiça;
+     - tarefa: o dado do pátio, tombado quatro vezes, vira o degrau da escada de blocos até o alto da muralha (8 m);
+     - na muralha há um ciclope no estreito, e do canto duas argolas puxam até o alto da torre;
+     - segredo: o bloco rachado de baixo da muralha sul, com o V3 no oco e a dica do golpe.
+  - **Arena no alto da torre** (22 m): o baú, um alien, um porco e uma abelha.
+- **Viagens:**
+  - o trenzinho, da estação alta pela ponte de blocos até o pé da mesa;
+  - o avião de papel, da beira da mesa até a escrivaninha;
+  - o carrinho de corda, da torre de livros pela pista laranja até a primeira almofada da lava.
+  - Todas esperam o Faísca e levam de volta.
+- **Números:** 129 estrelinhas soltas (174 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 6 dados que tombam, 1 dado que rola, 7 argolas, 3 cartas e 3 alavancas.
+- **Testes e fotos:**
+  - `--faisca-fase-2-3` confere 54 pontos com socos, pulos, ioiô e viagens de verdade, do tapete até o baú. Entram aí a estação alta sem o dado, o quinto soco que só balança, o dado travado, o dado que cai da mesa, o giro sem o ioiô, as três argolas em fila, a lava, a carta, o dado que rola, as alavancas e a ponte;
+  - `--faisca-fase-2-3-captura` tira 14 fotos em `tools/capturas/faisca/fase_2_3/`;
+  - `--faisca-jogar-2-3` abre a fase direto;
+  - a foto da porta, `assets/faisca/portas/fase_2_3.jpg`, é a do castelo com a mesa e a escrivaninha.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se a criança entende que o soco tomba o dado e o leva até a marca;
+  - se o golpe no ar perto da argola fica claro;
+  - se as cartas da lava viram rápido demais.
+
+### Fase 3-1: Pico Gelado (feita em 2026-10-30)
+
+O usuário pediu a maquete antes de construir ("Sim, a maquete"). Ela está em `docs/level-design/maquete-3-1-pico-gelado.html`, também como artifact privado: https://claude.ai/artifact/PvYpE3oFhjDc9KzzfRe8S4. Depois do revisor de física veio o pedido "commita, push, manda pro pc e segue pra próxima", e a fase foi construída seguindo a maquete.
+
+É a primeira fase do andar Frio e Vento: a porta pede 150 estrelinhas, é fase de céu e já tem cinco playgrounds, cada saída com uma tarefa. O código fica em `scripts/faisca/fases/fase_3_1.gd`.
+
+- **Peças:** em `assets/faisca/neve/`, do Holiday Bits: os dois bonecos de neve, a bola de neve, o monte de bolas, o canhão de bolas de neve, o sino, o pinheiro, o lampião e três presentes. Os arquivos estavam completos na coleção, sem LFS.
+- **Feito por código:**
+  - o pico;
+  - as ilhas e os blocos de neve (os do Block Bits estão só no LFS);
+  - as pontes e rampas de gelo;
+  - os iglus, ocos, com casca de colisão dos dois lados e porta;
+  - o forte, a cabana, a gruta, o muro do cume;
+  - o pinguim filhote e a Luva.
+- **Marco:** o pico de gelo no meio.
+  - O pé de pedra azulada tem raio de 26 m e vai até 30 m. O anel de neve em cima dele, de 18 a 26 m do meio, é o chão do playground 5.
+  - O pico de cima afina de raio 18 até 11, no cume plano a 46 m.
+  - Em volta do cume há um muro de gelo de 2,6 m, com a porta de gelo.
+- **Novidades:**
+  - **o gelo que escorrega** (`Gelo`, `Jogador.ACELERACAO_GELO`):
+    - o chão marcado com `Gelo.marcar` tem sempre o mesmo material, azul e riscado;
+    - em pé nele, o Faísca acelera e freia com 1,8 em vez de 14, e vira devagar;
+    - a neve branca é firme. O gelo mágico transparente (a escada do V2, o cubo do pinguim, a porta) também é firme, porque tem outra cara;
+  - **as bolas de neve que rolam** (`BolaDeNeve`): vão e voltam girando como o `DadoRolando`. Encostar empurra o Faísca para longe (`Jogador.empurrar`), sem tirar coração.
+- **Poder da fase, a Luva de Neve** (`Jogador.luva_de_neve`):
+  - fica dentro do iglu grande da vila;
+  - com ela, cada golpe (o soco no chão e o giro no ar) também joga uma bola de neve (`BolaDaLuva`). Ela vai sozinha até o sino ainda quieto ou a Bolota mais perto, até 30 m, a até 60° da frente, e sem parede no meio;
+  - sem alvo, a bola vai reto e se desfaz;
+  - na Bolota, conta como arremesso, então pega o fantasma;
+  - os sinos (`Sino`) ao alcance balançam e pulsam quando o Faísca tem a luva. Acertado, o sino faz "dlém", fica aceso e avisa a fase;
+  - não tem botão novo;
+  - dicas novas do Vovô: `gelo` (o analógico e o Faísca escorregando) e `luva` (X, a bola indo até o sino).
+- **Sons novos:** `sino` e `gelo`, de `make_neve()` no `tools/gerar_sons.py`. Só essa função rodou, então os sons antigos não mudaram.
+- **Os playgrounds:**
+  1. **Lago Congelado** (y 0, ao sul):
+     - tarefa: os três botões ficam no meio do lago de gelo e se apertam escorregando por cima. Para isso, ficam afundados, só com a tampa para fora: a base de 26 cm segurava o Faísca no gelo. Eles sobem a ponte;
+     - mudança da maquete: a ponte até o trenó é de blocos de neve firme, não de gelo, para o playground 1 continuar sem risco;
+     - mini-marco: o boneco de neve gigante;
+     - bolsos: o iglu pequeno, com estrelinhas dentro, e o monte do coração, pela pilha de bolas de neve.
+  2. **Ilhas de Gelo** (y 7 a 14, a oeste, P1):
+     - blocos de neve e dois de gelo, com pontes estreitas de gelo e degraus de neve;
+     - tarefa: o laser derrete os três cubos (`CuboDeGelo`) dos pinguins filhotes, um em cada ponta. Com os três soltos, o monte de neve que entope o canhão some;
+     - mini-marco: o forte de neve, com a bola de neve rolando;
+     - bolso: a beirada embaixo da ilha do meio, com o V1 e a neve fofa de volta.
+  3. **Vila do Iglu** (y 18, a noroeste, P2):
+     - a Luva de Neve fica dentro do iglu grande, e a porta dá para a trilha;
+     - tarefa: os três sinos no alto das colunas de gelo de 12 m destravam a cadeirinha (`Carona.travada`);
+     - bolsos:
+       - o quarto sino fica atrás da chaminé do iglu grande. Pela frente, a cúpula tapa; só se acerta indo por trás. Ele faz aparecer a escada de gelo em volta da pedra alta do V2, sete degraus de 1,6 m;
+       - o coração no telhado da cabana de esqui;
+       - estrelinhas no iglu pequeno;
+     - uma das três Bolotas é o fantasma.
+  4. **Encosta das Avalanches** (y 22 a 31, de nordeste a leste do pico, P3):
+     - tarefa: três cachoeiras (`Cachoeira`) cortam o caminho, e o vão é alto e largo demais para um pulo;
+       - a água empurra de volta para o lado de onde o Faísca veio, sem tirar coração;
+       - o sino na pedra em cima de cada uma congela a água, e a rampa de gelo cresce no vão;
+     - bolas de neve rolam nas plataformas do meio, com um boneco de neve de abrigo em cada;
+     - o último vão (5,6 m) se passa pulando e flutuando;
+     - bolso: a caverna de pedra atrás da segunda cachoeira, com o coração;
+     - a ponte de gelo leva ao anel.
+  5. **Subida do Pico** (y 30 a 46, P4):
+     - no anel, o monte de neve fofa joga até a primeira saliência;
+     - daí em diante há saliências de neve firme e pingentes lilases, que caem um instante depois de pisados, subindo 1,6 m por vez em volta do pico até o degrau na frente da porta;
+     - mudanças da maquete:
+       - a maquete tinha degraus de 3 m e saliências de gelo. Gelo num degrau de 4 m na parede jogaria a criança para fora;
+       - o degrau da porta ficou 1,4 m abaixo do cume, não 2,5;
+     - tarefa: o sino pendurado em cima da porta de gelo abre o muro do cume;
+     - quem cai da parede cai no anel, sem perder coração. A neve fofa do outro lado devolve até a quinta saliência;
+     - segredo: a gruta de gelo encostada no pico, com a parede rachada e o V3.
+  - **Arena no cume** (46 m): o baú, um alien, um porco e uma abelha, dentro do muro.
+- **Viagens:**
+  - o trenó dos pinguins (`Carona` "treno", voando), do lago às ilhas;
+  - o canhão de neve (`Canhao` com o modelo do Holiday Bits), das ilhas à vila;
+  - a cadeirinha de esqui (`Carona` "cadeirinha"), da vila à encosta, que também leva de volta;
+  - a ponte de gelo até o anel.
+- **Peças novas na `Fase`:** `sino`, `pinguim_preso`, `bola_de_neve`, `cachoeira`, `neve_fofa` (a `NuvemQueQuica` com `neve`) e `pingente` (a `NuvemQueSome` com `pingente`).
+- **Neve caindo:** partículas brancas acompanham a câmera. O céu ganhou mais saturação e contraste: nas primeiras fotos, neve, céu e névoa brancos deixavam tudo lavado, e o lago de gelo sumia na neve.
+- **Números:** 129 estrelinhas soltas (174 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 8 sinos, 3 pinguins, 3 cachoeiras, 3 bolas de neve, 3 montes de neve fofa e 3 pingentes.
+- **Testes e fotos:**
+  - `--faisca-fase-3-1` confere 68 pontos com golpes, pulos, laser, bolas de neve e viagens de verdade, do lago até o baú. Entre eles:
+    - quanto o Faísca escorrega no gelo e na neve;
+    - o botão apertado escorregando;
+    - o soco que não alcança o sino sem a luva;
+    - o fantasma que só a bola de neve pega;
+    - o quarto sino que só se acerta por trás;
+    - a cachoeira que empurra de volta;
+    - a porta fechada que segura o Faísca;
+    - o pingente que cai no anel;
+  - `--faisca-fase-3-1-captura` tira 18 fotos em `tools/capturas/faisca/fase_3_1/`, com a da porta (`porta.png`, sem o HUD);
+  - `--faisca-jogar-3-1` abre a fase direto;
+  - a foto da porta no farol, `assets/faisca/portas/fase_3_1.jpg`, é a do lago com o pico atrás;
+  - no revisor de física, a 3-1 sai com 0 sem física. Só a tampa do baú fica "em parte". Na primeira rodada ele pegou os pinguins do trenó e a barra de cima da cadeirinha.
+    - Tropeço: sólidos no meio da frente, os pinguins fecharam o trenó, que já tinha grade dos lados e encosto atrás. A criança ficava presa dentro, e o teste da chegada nas ilhas pegou. Os pinguins foram para as quinas da frente, puxando por cordas, e a frente ficou aberta.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se o gelo escorrega demais para criança;
+  - se dá para entender que a bola de neve sai do golpe;
+  - se o quarto sino atrás do iglu é achável.
+
+### Fase 3-2: Fábrica de Blocos (feita em 2026-10-31)
+
+A maquete veio antes (`docs/level-design/maquete-3-2-fabrica-de-blocos.html`, artifact privado https://claude.ai/artifact/WcpEWbNxi4qnrqJpHdsVmh). O usuário aprovou com "continua, ficou bom" e pediu, no meio da construção, "não esquece do cuidado com os itens e física de colisão": o que tem cara de chão ou de obstáculo é sólido, e a fase passou no revisor de física.
+
+É a segunda fase do andar Frio e Vento: a porta pede 180 estrelinhas, é fase de chão, tem cinco playgrounds e cada saída tem uma tarefa. O código fica em `scripts/faisca/fases/fase_3_2.gd`.
+
+- **História:** uma fábrica de brinquedos que faz blocos. As Bolotas desligaram tudo e penduraram a Estrela Grande no gancho do guindaste, no alto da Máquina de Blocos. Cada playground liga de volta uma parte da fábrica.
+- **Peças:** em `assets/faisca/fabrica/`, do Block Bits (os modelos têm 2 m): blocos coloridos, decorados e listrados, caixote, metal, estrutura de metal, cano, pilha e computador. Os `.bin` e a textura vieram do Git LFS da coleção em 2026-10-31. Do Platformer: as esteiras, as alavancas, os arcos e a estrela do gancho.
+- **Feito por código:** o galpão (chão de placas, paredes com janelões), a Máquina de Blocos, as máquinas do playground 2, a impressora, a bancada da oficina, a caixa de ferramentas, a estante, a passarela, o andar da pintura, as latas de tinta e a ponte de blocos.
+- **Fase de chão:** o chão da fábrica é a rede de segurança. Quem cai de uma máquina só desce, sem perder coração, e um monta-carga laranja (`Carona` "montacarga") leva de volta.
+  - Cada monta-carga só anda depois que o posto daquele andar acendeu. Antes disso ele fica travado, para o chão não virar atalho que pula a tarefa (escadas de caixotes, como na 2-3, deixariam subir antes da hora).
+  - A exceção é a tinta rosa do andar da pintura, que conta como cair, como a lava do quarto.
+- **Marco:** a Máquina de Blocos no meio do galpão.
+  - A parte de baixo tem 34 × 34 m e vai até o anel, a 26 m, com corrimão. Tem colunas de blocos coloridos nos cantos e a engrenagem grande na frente.
+  - A parte de cima tem 20 × 20 m e vai até o topo, a 44 m, com corrimão. Na parede oeste, no anel, fica a salinha do segredo.
+  - No topo, o guindaste segura uma Estrela Grande no gancho, à vista de toda a fábrica. Ela some quando o baú abre e a de verdade sobe.
+- **Novidades:**
+  - **as esteiras** (`Esteira`, a mesma da 1-1): na entrada ficam rentes ao chão, em buracos do piso, e levam os blocos. Na 3-2 elas têm uma faixa escura embaixo das setas (`faixa_escura`): no galpão claro, as setas brancas sumiam;
+  - **a esteira expressa:** seis esteiras em linha, inclinadas, do chão da entrada até a máquina A (8 m). Antes da tarefa ela desce a 9 m/s, mais rápido do que o Faísca corre (6,5), e quem tenta subir volta para a entrada. Com a tarefa, `Esteira.mudar` a faz subir a 4 m/s;
+  - **os blocos-pisca** (`BlocoPisca`): lilases, de 3 × 1 × 3 m, em dois grupos que se revezam no tique-taque da fábrica:
+    - cada grupo fica 3 s e some 1,8 s, e os dois ficam juntos por 0,6 s em cada troca;
+    - antes de sumir, o bloco pisca nos últimos 0,7 s;
+    - o contorno lilás fica sempre, mostrando onde ele aparece;
+    - quem manda no relógio é a fase (`definir`, com o `_tempo` dela), e o som `tique` toca a cada troca quando o Faísca está perto;
+  - **os pinos** (`Pino`): pinos laranja de 1,6 m que só afundam com a pancada do martelinho. Pular em cima, socar e o laser não fazem nada. Quando o Faísca tem o martelinho, eles pulsam;
+  - **os pistões** (`Pistao`): uma placa laranja numa coluna, que sobe quando o pino dela é batido. Um contorno laranja mostra até onde. Com `vai_e_volta`, ficam subindo e descendo, como elevador.
+- **Poder da fase, o Martelinho de Apito** (`Jogador.martelinho`):
+  - fica em cima da caixa de ferramentas da oficina (sobe-se por uma escada de caixotes) e vale até sair da fase;
+  - no ar, o golpe vira pancada: o Faísca para um instante, desce reto a 26 m/s e, no chão, afunda o pino embaixo (ou bem do lado, até 2,2 m) e acerta as Bolotas até 2,4 m em volta;
+  - nova regra de Bolota, o capacete (`BolotaMonstro`, tipo "capacete"): o soco, o giro, o pisão e o laser batem no capacete de obra branco e o Faísca volta. Só a pancada (e a Bolota arremessada) derruba;
+  - o dado que tomba ignora a pancada;
+  - não tem botão novo.
+- **Dicas novas do Vovô:** `esteira` e `tinta` (sem botão, só o desenho), `pisca` (A, os dois blocos se revezando) e `martelo` (X, a pancada no pino).
+- **Sons novos:** `martelo` (a pancada e o "piu-piu" do apito), `tique` e `pistao`, de `make_fabrica()` no `tools/gerar_sons.py`. Só essa função rodou.
+- **Os playgrounds:**
+  1. **Esteiras da Entrada** (no chão, ao sul):
+     - tarefa: três blocos de brinquedo (o `DadoQueTomba` com os blocos do Block Bits, de 2,6 m) ficam a duas tombadas a leste das esteiras. O soco tomba o bloco até a esteira; em cima dela ele fica preso e vai até a recebedora, que acende uma luz. Com as três, a esteira expressa passa a subir. Bloco empurrado para longe volta para casa num puf;
+     - mini-marco: a torre de blocos decorados;
+     - bolsos: a escada de caixotes até a prateleira do coração, e a esteira atrás da torre, que entrega o Faísca na porta do nicho com estrelinhas.
+  2. **Blocos-Pisca** (8 m, a oeste, P1):
+     - seis máquinas, com blocos-pisca entre algumas e vigas firmes entre outras (há mais de um caminho até a praça);
+     - tarefa: três alavancas, cada uma em cima de uma máquina, destravam a ponte rolante;
+     - mini-marco: a Impressora de Blocos, que bate o carimbo em cima de um bloco-pisca;
+     - bolso: o cano gigante que sai da parede, oco (colisão dos dois lados), com o V1 lá dentro, pelos blocos-pisca do fundo.
+  3. **Oficina do Martelinho** (14 m, ao norte, P2):
+     - a caixa de ferramentas com o martelinho, a gaveta com o coração e a escada de caixotes;
+     - tarefa: a empilhadeira espera em cima da estante, 6 m acima da bancada. Três pinos, cada um ligado por um cano a um pistão (1,2, 2,8 e 4,4 m), e os três pistões viram a escada até a estante;
+     - uma Bolota de capacete;
+     - bolso alto: o quarto pino, atrás da caixa, liga o pistão alto (8 m, sobe e desce), encostado na prateleira do V2.
+  4. **Andar da Pintura** (20 m, a leste, P3):
+     - o chão é tinta; firmes, só a faixa da entrada e a da saída;
+     - três latas de tinta gigantes de ilha, uma esteira que leva da entrada à primeira lata, blocos-pisca e a esteira larga que empurra para o lado, para a tinta;
+     - tarefa: o pino de cada lata sobe um vão da ponte de blocos;
+     - bolso: a lata tombada, oca, com o coração, por uma esteira e dois blocos-pisca.
+  5. **Subida da Máquina** (do anel a 26 m até o topo a 44 m, P4):
+     - a ponte de blocos sobe em degraus de 1,5 m até o anel;
+     - a subida vai pela parede da parte de cima, no sentido do relógio: saliências de metal, a esteira que sobe pela parede sul, dois blocos-pisca na parede oeste e os pistões;
+     - tarefa: o pino de cada canto liga o pistão logo adiante. O último é o pistão grande, que depois da pancada fica subindo e descendo: embaixo, na altura do canto; em cima, acima do corrimão do topo;
+     - quem cai da parede cai no anel, sem perder coração;
+     - segredo: o painel rachado (a `ParedeRachada`) na parede oeste, no anel, com a luz verde-limão perto. Três golpes abrem a salinha com o V3.
+  - **Arena no topo** (44 m): o baú, um alien, um porco e uma Bolota de capacete, dentro do corrimão.
+- **Viagens:**
+  - a esteira expressa, da entrada à máquina A;
+  - o palete laranja da ponte rolante (`Carona` "palete", pendurado; os trilhos e a viga ficam a 30 m), da máquina F à oficina;
+  - a empilhadeira (`Carona` "empilhadeira"; o Faísca vai no palete do garfo), pela passarela alta com corrimão, da estante da oficina ao andar da pintura, e de volta. A passarela é firme: dá para ir andando também;
+  - a ponte de blocos até o anel.
+- **Mudanças da maquete:**
+  - a viagem 1 é a própria esteira expressa, sem o caixote;
+  - os vãos da ponte de blocos sobem do chão em pistões, em vez de virem de esteiras do lado. As torres dessas esteiras virariam uma escada para o anel sem a tarefa;
+  - as escadas de caixotes de volta viraram monta-cargas que esperam o posto;
+  - a estante da empilhadeira ficou maior (12 m), para a empilhadeira caber de um lado e sobrar onde pousar vindo dos pistões;
+  - o pistão grande do fim virou elevador. Com o pino fora dele, ele subia antes de o Faísca subir nele.
+- **Tropeços da construção:**
+  - degrau de 0,2 m para cima já segura o Faísca andando: a prateleira do V2 ficou na altura do topo do pistão alto;
+  - esteira que termina com vão deixa o Faísca parado na beirada: o chão seguinte começa onde ela acaba;
+  - um degrau de 1,6 m com 1,4 m de vão não se alcança pulando do meio da placa de um pistão: as saliências ficaram a no máximo 0,6 m da placa.
+- **Números:** 123 estrelinhas soltas (168 com as das Bolotas), 15 Bolotas, 4 postos, 3 vaga-lumes, 4 corações, 3 blocos de empurrar, 3 alavancas, 10 pinos, 7 pistões, 16 blocos-pisca, 23 esteiras e 5 caronas (a ponte rolante, a empilhadeira e 3 monta-cargas).
+- **Testes e fotos:**
+  - `--faisca-fase-3-2` confere 69 pontos com socos, pancadas, pulos e viagens de verdade, da entrada até o baú. Entre eles:
+    - a expressa que desce antes da tarefa;
+    - os blocos tombados até a esteira e as luzes;
+    - o bloco-pisca que some debaixo do Faísca e a travessia no tempo dos blocos;
+    - o monta-carga travado antes do posto;
+    - o pino que não afunda sem o martelinho e a pancada do lado do pino;
+    - a Bolota de capacete;
+    - a tinta que tira coração;
+    - a esteira larga que empurra para o lado;
+    - a queda da parede no anel;
+  - `--faisca-fase-3-2-captura` tira 18 fotos em `tools/capturas/faisca/fase_3_2/`, com a da porta (`porta.png`, sem o HUD);
+  - `--faisca-jogar-3-2` abre a fase direto;
+  - a foto da porta no farol, `assets/faisca/portas/fase_3_2.jpg`, é a da entrada com a máquina e o guindaste atrás;
+  - no revisor de física, a 3-2 sai com 0 sem física; só o baú fica "em parte". Na primeira rodada ele pegou as cordas do palete e a borda do cano, que viraram enfeite (fininhas, de atravessar).
+- **Luz:** galpão de dia, com o sol entrando por cima. Nas primeiras fotos o chão e as máquinas ficavam quase brancos, e as esteiras sumiam: a luz ambiente baixou, o chão e as paredes escureceram um pouco, e a cena ganhou saturação e contraste.
+- **Ninguém jogou com controle ainda.** O que pede atenção no primeiro teste:
+  - se a criança entende que a expressa só sobe depois das três luzes;
+  - se o tempo dos blocos-pisca está bom (3 s aceso, 0,6 s com os dois juntos);
+  - se a pancada do martelinho fica clara, e se acertar o pino de cima é fácil.
+
+### Revisor de física (pedido do usuário em 2026-10-30)
+
+O pedido: "consegue criar um revisor ou script que teste os itens que deveriam ter física sólida mas não têm? exemplo: doces na fase de algodão doce".
+
+- **Irmão:** o revisor de piscadas (`tools/revisor_piscadas.gd`, 2026-11-11), que acha peças no mesmo plano (ver "Momentos especiais e fases mais longas", na 2-1).
+- **Como rodar:** `godot --headless --path . -s res://tools/revisor_fisica.gd`. Revisa o farol, a 1-1, a 1-2, a 2-1, a 2-2, a 2-3, a 3-1, a 3-2 (cada uma desde que ficou pronta) e a ilha em poucos segundos.
+  - Com nomes depois do `--` (`-- 2-2 ilha`), revisa só esses.
+  - Com `--ver <começo do nome>`, lista os pontos descobertos de cada peça com esse nome (para achar a peça no código).
+  - Sai com código 1 se sobrar algo SEM FÍSICA. Entra na bateria de testes junto com os outros.
+- **Como ele confere:** de cada peça (o modelo inteiro de um pacote, ou cada malha feita por código), sorteia 40 pontos na superfície. Para cada ponto, pergunta à física se tem algo sólido a menos de 35 cm, nas camadas em que o jogador esbarra. A parte dos pontos com algo sólido perto é a cobertura:
+  - **SEM FÍSICA:** menos de 35% coberta; o jogador entra na peça inteira;
+  - **EM PARTE:** de 35% a 75%, só nas peças altas. É aviso, não reprova.
+- **Pontos que não contam** (o jogador não chega neles):
+  - a faixa de baixo das peças altas (senão o chão "cobre" por elas);
+  - as faces viradas para baixo;
+  - as faces com algo sólido logo em cima (enterradas embaixo do chão);
+  - o que fica abaixo da altura de queda da fase.
+- **Peças fora da conta:**
+  - o que é de pegar ou atravessar (dentro de uma `Area3D`) e os personagens;
+  - a luz: material de luz somada, ou transparente sem sombra (vapor, raios);
+  - o miúdo: menos de 0,9 m de altura ou 0,4 m de largura, com exceção do baixo e largo (de 1,5 × 0,8 m para cima), que pode ser uma plataforma falsa;
+  - moitas, grama e flores;
+  - nas fases, o que fica a mais de 14 m de toda estrelinha, vaga-lume, posto, coração e Bolota (o farol ao longe, as nuvens do céu);
+  - o que tem o meta `enfeite`.
+  - Nas árvores, basta o tronco ser sólido.
+- **Um cuidado da física:** com o centro da bola de teste bem em cima de uma colisão feita da malha, a Godot não vê o toque. O revisor afasta cada ponto 8 cm da face antes de perguntar.
+- **O que ele achou na primeira rodada** (152 peças sem física) e como ficou:
+  - **2-2:** os doces eram só desenho, porque `doce()` nascia sem colisão (pirulitos, bengalas, presentes, balas, lanternas da praça). Agora nascem sólidos no formato da malha.
+    - Também ganharam colisão: o cone do telhado e as balas de goma do carrossel (a colisão sobe e desce com cada bala), o teto da cabine do teleférico, as torres do cabo e os escorridos de cobertura do bolo (um pouco abaixo da beira).
+  - **1-2:** os enfeites da mina viraram sólidos: barris, caixotes, baldes, pedras, picareta e o barril de chope. Ganharam colisão também os andaimes dos tablados e os cristais grudados no grande, e o ninho de cristais.
+  - **1-1:** as placas de seta e a bandeira do mini-marco.
+  - **2-1:** as cadeiras, o sorvete em cima da geladeira, o rolo da bancada e a torneira da pia.
+  - **2-3:** os telhados das torres do castelo, as bandeiras, a pista laranja do carrinho de corda e os pés dela (dá para descer andando por ela), e as aletas do foguete.
+  - **Trilhos** (`Fase.trilhos`): ganharam uma faixa sólida rente aos dormentes. A ponte do trenzinho da 2-3 e a rampa do carrinho da 1-2 pareciam caminho e não seguravam.
+  - **Farol:** a lâmpada do topo e o telhadinho dela.
+  - **Ilha:** pinos de malabares, bola do palhaço e balde do pescador.
+- **Enfeite de propósito** (`Fase.so_enfeite`):
+  - o aro (passa-se por dentro) e o canhão (encostar já entra; só a base é sólida);
+  - a chama da tocha (é flutuando em cima dela que o laser acende; o pedestal é sólido);
+  - a argola do ioiô, a água e a espuma da pia, o cabo do teleférico, as nuvens do céu da 2-2, o cabinho das cerejas e o teto do farol;
+  - a cobertura da beira do bolo da 2-2. Sólida, ela vira uma murinha de 0,7 m que fechava a chegada da ponte de wafer e tapava a vista do brilho do baú. Os dois testes da 2-2 pegaram isso.
+- **Avisos que ficaram** (EM PARTE, 22 no fim):
+  - a tampa do baú, mais alta que a caixa dele;
+  - as bolhas e as molas de cristal;
+  - as colunas de algodão da 2-2;
+  - o quadro alto da 2-3;
+  - as rodas do carrinho de corda;
+  - as lanternas da festa na ilha.
+  - Nenhum deles deixa o Faísca entrar inteiro numa peça.
+- **Testes:** depois das colisões novas, `--faisca-fase`, `--faisca-fase-1-2`, `--faisca-fase-2-1`, `--faisca-fase-2-2` e `--faisca-fase-2-3` passaram. A ilha foi regenerada (`tools/gerar_ilha.gd`), e a cena só mudou nas peças acima e nos `unique_id`.
+
+### Fase 3-3: Moinhos do Vento (maquete em 2026-11-10, aprovada e construída em 2026-11-12)
+
+Depois da separação dos jogos, o usuário pediu para seguir ("vamos seguir") nas próximas etapas. A primeira de peso era dar um final ao jogo do Faísca: a porta da nave pede 8 Estrelas Grandes e só havia 7 fases, então faltam a 3-3 e a fase da nave. A maquete da 3-3 veio antes, como nas anteriores: `docs/level-design/maquete-3-3-moinhos-do-vento.html`, também como artifact privado (https://claude.ai/artifact/Xd2bs5ju9FeSBEaB7HHRkd).
+
+É a última fase do andar Frio e Vento: fase de céu, porta pedindo 210 estrelinhas, no tamanho maior (cinco playgrounds, cada saída com uma tarefa). Na maquete: uma rota de uns 730 m, 128 estrelinhas, 3 vaga-lumes, 16 Bolotas (com as 3 da arena), 3 corações e 4 viagens.
+
+- **Peças conferidas na coleção:** o moinho do Medieval Hexagon (`building_windmill_*`, em quatro cores) tem as pás numa peça separada (`building_windmill_top_fan_*`), que dá para girar, e os `.bin` já estão baixados. O pacote tem também nuvens (`cloud_big`, `cloud_small`), torres de vigia, celeiros de moinho d'água e pontes. Biruta, cata-vento, pipa, fardos, silos e balão saem por código.
+- **Marco:** o Moinho Gigante no meio, com a torre de pedra até 30 m e de madeira até 40 m, a sacada de baixo a 30 m, a sacada do topo a 40 m (a arena), o telhado vermelho até 54 m e as pás gigantes viradas para o sul, girando devagar. A Estrela Grande brilha em cima do telhado.
+- **Novidade, o vento:**
+  - **faixas de vento:** riscos brancos correndo para onde ele sopra, setas e birutas laranja nas pontas. No chão quase não empurra; flutuando dentro da faixa, o Faísca é levado e passa vãos de 14 a 18 m (o voo sozinho passa uns 11). Contra o vento, não dá;
+  - **vento de lado** (é preciso mirar contra) e **rajadas** que vão e vêm no corredor dos moinhos, avisadas pelas birutas e pelas folhas.
+- **Poder da fase, a Pipa:** fica no celeiro da fazenda. Com ela, flutuar em cima de uma **coluna de vento** (grade no chão com aro laranja e fitas subindo) leva o Faísca até uns 13 m; sem ela, a coluna só segura a queda. Sem botão novo.
+- **Os playgrounds:**
+  1. **Campina dos Cata-ventos** (y 0, ao sul, P0): um riacho raso de 13 m corta a ilha, e a faixa de vento leva de uma margem à outra (quem cai só se molha e sai pelos degraus). Tarefa: um soco em cada um dos três cata-ventos parados faz girar e abre o portão de feno. Mini-marco: o moinho pequeno amarelo. Bolsos: o celeirinho e os fardos até o coração.
+  2. **Ilhas do Vento** (y 10 a 16, a oeste, P1): ilhas separadas por vãos que só se passam no vento a favor; dois caminhos, um direto e outro pelas ilhotas com vento de lado. Tarefa: atravessar flutuando as três argolas-sino no meio das faixas. Mini-marco: a torre de vigia com a biruta grande. Bolso: a ilhota embaixo da ilha do meio, com o vaga-lume 1, por uma faixa que desce, e um fardo que quica de volta.
+  3. **Fazenda das Nuvens** (y 18, ao norte, P2): pasto de 60 m com celeiro (e a Pipa), silos, cercas e campo de trigo. Tarefa: com a pipa, a coluna de vento ao lado de cada silo leva ao cata-vento do alto (13 m), e um soco faz girar. Bolso alto: o telhado do celeiro, com o vaga-lume 2; coração no paiol. Fardos de feno apontam a saída.
+  4. **Corredor dos Moinhos** (y 22 a 33, a leste, P3): ilhas subindo, cada uma com um moinho médio cujas pás levam gôndolas niveladas, como roda-gigante, e rajadas de lado entre elas. Tarefa: os três moinhos estão travados; a coluna de vento (com a pipa) leva à janela do eixo, onde um soco solta o freio. Segredo: do alto da roda do terceiro moinho, a ilhota escondida com o vaga-lume 3.
+  5. **Subida do Moinho Gigante** (y 30 a 40, P4): da sacada de baixo, a escada de tábuas em espiral por fora da torre. Tarefa: um soco no ferrolho laranja de cada uma das três janelas abre a janela e solta uma coluna de vento até o degrau seguinte; com as três, o alçapão do topo abre. Quem cai da escada cai na sacada de baixo, sem perder coração. Segredo: a parede rachada da sacada de baixo, com o coração.
+  - **Arena:** a sacada do topo, com três Bolotas guardando o baú.
+- **Viagens:** o balão de ar quente (campina para as ilhas), uma nuvem soprada pelo vento (ilhas para a fazenda), o teleférico que vai e volta (fazenda para os moinhos) e a ponte de tábuas até a sacada de baixo do Moinho Gigante.
+- **Bolotas da turma:** abelhas e morcegos (que voam) nas ilhas e nos moinhos, o porco disparando pelo pasto, e cogumelos, pinguins, aliens e um ciclope.
+- **Depois da 3-3:** a fase da nave Aspiratrão, com o Rei Bolotão e o final da história, para o jogo do Faísca ter fim.
+
+**Como ficou no jogo** (2026-11-12, pedido do usuário: "Acho que podemos seguir pra fase 3-3, aprovado sua maquete"; `scripts/faisca/fases/fase_3_3.gd`, `Fase33`). O esqueleto é o da maquete, nos mesmos lugares da 3-1 (a campina onde fica o lago, a fazenda onde fica a vila). O que mudou e o que é novo:
+- **O vento** (`FaixaDeVento`): uma área em caixa de `de` até `ate`, com o volume clarinho, os riscos brancos correndo (um MultiMesh) e as birutas laranja e brancas. A cada quadro ela sopra no Faísca (`Jogador.soprar`). Flutuando dentro dela, a velocidade dele vai para a do vento mais 45% do analógico, e o tempo de voo não acaba; sem flutuar, é só um empurrãozinho. Medido no teste: por cima do riacho, com o vento, ele pousa a 34 m de onde pulou; sem vento, a 12 m. Contra o vento, ele fica parado no ar.
+  - **rajadas** (`rajada`): sopram 2,6 s e param 2,4 s; um segundo antes de voltar, as birutas se agitam (o aviso).
+- **As colunas de vento** (`ColunaDeVento`): a grade escura com o aro laranja, o tubo de ar e as fitas subindo em espiral. Com a pipa, sobem a 7 m/s até `topo_y` e lá seguram o Faísca como uma mola (sem isso, o embalo levava 1,5 m acima); sem a pipa, ele desce devagar. As das janelas começam desligadas e sobem quando ligam.
+- **A Pipa** (`Pipa`): girando na porta do celeiro da fazenda. Pega, vale até o fim da fase (`Jogador.pipa`, que o `tirar_poderes` desliga). Enquanto ele voa com ela, a pipa aparece lá em cima, presa pelo fio.
+- **As peças de soco** (no grupo dos alvos, como o registro da 2-1): o `CataVento`, que gira, e o `Ferrolho`, que abre (os freios dos moinhos e as janelas do Moinho Gigante). Os golpes medem do pé do alvo, então o ferrolho fica na altura de onde o Faísca bate (no alto da coluna, ou no degrau).
+- **A argola-sino** (`ArgolaSino`): o aro laranja de pé no meio de uma faixa, com o sino amarelo (o do Holiday Bits) em cima; atravessar faz tocar e o aro fica dourado.
+- **O moinho de gôndolas** (`MoinhoDeGondolas`): feito por código, porque o moinho do Medieval Hexagon, no tamanho da roda (7 m de raio), teria 16 m de largura e não caberia nas ilhas. Torre creme, telhado colorido, quatro varas com velas e quatro gôndolas de tábua sempre niveladas, que levam o Faísca. Travado até o freio; destravado, gira a 0,3 rad/s. No ponto mais perto, a gôndola passa a uns 12 m da ilha seguinte, mais alta que ela, e de lá se desce flutuando (o teste faz o pulo).
+  - **armadilha:** as gôndolas são movidas pelo moinho, então ficam sem `sync_to_physics` (como o trem do farol) e são reposicionadas a cada quadro, mesmo paradas. Movidas só de vez em quando (no começo), a física guardava uma velocidade velha e enorme, e quem pulasse de uma gôndola de moinho travado saía voando (no teste, ele foi parar a 5 km de altura).
+- **O Moinho Gigante:** a torre de pedra até 30 m e a de madeira até 40 m, a sacada de baixo (com a murinha, menos onde chega a rampa) e a do topo (a arena), segurada por pilares de 30 em 30 graus. O telhado vermelho vai até 54 m, com o brilho do marco saindo do bico, e as pás gigantes ficam viradas para o sul. Os moinhos do Medieval Hexagon (`assets/faisca/moinhos/`) aparecem pequenos: o moinho amarelo da campina (mini-marco) e os das nuvens de enfeite. A torre de vigia, o fardo, a cerca e as nuvens também são desse pacote.
+- **A escada** (no lugar do alçapão da maquete): três trechos de seis degraus por fora da torre, debaixo da arena, e entre um trecho e o outro o degrau é alto demais. No fim de cada trecho, o soco no ferrolho da janela liga a coluna do vão (a pipa leva até o trecho seguinte), e a terceira janela acorda o vendaval. Quem cai da escada cai na sacada de baixo.
+- **O vendaval** (o momento especial, item 9; `Vendaval`): a terceira janela acorda o moinho. As pás disparam e um redemoinho de riscos brancos envolve a torre, com fardos de feno e folhas girando, o uivo do vento (`vendaval`) e o controle tremendo. Ele leva o Faísca voando: primeiro para fora (sem cruzar os pilares), depois uma volta e um quarto em espiral, subindo até 45 m, a 16,6 m do eixo (por fora da arena e por dentro das velas), e por fim pousando na arena, longe do baú. Leva uns 6,5 s, com o controle desligado, e passa por sete estrelinhas no caminho. Depois, o último degrau chama o vendaval de novo (para quem cair).
+- **Os bolsos:** o Faisquinha 3 no celeirinho da campina; o V1 (Faisquinha 0) na ilhota, por uma faixa mais fraca que desce, e um fardo que quica de volta (a mola, força 23); o V2 (1) no caibro do telhado do celeiro, pela coluna de trás; o V3 (2) na ilhota atrás do terceiro moinho. O Faisquinha 4 está na salinha da parede rachada, em -150 graus na sacada de baixo, entre dois pilares (a parede na escala 0,85, na largura da salinha). O 5 vai no porco da fazenda. Os corações ficam no monte dos fardos, no paiol e na salinha.
+- **O riacho da campina:** a ilha de baixo é o leito, de areia, a 1,2 m. As duas margens de grama são pedaços do círculo cortados na linha do riacho (`_margem`), e a água transparente só molha (o "poca"; `molhou` conta). Há pedras para sair dos dois lados. Só os topos de grama ganham o desenho e a vegetação (`leva_desenho` com a marca "grama").
+- **Viagens:** o balão de ar quente (tipo novo "balao" na `Carona`), a nuvem soprada (travada até as três argolas) e o teleférico (a "cabine", travado até os três cata-ventos dos silos, que volta também). A rampa de tábuas leva da última ilha do corredor à sacada de baixo.
+- **Dicas novas, com figura** (`hud.gd`): "vento", "argola", "pipa", "catavento", "freio" e "janela".
+- **Sons novos** (`gerar_sons.py vento`): o "vento" (o fiu) e o "vendaval" (o uivo, que repete sem emenda).
+- **Números:** 130 estrelinhas soltas (175 com as das Bolotas), 4 postos, 6 Faisquinhas, 3 corações, 15 Bolotas, 8 faixas de vento e 9 colunas.
+- **A porta no farol:** `assets/faisca/portas/fase_3_3.jpg`, a campina com o balão e o moinho atrás (a foto `porta` do `--faisca-fase-3-3-captura`).
+- **Testes:**
+  - `--faisca-fase-3-3`: 43 pontos. Confere as contagens, o brilho à vista das entradas, o vento que leva (e o voo sem vento, e contra o vento), a água, os cata-ventos e o portão de feno, o balão, as argolas e a nuvem, o V1 e o fardo, a coluna sem e com a pipa, os silos, o V2, o teleférico, o freio e a gôndola (com o pulo até a ilha seguinte), as rajadas, as janelas e as colunas da escada, a queda na sacada, a parede rachada, o vendaval (de novo também) e o baú;
+  - fotos no `--faisca-fase-3-3-captura`;
+  - a 3-3 entrou também no `--faisca-faisquinhas`, no `--faisca-mundo` e nos dois revisores (física e piscadas, que dão 0).
+
+### Fase final: Nave Aspiratrão (maquete, aprovação e construção em 2026-11-12)
+
+Pedido do usuário depois de construir a 3-3: "vamos planeja a ultima fase, talvez algo dentro da nave e no fim dela a luta com o bolotao. prepara uma sugestão de fase e design do chefe". A maquete em blocos está em `docs/level-design/maquete-nave-aspiratrao.html` e como artifact privado (https://claude.ai/artifact/HxkhXhfEMYQbxKnYxumMxc). Nada foi construído ainda.
+
+- **A ideia:** a última fase é por dentro da nave que paira em cima do farol. O Faísca entra sugado pelo bocal do aspirador e sobe em espiral, em volta do **Tanque de Estrelas** (o marco: um cilindro de vidro do fundo até o teto, com as estrelas roubadas), por cinco playgrounds que repetem os poderes de cada mundo, como as fases finais do Astro Bot. Como os poderes ficam nas fases deles, cada playground tem uma **cápsula de poder** na entrada. O fundo da nave é um campo de força: quem cai volta no posto.
+- **Os playgrounds:**
+  1. **Hangar do Bocal** (y 0, ao sul, P0; laser e molas): plataformas de pouso, a esteira com potes de estrelas e o dropship (mini-marco). Tarefa: o laser acende as três luzes de pouso. Bolsos: o labirinto de containers (Faisquinha 3) e o alto do dropship (coração).
+  2. **Depósito de Estrelas** (y 8 a 24, a oeste, P1; chiclete e ioiô): sala redonda com prateleiras de potes gigantes. Tarefa: o soco no ferrolho da tampa de três potes, e as estrelas voam até o tanque. Bolsos: o nicho atrás do pote do alto (V1, pelo ioiô) e o coração no fundo de um pote vazio.
+  3. **Sala de Máquinas** (y 26, a noroeste, P2; martelinho): motores com pistões, esteiras, blocos-pisca e o gerador de gravidade. Tarefa: o martelinho afunda o pino de três motores, e vem o **momento especial, "Sem gravidade!"**: tudo flutua, o pulo vai alto e devagar, e a saída no teto se alcança de caixa em caixa no ar. Bolsos: o alto do gerador (V2, só sem gravidade) e a salinha de ferramentas.
+  4. **Estufa Gelada** (y 34, a nordeste, P3; luva e pipa): tubos de plantas, chão de gelo e colunas de vento nas grades. Tarefa: a bola de neve em três sinos no alto dos tubos. Bolsos: o alto do tubo maior (V3, pela coluna com a pipa) e o coração no iglu.
+  5. **Corredor do Trono** (y 40, a leste, P4; tudo junto): corredor em curva com janelas para a noite, plataformas que andam, faixas de vento e barreiras de luz que empurram. Tarefa: vencer três guardas de capacete, que levam as chaves-coroa da porta. Bolso: a cabine de pilotagem (coração e Faisquinha 4); o Faisquinha 5 vai pendurado num guarda.
+- **Viagens:** a cápsula do tubo pneumático, o monta-carga (vai e volta), o carrinho no trilho do teto (vai e volta) e a ponte de luz; o elevador sobe do corredor até a Sala do Trono.
+- **Números da proposta:** uns 730 m de rota, umas 140 estrelinhas, 6 Faisquinhas, P0 e mais 4 postos, 15 Bolotas, 4 corações e 5 cápsulas.
+- **O Rei Bolotão:** uma Bolota roxa enorme (uns 8 m) de um olho só, com a coroa dourada torta por cima de uma touca de dormir azul com pompom, a capa roxa de estrelinhas, o cetro-aspirador e um trono que é um disco voador pequeno. A arena é a Sala do Trono, no topo, debaixo da cúpula: piso redondo de 24 m de raio, o vidro do tanque no meio e quatro postes de lâmpada apagados. Três corações, como os outros chefes.
+  1. **Trono voador:** ele voa em círculos e joga potes de estrelas (alvo rosa antes). Pelas argolas do ioiô, o Faísca chega ao trono e soca o botão vermelho; o trono cai, ele fica tonto e leva três socos.
+  2. **O aspirador:** o cetro puxa tudo (os pilares protegem). Com a pipa, as colunas de vento levam aos três filtros; o soco no ferrolho de cada um entope o aspirador, que estoura, e ele fica tonto: três socos.
+  3. **O apagão:** a poeira apaga as luzes, e ele rola chorando "Tá escuro!" (encostar ainda tira coração). O laser acende as quatro lâmpadas; a cada uma ele se acalma, e com as quatro ele para e chora. A luta acaba sem golpe, e vem o final da história (§4): a luzinha para dormir, a estrelinha de bolso e as estrelas voltando para o céu.
+- **Arte:** módulos, plataformas de pouso, containers, dropship e tubos de plantas do Space Base Bits; cristais roxos e baú do Resource Bits; pistões e esteiras da 3-2; sinos do Holiday Bits. O casco e as paredes roxas por código, como o Aspiratrão da abertura.
+
+**Como ficou no jogo** (2026-11-12, pedido do usuário: "maquete aprovada" e "pode seguir com a fase final"; `scripts/faisca/fases/fase_nave.gd`, `FaseNave`). O esqueleto é o da maquete, nos mesmos lugares.
+- **O casco** (por código, sem colisão): a parede roxa de 128 m de raio, de y −30 a 72, com as janelas grandes para a noite na frente do corredor, as duas fileiras de luzinhas amarelas, o teto com os anéis de luz e o buraco da cúpula de vidro em cima da Sala do Trono. Por dentro, a luz é lilás (`_montar_ceu_e_luz`, sem as nuvens: no lugar delas, o campo de força lilás lá embaixo, com o `limite_queda` em −24). O farol aparece lá embaixo, pelas janelas.
+- **O Tanque de Estrelas:** o cilindro de vidro sólido (9 m de raio) do fundo até o chão da Sala do Trono, com 170 estrelas (um MultiMesh) girando devagar, os anéis laranja e a luz amarela. A coluna de luz do marco sai do vidro no meio da sala e some quando a luta começa.
+- **Peças novas:**
+  - `CapsulaDePoder`: o tubo de vidro rosa com a figura do poder girando (o balão, o ioiô, a luva com a bola de neve, o martelinho e a pipa). Encostar pega; os poderes somam até o fim da fase.
+  - `Lampada`: apagada e cinzinha, o laser dos pés acende (na camada da luz, como a tocha). "pouso" é a luz redonda das plataformas do hangar; "poste" é o poste baixinho da Sala do Trono, que pisca fraquinho no escuro.
+  - `PoteDeEstrelas`: o pote gigante de vidro, sólido, com a tampa de pisar. Com a trava, a fita laranja desce até o Ferrolho embaixo; o soco solta a tampa, e as estrelas voam até o tanque.
+  - `MotorDaNave`: o bloco roxo com os pistões batendo e o Pino em cima; a pancada do martelinho para o motor.
+  - `ChefeRei`: o Rei Bolotão (ver abaixo). A `Carona` ganhou a "capsula" (a cápsula do tubo pneumático).
+- **Os playgrounds:**
+  1. **Hangar do Bocal:** o bocal roxo desce do teto até o começo. Cada plataforma de pouso (`landingpad_large` em 4x) tem a luz no meio. As duas de 2,5 m têm um caixote de degrau, e a do meio (5 m) tem mola. Com as três luzes, a escotilha abre (`escotilha`: aro laranja, porta roxa e uma parede invisível mais larga que a estação, então não dá para passar por fora). Há também o dropship (o mini-marco), com mola até o coração, o anel de caixotes com uma brecha só (Faisquinha 3) e a esteira de enfeite com os potinhos.
+  2. **Depósito de Estrelas:** o chão redondo (22 m) e as prateleiras de 8 m de largura, a de baixo a 16 m (de 95° a 215°) e a de cima a 24 m (de 235° a 345°). Ficaram separadas, porque as argolas do ioiô no vão entre elas levam de uma à outra; uma em cima da outra, o puxão batia na de cima. A parede vai de 95° a 300°, deixando aberto o lado do tanque e o caminho do monta-carga. As bolhas de chiclete (força 21) jogam até a prateleira de baixo, e o coração fica na tampa de um pote (o balão leva). O V1 fica no nicho alto, por uma argola de fora para dentro.
+  3. **Sala de Máquinas:** paredes invisíveis em volta, com a brecha do monta-carga. O V2 fica numa plaquinha a 48 m, perto do gerador, onde só se chega sem gravidade. Cada motor tem um caixote de degrau. Com os três pinos, vem o "sem gravidade" (`ligar_sem_gravidade`): a sirene vermelha gira, o gerador apaga e as cinco caixas sobem do chão até a escada no ar (AnimatableBody, mexidas por tween de física). Enquanto o Faísca está na sala, abaixo da estação, a `gravidade` dele cai para 30% (o pulo vai de 2,2 m a uns 7 m). Na estação volta ao normal, e também ao sair da fase (`_exit_tree`). A estação é comprida: o pulo chega no lado oeste e o carrinho espera no leste (no meio, o Faísca caía no telhado dele).
+  4. **Estufa Gelada:** metade de chão de metal e metade de gelo (meta "gelo"), com os tubos de plantas (`eco_module` esticado, com colisão de cilindro). Os sinos ficam pendurados do lado de fora dos tubos, perto do alto: em cima, o próprio tubo tapava a bola de neve de quem estava no chão. O iglu é oco e sólido, com porta, e o coração fica dentro. Os três sinos abrem a porta e fazem aparecer a ponte de luz até o corredor. O carrinho chega pelo noroeste, longe dos tubos (parado no meio, ele tapava o primeiro sino), e desce devagar, porque numa descida forte o Faísca descolava do chão dele e caía.
+  5. **Corredor do Trono:** sete trechos em curva a 110 m do meio. Dois são plataformas que andam, e há a murinha do lado de dentro e uma parede invisível do lado de fora. As barreiras de luz giram e empurram (AnimatableBody posta no lugar a cada quadro). Os três guardas de capacete (`capacete`: só a pancada derruba) soltam as chaves-coroa, que voam até os encaixes da porta; com as três, a porta sobe e o elevador destrava. A cabine de pilotagem (`basemodule_A`) tem o coração e o Faisquinha 4 no telhado.
+- **A Sala do Trono:** o chão redondo (24 m) com o vidro do tanque no meio e uma parede invisível baixa na beira (o elevador chega por cima dela). Há os três pilares, as quatro lâmpadas, as três grades das colunas e o posto P5. Ela não entra como playground: assim o mundo que reage não põe caixas nem poças no meio da luta.
+- **A luta** (`ChefeRei`, o Alien em 3,4x com a coroa torta, a touca de pompom, a capa aberta na frente e o cetro-aspirador). Ela começa um segundo depois de o Faísca pisar na sala. A música passa para a dos chefes (sinal `luta_comecou`), e o Faísca fica só com o ioiô e a pipa (`tirar_poderes`): sem o martelinho, o golpe no ar volta a ser o giro (para os ferrolhos dos filtros); sem o chiclete, o laser sai na hora (para as lâmpadas).
+  1. **Trono voador:** o trono (um disco de 6,5 m, a 8 m do chão) boia e gira devagar, e o Rei joga potes com o alvo rosa. Duas fileiras de argolas levam até em cima do trono, e o soco no botão vermelho da beira derruba o trono. Se o tonto passa sem os três socos, o trono volta.
+  2. **O aspirador:** o cetro liga por 4,2 s e descansa 2,6 s. Ligado, os riscos brancos correm para ele, e quem está no chão, à vista dele, é puxado a 2,8 m/s (`move_and_collide`). Atrás de um pilar e em cima de uma grade, não puxa. As colunas sobem até 12 m, e o soco no ferrolho de cada filtro entope o aspirador; com os três, ele estoura e o Rei fica tonto.
+  3. **O apagão:** a luz cai para quase nada, e as lâmpadas que já estavam acesas apagam. O Rei rola chorando e mais devagar a cada lâmpada que o laser acende. Com as quatro, ele senta e chora, e a luta acaba sem golpe.
+- **A cena do final, na nave** (`_vitoria`, sem controle): a câmera de lado mostra os dois. Vêm as falas "Buáá! Tá escuro..." e "Eu só queria uma luzinha pra dormir...", e a estrelinha de bolso voa do Faísca até a mão do Rei. Ele dança (`alegrar`), a luz volta e as estrelas sobem do tanque pela cúpula; depois a fase pede o final (`final_pedido`).
+- **O final lá fora** (`FaiscaJogo._final_da_nave`, o contrário da abertura): à noite, as estrelas saem do bocal do Aspiratrão e voltam para o céu (as pintadas reaparecem), com fogos em cima do farol. Depois vem a festa na porta do farol: o Rei pequenininho com a estrelinha, seis Bolotas dançando em meia-roda e o Faísca comemorando, com "Às vezes falta só um convite." e "Fim!". Termina no farol, na frente da porta da nave, que fica com a Estrela Grande (`final_visto`, no save "final"). Dá para continuar juntando o que faltou.
+- **Sons e música** (`gerar_sons.py nave`): o "sem_gravidade", o "aspirador" e o "choro"; o tema "nave" (mi menor, misterioso sem assustar) e o "final" (o tema do farol em festa).
+- **Números:** 110 estrelinhas soltas (155 com as das Bolotas), 5 postos, 6 Faisquinhas, 4 corações (mais 2 na luta), 15 Bolotas e 5 cápsulas. A pausa no farol conta 54 Faisquinhas, e a porta da nave mostra os seis.
+- **A porta no farol:** `assets/faisca/portas/nave.jpg`, a visão de dentro com o tanque e a cúpula (a foto `porta` do `--faisca-fase-nave-captura`).
+- **Testes:**
+  - `--faisca-fase-nave`: 40 pontos, da descida no hangar até o pedido do final, passando por cada tarefa, viagem e fase da luta;
+  - fotos no `--faisca-fase-nave-captura`;
+  - no `--faisca-jogo`: a porta da nave abre com as 8 Estrelas Grandes e leva à nave (com o tema dela); a luta troca para o tema dos chefes, com os corações do Rei; durante a cena a pausa fica fechada (`pode_pausar`); e o final lá fora volta ao farol, com a porta dourada e o "final" no save;
+  - a nave entrou também no `--faisca-faisquinhas`, no `--faisca-mundo` e nos dois revisores (0 sem física, 0 piscando; o trono fica "em parte", porque o disco desenhado é maior que a colisão).
+
+### Lista de melhorias e novidades do Faísca (2026-11-11)
+
+Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jogo Faísca sobre melhorias e novidades, reforçando que a grande inspiração do jogo é o Astro Bot". Ficam de fora o que o usuário já recusou: dois jogadores e o escorregador.
+
+**O que o Faísca já tem do Astro:**
+- o movimento fluido (2026-11-10/11);
+- soco em sequência, giro, giro carregado, pisão, agarrar e arremessar a Bolota, a dancinha e o voo com o laser dos pés;
+- um poder novo por fase desde a 2-2: Balão de Chiclete, Ioiô, Luva de Neve, Martelinho de Apito e, na maquete da 3-3, a Pipa;
+- fases em playgrounds com tarefa para abrir a saída;
+- o farol de andares com o teto de constelações;
+- sem fim de jogo, e com o Modo Fácil.
+
+**O que falta, comparando com o Astro Bot:**
+1. **Ninguém para resgatar.** No Astro, os robôs perdidos são o coração do jogo: cada fase esconde vários, e eles enchem o hub e abrem coisas lá. No Faísca, os 3 vaga-lumes de cada fase só acendem luzinhas na moldura da porta.
+2. **Nada para gastar.** O Astro tem moedas em todo canto e a máquina de brindes. O Faísca não tem moedas.
+3. **Sem chefes.** O Astro fecha cada galáxia com um chefão grande, em fases. No Faísca, nenhum andar tem chefe (está no "Em aberto").
+4. **O controle quase parado.** O Astro usa o DualSense o tempo todo: vibração com textura de chão, gatilhos, giroscópio e luz. O Faísca só tem a vibração simples, e os gatilhos, que agora funcionam na ilha, ainda não chegam nele.
+5. **O mundo reage pouco.** No Astro quase tudo se mexe ao encostar (grama, objetos, moedas saindo do que quebra).
+6. **Uma música só** (a da ilha) para todas as fases. No Astro, cada fase tem a sua.
+7. **A câmera é sempre a livre.** O Astro escolhe o ângulo de cada trecho (de lado, de cima, num trilho).
+8. **Poucos momentos especiais.** Faltam perseguições e a fase que se transforma no meio.
+9. **Sem fases de desafio**, as curtas e difíceis que o Astro abre para quem já passou de tudo.
+10. **A viagem é pela escada.** No Astro, a viagem entre os mundos é um voo de nave.
+
+| # | Melhoria ou novidade | Tamanho | Situação |
+|---|---|---|---|
+| 1 | **Faisquinhas para resgatar:** os vaga-lumes viram robozinhos presos em bolhas das Bolotas, 6 por fase (os 3 de hoje e mais 3 em lugares difíceis). No farol eles aparecem brincando, acenando e dançando junto, e cada grupo abre uma coisa nova (10 consertam o elevador do farol, 20 abrem a sala de brinquedos, 30 acendem o farolete do topo) | M/G | feito em 2026-11-11 (a sala de brinquedos virou o trenzinho do térreo) |
+| 2 | **Contador da fase com figuras** na pausa e no fim (estrelinhas, Faisquinhas, moedas), e o controle tremendo de leve perto de um Faisquinha escondido | P | feito em 2026-11-11 (as moedas entram com o item 4) |
+| 3 | **DualSense no Faísca:** o R2 duro carregando o Martelinho, a tensão do Ioiô no gatilho, a luz do controle na cor do Faísca e vermelha com 1 coração, e a vibração com textura por chão (grama, gelo, metal, nuvem) | P/M | feito em 2026-11-11 |
+| 4 | **Moedas e a Máquina de Brindes** no térreo do farol: moedas das Bolotas, das caixas e dos cantinhos escondidos. A máquina de cápsula dá figurinhas 3D para uma estante (Bolotas, monstros, amigos) e roupinhas para o Faísca (antenas, capas, chapéus), aproveitando as Roupinhas da ilha | M | feito em 2026-11-11; em 2026-11-12 os chapéus viraram tintas, escolhidas numa lojinha com prévia no soco do cabide |
+| 5 | **Um chefe por andar,** cada um usando os poderes do mundo dele e com três fases, numa arena grande: um no andar das Ilhas Fofas, o Chef Bolotão no dos Doces e Brinquedos e um no do Frio e Vento | G (um por vez) | os três feitos em 2026-11-11: o Bolotão Fofão (andar 1), o Chef Bolotão (andar 2) e o Pinguinzão do Gelo (andar 3) |
+| 6 | **Mundo que reage:** grama e flores que balançam quando ele passa, potes e caixas que quebram no soco soltando moedas, poças que espirram, e Bolotas que param para olhar quando ele dança | M | feito em 2026-11-11 (cada mundo com as plantas, as caixas e as poças dele) |
+| 7 | **Música própria por mundo,** gerada como os sons, e um tema curto para resgatar um Faisquinha e para a Estrela Grande | M | feito em 2026-11-11 (um tema por mundo, o do farol, o dos chefes e as duas vinhetas) |
+| 8 | **Câmera guiada em alguns trechos:** de lado (2,5D), de cima, num trilho | M | |
+| 9 | **Um momento especial por fase:** uma Bolota gigante rolando atrás dele, a cozinha alagando, a luz do quarto apagando | M por fase | feito em 2026-11-11 e 2026-11-12: o da 1-1 (a Bolota gigante na Ponte Fofa), o da 1-2 (a fuga no carrinho de mina), o da 2-1 (a cozinha alagando), o da 2-2 (a chuva de confeitos), o da 2-3 (a luz do quarto apagando), o da 3-1 (a avalanche), o da 3-2 (a linha de montagem disparada) e o da 3-3 (o vendaval) |
+| 10 | **Fases de desafio** no topo do farol: curtas, difíceis e sem posto, uma por andar, para quem já passou de tudo, com uma estrela especial | M | |
+| 11 | **Viagem de nave entre os andares,** com o giroscópio ou o analógico, voando pelo céu da ilha e juntando moedas | G | |
+| 12 | **Pendências que já estavam no plano:** revisar a 2-1, esticar a 1-1, a 1-2 e a 2-1, aprovar e construir a 3-3 e fazer a nave final com o Rei Bolotão | — | em andamento desde 2026-11-11: a 2-1 revisada, e a 1-1, a 1-2 e a 2-1 mais longas; a 3-3 e a nave com o Rei Bolotão construídas em 2026-11-12 (o jogo do Faísca tem fim) |
+| 13 | **Textura no chão em vez da cor lisa,** no Faísca e na ilha (ideia do usuário em 2026-11-11: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha"): grama, pedra, madeira, neve, metal e tapete com um desenho de leve por cima da cor de hoje | M | feito e aprovado em 2026-11-11, antes do item 7, com a vegetação em 3D na ilha; depois do item 7, a grama da ilha e a vegetação (ou as miudezas de cada mundo) foram para as fases do Faísca, a pedido do usuário ("vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca"; "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase") |
+| 14 | **Perder todos os corações** (pedido do usuário em 2026-11-12): nas fases, volta ao último posto, ou ao começo se ainda não acendeu nenhum; no chefe, a luta recomeça do zero | P | anotado em 2026-11-12. Nas fases isso já acontece (o "curto": faísca, fumacinha e volta ao último posto com os 3 corações). No chefe, hoje o Faísca volta ao começo da arena com os 3 corações e o chefe continua machucado: falta recomeçar a luta (o chefe com os corações cheios e a arena como no começo) |
+| 15 | **O chefe de cada andar abre com as fases do andar** (pedido do usuário em 2026-11-12: "os chefes de cada nível do farol desbloqueiam quando o jogador passa todas as fases do nível"): hoje a porta do chefe pede um número de Estrelas Grandes no total (2, 5 e 7); vai pedir as Estrelas Grandes das fases daquele andar. Com a 3-3 pronta, o Pinguinzão pediria as três do mundo 3 (hoje pede 7 no total, dá para abrir sem a 3-3) | P | anotado em 2026-11-12, para depois |
+
+**Ordem sugerida:**
+- primeiro o 1 com o 2, que viram o coração do jogo como no Astro;
+- depois o 3, que é barato porque os gatilhos já funcionam;
+- depois o 4, que dá uso aos Faisquinhas e às moedas;
+- em seguida um chefe (o 5), começando pelo andar 1;
+- o charme (6 e 7) entra junto com as fases novas.
+
+As telas novas seguem a regra das crianças: figura primeiro, o ganho em destaque e o texto só de apoio.
+
+### Faisquinhas para resgatar (itens 1 e 2 da lista, feitos em 2026-11-11)
+
+Pedido do usuário: "comeca", depois da lista acima, pelos itens 1 e 2. O vaga-lume virou o **Faisquinha** (`scripts/faisca/faisquinha.gd`), como os robôs perdidos do Astro Bot.
+
+**Como ele é:**
+- um Faísca pequenininho, de uns 0,9 m: capacete branco com a tela preta e os olhos ciano;
+- a antena com a luzinha verde-limão de quando era vaga-lume;
+- corpo, orelhas, mãos e pés na cor dele, uma por número (`Faisquinha.CORES`: laranja, azul, rosa, verde, roxo e amarelo);
+- feito por código, com as malhas e os materiais em cache (leve para ter 40 no farol).
+
+**Seis por fase.** Os três de antes continuam com os nomes "0" a "2" (o save de quem já jogou vale). Os novos têm o nome fixo, criado em qualquer ponto do caminho:
+
+| Fase | 3 (bolso) | 4 (bolso mais difícil) | 5 (na Bolota) |
+|---|---|---|---|
+| 1-1 | no meio da roda atrás do pinheiro rosa | em cima do pilar da mola, no Jardim | a Bolota-cogumelo das Ilhas das Argolas |
+| 1-2 | no andaime do Salão das Tochas | no bolso embaixo do abismo da Mina | a Bolota do Poço dos Cristais |
+| 2-1 | no meio da roda lá no alto (a tampa joga até ele) | em cima do vidro de ketchup, pulando da tampa e flutuando | o porco da Bancada |
+| 2-2 | no morro de algodão | em cima do coração no bolso alto (só com o balão) | o porco da Praça do Carrossel |
+| 2-3 | na torre de blocos | no topo do abajur | o caranguejo do Tabuleiro |
+| 3-1 | dentro do iglu do Lago | na caverna atrás da segunda cachoeira | o pinguim da Vila do Iglu |
+| 3-2 | no nicho atrás da torre de blocos | logo depois da boca da lata tombada | a Bolota da Oficina |
+
+**O que acontece com ele:**
+- **Preso:** fica numa bolha lilás das Bolotas, flutuando, com os bracinhos empurrando a bolha. Encostar estoura a bolha. Ele pula duas vezes, acena e sobe girando para o farol, com o som novo `faisquinha_salvo`.
+- **Na Bolota:** o 5 vai numa bolha amarrada por um fio em cima de uma Bolota que anda e não dá para encostar. Vencida a Bolota, a bolha estoura e ele cai no chão embaixo (ou onde a Bolota estava, se embaixo não tiver chão). Fica pulando e acenando até o Faísca encostar.
+- **Já salvo em outra vez:** desde 2026-11-12, só a bolha com uma moeda dourada dentro, girando (pedido do usuário). Estourar dá uma moeda, sem contar como Faisquinha, sem o tema do resgate e sem festa no controle. O da Bolota, vencida ela, estoura lá em cima e a moeda sai dali. Até então era o mesmo boneco transparente, e não dava para saber se era um novo (ver "Em aberto").
+
+**O chamado (item 2).** Quem ainda está preso, a menos de 14 m, chama com um "piu-piu!" de robozinho (`faisquinha_chama`, gerado no `tools/gerar_sons.py`, que agora aceita o grupo: `python3 tools/gerar_sons.py faisquinhas`). A menos de 9 m, o controle dá tremidinhas no motor fraco (`Jogador.tremidinha`), mais rápidas quanto mais perto. Respeitam a vibração dos Ajustes.
+
+**Contadores com figura (item 2).**
+- No canto do HUD, as 6 cabecinhas de Faisquinha na cor de cada um, cheias quando salvos.
+- Na tela de fim, as 6 cabecinhas maiores.
+- Na pausa, uma linha com a estrelinha, o Faisquinha e a Estrela Grande, cada um com o número. Na fase é "pegas/total"; no farol é o jogo todo (estrelinhas, "salvos/42" e "Estrelas Grandes/8").
+- Na porta de cada fase, 6 cabecinhas: brancas com a tela e a luz da antena se salvos, cinza se não.
+
+**No farol (`HubFarol`).** Cada Faisquinha salvo mora no andar do mundo de onde veio: os da 1-x no térreo, os da 2-x no 2º andar e os da 3-x no 3º. As vagas ficam de 15 em 15 graus, em dois anéis, longe das portas, do elevador, das placas, da entrada e do patamar da escada. No farol eles são 1,3x maiores (a sala tinha 24 m de largura, hoje 32 m, e do tamanho das fases quase não apareciam). Lá eles:
+- ficam perto de casa e de vez em quando dão um pulinho, um giro ou um aceno;
+- olham e acenam quando o Faísca chega perto;
+- dançam junto quando ele dança, todos os do mesmo andar;
+- pulam para o lado quando ele esbarra.
+
+Os salvos na última fase chegam caindo do alto, girando, com confete, e aparece a faixa "Faisquinhas no farol!".
+
+**Os prêmios (`FaiscaJogo.PREMIOS`).** Antes de abrir, cada prêmio tem uma placa com o desenho dele, um Faisquinha e "quantos tem/quantos pede". Quando abre, a festa aparece uma vez só (faixa, confete e os Faisquinhas pulando), e o save guarda em `premios`.
+- **10, o elevador:** a plataforma laranja no vão das sacadas a sudeste (135°), parando 2,6 s em cada andar.
+  - Andando, fecha as pontas para o Faísca não sair no meio.
+  - Em cada andar de cima, uma cancela listrada de cada lado do vão abre só quando o elevador está ali.
+  - Não desce se o Faísca estiver embaixo dele no térreo.
+  - Antes dos 10, fica parado no térreo, torto e apagado, e as sacadas não têm o vão.
+- **20, o trenzinho:** locomotiva, tênder de presentes e vagão (do pacote do quarto), rodando devagar num trilho em volta do eixo no térreo, com dois Faisquinhas de passageiros sentados no teto do vagão. Dá para subir em cima: a colisão de cada carro tem a altura do modelo. Os carros vão sem `sync_to_physics`, porque quem move é o farol; com ele ligado (o padrão do AnimatableBody3D), o trem ficava parado no meio da torre. A ideia da "sala de brinquedos" virou o trenzinho: o farol não tem uma sala a mais.
+- **30, o farolete:** a lâmpada do topo fica mais forte, e dois fachos com holofotes giram pela torre.
+
+**Save.** A chave virou `faisquinhas`; quem tem a antiga, `vaga_lumes`, é lido do mesmo jeito. A migração da Parte 2 já grava a nova.
+
+**Testes:**
+- `--faisca-faisquinhas`, nas sete fases:
+  - os seis de cada fase;
+  - o 5 numa Bolota que anda;
+  - chão embaixo e bolha livre;
+  - os novos num bolso com estrelinhas, com duas exceções marcadas na fase: o 3 da 2-1 fica no ar e o 4 está no ketchup;
+  - o chamado e a tremidinha;
+  - salvar encostando;
+  - a Bolota vencida soltando o 5 num chão firme.
+- `--faisca-jogo`: os moradores e os três prêmios, com Faisquinhas de mentira:
+  - o elevador levando o Faísca ao 2º andar, com a cancela;
+  - o trenzinho;
+  - o farolete;
+  - as placas;
+  - o contador da pausa;
+  - a dança junto.
+- Fotos: `--faisca-faisquinhas-captura` (o Faisquinha preso, na Bolota, solto e salvo) e `--faisca-farol-captura` (o farol com os prêmios e a pausa).
+
+### DualSense no Faísca (item 3 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "Sim, começa", depois dos Faisquinhas.
+
+**Como funciona.** O nó `DualSense` da ilha ganhou o `perfil`: fora da ilha, quem escolhe os efeitos é o `ControleFaisca` (`scripts/faisca/controle_faisca.gd`), criado pelo `FaiscaJogo`. Ele devolve os dois gatilhos, a cor da barra de luz e os 5 LEDs de baixo. Os bytes são os da página de teste do usuário:
+- a luz: a bandeira 0x04 no byte 1 e o RGB nos bytes 44 a 46;
+- os LEDs: a bandeira 0x10 no byte 1 e o desenho no byte 43.
+
+A ilha não manda luz, e o bloco dela fica igual. Saindo do jogo depois de mexer na luz, ela volta para o azul de quando o controle liga.
+
+**Gatilhos.** O R2 também dá o golpe e o L2 também agarra (`Controles`). Contam passando da metade, onde fica o estalo.
+- **R2:**
+  - um estalinho em cada soco;
+  - segurando para o giro forte, endurece em 4 degraus;
+  - girando forte, treme;
+  - com o Martelinho de Apito, o estalo forte;
+  - puxado pelo Ioiô, treme como o fio esticado;
+  - com a Luva de Neve, um estalo fofo.
+- **L2:** pesa com uma Bolota agarrada.
+- **Soltos:** na pausa, na cena, na tela de fim e com a vibração desligada nos Ajustes.
+
+**Luz e LEDs.**
+- A luz fica no azul do Faísca ou na cor do poder da fase: rosa no Balão, verde no Ioiô, branco-azulado na Luva e laranja no Martelinho.
+- Com 1 coração, fica vermelha piscando.
+- Pisca de festa ao salvar um Faisquinha (verde-limão), na Estrela Grande e no prêmio do farol (dourado) e no coração (rosa).
+- Os LEDs mostram os corações no desenho de jogador do controle: 1 no meio, 2 separados, 3 alternados.
+
+**Vibração com textura de chão** (`Jogador.TEXTURAS`).
+- Cada passo treme de um jeito, bem de leve, conforme o chão:
+  - motor fraco, o agudo: grama, madeira, algodão, tapete, gelo, metal, esteira;
+  - motor forte, o grave: pedra e neve.
+- O chão é o da fase (`Fase.superficie`):
+  - grama na 1-1;
+  - pedra na 1-2;
+  - madeira na 2-1 e no farol;
+  - algodão na 2-2;
+  - tapete na 2-3;
+  - neve na 3-1;
+  - metal na 3-2.
+- Alguns corpos têm o chão marcado: as nuvens que quicam e as que somem são "nuvem", as esteiras são "esteira" e o gelo da 3-1 é "gelo".
+- Deslizando no gelo, um chiadinho. No pouso, a tremida do chão mais forte.
+
+**Tremidinhas de festa** (`Jogador.festa_no_controle`): na estrelinha, no Faisquinha salvo (duas), no coração, na Estrela Grande e no prêmio do farol. Tudo respeita a vibração dos Ajustes.
+
+**Teste:** `--faisca-dualsense`. Confere os bytes (USB e Bluetooth), cada escolha do `ControleFaisca` e os passos tremendo na grama, na pedra, no algodão e no metal. Confere também a esteira, o gelo, o pouso e as festas. No PC, falta o usuário sentir com o controle de verdade. Se o Steam estiver mandando na luz do controle, ela pode brigar com a do jogo.
+
+### Moedas e a Máquina de Brindes (item 4 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "Pode seguir pra proxima etapa", depois do DualSense. Como o laboratório de brindes do Astro Bot.
+
+**As moedas** (`scripts/faisca/moeda.gd`):
+- **O modelo:** a moeda do Board Game Bits em pé, girando, com uns 0,5 m (o modelo tem 1 m).
+- **De onde saem** (`Fase.soltar_moedas`): 3 de cada Bolota vencida, 5 de cada Faisquinha salvo e 20 do baú aberto. Saem pulando para os lados e caem no chão até 2 m abaixo; sem chão perto (a beira de um bolso), ficam flutuando, em vez de cair lá embaixo.
+- **Pegar:** a até 3,5 m (o ímã) elas voam até o Faísca. Somem em 30 s se ninguém pegar.
+- **A carteira:** vão para a carteira do save (`moedas`) uma a uma e voltam em cada visita, como no Astro. Aparecem no HUD embaixo das estrelinhas (o número e a moeda desenhada) e na linha da pausa.
+- **Sons:** `moeda` (o "plim-plim") e `maquina`, no grupo `brindes` do `tools/gerar_sons.py`.
+
+**A Máquina de Brindes** (`scripts/faisca/maquina_de_brindes.gd`), no térreo, a sudoeste:
+- **Como ela é:** base vermelha, cúpula de vidro com cápsulas coloridas, o botão amarelo e a placa "25" com uma moeda.
+- **Pedir:** o soco no botão pede (ela fica no grupo dos alvos, como o baú). Sem moedas ou já com tudo, ela balança que não e a placa pisca, com a faixa "Faltam N moedas" ou "Você já tem todos os brindes!".
+- **Pagando 25:**
+  - a máquina chacoalha;
+  - a cápsula sai pela boca e rola, abre com confete e o brinde sobe girando ("Figurinha nova!" ou "Tinta nova!", com o nome);
+  - depois voa para a vaga da estante, ou até o Faísca, que fica pintado com a tinta nova (e a lata vai para o cabide).
+- **O sorteio** (`Brindes.sortear`): nunca repete. A 1ª é uma figurinha e a 2ª uma tinta, para a criança ver as duas coisas logo.
+
+**Os 18 brindes** (`scripts/faisca/brindes.gd`):
+- **12 figurinhas** para a estante (`estante_de_figurinhas.gd`, na parede a noroeste, duas prateleiras de 6): os 11 monstros da turma das Bolotas, mexendo na animação de parado, e um Faisquinha dourado. A que falta é uma cápsula cinza com "?".
+- **6 tintas** para as partes laranja do Faísca: azul, verde, roxo, rosa, vermelho e dourado (a dourada brilha como metal). Até 2026-11-12 eram 6 chapéus da lojinha da ilha; ver "Tintas no lugar das roupinhas", logo abaixo.
+
+**Save:** `moedas`, `brindes` e `tinta` (até 2026-11-12, `roupa`).
+
+**Testes:**
+- `--faisca-moedas`:
+  - a Bolota soltando 3, que caem no chão e ficam paradas longe;
+  - o ímã pegando e o HUD contando;
+  - o Faisquinha dando 5 e o baú dando 20.
+- `--faisca-jogo`:
+  - o soco de verdade no botão sem moedas;
+  - a figurinha na estante e a tinta pintando o Faísca;
+  - a lojinha das tintas, o save, os chapéus de antes virando tintas e "já tem todos".
+- Fotos: `--faisca-brindes-captura`, com a máquina, a cápsula aberta, a estante com o cabide, o cabide de perto, a lojinha (uma tinta marcada e uma trancada) e o Faísca com cada tinta.
+
+### Tintas no lugar das roupinhas (2026-11-12)
+
+Pedido do usuário: "o modo de trocar chapéu não ficou legal, talvez ganhar tintas pra trocar a cor do faisca seja mais interessante. e a cor precisa ser trocada a partir de um tipo de lojinha (com preview) igual das crianças na ilha (pode manter abrir essa lojinha dando soco no cabide no farol)".
+
+- **As tintas** (`Brindes`, tipo "tinta"): as seis da Máquina de Brindes ficam no lugar dos seis chapéus, e a de fábrica (laranja, `Brindes.COR_ORIGINAL`) está sempre lá. Pintar troca a cor do material laranja do robô (`Robo.pintar`): a placa do peito, as orelhas, o friso da tela, as mãos e as pontas dos pés.
+- **A lata** (`Brindes.lata`): o balde de metal do KayKit RPG Tools Bits (`assets/faisca/tintas/`), com a tinta em cima e dois escorridos. É o brinde que sai da cápsula e o que fica pendurado em cada gancho do cabide (`cabide_de_tintas.gd`, antes `cabide_de_roupas.gd`).
+- **A lojinha das tintas** (`painel_tintas.gd`), aberta pelo soco no cabide, no molde do guarda-roupa da ilha:
+  - à esquerda, o Faísca de verdade num retrato (`Portrait`), girando devagar, que já prova a tinta do cartão marcado;
+  - à direita, os sete cartões, cada um com a lata desenhada na cor; o da tinta em uso tem a borda e o visto verdes;
+  - as que ainda não saíram têm cadeado: dá para marcar e ver no Faísca, mas o A nega e mostra a cápsula com "Essa sai na Máquina de Brindes!";
+  - o A pinta e o Faísca dá tchau no retrato, e a lojinha continua aberta para provar outras; B, Voltar ou o botão de menu fecham;
+  - com ela aberta, o jogo fica parado como na pausa, e o controle volta um instante depois de fechar.
+- **Saves de antes:** quem tinha chapéus ganha as tintas no lugar (`Brindes.migrar`, na mesma ordem: palha → azul, mago → verde, palhaço → roxo, urso → rosa, duende → vermelho, soldadinho → dourado) e fica com a cor de fábrica. O save do PC tinha o de duende e o de palha, que viram o vermelho e o azul.
+
+### Chefe do andar 1: o Bolotão Fofão (item 5 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "pode enviar e seguir pra proxima". Como os chefes do Astro Bot: grande, em três fases, cada uma com o que o Faísca aprendeu no mundo.
+
+**A porta e a arena.**
+- **A porta:** vermelha, com uma coroa em cima e a foto da arena, no térreo a 30°. Pede as 2 Estrelas Grandes do mundo 1 (`pede_grandes` 2).
+- **O Ninho das Nuvens** (`scripts/faisca/fases/chefe_1.gd`): uma ilha redonda de grama com 15 m de raio, no meio das nuvens. Uma parede invisível na beira não deixa cair. Tem árvores em volta e uma roda de 12 estrelinhas.
+
+**O Bolotão Fofão** (`scripts/faisca/chefe_bolotao.gd`): o Alien das Bolotas em 3x (uns 6 m), com a coroa dourada de capitão do Rei Bolotão. A luta começa quando o Faísca pisa na arena, com a faixa "Bolotão Fofão!", e os corações roxos dele aparecem no alto da tela, um por fase.
+1. **Pisões:**
+   - ele anda até o Faísca, agacha e pula onde ele está, e a sombra mostra onde vai cair;
+   - no pouso, uma onda amarela corre pelo chão: acerta quem está no chão e não acerta quem pula por cima;
+   - depois de 3 pisões ele cansa e fica tonto, com estrelinhas girando.
+2. **Bolotinhas:**
+   - no meio da arena, ele cospe Bolotinhas, no máximo 3;
+   - soco nele não adianta, e ele faz que não;
+   - um soco deixa a Bolotinha tonta; agarrada e arremessada nele, ele fica tonto;
+   - o Vovô mostra o agarrar.
+3. **Investidas:**
+   - ele agacha piscando vermelho e corre reto até a beira;
+   - aparecem 4 flores de luz, e acesas com o laser, a luz deixa ele tonto (se o tonto passa, as flores voltam apagadas);
+   - o Vovô mostra o laser.
+
+**Regras da luta.**
+- Tonto, cada fase acaba com 3 socos (2 no Modo Fácil, com o tonto 50% mais longo).
+- Encostar nele, fora do tonto, tira um coração; na investida, ele joga o Faísca mais longe.
+- Cada fase nova põe um coração no meio da arena.
+
+**A vitória.**
+- Ele vira uma bolotinha envergonhada, com confete.
+- Saem 40 moedas, e o baú dourado cai do céu com a estrela.
+- Vencido, ele conta em `chefes` (save), não nas Estrelas Grandes: a nave continua pedindo 8.
+- No farol: a coroa da porta acende, o troféu dourado dele aparece ao lado da porta e uma constelação de coroa acende no teto.
+
+**Testes:**
+- `--faisca-chefe-1`:
+  - a arena e a parede da beira;
+  - o começo da luta;
+  - a onda acertando no chão e não no ar;
+  - o tonto e os socos;
+  - as Bolotinhas, com o soco nele não adiantando;
+  - as flores, as moedas e o baú.
+- `--faisca-jogo`: a porta, os corações no HUD, a vitória contando como chefe, o troféu, a constelação e o save.
+- Fotos: `--faisca-chefe-1-captura`. Para jogar direto: `--faisca-jogar-chefe-1`. O revisor de física também confere a arena.
+
+### Chefe do andar 2: o Chef Bolotão (item 5 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "Seguir para o chefe 2". Mesmo molde do Bolotão Fofão (três fases, tonto, 3 socos, os corações roxos no HUD), agora com o que o Faísca aprendeu no mundo 2 (Doces e Brinquedos).
+
+**A porta e a arena.**
+- **A porta:** no 2º andar do farol, a noroeste (315°). Pede 5 Estrelas Grandes, as dos mundos 1 e 2.
+- **A Cozinha do Chef** (`scripts/faisca/fases/chefe_2.gd`): uma travessa redonda gigante, branca com a borda azul e 16 m de raio, em cima da mesa de uma cozinha de gigantes, com a parede invisível na beira. Em volta:
+  - os móveis do Restaurant Bits bem grandes ao longe (a geladeira, o fogão, o pote e a casquinha);
+  - o bolo listrado de 7 m no meio, com cobertura e velinhas;
+  - a torre de 10 panquecas com calda e manteiga (10 m) na beira norte;
+  - as 3 panelas com tampa em volta do bolo, com força 23;
+  - uma roda de 12 estrelinhas.
+
+**O Chef Bolotão** (`scripts/faisca/chefe_chef.gd`): o porquinho das Bolotas (Pig) em 2,6x, com o chapéu de cozinheiro.
+1. **Bolinhos:** em cima do bolo, ele joga bolinhos (massa rosa, cobertura e cereja) onde o Faísca está, com um alvo rosa no chão antes; quem está no alvo quando o bolinho cai perde um coração. As tampas das panelas jogam o Faísca lá em cima, e chegando no alto do bolo o Chef se assusta e fica tonto.
+2. **Investidas:** ele pula para o chão e corre reto até o Faísca, como os porquinhos. Batendo na beira, no bolo ou na torre (o Faísca sai da frente), fica tonto.
+3. **Torre de panquecas:** ele pula para o alto da torre e volta a jogar bolinhos. A bola de chiclete aparece na frente da torre e dá o Balão de Chiclete (o Vovô mostra). Subindo com o balão até ele, o Chef fica tonto.
+
+**A vitória:** como a do Bolotão Fofão. Saem 40 moedas e o baú dourado cai do céu. O troféu é o porquinho dourado ao lado da porta, e a constelação do chapéu de cozinheiro acende no teto.
+
+**Testes:**
+- `--faisca-chefe-2`:
+  - a arena;
+  - o bolinho acertando quem está no alvo;
+  - a tampa jogando acima do bolo e o susto no alto dele;
+  - a investida batendo na beira;
+  - a torre, o chiclete dando o balão e o balão subindo acima da torre;
+  - o baú.
+- `--faisca-jogo`: a porta do Chef abrindo com 5 Estrelas Grandes, levando à cozinha, com os corações dele.
+- Fotos: `--faisca-chefe-2-captura`. Para jogar direto: `--faisca-jogar-chefe-2`. O revisor de física confere a arena.
+
+### Chefe do andar 3: o Pinguinzão do Gelo (item 5 da lista, feito em 2026-11-11)
+
+Pedido do usuário: "vamos acabar as melhorias do projeto faisca, depois de mergear na main, vamos testar o Kenney Particle Pack". Mesmo molde dos outros dois chefes, com o que o Faísca aprendeu no mundo 3 (Frio e Vento). A 3-3, que traria a Pipa, ainda não existe; a luta usa a Luva de Neve (3-1), o Martelinho de Apito (3-2) e o gelo.
+
+**A porta e a arena.**
+- **A porta:** no 3º andar do farol, a noroeste (315°). Pede 7 Estrelas Grandes, todas as que já existem.
+- **O Pico do Pinguinzão** (`scripts/faisca/fases/chefe_3.gd`): um platô redondo de neve (16 m), acima das nuvens, com a parede invisível na beira, pinheiros enfeitados do pacote de neve e uma roda de 12 estrelinhas.
+
+**O Pinguinzão** (`scripts/faisca/chefe_pinguim.gd`): o pinguim das Bolotas em 2,8x, com cachecol vermelho e coroa de cristais de gelo.
+1. **O pilar de gelo:**
+   - lá em cima do pilar do meio (6 m), ele joga bolas de neve grandes onde o Faísca está, com um alvo azul no chão antes;
+   - o Faísca ganha a Luva de Neve (o Vovô mostra);
+   - tocados os 3 sinos das colunas de gelo da beira, o pilar desmancha e ele cai tonto;
+   - se o tonto passa sem os socos, o pilar e os sinos voltam.
+2. **A casca de gelo:**
+   - ele se fecha numa casca e solta ondas geladas pelo chão (pular por cima);
+   - a luva vira o Martelinho;
+   - afundados os 4 pinos em volta, a casca quebra e ele fica tonto.
+3. **As barrigadas:**
+   - o chão congela (escorrega, como o gelo da 3-1) e a luva volta;
+   - ele desliza de barriga, batendo na beira e voltando para o lado do Faísca;
+   - três bolas da luva nele (2 no Modo Fácil) e ele tropeça e fica tonto.
+
+**A vitória:** como a dos outros. O chão degela, saem 40 moedas e o baú dourado cai do céu. O troféu é o pinguim dourado ao lado da porta, e a constelação do floco de neve acende no teto.
+
+**Dois consertos que a luta pediu.**
+- A mira da luva passou a mirar em qualquer alvo com a meta `alvo_da_luva` (não só nas Bolotas), e o raio que confere se há parede no caminho agora ignora o próprio alvo.
+- O pinguim ignora a própria casca: sem isso, o corpo dele era empurrado para fora dela e atravessava o chão. Ele tem também uma rede de segurança: abaixo do platô, volta para o meio.
+
+**Testes:**
+- `--faisca-chefe-3`, com a luva jogada de verdade nos sinos e nele deslizando:
+  - a bola grande acertando quem está no alvo;
+  - o pilar desmanchando;
+  - a casca e os pinos, com a troca para o martelinho;
+  - a onda gelada;
+  - o chão de gelo;
+  - os tropeços e o baú.
+- `--faisca-jogo`: a porta do Pinguinzão abrindo com 7 Estrelas Grandes, a luva na luta e o poder ficando lá dentro ao sair.
+- Fotos: `--faisca-chefe-3-captura`. Para jogar direto: `--faisca-jogar-chefe-3`. O revisor de física confere a arena.
+
+### Mundo que reage (item 6 da lista, feito em 2026-11-11)
+
+No Astro Bot quase tudo se mexe quando o robô encosta. No Faísca agora também. Nada disso é posto à mão em cada fase: depois do primeiro quadro de física, a fase espalha sozinha em cada playground o que o mundo dela tem (`Fase.ESTILOS`, pela `superficie`):
+
+| Mundo (superfície) | Plantas que balançam | O que quebra | Poça |
+|---|---|---|---|
+| Ilhas (grama, 1-1) | grama do Forest Nature e flores de seis pétalas | caixa do Dungeon Pack e vaso de barro feito por código | água |
+| Túneis (pedra, 1-2) | cogumelos coloridos com bolinhas, brilhando de leve | barril, caixa e vaso | água |
+| Cozinha (madeira, 2-1) | nenhuma | potes de tempero da cozinha | leite e suco |
+| Nuvens (algodão, 2-2) | pirulitos de espiral e flores cor-de-rosa | presentes | calda |
+| Quarto (tapete, 2-3) | cataventos, que giram quando ele passa | presentes | tinta |
+| Pico (neve, 3-1) | grama coberta de geada e flores de cristal | presentes do pacote de neve | água |
+| Fábrica (metal, 3-2) | antenas de mola com bolinha, que fazem "boing" | caixote | água |
+
+**Onde a fase põe.** Por playground: 3 coisas que quebram, até 2 poças e 3 tufos de 6 a 9 plantas (nessa ordem: as plantas cabem em quase todo canto e ficam longe das caixas e das poças). Fica só o que acha lugar. Cada ponto precisa ter:
+- chão firme: nem o que se mexe ou some (plataformas, nuvens que somem, blocos-pisca, esteiras), nem outra caixa;
+- chão quase reto e na mesma altura em volta (nem beirada, nem rampa);
+- espaço vazio em volta da caixa, para ela não fechar um corredor;
+- distância de tudo o que a fase já pôs: estrelinhas, postos, Bolotas, molas, botões, o começo, as entradas, os arcos de saída, o caminho creme e o caminho de quem anda de um lado para o outro (plataformas, bolas de neve, dados, carrinhos, caronas e rolos).
+
+O sorteio é sempre o mesmo para a mesma fase. Uma fase pode desligar (`mundo_que_reage = false`) e pôr à mão com `planta`, `canteiro`, `quebravel` e `poca`.
+
+**As plantas** (`scripts/faisca/mato.gd`, um Mato por fase): cada uma é uma mola.
+- O Faísca perto (1,3 m) empurra o topo para longe dele; ao sair, ela volta balançando até parar.
+- O giro empurra de 2,8 m, e o laser dos pés, voando por cima, abre o mato em roda.
+- Encostar faz um farfalhar baixinho (a antena faz o "boing" da mola).
+- Nenhuma tem colisão: são enfeite, e o revisor de física não cobra.
+
+**O que quebra** (`scripts/faisca/quebravel.gd`): quebra no primeiro golpe de qualquer tipo:
+- soco, giro, pisão em cima (o Faísca quica, como na Bolota), laser dos pés, pancada do Martelinho e Bolota arremessada;
+- dá um estalo e some numa chuva de cacos que quicam no chão, nas cores do próprio modelo (lidas da textura);
+- solta 3 moedas (o presente solta 4, com confete);
+- até quebrar é sólido, e dá para subir em cima.
+
+**As poças** (`scripts/faisca/poca.gd`): um contorno com ondinhas, brilhante, na cor do mundo.
+- Cada passo dentro dela solta respingos e uma rodinha na água, e os passos não levantam poeira.
+- Cair de um pulo nela (ou dar a pancada do Martelinho) espirra alto, com uma tremidinha no controle.
+- Enquanto ele está dentro, o chão do DualSense é "agua", com textura própria.
+
+**As Bolotas olham a dança:**
+- Com o Faísca dançando a até 10 m, a Bolota acordada para tudo, vira para ele e dança junto. Os monstros usam a animação "Dance" do pacote; os que voam batem as asas mais rápido.
+- Ela solta coraçõezinhos e não machuca, nem colada nele.
+- Quando a dança acaba, faz que "sim" com a cabeça (o aplauso), fica um instante parada e volta ao que fazia.
+- As que dormem continuam dormindo. Quem está no meio de uma investida ou de um rasante não para.
+
+**Sons novos** (`python3 tools/gerar_sons.py mundo`): `mato`, `caixa_quebra`, `pote_quebra`, `presente_abre` e `poca`.
+
+**Dois consertos depois** (relato do usuário em 2026-11-11: "quando o faisca inicia uma dança e o jogador espera a dança terminar, ele nao para de dançar e os inimigos proximos nao consegue atacar"):
+- Quando o tempo da dança acabava sozinho, o `_parar_danca` via o tempo já zerado, achava que não havia dança e não desligava o robô: ele dançava para sempre, até andando. Agora a dança guarda se está acontecendo (`_na_danca`).
+- A Bolota parada encostava no Faísca a 1,12 m (a esfera dela, 0,62 m, mais a cápsula dele, 0,5 m), e o toque só valia até 1,05 m: com ele parado, ela nunca machucava. Isso era mais antigo que a dança, e a dança só deixou à mostra. O toque agora vale até 1,25 m (na Bolotona, o encosto dela mais 0,13 m).
+- O `--faisca-mundo` confere os dois: o Faísca para de dançar sozinho, e a Bolota encosta e machuca quando ele está parado.
+
+**Conserto que o teste achou:** depois de uma dancinha inteira, o som dela se solta sozinho. A dancinha seguinte passava esse som já solto para `_parar_som`, que tinha tipo no argumento, e o erro cortava o começo da dança: o Faísca não dançava de novo. O argumento ficou sem tipo.
+
+**Testes:** `--faisca-mundo`.
+- Nas 7 fases: as plantas, as coisas que quebram e as poças estão nos playgrounds; nenhuma caixa encostada em outra coisa sólida e nenhuma poça torta.
+- Na 1-1:
+  - a planta dobra para longe e volta balançando, e o giro empurra de mais longe;
+  - o soco quebra a caixa (cacos e moedas) e o pisão quebra e faz quicar;
+  - a poça espirra no pulo e nos passos, e muda o chão do controle;
+  - a Bolota olha a dança, aplaude, volta a seguir e, colada nele dançando, não machuca.
+- Fotos de cada mundo: `--faisca-mundo-captura`.
+
+### Música por mundo (item 7 da lista, feito em 2026-11-11)
+
+Até aqui o Faísca tocava o tema da ilha em todo lugar. Agora cada lugar tem o seu, e as músicas são geradas como os sons, por síntese (`python3 tools/gerar_sons.py musica_faisca`, cerca de 10 s).
+
+**A bandinha.** O gerador ganhou instrumentos e bateria macia:
+- marimba, cavaquinho, caixinha de música, sininho, flauta, metais, uma "quadrada" de videogame, baixo, pizzicato e pad;
+- bumbo, caixa, palmas, chimbal, chocalho, guizos de trenó, bloquinho, tambor, tímpano, prato e um brilho.
+
+Também ganhou uma notação curta: a melodia é uma lista de `nota:tempos` (`"A4:.5"`; `"-:1"` é pausa) e os acordes, um nome por compasso. Cada faixa repete sem emenda: o que passa do fim volta para o começo.
+
+| Faixa | Onde toca | Como é |
+|---|---|---|
+| `farol` | dentro do farol e na abertura | dó maior, 88 bpm, de ninar: flauta, caixinha em arpejo e pad, sem bateria |
+| `mundo_1` | 1-1 e 1-2 (Ilhas Fofas) | fá maior, 124 bpm, saltitante: marimba, cavaquinho no contratempo, palmas e chocalho, com um sininho na segunda parte |
+| `mundo_2` | 2-1, 2-2 e 2-3 (Doces e Brinquedos) | sol maior, 132 bpm, de brinquedo de corda: caixinha picadinha, "oompa" no pizzicato, bloquinho |
+| `mundo_3` | 3-1 e 3-2 (Frio e Vento) | ré maior, 108 bpm, mais calmo: sininho, flauta no fundo e guizos de trenó |
+| `chefe` | as três lutas de chefe | lá menor, 144 bpm, agitado sem assustar: baixo em colcheias, a "quadrada", metais e tambores no fim |
+| `vinheta_faisquinha` | Faisquinha resgatado (3,2 s) | arpejo subindo no sininho e na marimba, o acorde e o brilho |
+| `vinheta_estrela` | Estrela Grande (6,4 s) | fanfarra dos metais com tímpano, o acorde grande, o prato e o brilho |
+
+**No jogo** (`FaiscaJogo`):
+- `tocar_musica` troca devagar: a de antes some em 0,8 s e a nova entra em 1,2 s.
+- `musica_da_fase` escolhe pelo andar da fase; as lutas usam o tema dos chefes.
+- A vinheta do Faisquinha entra 0,3 s depois do "ê!" dele, com a música abaixada em 16 dB, que volta no fim.
+- A fanfarra da Estrela Grande tira a música da fase, que só volta com a do farol.
+- As vinhetas tocam no canal da música (`Sfx.vinheta`), então seguem o volume dos Ajustes.
+- A ilha continua com o tema dela.
+
+**Testes:** o `--faisca-jogo` confere:
+- o tema do farol;
+- a troca para o do mundo 1, com o do farol indo embora;
+- a vinheta do resgate com a música abaixada;
+- a fanfarra com a música sumindo;
+- o tema dos chefes na luta.
+
+Ninguém ouviu as músicas ainda: as notas foram conferidas (cada melodia fecha certinho no número de tempos da faixa), mas o som em si espera os ouvidos do usuário.
+
+### Textura no chão (item 13 da lista, feito em 2026-11-11)
+
+Ideia do usuário: "colocar texturas no solo ao invés do chao cru, tanto pro faisca quanto jogo ilha". Feito antes do item 7, a pedido dele ("vamos ver sobre a textura antes").
+
+**Como é feito.** Os desenhos são feitos por conta no shader, sem imagem baixada (`scripts/chao/padroes_do_chao.gdshaderinc`):
+- cada um escurece e clareia a cor que o chão já tem, sem trocar o tom (a grama continua do verde dela);
+- ficam nas coordenadas do mundo, então não esticam nos morros esticados e não emendam entre peças;
+- o detalhe fino some com a distância (na fase, de 14 a 55 m; na ilha, de 30 a 110 m), para não piscar de longe.
+
+| Desenho | Como é | Onde |
+|---|---|---|
+| grama | manchas de sol e sombra, tufinhos em "V" e folhinhas curtas | 1-1 e topo dos morros |
+| campo da ilha | manchas de sol amareladas e de grama funda azulada, tufinhos virados para todo lado com a pontinha clara, folhinhas e canteirinhos de florzinhas brancas, amarelas e cor-de-rosa | a grama da ilha |
+| mata da ilha | verde mais fechado com manchas de musgo, folhas secas em montinhos (laranja, amarelas, marrons e vermelhas, com a nervura) e gravetinhos | o chão da mata, ao norte do rio |
+| terra | pedrinhas de tons diferentes | trilhas da ilha |
+| areia | ondinhas do vento e o granulado | praia e fundo do mar da ilha |
+| pedra | lajes irregulares com rachaduras | encostas da ilha e dos morros, túneis (1-2) |
+| calçada e praça | ladrilhos quadrados; tijolinhos desencontrados | cidade da ilha |
+| madeira | tábuas de 1 m com emendas e veios | cozinha (2-1) e mesa do Chef Bolotão |
+| tapete | trama de fios em xadrez | quarto (2-3) |
+| neve | branca, com sombra azulada nos montinhos e marcas do vento | pico (3-1) e arena do Pinguinzão |
+| gelo | rachaduras finas e claras | o lago congelado (o que tem a meta "gelo") |
+| metal | chapas de 2 m com emendas e rebites | fábrica (3-2) |
+| algodão | bolinhas fofas | nuvens de algodão-doce (2-2) |
+
+**Na ilha:** o terreno gerado (`Terreno/Malha`) troca de material para o `terreno_da_ilha.gdshader`. O shader descobre o que é cada pedaço de chão pela cor que o `tools/gerar_ilha.gd` pinta, então a paleta dos dois precisa ser a mesma (há um aviso no gerador).
+- O campo e a mata ganharam desenho com cor própria (pedido do usuário em 2026-11-11: "é possível melhorar a textura da parte de grama e mata?"). Os outros chões só clareiam e escurecem.
+- As florzinhas somem antes do resto com a distância: de longe viravam chuvisco.
+- As fotos de antes e depois usam a mesma luz da ilha no jogo, de dia.
+
+**A vegetação da ilha em 3D** (pedido do usuário em 2026-11-11, com uma imagem de referência de campo cheio de grama alta, trevos, florzinhas e samambaias: "não precisa ser nesse tom realista, mas eu tinha imaginado algo mais abundante de vegetação"):
+- **As plantas** (`scripts/vegetacao/plantas_3d.gd`), cada uma com poucos triângulos, desenhadas aos milhares de uma vez (MultiMesh):
+  - o tufo de grama: doze folhas compridas e finas, curvadas para fora;
+  - os trevos: cinco trevos de três folhas redondas, rentes ao chão;
+  - a florzinha: caule de até uns 60 cm, mais alto que a grama, e a flor de cinco pétalas em cinco cores (branca, amarela, rosa, azul-clara e laranja);
+  - a samambaia: sete folhas em arco com o contorno recortado.
+- **Onde nascem** (`scripts/vegetacao/vegetacao_ilha.gd`): só no campo e na mata, pela cor de cada triângulo do terreno.
+  - Campo: tufos por todo lado, mais altos e mais cheios em manchas, trevos e florzinhas nos prados.
+  - Mata: grama mais rala (aparecem as folhas secas do chão), samambaias e trevos.
+  - Nada nasce embaixo do que está em cima do chão (casa, cerca, pedra, pista, deque): um raio de cima confere cada planta.
+  - Em volta dos lugares das caixas de munição, que ficam no chão, só trevos. Os corações, os prêmios e os bilhetes flutuam acima da grama.
+- **Em pedaços de 16 m** criados em volta da câmera (até 40 m) e apagados quando ela se afasta (60 m), montados aos poucos (até 6 ms por quadro). Os pedaços em volta do começo saem já montados.
+- **O desenho** (`scripts/vegetacao/vegetacao.gdshader`):
+  - a cor de cada planta é a do chão onde ela nasceu, com as mesmas manchas de sol e de musgo do desenho do chão; o pé é mais escuro e a ponta mais clara;
+  - a ponta balança com o vento e abre para longe do jogador quando ele passa;
+  - de longe (entre 26 e 38 m da câmera), as plantas encolhem até sumir, e ali o desenho do chão assume.
+- **O custo:** no Mac (M4, 1280x720), um campo cheio tem uns 20 a 28 mil tufos na tela e custou por volta de 1 a 1,5 ms por quadro. Ainda não foi medido no PC.
+- Sem tela (os testes), a vegetação não é montada.
+- **Fotos:** `godot --path . --resolution 1280x720 -s res://tools/foto_vegetacao.gd` (com e sem as plantas, com a contagem e o tempo de cada quadro) e, no jogo de verdade, `-- --vegetacao-captura` (o personagem no campo, no morro e na mata, em `tools/capturas/veg_*.png`).
+
+**A grama e as miudezas nas fases do Faísca** (2026-11-11, depois do item 7; pedidos do usuário: "vamos levar essas texturas melhores que aplicou na ilha pras fases do faisca" e "trabalha na textura e vegetaçao ou outros materias que fazem sentido pra fase"):
+- **A grama com o campo da ilha:** os morros da 1-1 e o chão da arena do Bolotão Fofão trocam de material para o `grama_das_fases.gdshader`, que usa a textura e a cor da peça por baixo e desenha em cima o mesmo campo da ilha. As encostas ficam com as lajes de pedra. Os tufinhos em "V" ficam mais fracos que na ilha (`tufos` = 0,35), porque a câmera do Faísca é mais baixa e eles apareciam como setinhas. O campo e a mata da ilha moram em `campo_e_mata.gdshaderinc`, usado pelos dois.
+- **A vegetação e as miudezas de cada mundo** (`scripts/vegetacao/vegetacao_da_fase.gd` e as peças em `miudezas_3d.gd`): o mesmo jeito da vegetação da ilha (MultiMesh com o `vegetacao.gdshader`, em pedaços de 16 m que somem a uns 46 m), por cima das peças de chão que ganharam a textura:
+
+| Mundo | O que nasce no chão |
+|---|---|
+| grama (1-1 e a arena do Bolotão Fofão) | tufos de grama na cor da grama embaixo, trevos e florzinhas |
+| pedra (túneis da 1-2) | musgo baixinho e pedrinhas |
+| madeira (cozinha da 2-1 e a mesa do Chef) | farelos e granulado |
+| algodão (nuvens da 2-2) | granulado colorido e confeitos |
+| tapete (quarto da 2-3) | pecinhas de montar e bolinhas de gude (brilhantes), poucas para não parecerem coisa de pegar |
+| neve (pico da 3-1 e a arena do Pinguinzão) | tufos de geada saindo da neve, montinhos de neve e cristais (nada em cima do lago congelado) |
+| metal (fábrica da 3-2) | porcas e parafusos de metal |
+
+- **Onde nasce:** nas faces de cima de cada peça de chão do mundo, sorteadas pela área. Cada ponto é conferido por um raio de cima: nada embaixo de outra peça ou de caixa, nem em cima do gelo. Fica longe:
+  - do que se usa no chão (botões, molas, postos, alavancas e o que mais tem regra própria);
+  - do caminho de quem anda de um lado para o outro (rolo de massa, bolas de neve, dados, carrinhos, caronas e plataformas);
+  - das poças e do caminho creme.
+- As miudezas não balançam, e a luz usa as normais delas (o shader ganhou o modo `rigido`, com aspereza, metal e brilho de cada uma).
+- Sem tela (os testes), não é montada; o `--faisca-mundo` liga para conferir (`VegetacaoDaFase.nos_testes`). Para isso, a vegetação guarda uma amostra de onde pôs cada tipo, já que sem tela o Godot não guarda as posições do MultiMesh.
+- **A tela preta ao entrar na fase** (relato do usuário em 2026-11-12: "na primeira fase do jogo, a tela fica preta por um período longo enquanto o som do laser dos pés do faísca toca, depois de alguns segundos a tela mostra o faísca chegado. é um loading?"):
+  - **a causa:** para dar a cor do chão a cada tufo de grama, a vegetação lia a malha da peça com `surface_get_arrays` a cada tufo. Com tela, isso busca a malha de volta na placa de vídeo e espera por ela; sem tela, nos testes, é barato, e por isso não aparecia. Na 1-1 são uns 9 mil tufos: medido no Mac com janela, o primeiro quadro da fase levava 7,6 s, e sem a vegetação, 30 ms. Enquanto isso, o Faísca já descia com o laser ligado (o som) e a tela não clareava;
+  - **o conserto:** os dados de cada malha são lidos uma vez só e guardados durante a montagem (`VegetacaoDaFase._dados_da_malha`). O primeiro quadro da 1-1 foi para 0,46 s (2-2 e 3-1, uns 0,6 s);
+  - **a entrada na fase** (`FaiscaJogo._esperar_a_fase_assentar`) passa pelos primeiros quadros, os mais pesados (a vegetação, o mundo que reage e os shaders compilando), com a tela ainda escura e o Faísca parado lá no alto, e só depois clareia e ele desce. Medido no Mac, da porta até a tela clara: 9,2 s antes, 1,6 s agora; o pouso, de 11,8 s para 4,4 s, com a descida inteira à vista;
+  - para medir, com janela: `tools/medir_entrada.gd` (da porta até o pouso, quadro a quadro) e `tools/medir_montagem.gd` (o `_ready` e os primeiros quadros de uma fase, tirando partes: `sem-vegetacao`, `sem-textura`, `sem-sombra`, `sem-shader`).
+- **Testes:** o `--faisca-mundo` confere, em cada fase:
+  - que a turma do mundo nasce no chão;
+  - que, das quase 10 mil amostras, nenhuma fica embaixo de outra coisa, no gelo, numa poça ou em cima do que se usa;
+  - que a grama da 1-1 ganhou o campo com cor.
+- **Fotos:** o `tools/foto_chao.gd` tira a vegetação junto com o desenho nas fotos "sem", e fotografa também a arena do Bolotão Fofão (`-- chefe-1`).
+
+**No Faísca:** cada fase, ao terminar de montar, põe o `detalhe_do_chao.gdshader` por cima (`material_overlay`) das peças de chão, com o desenho da `superficie` dela (`TexturaDoChao.na_fase`).
+- Contam como chão: as peças sólidas, de pelo menos 3 x 3 m, com material comum.
+- Os morros do Forest Nature levam grama em cima e pedra nas encostas.
+- Ficam lisos:
+  - as plataformas de plástico do Platformer (são brinquedo);
+  - a água e o que tem shader próprio;
+  - os enfeites;
+  - o que se mexe ou tem regra própria (plataforma que anda, pizza que gira, nuvem que some, caixa que quebra), porque o desenho é preso no mundo e escorregaria por cima.
+
+**Fotos de antes e depois:** `godot --path . --resolution 1280x720 -s res://tools/foto_chao.gd [-- ilha 1-1 ...]`, em `tools/capturas/chao/`. O `--faisca-mundo` confere que cada fase tem chão com textura e que nada do que se mexe ganhou.
+
+### Momentos especiais e fases mais longas (itens 9 e 12 da lista, desde 2026-11-11)
+
+Pedido do usuário: "vamos fazer o 9 e 12". O plano aprovado ("Aprovar e começar"):
+- fase por fase, um momento especial em cada uma;
+- na 1-1, na 1-2 e na 2-1, o momento vira o quinto playground (o trecho novo que deixa a fase mais longa), e cada saída passa a pedir uma tarefa;
+- a revisão da 2-1 entra junto com ela;
+- depois, a 3-3 (aprovada e construída em 2026-11-12, com o vendaval) e a nave final com o Rei Bolotão (proposta antes de construir).
+
+| Fase | Momento especial |
+|---|---|
+| 1-1 | a Bolota gigante rolando na Ponte Fofa (feito) |
+| 1-2 | a fuga no carrinho de mina, com o túnel desmoronando (feito) |
+| 2-1 | a cozinha alagando: a pia transborda e a água sobe em três etapas (feito) |
+| 2-2 | a chuva de confeitos gigantes, que viram degraus (feito) |
+| 2-3 | a luz do quarto apaga e os brinquedos que brilham mostram o caminho (feito) |
+| 3-1 | a avalanche na Encosta das Avalanches (feito) |
+| 3-2 | a linha de montagem dispara (feito) |
+| 3-3 | o vendaval que leva o Faísca voando em volta do Moinho Gigante até o topo (feito) |
+
+**1-1 Pulinhos nas Nuvens (feito em 2026-11-11):**
+- **A Ponte Fofa, o playground 4 novo** (no lugar da plataforma que ia do Jardim até a torre; a Subida virou o 5):
+  - do arco do Jardim, um pátio largo com posto;
+  - dele sai a estrada de nuvem: três trechos de 6 m de largura, com muretas azuis só do lado de lá (do lado da câmera elas tapavam o Faísca) e vãos de 2 a 2,5 m;
+  - no fim, o pátio da curva, de onde um caminho leva ao começo da subida.
+- **A Bolota gigante** (`scripts/faisca/bolota_gigante.gd`, `Fase.corrida_da_bolota`):
+  - passando pelo gatilho do primeiro trecho, ela cai do céu atrás do Faísca e rola pelo meio da estrada, a 5 m/s (ele corre a 6,5);
+  - a bola gira inteira, com listras lilases, e a cara (olhos, sobrancelhas, sorrisão e antena) fica sempre para a frente;
+  - o controle treme mais quanto mais perto ela está, e ela tem o som `rolar` (`python3 tools/gerar_sons.py momentos`);
+  - se alcançar, o Faísca fica achatadinho e volta ao pátio do começo, sem perder coração, e ela cai de novo quando ele passar pelo gatilho;
+  - no pátio da curva ela segue reto, cai nas nuvens, e aparecem 8 estrelinhas de prêmio (já contadas no total) e 10 moedas.
+- **A câmera de lado** (o começo do item 8: `ZonaDeCamera`, `Fase.zona_de_camera` e `Jogador.camera_guiada`):
+  - na estrada, a câmera vai devagar para o lado oeste, olhando para leste, e o Faísca corre da esquerda para a direita da tela;
+  - o analógico direito e o mouse não giram;
+  - saindo da estrada, a câmera volta a ser solta.
+- **As saídas com tarefa:**
+  - a cancela vermelha da ponte de esteiras (`Fase.cancela_da_alavanca`) só abre com o soco na alavanca lá no alto do morrinho, que pede os degraus pulando, com a dica da alavanca;
+  - o canhão das Argolas fica com rolha (`Canhao.travar`), com uma luzinha na base para cada argola; com as quatro acesas, a rolha salta. O Vovô tem uma dica nova, "argolas": a argola e as quatro luzinhas.
+  - o portão das flores do Jardim já era uma tarefa.
+- **As contas:**
+  - 102 estrelinhas soltas e 141 com as das Bolotas (eram 82 e 118);
+  - 13 Bolotas (uma acordada a mais no playground 1);
+  - 4 postos (o novo fica no começo da Ponte Fofa);
+  - 2 plataformas que se mexem.
+- **Testes:** o `--faisca-fase` confere:
+  - as contas novas e os cinco playgrounds;
+  - a cancela segurando o caminho até o soco na alavanca;
+  - o canhão com rolha até as quatro argolas;
+  - na Ponte Fofa: a Bolota caindo atrás com a câmera de lado; parado, ela alcança e ele volta sem perder coração; fora da estrada, a câmera solta; e uma corrida de verdade, com o analógico para a direita da tela e os três pulos, em que ela não alcança, cai e o prêmio aparece.
+- **Fotos:** `--faisca-fase-captura` ganhou a cancela, a alavanca, o canhão com rolha, a Ponte Fofa de cima e a corrida de lado.
+
+**1-2 Túneis do Morro (feito em 2026-11-11):**
+- **A Estação dos Trilhos, o playground 4 novo** (no lugar da balsa que ia da Sala das Alavancas até o Poço dos Cristais; o Poço virou o 5):
+  - a grade amarela da sala agora leva a uma estação de pedra a leste (16 m de altura), com posto, duas Bolotas (uma cogumelo dormindo) e a dica da tocha;
+  - o carrinho da fuga fica parado de lanternas apagadas; ele só sai com as duas tochas da estação acesas pelo laser, uma no chão e outra em cima do caixote de 3 m (o pulo do caixote baixo para o alto);
+  - o barril da sala mudou de lugar para não tapar a porta nova.
+- **A fuga no carrinho** (`scripts/faisca/carrinho_da_fuga.gd`, que herda o `CarrinhoDeMina`):
+  - um trilho de uns 105 m pendurado no escuro, em cavaletes, com curvas macias, uma descida de 3 m e a volta pelo norte até a estação de chegada, na entrada do Poço dos Cristais;
+  - o Faísca vai sentado: o carrinho leva ele (como o canhão), porque solto ele saía voando nas curvas. O pulo (A) é só para cima, dentro do carrinho;
+  - a câmera vai por trás, virando junto nas curvas (`camera_guiada` com o yaw do trilho);
+  - atrás, o túnel desmorona: pedras grandes caindo no trilho uns 6 m depois do carrinho, com poeira, o som `rolar` e o controle tremendo;
+  - estrelinhas no trilho (pegam sozinhas) e três arcos altos de três estrelinhas, que só se pegam pulando na hora;
+  - na chegada, ele desce na frente do carrinho, com o controle e a câmera soltos, e o carrinho volta sozinho para a estação depois de 2 s vazio.
+- **As saídas com tarefa:**
+  - o elevador da mina fica parado embaixo até o soco na alavanca em cima de dois caixotes no canto da mina (com a dica da alavanca);
+  - a porta das tochas e a grade amarela já eram tarefas;
+  - o carrinho da fuga pede as duas lanternas.
+- **As contas:**
+  - 110 estrelinhas soltas e 155 com as das Bolotas;
+  - 15 Bolotas (com a Bolotona e as 3 filhas);
+  - 4 postos, 23 tochas (14 já acesas);
+  - 1 plataforma que se mexe (a balsa saiu).
+- **Testes:** o `--faisca-fase-1-2` confere:
+  - as contas novas e os cinco playgrounds;
+  - o elevador parado até a alavanca, com os pulos de verdade nos caixotes;
+  - o carrinho da fuga apagado até o laser nas duas lanternas;
+  - a viagem inteira: dentro o tempo todo, as estrelinhas do trilho, as pedras caindo atrás, os pulos nos três arcos (9 de 9), a câmera solta na chegada e o Faísca andando para dentro do Poço dos Cristais.
+- **Fotos:** `--faisca-fase-1-2-captura` ganhou os caixotes do elevador, a estação de cima, o trilho visto de longe, a fuga por trás e a fuga na curva.
+
+**2-1 Cozinha Gigante (feito em 2026-11-11):**
+- **A revisão dos glitches** (o pedido de 2026-10-30, "a fase da cozinha tem muitos glitches visuais"). As fotos não mostravam nada quebrado parado, então procurei o que pisca com a câmera andando: duas peças com faces no mesmo plano (z-fighting).
+  - Na 2-1: as duas tábuas da ponte uma por cima da outra e rentes ao tampo da mesa e da bancada; a pizza com o prato no plano do tampo da mesa (girando, o pisca mudava o tempo todo); as duas prateleiras de trás da geladeira no mesmo lugar; e a janela 5 cm atrás da faixa de azulejo. As tábuas e a pizza subiram uns centímetros, a prateleira ficou mais curta e a janela foi para cima do azulejo.
+  - Nas outras fases, o mesmo problema: o pilar de doce e a cobertura dele, a ilha alta e a ponte de wafer (2-2); os pilares do trem repetidos nas quinas, em cores diferentes, e a ponte levadiça no plano da parede do castelo (2-3); a pedra e o gelo do pico no plano das tampas de neve, e a coluna da pedra alta do V2 (3-1); a coluna dos pistões no meio da placa laranja, e as passarelas rentes às plataformas (3-2); os ladrilhos, as paredes e as plataformas de tábua rentes às rochas (1-2). As caronas parando na estação (o piso delas no plano do chão de lá) também: o desenho fica 1,5 cm acima da colisão.
+  - O revisor de piscadas, `godot --headless --path . -s res://tools/revisor_piscadas.gd [-- 2-1 ...]`, faz essa busca em todas as fases e arenas de chefe. Ficam de fora as faces viradas para baixo, as escondidas dentro de outra peça e as de material igual. Depois dos consertos, dá 0.
+  - O desenho de tábuas (item 13) ia em cima de tudo o que é chão na 2-1, inclusive a geladeira, os pratos, as panelas e o fogão. A fase agora escolhe (`Fase21.leva_desenho`, chamado pelo `TexturaDoChao.na_fase`): só a madeira (bancadas, mesas, cadeiras, tábuas, caixotes e as prateleiras).
+  - De quebra, a vegetação passou a desviar da faixa inteira por onde rola o rolo de massa (ele tem quase 9 m atravessados), e não só da linha do meio.
+- **A Cozinha Alagando, o playground 5 novo** (no canto da janela, a leste da pia; no lugar das bolhas de degrau que iam da bancada da pia até a prateleira):
+  - a saída da pia é o registro (a roda vermelha, `Registro`) na bancada do fim, com o arco amarelo e a dica nova do Vovô ("registro": o soco, a roda girando, a água subindo e a esponja boiando);
+  - cada registro girado sobe a água uma etapa (`Enchente`): o jorro da torneira, a pia transbordando numa cascata pela frente dela (com espuma embaixo) e o chão da cozinha inteira enchendo, devagar, com o som novo `enchente` (`python3 tools/gerar_sons.py momentos`). As etapas param em 3,1, 5,2 e 7,2 m, abaixo dos tampos (8 m) e fora da altura de qualquer tampo, para a água não piscar com eles;
+  - o que boia (`Boia`: esponjas, pratos, o patinho de borracha e o pote de sorvete) fica deitado no chão seco, onde pisar é cair, e sobe com a água. Encostar na água é cair, como na pia;
+  - etapa 1: esponja, prato e esponja levam da bancada até o degrau de baixo da escadinha de madeira; ela sobe até o P4 e o registro 2, com uma Bolota cogumelo;
+  - etapa 2 (o degrau de baixo fica embaixo d'água): esponja, prato e esponja até o balde azul virado, com o registro 3 em cima; de lado, o patinho leva o V3 nas costas (ele olha para a parede, e quem chega do prato cai perto do rabo);
+  - etapa 3: prato e o pote de sorvete (que boia mais alto) até a torre de potes, que sobe de 1,9 em 1,9 m; do alto dela, a bandeja leva (subindo 1 m) até a prateleira atrás da geladeira, onde agora tem um coração, e dali ao sorvete que joga para a arena;
+  - sem a água, da bancada não se chega a nada do playground, e da borda da pia não se sobe na torre.
+- **As contas:** 97 estrelinhas soltas e 127 com as das Bolotas (eram 81 e 108), 10 Bolotas, 4 postos, 5 coisas que se mexem (os 4 pratos e a bandeja), 3 registros e 9 boias.
+- **Testes:** o `--faisca-fase-2-1` confere as contas novas e os cinco playgrounds. Na enchente, confere:
+  - a água escondida antes do registro, e que o pulo mais longo da bancada (correndo e flutuando) cai no chão;
+  - a dica, cada registro e cada etapa;
+  - todos os pulos de boia em boia de verdade, saindo da beirada como quem joga;
+  - o V3 no patinho, cair na água, a torre, a bandeja, o coração e o sorvete.
+- **Fotos:** `--faisca-fase-2-1-captura` ganhou a cozinha seca, o registro, as três etapas, a cascata, o patinho, a torre com a bandeja e a cozinha alagada de cima.
+
+**2-2 Nuvens de Algodão-Doce (feito em 2026-11-11):** a fase já tinha cinco playgrounds e tarefa em cada saída, então ganhou só o momento, no fim da Subida do Bolo, no lugar da cereja que jogava do último biscoito até a arena.
+- **O pote de confeitos** (`scripts/faisca/pote_de_confeitos.gd`), no último biscoito, com a dica nova do Vovô ("confeitos": o soco, o pote virando, a chuva e os três degraus).
+  - Um soco (ou o giro) e ele pula lá para o alto, vira de boca para baixo em cima do bolo e chacoalha por uns 3 s, com o som novo `confeitos` (`python3 tools/gerar_sons.py momentos`).
+  - Chove confeito colorido no bolo inteiro: os miudinhos ficam espalhados no topo e no anel, de enfeite (uns 120; um material por cor).
+  - Os três confeitos grandes (redondos, de 4,8 m) caem um depois do outro e cravam na parede do andar de cima, com poeira, o "tum" e o controle tremendo. Ficam 1,4 m um acima do outro, no sentido do relógio, e do último se sobe na arena, entre as cerejas da cerquinha.
+  - O balão de chiclete continua podendo encurtar a subida, como antes.
+- **Testes:** o `--faisca-fase-2-2` confere:
+  - os confeitos grandes ausentes antes do pote, e que, sem eles e sem o balão, o pulo mais longo do último biscoito cai;
+  - a dica, o soco, a chuva (os grandes cravados e os miudinhos no bolo);
+  - os pulos de verdade nos três confeitos e a subida na arena.
+- **Fotos:** `--faisca-fase-2-2-captura` ganhou o pote, a chuva caindo, a escadinha de perto e de fora, e a arena coberta de confeito.
+
+**2-3 Quarto de Brinquedos (feito em 2026-11-11):** como a 2-2, já tinha cinco playgrounds e tarefas, e ganhou só o momento, no playground 4 (O Chão É Lava).
+- **A luz do quarto apaga** quando o P3 acende, na chegada do carrinho de corda (uma vez só, e não depois da ponte abaixada):
+  - o interruptor gigante na parede leste (a placa, a tecla e a luzinha laranja que se vê no escuro) desliga com um "tlec" (som novo `interruptor`);
+  - o quarto fica de noite: fundo e luz azuis, o sol virando luar, a janela escura com a lua, e 22 estrelinhas de colar nas paredes norte e leste brilhando verde-claro;
+  - a lava continua brilhando, e os nove brinquedos que brilham no escuro (estrela, bola e cubinho, nas seis almofadas e em cima das três cartas) acendem um por um na ordem do caminho, cada um com um "plim" (som novo `brilha`) e uma luz colorida em volta;
+  - com as três alavancas e a ponte levadiça no lugar, a tecla volta, é dia de novo e os brinquedos apagam.
+- **Testes:** o `--faisca-fase-2-3` confere a luz apagando na chegada, os nove brinquedos acendendo um por um, e a luz voltando com a ponte.
+- **Fotos:** `--faisca-fase-2-3-captura` ganhou a lava no escuro de dentro e de cima, e o interruptor.
+
+**3-1 Pico Gelado (feito em 2026-11-11):** a fase também já tinha cinco playgrounds e tarefas. A avalanche ficou na saída da Encosta das Avalanches: o trecho do anel do pico entre a chegada da ponte de gelo (-26°) e a neve fofa, que antes era só um caminho a pé (`scripts/faisca/avalanche.gd`).
+- **A avalanche grande:** chegando no anel, ela despenca pela parede do pico no setor todo, com o ronco (`rolar`) e o controle tremendo forte. É só de ver: não pega ninguém.
+- **As calhas:** depois dela, duas calhas (em -40° e -62°) soltam neve no ritmo, uma a cada 5 s, a segunda meio ciclo atrás.
+  - Cada calha é uma faixa lisa de neve na parede, com a cornija lá no alto (as primeiras eram lombadas empilhadas e pareciam prateleiras de subir).
+  - Antes de cada onda vem o aviso: bolinhas de neve escorregando, o ronco e uma tremidinha.
+  - A onda desce a parede, atravessa o anel em 1 s e cai da beira.
+  - Quem ela pega vira uma bola de neve um instante e volta ao abrigo de antes, sem perder coração.
+- **Os abrigos:** três (em -30°, -51° e -73°), cada um com um boneco de neve encostado na parede, de escudo. Do lado de fora, o boneco ficava entre a câmera e o Faísca.
+- **O P4** mudou para o último abrigo, depois da avalanche. A neve fofa e a dica dela foram uns graus adiante (-78°).
+- **A câmera:** de lado, de fora do anel, olhando para a parede; o Faísca anda da esquerda para a direita e a neve desce de frente. São duas zonas, cada uma olhando para o meio do seu trecho, e a primeira começa depois do arco de saída da Encosta, que tapava a vista.
+- **Testes:** o `--faisca-fase-3-1` confere:
+  - a avalanche grande na chegada;
+  - parado na calha, a onda pega e ele volta ao abrigo sem perder coração;
+  - a travessia de verdade: esperando cada onda passar e correndo com o analógico conforme a câmera, de abrigo em abrigo até o P4, sem ser pego.
+- **Fotos:** `--faisca-fase-3-1-captura` ganhou a avalanche grande, a onda no anel e as calhas de fora.
+
+**3-2 Fábrica de Blocos (feito em 2026-11-11):** também já tinha cinco playgrounds e tarefas. O momento ficou na ponte de blocos, entre o Andar da Pintura e o anel da máquina (`scripts/faisca/linha_de_montagem.gd`).
+- **A linha dispara** quando o último vão da ponte chega no lugar:
+  - o giroflex vermelho em cima da boca da máquina (nova, na parede leste da parte de cima, de frente para a ponte) acende e gira;
+  - a sirene toca (som novo `alarme`), sai vapor e o controle treme.
+- **Os blocos:** a máquina passa a cuspir blocos de brinquedo amarelos a cada 2,8 s (da mesma cor da ponte, vermelhos, azuis e verdes, eles sumiam nela).
+  - Eles deslizam ponte abaixo a 4 m/s, descendo cada degrau, e no fim tombam lá para baixo.
+  - Vêm numa faixa ou na outra (dá para desviar, e o meio da ponte fica livre dos pequenos), e a cada quatro vem um largo, que pega a ponte toda e só se passa pulando.
+  - A linha fica 85 cm para o sul do meio da ponte, para a faixa de cá não encostar na primeira saliência da subida.
+  - Quem um bloco pega é empurrado ponte abaixo, sem perder coração.
+- **Testes:** o `--faisca-fase-3-2` confere:
+  - a linha disparando com a ponte pronta;
+  - o bloco empurrando quem fica na faixa dele, sem tirar coração;
+  - o bloco passando ao lado de quem está na outra faixa;
+  - o pulo por cima do largo.
+  - A subida degrau por degrau, que já era conferida, roda com a linha pausada (`LinhaDeMontagem.pausada`).
+- **Fotos:** `--faisca-fase-3-2-captura` ganhou a linha disparada de dentro da ponte e os blocos na ponte de lado.
+
+### Em aberto
+
+- **Faisquinha já salvo parecido demais com o novo** (relato do usuário em 2026-11-12: "pego os mesmos mini faiscas e a contagem cresce", até 6 de 6, "mesmo não achando os últimos 3"). A conta estava certa: o save do PC tinha na 1-1 os três de antes ("0", "1" e "2", os antigos vaga-lumes) e, nessa partida, contaram o "3", o "4" e o "5", os três que entraram na fase em 2026-11-11 (dois nos bolsos e o da Bolota-cogumelo). O já salvo é só o mesmo boneco com 40% de transparência, na mesma bolha lilás um pouco mais apagada, e sozinho, de longe, quase não se nota . O `--faisca-jogo` agora confere o caso (com "0", "1" e "2" salvos, as três bolhas dão uma moeda cada e não contam, e um novo conta). Resolvido no mesmo dia, a pedido do usuário: o já salvo virou uma bolha com uma moeda dentro (ver "O que acontece com ele", nos Faisquinhas).
+- Nome da Parte 2. O provisório é "Faísca e o Céu Apagado".
+- Chefes no fim de cada andar (no projeto Faísca era uma Bolota grande por mundo).
+- Se o Faísca pode dirigir o kart.
+- **Revisar a 2-1 Cozinha Gigante** (pedido do usuário em 2026-10-30: "a fase da cozinha tem muitos glitches visuais"). Feito em 2026-11-11 (ver "Momentos especiais e fases mais longas"): as peças no mesmo plano que piscavam e as tábuas desenhadas na geladeira e nas louças. Se o usuário ainda vir algo jogando, pedir o lugar.
+- **Fases mais longas** (pedido do usuário em 2026-10-30: "a duração das fases precisa aumentar, as crianças estão zerando muito rápido"). Feito: a 2-2 e a 2-3 já nasceram com cinco playgrounds e tarefa em cada saída, e a 1-1, a 1-2 e a 2-1 ficaram assim em 2026-11-11 (ver "Momentos especiais e fases mais longas").
+- **Teste `--ilha` instável na viela** (visto em 2026-10-30; resolvido em 2026-11-11: o esqueleto que dorme em (30, 110) acordava e travava a viela, e o teste agora tira ele antes): rodando na bateria completa, depois dos outros testes, o trecho "anda pela viela do quarteirão até a rua do outro lado" falhou três vezes parando no mesmo ponto (43,5; 145,1), e sozinho passa. Não é das mudanças da 2-2 e da 2-3, que não mexem na ilha. Ainda não investigado.
+  - Na bateria de 2026-10-30, depois do revisor de física, falhou de novo no mesmo ponto. Desta vez o `--armas` também falhou uma vez ("com duas pistolas, cada tiro tira 75% do dano", sem valor medido). Sozinhos, os dois passaram.
+- **Jogo fecha ao entrar na pista de kart** (relato do usuário em 2026-10-30, no Bazzite: "quando pega o kart e entra na pista o jogo travou e fechou"). Resolvido em 2026-10-31: o piloto rival vinha da pasta que fica fora da build (ver a memória do projeto e a seção do kart).
+  - Foram dois fechamentos seguidos, às 17:53:17 e às 17:53:57, os dois por SIGSEGV na thread principal. A pilha repete sempre o mesmo trio de endereços do executável (`+0x3e89ce`, `+0x2c2e402`, `+0x2a61dc6`, `+0x526b10`), o que lembra recursão infinita em GDScript (estouro da pilha; a build de release não escreve o erro no log).
+  - Os coredumps estão no PC (`coredumpctl info 152449` e `154948`). O log da Godot nessas sessões só tem o erro de sempre do `Mage.glb` na abertura.
+  - Para começar: não se sabe se era uma criança ou o Faísca no kart. Rodar o `--atividades` e o `--pista-kart`, e uma volta de kart com o Faísca, na build de debug.

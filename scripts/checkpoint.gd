@@ -36,7 +36,8 @@ func _ready() -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	if body is Player and not active:
+	# O Faísca (Parte 2) também acende: com ele, o aventureiro fica guardado e sem colisão.
+	if (body is Player or body is Jogador) and not active:
 		activated.emit(self)
 
 
