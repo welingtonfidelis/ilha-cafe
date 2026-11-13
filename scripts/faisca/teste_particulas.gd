@@ -273,6 +273,39 @@ func capturar_visual() -> void:
 	m.get_tree().quit()
 
 
+## As bolhas de sabão da pia (2-1), pela câmera do jogo, saindo do P3, e de lado mais perto (2026-11-13: as crianças
+## tinham dificuldade de ver as bolhas). Uso: godot --path . -- --faisca-bolhas-captura --prefixo=antes
+## (em tools/capturas/faisca/bolhas/)
+func capturar_bolhas() -> void:
+	var prefixo := "foto"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--prefixo="):
+			prefixo = a.substr(10)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(m.PASTA_CAPTURAS + "bolhas/"))
+	m._comecar_fase()
+	await m._esperar(4.0)
+	j.teleportar(Vector3(21.5, 8.1, -94.0))
+	j.yaw = PI
+	j.pitch = -0.32
+	j.visual.rotation.y = 0.0
+	j.camera.make_current()
+	await m._esperar(1.5)
+	await m._foto("bolhas/%s_1_saindo_do_posto" % prefixo)
+	j.teleportar(Vector3(22.5, 8.9, -80.0))
+	j.yaw = PI
+	await m._esperar(1.5)
+	await m._foto("bolhas/%s_2_no_prato" % prefixo)
+	var cam := Camera3D.new()
+	cam.fov = 50.0
+	m.add_child(cam)
+	cam.global_position = Vector3(12.0, 13.0, -80.0)
+	cam.look_at(Vector3(21.0, 8.0, -76.0))
+	cam.make_current()
+	await m._esperar(0.5)
+	await m._foto("bolhas/%s_3_de_lado" % prefixo)
+	m.get_tree().quit()
+
+
 ## Câmera de cima e de lado (uns 35 graus), a `longe` m de `meio`, do lado `para`.
 func _alto(cam: Camera3D, meio: Vector3, longe: float, para := Vector3.BACK) -> void:
 	var lado := para.cross(Vector3.UP).normalized()

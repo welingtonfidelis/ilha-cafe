@@ -18,7 +18,7 @@ extends Node3D
 ## precisam de janela).
 
 const CENA := "res://scenes/faisca.tscn"
-const MODOS := ["--faisca-jogo", "--faisca-jogo-captura", "--faisca-farol-captura", "--faisca-brindes-captura"]
+const MODOS := ["--faisca-jogo", "--faisca-jogo-captura", "--faisca-farol-captura", "--faisca-brindes-captura", "--faisca-trem-captura"]
 ## As fases, na ordem das portas, com o andar do farol (0 é o térreo; cada andar é um mundo) e o lado da
 ## parede em graus. "cena" vazia é porta que abre mas ainda mostra "Em breve". Nomes e números das que
 ## faltam fazer vêm do mapa da seção 11 do doc e mudam quando cada uma for planejada. A porta do chefe de cada andar
@@ -161,6 +161,9 @@ func _ready() -> void:
 	elif "--faisca-farol-captura" in args:
 		_teste = TesteFaiscaJogo.new(self)
 		_teste.capturar_farol()
+	elif "--faisca-trem-captura" in args:
+		_teste = TesteFaiscaJogo.new(self)
+		_teste.capturar_trem()
 	elif "--faisca-brindes-captura" in args:
 		_teste = TesteFaiscaJogo.new(self)
 		_teste.capturar_brindes()

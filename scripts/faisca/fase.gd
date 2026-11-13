@@ -1440,17 +1440,18 @@ func agua(centro: Vector3, tamanho: Vector2) -> Area3D:
 	plano.material_override = m
 	plano.position = centro
 	add_child(so_enfeite(plano))
-	# Espuma: bolinhas brancas boiando.
+	# Espuma: bolinhas brancas boiando, pequenas e achatadas. Até 2026-11-13 eram umas 70 bolotas de até 0,8 m, que
+	# pareciam pedrinhas de pisar e escondiam as bolhas de sabão (as crianças não achavam as bolhas).
 	var espuma := StandardMaterial3D.new()
-	espuma.albedo_color = Color("f4fbff")
+	espuma.albedo_color = Color("eef7ff")
 	espuma.roughness = 0.9
 	var gerador := RandomNumberGenerator.new()
 	gerador.seed = int(centro.z * 10.0)
-	for i in int(tamanho.x * tamanho.y / 6.0):
+	for i in int(tamanho.x * tamanho.y / 16.0):
 		var bola := MeshInstance3D.new()
 		var esfera := SphereMesh.new()
-		esfera.radius = gerador.randf_range(0.3, 0.8)
-		esfera.height = esfera.radius * 1.2
+		esfera.radius = gerador.randf_range(0.18, 0.42)
+		esfera.height = esfera.radius * 0.6
 		bola.mesh = esfera
 		bola.material_override = espuma
 		bola.position = centro + Vector3(gerador.randf_range(-0.5, 0.5) * tamanho.x, 0.05, gerador.randf_range(-0.5, 0.5) * tamanho.y)

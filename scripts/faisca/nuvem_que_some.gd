@@ -14,6 +14,9 @@ var bolha := false
 var pingente := false
 var sumida := false
 var _visual: Node3D
+## A bolha de sabão (desenho e espuma) balança devagar dentro do _visual (que treme quando ela vai estourar).
+var _bolha: Node3D
+var _tempo := 0.0
 var _forma: CollisionShape3D
 var _contando := -1.0
 
@@ -25,21 +28,41 @@ func _ready() -> void:
 	_visual = Node3D.new()
 	add_child(_visual)
 	if bolha:
-		var b := StandardMaterial3D.new()
-		b.albedo_color = Color(0.85, 0.95, 1.0, 0.45)
-		b.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		b.metallic = 0.3
-		b.roughness = 0.05
-		b.rim_enabled = true
-		b.rim = 1.0
-		b.emission_enabled = true
-		b.emission = Color("b8f0ff")
-		b.emission_energy_multiplier = 0.25
+		# Bem visível para criança (2026-11-13): a película de arco-íris (bolha_sabao.gdshader), mais alta, um brilho
+		# branco em cima e um anel de espuma branca na linha da água, marcando onde a bolha está. Antes era uma esfera
+		# azul clarinha, quase transparente, que sumia contra a água.
+		_bolha = Node3D.new()
+		_visual.add_child(_bolha)
+		var b := ShaderMaterial.new()
+		b.shader = preload("res://scripts/faisca/bolha_sabao.gdshader")
 		var esfera := MeshInstance3D.new()
-		esfera.mesh = Forma.superelipsoide(Vector3(raio, raio * 0.55, raio), 1.0, 1.0)
+		esfera.mesh = Forma.superelipsoide(Vector3(raio, raio * 0.72, raio), 1.0, 1.0)
 		esfera.material_override = b
-		esfera.position.y = -raio * 0.5
-		_visual.add_child(esfera)
+		esfera.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		esfera.position.y = -raio * 0.62
+		_bolha.add_child(esfera)
+		var reflexo := StandardMaterial3D.new()
+		reflexo.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		reflexo.albedo_color = Color(1, 1, 1, 0.9)
+		reflexo.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		var brilho := MeshInstance3D.new()
+		brilho.mesh = Forma.superelipsoide(Vector3(raio * 0.22, raio * 0.08, raio * 0.12), 1.0, 1.0)
+		brilho.material_override = reflexo
+		brilho.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		brilho.position = Vector3(-raio * 0.38, raio * 0.02, raio * 0.3)
+		brilho.rotation = Vector3(0.3, 0.6, 0.35)
+		_bolha.add_child(brilho)
+		var espuma := StandardMaterial3D.new()
+		espuma.albedo_color = Color("fbfdff")
+		espuma.roughness = 0.75
+		for k in 12:
+			var a := TAU * k / 12.0
+			var tufo := MeshInstance3D.new()
+			var r := raio * (0.3 + 0.06 * sin(a * 3.0))
+			tufo.mesh = Forma.superelipsoide(Vector3(r, r * 0.6, r), 1.0, 1.0)
+			tufo.material_override = espuma
+			tufo.position = Vector3(cos(a) * raio * 0.95, -raio * 0.74, sin(a) * raio * 0.95)
+			_bolha.add_child(tufo)
 	if pingente:
 		var gelo := StandardMaterial3D.new()
 		gelo.albedo_color = Color(0.82, 0.72, 1.0, 0.85)
@@ -103,6 +126,10 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _bolha:
+		# Balança de leve, chamando o olho (cada bolha num tempo, pela posição).
+		_tempo += delta
+		_bolha.position.y = sin(_tempo * 2.2 + position.x + position.z * 0.7) * 0.06
 	if _contando < 0.0:
 		return
 	_contando -= delta

@@ -449,9 +449,16 @@ func _chamar_aviao() -> void:
 	aviao.visible = true
 	aviao.collision_layer = 1
 	aviao.process_mode = Node.PROCESS_MODE_INHERIT
-	aviao.scale = Vector3.ONE * 0.05
-	var tw := aviao.create_tween()
-	tw.tween_property(aviao, "scale", Vector3.ONE, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# Só o desenho cresce; o corpo (onde se pisa) já aparece do tamanho certo. Antes o avião inteiro crescia, e o corpo
+	# físico mexido fora do caminho dele podia jogar o Faísca longe (relato do usuário em 2026-11-13: "quando entra no
+	# avião a primeira vez o Faísca é jogado pra longe").
+	var tw := aviao.create_tween().set_parallel()
+	for filho in aviao.get_children():
+		if filho is MeshInstance3D:
+			var desenho := filho as MeshInstance3D
+			var tamanho := desenho.scale
+			desenho.scale = tamanho * 0.05
+			tw.tween_property(desenho, "scale", tamanho, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Fx.confetti(self, aviao.global_position + Vector3.UP * 2.0, 50, 4.0)
 	Sfx.play(self, "bandeira", 0.0, 0.0)
 

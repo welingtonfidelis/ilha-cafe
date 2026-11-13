@@ -68,7 +68,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-fase-3-3", "--faisca-fase-3-3-captura",
-		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-giro-quadros", "--faisca-visual-captura", "--faisca-canhao", "--faisca-canhao-2-2", "--faisca-canhao-3-1", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
+		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-giro-quadros", "--faisca-visual-captura", "--faisca-canhao", "--faisca-canhao-2-2", "--faisca-canhao-3-1", "--faisca-bolhas-captura", "--faisca-aviao", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
 		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1",
 		"--faisca-chefe-2", "--faisca-chefe-2-captura", "--faisca-jogar-chefe-2",
@@ -95,6 +95,7 @@ var _teste_nave: TesteFaseNave
 var _teste_particulas: TesteParticulas
 var _teste_espera: TesteEspera
 var _teste_canhao: TesteCanhao
+var _teste_aviao: TesteAviao
 var _teste_monstro: TesteMonstro
 var _teste_movimento: TesteMovimento
 var _teste_faisquinhas: TesteFaisquinhas
@@ -162,9 +163,9 @@ func _ready() -> void:
 		hud.mostrar_faisquinhas(0, 0)
 	else:
 		var a_1_2 := "--faisca-fase-1-2" in args or "--faisca-fase-1-2-captura" in args or "--faisca-jogar-1-2" in args
-		var a_2_1 := "--faisca-fase-2-1" in args or "--faisca-fase-2-1-captura" in args or "--faisca-jogar-2-1" in args
+		var a_2_1 := "--faisca-bolhas-captura" in args or "--faisca-fase-2-1" in args or "--faisca-fase-2-1-captura" in args or "--faisca-jogar-2-1" in args
 		var a_2_2 := "--faisca-canhao-2-2" in args or "--faisca-fase-2-2" in args or "--faisca-fase-2-2-captura" in args or "--faisca-jogar-2-2" in args
-		var a_2_3 := "--faisca-fase-2-3" in args or "--faisca-fase-2-3-captura" in args or "--faisca-jogar-2-3" in args
+		var a_2_3 := "--faisca-aviao" in args or "--faisca-fase-2-3" in args or "--faisca-fase-2-3-captura" in args or "--faisca-jogar-2-3" in args
 		var a_3_1 := "--faisca-canhao-3-1" in args or "--faisca-fase-3-1" in args or "--faisca-fase-3-1-captura" in args or "--faisca-jogar-3-1" in args
 		var a_3_2 := "--faisca-fase-3-2" in args or "--faisca-fase-3-2-captura" in args or "--faisca-jogar-3-2" in args
 		var a_3_3 := "--faisca-fase-3-3" in args or "--faisca-fase-3-3-captura" in args or "--faisca-jogar-3-3" in args
@@ -291,6 +292,12 @@ func _ready() -> void:
 	elif "--faisca-visual-captura" in args:
 		_teste_particulas = TesteParticulas.new(self)
 		_teste_particulas.capturar_visual()
+	elif "--faisca-aviao" in args:
+		_teste_aviao = TesteAviao.new(self)
+		_teste_aviao.rodar()
+	elif "--faisca-bolhas-captura" in args:
+		_teste_particulas = TesteParticulas.new(self)
+		_teste_particulas.capturar_bolhas()
 	elif "--faisca-canhao" in args or "--faisca-canhao-2-2" in args or "--faisca-canhao-3-1" in args:
 		_teste_canhao = TesteCanhao.new(self)
 		_teste_canhao.rodar()

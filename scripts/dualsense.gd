@@ -38,10 +38,18 @@ var game: Node
 ## Fora da ilha: quem escolhe os efeitos, devolvendo [R2, L2, luz, leds] (luz SEM_LUZ e leds -1 não mexem).
 var perfil: Callable
 var _mexeu_na_luz := false
-## O `dd` que escreve no controle: o cano de entrada dele e o número do processo.
+## O `dd` que escreve no controle: o cano de entrada dele, o de erros e o número do processo. O cano de erros fica
+## guardado: solto, ele fechava, e o `dd` morria de SIGPIPE ao escrever a primeira mensagem de erro (visto no PC em
+## 2026-11-13: um `dd` zumbi com o sinal 13, e os gatilhos mudos até o fim da partida).
 var _cano: FileAccess
+var _erros: FileAccess
 var _pid := -1
 var _procurar := 0.0
+## Quando dá para mandar o próximo relatório só de luz (a luz que pulsa mudava a cada quadro, e 60 relatórios por
+## segundo pelo Bluetooth enchiam a fila do controle).
+var _proximo_envio := 0.0
+## Quantas vezes o `dd` morreu e foi aberto de novo (os testes e o --dualsense-pc olham).
+var reconexoes := 0
 
 
 func _ready() -> void:
@@ -83,6 +91,7 @@ func procurar() -> bool:
 		caminho = dev
 		bluetooth = info.bluetooth
 		_cano = dd.stdio
+		_erros = dd.get("stderr")
 		_pid = int(dd.pid)
 		atual = []
 		return true
@@ -116,6 +125,13 @@ static func ler_uevent(texto: String) -> Dictionary:
 
 
 func _physics_process(delta: float) -> void:
+	if caminho != "" and _pid > 0 and not OS.is_process_running(_pid):
+		# O `dd` morreu (uma escrita que falhou pelo Bluetooth, o controle desligado): abre de novo na hora e manda o
+		# estado de agora. Antes só se percebia ao mandar um efeito diferente; na ilha, que quase não muda, os gatilhos
+		# ficavam mudos.
+		_fechar()
+		reconexoes += 1
+		_procurar = 0.3
 	if caminho == "":
 		# O controle pode ser ligado depois: procura de novo a cada 5 s.
 		_procurar -= delta
@@ -124,8 +140,15 @@ func _physics_process(delta: float) -> void:
 			procurar()
 		return
 	var par := escolher()
-	if par != atual:
-		mandar(par[0], par[1], par[2] if par.size() > 2 else SEM_LUZ, par[3] if par.size() > 3 else -1)
+	if par == atual:
+		return
+	# Gatilho mudou: manda já. Só a luz mudou (ela pulsa): no máximo 20 por segundo.
+	var gatilhos_iguais: bool = atual.size() >= 2 and par[0] == atual[0] and par[1] == atual[1]
+	var agora := Time.get_ticks_msec() / 1000.0
+	if gatilhos_iguais and agora < _proximo_envio:
+		return
+	_proximo_envio = agora + 0.05
+	mandar(par[0], par[1], par[2] if par.size() > 2 else SEM_LUZ, par[3] if par.size() > 3 else -1)
 
 
 ## Os efeitos de agora: [R2, L2].
@@ -184,6 +207,9 @@ func _fechar() -> void:
 	if _cano:
 		_cano.close()
 	_cano = null
+	if _erros:
+		_erros.close()
+	_erros = null
 	if _pid > 0 and OS.is_process_running(_pid):
 		OS.kill(_pid)
 	_pid = -1

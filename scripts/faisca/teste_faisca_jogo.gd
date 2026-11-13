@@ -813,6 +813,42 @@ func capturar() -> void:
 ## placas; depois, com 30 (de mentira), o térreo com o trenzinho, o elevador no 2º andar com a cancela aberta, o 3º
 ## andar e o farolete aceso visto do topo; e a pausa dentro de uma fase, com o contador.
 ## Uso: godot --path . -- --faisca-farol-captura
+## O trenzinho do farol de perto, em sequência (2026-11-13: "o trem com os faisquinhas, os personagens pulam no ar"):
+## seis quadros do vagão com os dois passageiros e, de lado, a altura deles medida contra o teto do vagão. Uso:
+## godot --path . -- --faisca-trem-captura --prefixo=antes  (em tools/capturas/faisca/jogo/)
+func capturar_trem() -> void:
+	var prefixo := "foto"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--prefixo="):
+			prefixo = a.substr(10)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://tools/capturas/faisca/jogo/"))
+	j.abertura_vista = true
+	var ids := ["0", "1", "2", "3", "4", "5"]
+	j.faisquinhas = {"1-1": ids, "1-2": ids, "2-1": ids, "2-2": ids}
+	j.comecar_no_farol()
+	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 10.0)
+	var hub := j.hub
+	f.teleportar(hub.inicio)
+	var cam := Camera3D.new()
+	cam.fov = 45.0
+	j.add_child(cam)
+	cam.make_current()
+	var vagao: Node3D = hub.trem[2]
+	for k in 6:
+		var p := vagao.global_position
+		var fora := Vector3(p.x, 0, p.z).normalized()
+		cam.global_position = p + fora * 4.0 + Vector3.UP * 2.6
+		cam.look_at(p + Vector3.UP * 1.9)
+		await _esperar(0.12)
+		var alturas := []
+		for c in vagao.get_children():
+			if c.name.begins_with("Passageiro"):
+				alturas.append(snappedf((c as Node3D).global_position.y - vagao.global_position.y, 0.01))
+		print("trem quadro %d: passageiros a %s m do chão do vagão" % [k, str(alturas)])
+		await _foto("%s_trem_%d" % [prefixo, k])
+	j.get_tree().quit()
+
+
 func capturar_farol() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://tools/capturas/faisca/jogo/"))
 	j.abertura_vista = true

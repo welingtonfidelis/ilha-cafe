@@ -705,6 +705,12 @@ Ficaram de fora o que o usuário já recusou: dois jogadores e o escorregador.
   - **no kart:** o R2 acelera macio e o L2 freia duro;
   - **tudo solto:** com menu aberto, tonto, pescando, no celular, jogando no teclado ou com a vibração desligada nos Ajustes; ao sair do jogo, solta os dois.
 - **No PC (2026-11-11):** o DualSense por Bluetooth aparece como `/dev/hidraw4`. `./IlhaCafune.x86_64 --headless -- --dualsense-pc` acha o controle, deixa o R2 duro e o L2 tremendo por 8 s e solta (respondeu `caminho '/dev/hidraw4' bluetooth true`). Falta o usuário confirmar que sente os efeitos no jogo.
+- **Os gatilhos ficando mudos no meio da partida** (relato do usuário em 2026-11-13: "a funcionalidade de pressão nos gatilhos de dualsense não está mais funcionando"). No PC, o jogo aberto pela Steam tinha um `dd` zumbi, morto pelo sinal 13 (SIGPIPE), e nenhum vivo; por fora da Steam, e também com o ambiente da Steam, o `--dualsense-pc` funcionava. O que acontecia:
+  1. uma escrita no controle falhava (pelo Bluetooth acontece; o kernel do PC registrava falhas de CRC do controle no dia);
+  2. o `dd` tentava escrever o erro no cano de erros, que já tinha fechado porque o jogo não guardava ele, e morria de SIGPIPE;
+  3. o jogo só conferia o `dd` ao mandar um efeito diferente, e, enquanto o achava vivo, não procurava o controle de novo. Na ilha, que quase não muda de efeito, os gatilhos ficavam mudos até o fim.
+
+  Agora o cano de erros fica guardado, o jogo confere o `dd` a cada passo de física e, se ele morreu, abre de novo em 0,3 s e manda o estado de agora (`DualSense.reconexoes` conta). A luz que pulsa manda no máximo 20 relatórios por segundo, para não encher a fila do Bluetooth; mudança de gatilho vai na hora.
 - **Testes:** `-- --dualsense` confere 8 pontos: o CRC32; os efeitos; o relatório USB; o relatório Bluetooth; o `HID_ID`; sem o controle; o que cada blaster faz; menu e vibração desligada.
 
 ### Vozes (item 13 da lista, feito em 2026-11-10)
@@ -1849,6 +1855,17 @@ São quatro primas da Bolota, e cada uma ensina um jeito de vencer:
 - `-- --faisca-monstro-captura` tira 8 fotos em `tools/capturas/faisca/monstro/`: a turma, o cacto espetando, o caranguejo defendendo, o fantasma atravessado pelo soco, o porco disparando e tonto, e a abelha no alto e no rasante.
 - A build com os monstros foi para o PC em 2026-10-30 (o executável de lá é igual ao `build/linux` do commit 4c20cdb).
 
+**As bolhas da pia mais fáceis de ver** (pedido do usuário em 2026-11-13: "as crianças estão com dificuldade em ver elas"):
+- As bolhas de sabão que estouram (`NuvemQueSome` com `bolha`) eram uma esfera azul-clarinha, 45% transparente, em cima da água azul-clara, e quase sumiam.
+- Agora (`bolha_sabao.gdshader`) cada uma tem:
+  - o corpo rosa, pouco transparente;
+  - a película de arco-íris na borda, que anda devagar e tem brilho próprio;
+  - um reflexo branco;
+  - um anel de espuma branca na linha da água;
+  - uma cúpula mais alta que balança de leve.
+- A água tinha umas 70 bolotas brancas de espuma de até 0,8 m, que pareciam pedrinhas de pisar (tocar a água é cair) e escondiam as bolhas. Ficaram 26, pequenas e achatadas.
+- Fotos de antes e depois: `--faisca-bolhas-captura --prefixo=antes|depois` (`tools/capturas/faisca/bolhas/`).
+
 ### Fase 2-2: Nuvens de Algodão-Doce (feita em 2026-10-30)
 
 Pedido do usuário: "vamos fazer as próximas fases" e "pode começar", seguindo a maquete aprovada (`docs/level-design/maquete-2-2-nuvens-de-algodao-doce.html`). No meio do trabalho veio o pedido de fases mais longas, então ela já nasceu maior que a maquete: cinco playgrounds em vez de quatro, e cada saída só abre com uma tarefa.
@@ -1986,6 +2003,17 @@ Fase de chão: o chão do quarto é a rede de segurança. Quem cai de um móvel 
   - se a criança entende que o soco tomba o dado e o leva até a marca;
   - se o golpe no ar perto da argola fica claro;
   - se as cartas da lava viram rápido demais.
+
+**O avião de papel jogando o Faísca longe** (relato do usuário em 2026-11-13: "quando entra no avião a primeira vez o Faísca é jogado pra longe"):
+- `--faisca-aviao --caso=0..7` (`teste_aviao.gd`) entra como uma criança, um caso por vez e cada um com a fase nova:
+  - andando e pulando da beira da mesa, logo que o avião aparece, ainda crescendo, até 2 s depois;
+  - com os três dados socados como no jogo;
+  - com o avião mexido por fora antes de subir.
+
+  Em nenhum dos casos o Faísca foi jogado, com e sem janela. O arremesso só apareceu na primeira versão do teste, que teleportava o avião de volta no meio do voo e o desligava e religava (o Faísca a 21,5 m/s); no jogo, nada mexe nas viagens fora do caminho delas.
+- Conserto, para o que dava para pegar: o avião aparecia crescendo o corpo físico inteiro, e agora só o desenho cresce.
+- Uma segunda tentativa repunha toda viagem parada no lugar a cada passo de física. Ela fez o balão da 3-3 e o carrinho do teto da nave não saírem mais, e as cabines piscarem no revisor; saiu.
+- Ainda falta saber como foi o arremesso de ontem.
 
 ### Fase 3-1: Pico Gelado (feita em 2026-10-30)
 
@@ -2554,6 +2582,7 @@ Os salvos na última fase chegam caindo do alto, girando, com confete, e aparece
   - Não desce se o Faísca estiver embaixo dele no térreo.
   - Antes dos 10, fica parado no térreo, torto e apagado, e as sacadas não têm o vão.
 - **20, o trenzinho:** locomotiva, tênder de presentes e vagão (do pacote do quarto), rodando devagar num trilho em volta do eixo no térreo, com dois Faisquinhas de passageiros sentados no teto do vagão. Dá para subir em cima: a colisão de cada carro tem a altura do modelo. Os carros vão sem `sync_to_physics`, porque quem move é o farol; com ele ligado (o padrão do AnimatableBody3D), o trem ficava parado no meio da torre. A ideia da "sala de brinquedos" virou o trenzinho: o farol não tem uma sala a mais.
+  - **Conserto (relato do usuário em 2026-11-13: "o trem com os faisquinhas, os personagens pulam no ar"):** os dois passageiros e a caixa do vagão ficavam a 1,9 m, mas o teto do vagão do modelo, em 2,6x, fica a 1,43 m: eles flutuavam uns 47 cm acima, dando pulinhos de 10 cm. Agora ficam no teto (`HubFarol.TETO_DO_VAGAO`) e só balançam de leve. As fotos em sequência saem com `--faisca-trem-captura --prefixo=...`.
 - **30, o farolete:** a lâmpada do topo fica mais forte, e dois fachos com holofotes giram pela torre.
 
 **Save.** A chave virou `faisquinhas`; quem tem a antiga, `vaga_lumes`, é lido do mesmo jeito. A migração da Parte 2 já grava a nova.

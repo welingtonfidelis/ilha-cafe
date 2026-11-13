@@ -55,6 +55,8 @@ const ELEVADOR_ABERTURA := 24.0
 const ELEVADOR_RAIO := 13.9
 ## O trilho do trenzinho, em volta do eixo no térreo.
 const TREM_RAIO := 3.2
+## Altura do teto do vagão (o train_wagon em 2,6x), onde os dois passageiros ficam em pé.
+const TETO_DO_VAGAO := 1.43
 const TREM_VELOCIDADE := 0.25
 ## Onde ficam as placas dos prêmios que faltam (graus, raio, andar).
 const PLACAS := {"elevador": [118.0, 11.6, 0], "trem": [180.0, 5.6, 0], "farolete": [55.0, 13.6, 3]}
@@ -771,8 +773,10 @@ func _trem() -> void:
 		dormente.position = ponto(g, TREM_RAIO, 0.03)
 		dormente.rotation.y = deg_to_rad(-g)
 		add_child(dormente)
-	# [modelo, comprimento, altura do teto] (em 2,6x: a locomotiva tem 1,7 m de altura e o vagão 1,9 m).
-	var pecas := [["train_locomotive", 2.2, 1.7], ["train_tender_presents_A", 1.7, 1.3], ["train_wagon", 2.5, 1.9]]
+	# [modelo, comprimento, altura do teto] (em 2,6x: a locomotiva tem 1,7 m de altura e o teto do vagão fica a 1,43 m,
+	# medido no modelo; até 2026-11-13 estava 1,9 m, e os passageiros e a caixa do vagão ficavam uns 47 cm acima do teto,
+	# "pulando no ar", relato do usuário).
+	var pecas := [["train_locomotive", 2.2, 1.7], ["train_tender_presents_A", 1.7, 1.3], ["train_wagon", 2.5, TETO_DO_VAGAO]]
 	var angulo := 0.0
 	for i in pecas.size():
 		var carro := AnimatableBody3D.new()
@@ -813,9 +817,11 @@ func _mover_trem(tempo: float) -> void:
 		var a: float = carro.get_meta("angulo") + tempo * TREM_VELOCIDADE
 		carro.position = Vector3(cos(a) * TREM_RAIO, 0.05, -sin(a) * TREM_RAIO)
 		carro.rotation.y = a + PI
+		# Os passageiros balançam de leve no teto (antes davam pulinhos de 10 cm, a quase meio metro do teto).
 		for p in carro.get_children():
 			if p.name.begins_with("Passageiro"):
-				p.position.y = 1.9 + absf(sin(tempo * 5.0 + p.position.z * 3.0)) * 0.1
+				p.position.y = TETO_DO_VAGAO + absf(sin(tempo * 3.0 + p.position.z * 3.0)) * 0.03
+				p.rotation.z = sin(tempo * 3.0 + p.position.z * 3.0) * 0.06
 
 
 ## O farolete aceso: a lâmpada mais forte e dois fachos que giram pela torre, cada um com um holofote que passa pela
