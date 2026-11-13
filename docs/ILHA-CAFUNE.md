@@ -2410,6 +2410,30 @@ Pedido: "analisa esse video, nota os efeitos de giro, golpes, movimentaçao do a
   - `--faisca-espera-captura`, em `tools/capturas/faisca/espera/`;
   - `--espera-captura` na Ilha (menina e menino), em `tools/capturas/espera_*.png`.
 
+### Faísca mais simpático, olhando o Astro (2026-11-13)
+
+Pedido: "o visual do faisca ainda nao tá amigavel como o astro bot (nossa referencia), algumas sugestoes?", com uma imagem do Astro. As sugestões, em ordem do que mais muda com menos trabalho:
+1. contraste no jogo;
+2. câmera mais perto;
+3. rosto (viseira e olhos);
+4. proporções (cabeça mais redonda, mãos e pés maiores, membros roliços com juntas de bolinha);
+5. um acessório só dele que balança (por exemplo, uma antena de raio com uma faísca na ponta, no lugar do cachecol e da antena de bolinha do Astro, para não copiar);
+6. jeito de corpo (cabeça inclinando, respirar com molinha).
+
+A identidade dele fica: laranja, estrela no peito e orelhas de LED. O usuário mandou começar ("inicia as mudanças pra ver como fica"), e os itens 1 a 3 foram feitos:
+- **Contraste:**
+  - a luz ambiente das fases é forte e lisa (0,8), e o branco quase puro saía chapado. O branco ficou um tiquinho azulado (`Robo.BRANCO` "dce2ef"; era "f4f5f9") e mais brilhante (rugosidade 0,22 e verniz 1), e o lado da sombra ganha volume;
+  - um contorno de luz azulada (`contorno_luz.gdshader`, uma segunda passada somando luz nas beiradas) no branco, no laranja e no cromo destaca ele do cenário. A névoa das fases quase não pesa a essa distância e ficou como estava.
+- **Câmera:** `Jogador.DISTANCIA_CAMERA` foi de 7,5 para 6,3 m. O farol continua com as distâncias dele.
+- **Rosto:**
+  - viseira maior (`Robo.TELA` 0,475 x 0,325; era 0,44 x 0,29), com o friso laranja acompanhando;
+  - olhos 30% maiores, mais separados e um pouco mais baixos, e o normal virou uma pílula deitada (era em pé, e o rosto parecia mais assustado que amigo). O bravo seguiu a mesma pílula;
+  - de perto, os LEDs mostram uma gradinha de pontinhos no lugar das linhas; o brilho em volta ficou maior e o miolo branco menor, para aparecer o azul.
+- **Fotos de antes e depois:**
+  - no jogo, `--faisca-visual-captura --prefixo=antes|depois` (`tools/capturas/faisca/visual/`), na 1-1, de costas e de frente pela câmera do jogo e de perto;
+  - no estúdio, `tools/foto_faisca.gd --prefixo=hoje|depois`.
+- **Falta, se o usuário quiser:** os itens 4 a 6.
+
 ### Lista de melhorias e novidades do Faísca (2026-11-11)
 
 Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jogo Faísca sobre melhorias e novidades, reforçando que a grande inspiração do jogo é o Astro Bot". Ficam de fora o que o usuário já recusou: dois jogadores e o escorregador.

@@ -5,15 +5,18 @@ shader_type spatial;
 // mexe o olhar pelos parâmetros.
 
 uniform vec3 cor_led : source_color = vec3(0.56, 0.95, 1.0);
-uniform float energia = 2.2;
+uniform float energia = 2.4;
 // 0 normal, 1 feliz, 2 surpreso, 3 bravo, 4 dor, 5 tonto, 6 coração (ver Robo.EXPRESSOES).
 uniform int forma = 0;
 // 1 aberto; perto de 0, fechado (piscando).
 uniform float abertura = 1.0;
 // Deslocamento dos dois olhos juntos, em metros na tela (olhadinhas para os lados).
 uniform vec2 olhar = vec2(0.0);
-uniform float separacao = 0.14;
-uniform float altura = 0.01;
+// Desde 2026-11-13 os olhos são maiores (`tamanho`), mais separados e um pouco mais baixos: no Astro, olhos grandes e
+// baixos deixam o rosto mais carinhoso.
+uniform float separacao = 0.168;
+uniform float altura = -0.022;
+uniform float tamanho = 1.3;
 
 varying vec3 p;
 
@@ -53,9 +56,9 @@ float olho(vec2 q, float lado) {
 		return length(q) - 0.072;
 	}
 	if (forma == 3) {
-		// Bravo (golpes): a pílula com o topo cortado em diagonal, mais baixo do lado de dentro.
-		float d = segmento(q, vec2(0.0, -0.047), vec2(0.0, 0.047)) - 0.058;
-		return max(d, (q.y - 0.018 - 0.6 * q.x) / sqrt(1.36));
+		// Bravo (golpes): a pílula deitada com o topo cortado em diagonal, mais baixo do lado de dentro.
+		float d = segmento(q, vec2(-0.022, 0.0), vec2(0.022, 0.0)) - 0.056;
+		return max(d, (q.y - 0.012 - 0.55 * q.x) / sqrt(1.3025));
 	}
 	if (forma == 4) {
 		// Dor: > <, com a ponta para dentro.
@@ -75,26 +78,26 @@ float olho(vec2 q, float lado) {
 		float s = 0.13;
 		return coracao((q - vec2(0.0, -0.068)) / s) * s;
 	}
-	// Normal: pílula em pé.
-	return segmento(q, vec2(0.0, -0.047), vec2(0.0, 0.047)) - 0.058;
+	// Normal: pílula deitada, mais larga que alta (era em pé, e o rosto parecia mais assustado que amigo).
+	return segmento(q, vec2(-0.022, 0.0), vec2(0.022, 0.0)) - 0.056;
 }
 
 void fragment() {
 	vec2 c = p.xy - olhar - vec2(0.0, altura);
 	float lado = c.x < 0.0 ? -1.0 : 1.0;
-	vec2 q = vec2(abs(c.x) - separacao, c.y / max(abertura, 0.06));
-	float d = olho(q, lado);
+	vec2 q = vec2(abs(c.x) - separacao, c.y / max(abertura, 0.06)) / tamanho;
+	float d = olho(q, lado) * tamanho;
 	float aa = max(fwidth(d), 0.0004);
 	float frente = step(0.0, p.z);
 	float led = (1.0 - smoothstep(-aa, aa, d)) * frente;
-	// Brilho fraquinho em volta do LED, como luz atrás do vidro.
-	float halo = exp(-max(d, 0.0) / 0.016) * 0.3 * frente;
+	// Brilho em volta do LED, como luz atrás do vidro.
+	float halo = exp(-max(d, 0.0) / 0.022) * 0.4 * frente;
 	// Miolo mais claro, quase branco.
 	float miolo = (1.0 - smoothstep(-0.04, -0.012, d)) * led;
-	// Linhas de LED: só aparecem de perto (somem quando ficam menores que um pixel).
-	float linhas = 0.5 + 0.5 * cos(p.y * TAU / 0.011);
-	float de_perto = clamp(1.0 - fwidth(p.y) / 0.0035, 0.0, 1.0);
-	float faixa = mix(1.0, 0.78 + 0.22 * linhas, de_perto);
+	// A gradinha de pontinhos de LED: só aparece de perto (some quando os pontos ficam menores que um pixel).
+	float pontos = (0.5 + 0.5 * cos(p.x * TAU / 0.012)) * (0.5 + 0.5 * cos(p.y * TAU / 0.012));
+	float de_perto = clamp(1.0 - max(fwidth(p.x), fwidth(p.y)) / 0.004, 0.0, 1.0);
+	float faixa = mix(1.0, 0.62 + 0.38 * sqrt(pontos), de_perto);
 
 	// Reflexo pintado no canto de cima, à esquerda: uma faixa curva e um pontinho. Garante o
 	// brilho do vidro mesmo onde a luz da cena não faz reflexo.
@@ -114,6 +117,6 @@ void fragment() {
 	CLEARCOAT = 1.0;
 	CLEARCOAT_ROUGHNESS = 0.04;
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
-	EMISSION = cor_led * energia * (led * faixa + halo) + vec3(1.0) * miolo * 0.3 * energia * faixa
+	EMISSION = cor_led * energia * (led * faixa + halo) + vec3(1.0) * miolo * 0.12 * energia * faixa
 			+ vec3(0.3, 0.5, 0.65) * fresnel * 0.22 + vec3(0.9) * reflexo * 0.12;
 }

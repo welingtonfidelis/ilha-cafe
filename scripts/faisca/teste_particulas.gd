@@ -221,6 +221,41 @@ func capturar_giro_quadros() -> void:
 	m.get_tree().quit()
 
 
+## Fotos do visual do Faísca dentro da 1-1, para comparar antes e depois (2026-11-13, o usuário quer o Faísca mais
+## simpático, como o Astro): pela câmera do jogo de costas e de frente, e de perto, de três quartos. Uso:
+## godot --path . -- --faisca-visual-captura --prefixo=antes  (em tools/capturas/faisca/visual/)
+func capturar_visual() -> void:
+	var prefixo := "foto"
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--prefixo="):
+			prefixo = a.substr(10)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(m.PASTA_CAPTURAS + "visual/"))
+	m._comecar_fase()
+	await m._esperar(4.0)
+	var p := n.inicio + Vector3(0, 0.1, 0)
+	j.teleportar(p)
+	j.camera.make_current()
+	j.visual.rotation.y = j.yaw + PI
+	await m._esperar(1.0)
+	await m._foto("visual/%s_1_jogo_costas" % prefixo)
+	var d := j.camera.global_position - j.global_position
+	j.visual.rotation.y = atan2(d.x, d.z) + 0.35
+	j.robo.expressao("feliz", 3.0)
+	await m._esperar(0.6)
+	await m._foto("visual/%s_2_jogo_frente" % prefixo)
+	var cam := Camera3D.new()
+	cam.fov = 40.0
+	m.add_child(cam)
+	var frente := Vector3(sin(j.visual.rotation.y), 0, cos(j.visual.rotation.y))
+	cam.global_position = p + frente * 3.4 + frente.cross(Vector3.UP) * 1.2 + Vector3.UP * 1.9
+	cam.look_at(p + Vector3.UP * 1.3)
+	cam.make_current()
+	j.robo.expressao("normal")
+	await m._esperar(0.6)
+	await m._foto("visual/%s_3_perto" % prefixo)
+	m.get_tree().quit()
+
+
 ## Câmera de cima e de lado (uns 35 graus), a `longe` m de `meio`, do lado `para`.
 func _alto(cam: Camera3D, meio: Vector3, longe: float, para := Vector3.BACK) -> void:
 	var lado := para.cross(Vector3.UP).normalized()

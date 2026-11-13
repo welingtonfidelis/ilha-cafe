@@ -74,7 +74,8 @@ const TEXTURAS := {
 }
 const PITCH_MIN := -1.1
 const PITCH_MAX := 0.3
-const DISTANCIA_CAMERA := 7.5
+## A câmera ficou mais perto em 2026-11-13 (era 7,5 m), para o Faísca aparecer maior, como o Astro.
+const DISTANCIA_CAMERA := 6.3
 const ALTURA_QUEDA := -12.0
 const VIDA_MAX := 3
 ## Depois de levar dano, fica piscando e sem levar outro por este tempo.

@@ -66,7 +66,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-fase-3-3", "--faisca-fase-3-3-captura",
-		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-giro-quadros", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
+		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-giro-captura", "--faisca-giro-quadros", "--faisca-visual-captura", "--faisca-espera", "--faisca-espera-captura", "--faisca-monstro", "--faisca-monstro-captura",
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
 		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1",
 		"--faisca-chefe-2", "--faisca-chefe-2-captura", "--faisca-jogar-chefe-2",
@@ -285,6 +285,9 @@ func _ready() -> void:
 	elif "--faisca-giro-quadros" in args:
 		_teste_particulas = TesteParticulas.new(self)
 		_teste_particulas.capturar_giro_quadros()
+	elif "--faisca-visual-captura" in args:
+		_teste_particulas = TesteParticulas.new(self)
+		_teste_particulas.capturar_visual()
 	elif "--faisca-espera" in args:
 		_teste_espera = TesteEspera.new(self)
 		_teste_espera.rodar()

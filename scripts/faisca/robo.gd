@@ -20,13 +20,19 @@ const DEDO_SOLTO := 12.0
 const DEDO_FECHADO := 105.0
 const POLEGAR_FECHADO := 70.0
 ## Tronco: a Forma.ovo branca (raios, afina e altura do meio). As placas do peito e das costas seguem a curva dele.
+## A tela do capacete (meias-medidas e o meio). Maior desde 2026-11-13 (era 0.44 x 0.29 x 0.24 em y 1.68): no Astro,
+## a viseira ocupa quase a frente toda.
+const TELA := Vector3(0.475, 0.325, 0.245)
+const CENTRO_TELA := Vector3(0, 1.675, 0.3)
 const TRONCO := Vector3(0.31, 0.34, 0.27)
 const TRONCO_AFINA := -0.13
 const TRONCO_Y := 0.86
 ## Caras da tela (o número é a `forma` do shader). "piscando" é a normal de olhos fechados.
 const EXPRESSOES := {"normal": 0, "piscando": 0, "feliz": 1, "surpreso": 2, "bravo": 3, "dor": 4, "tonto": 5, "coracao": 6}
 const COR_LED := Color("8ff3ff")
-const BRANCO := Color("f4f5f9")
+## O branco é um tiquinho azulado (era "f4f5f9"): com a luz ambiente forte das fases, o branco quase puro saía
+## chapado, sem volume; assim o lado da sombra fica cinza-azulado, como o plástico do Astro.
+const BRANCO := Color("dce2ef")
 const COR_CORACAO := Color("ff7eb6")
 ## Duração de uma piscada (fecha e abre). A troca de cara acontece no meio, de olho fechado.
 const PISCADA := 0.16
@@ -429,7 +435,7 @@ func _mao(osso: String, lado: float) -> void:
 
 
 func _criar_materiais() -> void:
-	mat.branco = _plastico(BRANCO, 0.32, 0.7)
+	mat.branco = _plastico(BRANCO, 0.22, 1.0)
 	mat.cinza = _plastico(Color("3e4352"), 0.35, 0.4)
 	mat.cinza.metallic = 0.3
 	mat.laranja = _plastico(Color("ff7a22"), 0.45, 0.5)
@@ -456,13 +462,18 @@ func _criar_materiais() -> void:
 	mat.jato = _led(Color("8ff3ff"), 3.5)
 	mat.jato.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.jato.albedo_color.a = 0.75
+	# O contorno de luz azulada (contorno_luz.gdshader) por cima do plástico, para o Faísca se destacar do cenário.
+	var contorno := ShaderMaterial.new()
+	contorno.shader = preload("res://scripts/faisca/contorno_luz.gdshader")
+	for m: StandardMaterial3D in [mat.branco, mat.laranja, mat.cromo]:
+		m.next_pass = contorno
 
 
 func _montar() -> void:
 	# ----- cabeça: capacete branco quadrado e arredondado, tela preta, olhos e orelhas -----
 	_peca("head", Forma.superelipsoide(Vector3(0.56, 0.47, 0.5), 0.72, 0.72), mat.branco, Vector3(0, 1.72, 0))
 	# A tela desenha os olhos (rosto_led.gdshader); a moldura laranja aparece só como um friso em volta.
-	_peca("head", Forma.superelipsoide(Vector3(0.44, 0.29, 0.24), 0.6, 0.6, -PI / 2.0, 40, 96), mat.rosto, Vector3(0, 1.68, 0.3))
+	_peca("head", Forma.superelipsoide(TELA, 0.6, 0.6, -PI / 2.0, 40, 96), mat.rosto, CENTRO_TELA)
 	_peca("head", Forma.tubo_fechado(_borda_da_tela(), 0.02), mat.laranja, Vector3.ZERO)
 	for lado in [-1.0, 1.0]:
 		# Orelhas: disco laranja de quina redonda, tampa branca e um LED que respira no meio.
@@ -524,9 +535,9 @@ func _montar() -> void:
 ## são superelipsoides de expoentes iguais, então cada uma é |x/a|^n + |y/b|^n + |z/c|^n = 1. Para cada
 ## direção na tela, anda do meio para fora pela frente dela até entrar no capacete.
 func _borda_da_tela() -> PackedVector3Array:
-	var tela := Vector3(0.44, 0.29, 0.24)
+	var tela := TELA
 	var nt := 2.0 / 0.6
-	var centro_tela := Vector3(0, 1.68, 0.3)
+	var centro_tela := CENTRO_TELA
 	var capacete := Vector3(0.56, 0.47, 0.5)
 	var nc := 2.0 / 0.72
 	var centro_capacete := Vector3(0, 1.72, 0)
