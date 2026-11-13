@@ -68,10 +68,11 @@ func rodar() -> void:
 			and terreo[2].tipo == "chefe" and not terreo[2].aberta and int(terreo[2].pede_grandes) == 2
 			and not portas.any(func(d: Dictionary) -> bool: return d.tipo == "saida")) and ok
 	var de_cima := portas.filter(func(d: Dictionary) -> bool: return int(d.andar) > 0)
-	ok = _conferir("nos andares de cima: as portas trancadas (com as do Chef Bolotão e do Pinguinzão) e a da nave no topo, pedindo as 8 Estrelas Grandes",
-			de_cima.size() == 9 and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-2" and int(d.pede_grandes) == 5)
-			and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-3" and int(d.pede_grandes) == 7)
-			and de_cima.all(func(d: Dictionary) -> bool: return not d.aberta) and int(hub.portas_nos["nave"].dados.pede_grandes) == 8) and ok
+	ok = _conferir("nos andares de cima: as portas trancadas (o Chef Bolotão e o Pinguinzão pedindo as 3 Estrelas Grandes do andar) e a da nave no topo, pedindo os 3 chefes",
+			de_cima.size() == 9 and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-2" and int(d.pede_grandes) == 3)
+			and de_cima.any(func(d: Dictionary) -> bool: return d.id == "chefe-3" and int(d.pede_grandes) == 3)
+			and de_cima.all(func(d: Dictionary) -> bool: return not d.aberta) and int(hub.portas_nos["nave"].dados.pede_chefes) == 3
+			and int(hub.portas_nos["nave"].dados.pede_grandes) == 0) and ok
 	var da_escada: Area3D = hub.estrelas[0]
 	await _faisca_em(da_escada.global_position - Vector3(0, 1.0, 0))
 	ok = _conferir("a estrelinha da escada do farol conta", j.total_estrelas() == 1 and j.hud._contador.text == "1", "(%d)" % j.total_estrelas()) and ok
@@ -187,7 +188,8 @@ func rodar() -> void:
 	porta11 = hub.portas_nos["1-1"]
 	ok = _conferir("o A na tela de fim volta para o farol, com a Estrela Grande na porta e a constelação acesa", j.lugar == "hub"
 			and not j.hud.fim_aberto and porta11.dados.grande and int(porta11.dados.achados) == 1 and "1-1" in hub.grandes) and ok
-	ok = _conferir("com uma Estrela Grande, a porta da nave pede as outras 7", int(hub.portas_nos["nave"].dados.falta) == 7
+	ok = _conferir("com uma Estrela Grande, a porta do chefe do térreo pede a outra, e a da nave ainda pede os 3 chefes",
+			int(hub.portas_nos["chefe-1"].dados.falta) == 1 and int(hub.portas_nos["nave"].dados.falta) == 3
 			and not hub.portas_nos["nave"].dados.aberta) and ok
 	var salvo := FaiscaSave.ler()
 	ok = _conferir("o save do Faísca guarda as estrelinhas, a Estrela Grande e os Faisquinhas", "1-1" in salvo.get("grandes", [])
@@ -466,6 +468,18 @@ func _chefe() -> bool:
 	ok = _conferir("na luta toca o tema dos chefes", j.musica_nome == "chefe") and ok
 	ok = _conferir("a porta leva ao Ninho das Nuvens, e a luta começa com os 3 corações dele no HUD", arena != null
 			and arena.chefe.fase == 1 and j.hud.chefe_restam() == 3 and j.faixa_titulo_texto() == "Bolotão Fofão!") and ok
+	# Perdendo todos os corações no meio da luta (item 14), a arena monta de novo, com o chefe inteiro.
+	if arena:
+		arena.chefe._proxima_fase()
+		f._invencivel = 0.0
+		f.vida = 1
+		f.receber_dano(f.global_position + Vector3.FORWARD)
+		var de_novo := func() -> bool: return j.luta_recomecou == 1 and j.nivel != arena and j.nivel is Chefe1 and not j.busy() and (j.nivel as Chefe1).chefe.fase == 1
+		await _ate(de_novo, 14.0)
+		ok = _conferir("perdendo todos os corações na luta, ela recomeça do zero: a arena monta de novo, com o chefe inteiro e os corações cheios",
+				j.luta_recomecou == 1 and j.nivel != arena and j.nivel is Chefe1 and (j.nivel as Chefe1).chefe.fase == 1
+				and j.hud.chefe_restam() == 3 and f.vida == Jogador.VIDA_MAX, "(recomeçou %d)" % j.luta_recomecou) and ok
+		arena = j.nivel as Chefe1
 	if arena:
 		f._invencivel = 999.0
 		arena.chefe._proxima_fase()
@@ -487,9 +501,9 @@ func _chefe() -> bool:
 		j.hud.jogar_de_novo.emit()
 		await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
 		await _esperar(0.2)
-		ok = _conferir("no farol: o troféu dourado do lado da porta, a coroa acesa na porta e a nave ainda pedindo 6",
+		ok = _conferir("no farol: o troféu dourado do lado da porta, a coroa acesa na porta e a nave ainda pedindo os outros 2 chefes",
 				j.hub.get_node_or_null("Trofeu_chefe-1") != null and j.hub.portas_nos["chefe-1"].dados.grande
-				and int(j.hub.portas_nos["nave"].dados.falta) == 6 and "chefe-1" in j.hub.grandes
+				and int(j.hub.portas_nos["nave"].dados.falta) == 2 and "chefe-1" in j.hub.grandes
 				and "chefe-1" in FaiscaSave.ler().get("chefes", [])) and ok
 	# O do andar 2: com as 5 Estrelas Grandes dos mundos 1 e 2, a porta do Chef abre e leva à Cozinha do Chef.
 	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3"]
@@ -502,11 +516,15 @@ func _chefe() -> bool:
 			and j.faixa_titulo_texto() == "Chef Bolotão!") and ok
 	j.sair_da_fase()
 	await _ate(func() -> bool: return j.lugar == "hub" and not j.busy(), 6.0)
-	# O do andar 3: com 7 Estrelas Grandes, a porta do Pinguinzão abre no 3º andar.
+	# O do andar 3: sem a da 3-3, a porta do Pinguinzão continua trancada (item 15); com as três do andar, abre.
 	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2"]
 	await _refazer_hub()
+	ok = _conferir("sem a Estrela Grande da 3-3, a porta do Pinguinzão continua trancada, pedindo 1", not j.hub.portas_nos["chefe-3"].dados.aberta
+			and int(j.hub.portas_nos["chefe-3"].dados.falta) == 1) and ok
+	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3"]
+	await _refazer_hub()
 	var porta3: Node3D = j.hub.portas_nos["chefe-3"]
-	ok = _conferir("com 7 Estrelas Grandes, a porta do Pinguinzão do Gelo abre no 3º andar", porta3.dados.aberta and int(porta3.dados.andar) == 2) and ok
+	ok = _conferir("com as 3 Estrelas Grandes do andar 3, a porta do Pinguinzão do Gelo abre no 3º andar", porta3.dados.aberta and int(porta3.dados.andar) == 2) and ok
 	j.entrar_fase("chefe-3")
 	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy() and j.nivel is Chefe3 and (j.nivel as Chefe3).chefe.fase == 1, 10.0)
 	ok = _conferir("a porta leva ao Pico do Pinguinzão, com a Luva de Neve e os corações dele no HUD", j.nivel is Chefe3
@@ -526,10 +544,16 @@ func _chefe() -> bool:
 func _nave() -> bool:
 	var ok := true
 	var antes := j.grandes.duplicate()
+	var chefes_antes := j.chefes.duplicate()
 	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3"]
+	j.chefes = ["chefe-1", "chefe-2"]
+	await _refazer_hub()
+	ok = _conferir("com as 8 Estrelas Grandes e 2 chefes, a porta da nave continua trancada, pedindo o último chefe",
+			not j.hub.portas_nos["nave"].dados.aberta and int(j.hub.portas_nos["nave"].dados.falta) == 1) and ok
+	j.chefes = ["chefe-1", "chefe-2", "chefe-3"]
 	await _refazer_hub()
 	var porta: Node3D = j.hub.portas_nos["nave"]
-	ok = _conferir("com as 8 Estrelas Grandes, a porta da nave abre, com a foto e os 6 Faisquinhas", porta.dados.aberta and porta.dados.feita
+	ok = _conferir("com os 3 chefes vencidos, a porta da nave abre, com a foto e os 6 Faisquinhas", porta.dados.aberta and porta.dados.feita
 			and porta._quadro_mat.albedo_texture != null and int(porta.dados.total_faisquinhas) == 6 and not porta.dados.grande) and ok
 	j.entrar_fase("nave")
 	await _ate(func() -> bool: return j.lugar == "fase" and not j.busy() and j.nivel is FaseNave, 12.0)
@@ -537,6 +561,7 @@ func _nave() -> bool:
 	ok = _conferir("a porta leva à Nave Aspiratrão, com o tema da nave", nave != null and j.musica_nome == "nave") and ok
 	if nave == null:
 		j.grandes = antes
+		j.chefes = chefes_antes
 		return false
 	nave.rapido = true
 	f._invencivel = 999.0
@@ -544,6 +569,18 @@ func _nave() -> bool:
 	await _ate(func() -> bool: return nave.chefe.fase == 1, 6.0)
 	ok = _conferir("na Sala do Trono, a luta começa com o tema dos chefes e os 3 corações do Rei", nave.chefe.fase == 1 and j.musica_nome == "chefe"
 			and j.hud.chefe_restam() == 3 and j.faixa_titulo_texto() == "Rei Bolotão!" and f.ioio and f.pipa and not f.martelinho) and ok
+	# Perdendo todos os corações (item 14): só a Sala do Trono volta ao começo, e o Faísca fica no posto dela.
+	nave.chefe._proxima_fase()
+	f._invencivel = 0.0
+	f.vida = 1
+	f.receber_dano(f.global_position + Vector3.FORWARD)
+	await _ate(func() -> bool: return nave.vezes_que_recomecou == 1, 6.0)
+	ok = _conferir("perdendo todos os corações na luta com o Rei, a Sala do Trono volta ao começo (o Rei dormindo no trono, sem colunas)",
+			nave.vezes_que_recomecou == 1 and nave.chefe.fase == 0 and nave.chefe.estado == "dormindo" and j.nivel == nave
+			and not nave.colunas_do_trono.any(func(c: ColunaDeVento) -> bool: return c.ligada) and f.global_position.y > FaseNave.ARENA_Y - 0.5) and ok
+	await _ate(func() -> bool: return nave.chefe.fase == 1, 6.0)
+	ok = _conferir("no posto da sala, a luta recomeça do zero, com os 3 corações do Rei", nave.chefe.fase == 1 and j.hud.chefe_restam() == 3) and ok
+	f._invencivel = 999.0
 	nave.chefe._proxima_fase()
 	nave.chefe._proxima_fase()
 	nave.chefe._proxima_fase()
@@ -560,6 +597,7 @@ func _nave() -> bool:
 	f._invencivel = 0.0
 	j.final_visto = false
 	j.grandes = antes
+	j.chefes = chefes_antes
 	j._salvar()
 	return ok
 
@@ -815,6 +853,24 @@ func capturar_farol() -> void:
 	cam.look_at(Vector3(0, HubFarol.ANDARES[3] + 1.6, 0))
 	await _esperar(0.6)
 	await _foto("f05_farolete_aceso")
+	# A porta da nave no topo, trancada, pedindo os chefes (a coroa do lado do número), e a do Pinguinzão pedindo a 3-3.
+	var grandes_antes := j.grandes.duplicate()
+	j.grandes = ["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2"]
+	j.chefes = ["chefe-1"]
+	await _refazer_hub()
+	var nave: Node3D = j.hub.portas_nos["nave"]
+	cam.make_current()
+	cam.global_position = nave.global_position + nave.global_basis.z * 6.5 + Vector3.UP * 2.6
+	cam.look_at(nave.global_position + Vector3.UP * 2.2)
+	await _esperar(0.6)
+	await _foto("f07_porta_da_nave_pedindo_os_chefes")
+	var pinguim: Node3D = j.hub.portas_nos["chefe-3"]
+	cam.global_position = pinguim.global_position + pinguim.global_basis.z * 6.5 + Vector3.UP * 2.6
+	cam.look_at(pinguim.global_position + Vector3.UP * 2.2)
+	await _esperar(0.6)
+	await _foto("f08_porta_do_pinguinzao_pedindo_a_3_3")
+	j.grandes = grandes_antes
+	j.chefes = []
 	# A pausa dentro da 1-1, com o contador.
 	await _refazer_hub()
 	f.camera.make_current()

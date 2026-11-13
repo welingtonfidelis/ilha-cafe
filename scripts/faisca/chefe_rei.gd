@@ -63,6 +63,8 @@ var _ciclo := 0.0
 var _lagrima := 0.0
 var _soluco := 0.0
 var _ligado_antes := false
+## O tween de agora (cair do trono, pular de volta): a luta recomeçando para ele.
+var _tw: Tween
 var _manual := true
 var _rolando_visual := false
 
@@ -431,6 +433,7 @@ func cair_do_trono(chao: Vector3) -> void:
 	_animar("HitRecieve", 0.6)
 	var de := global_position
 	var tw := create_tween()
+	_tw = tw
 	tw.tween_method(func(k: float) -> void:
 		global_position = de.lerp(chao, k) + Vector3.UP * sin(k * PI) * 2.5, 0.0, 1.0, 0.9)
 	tw.tween_callback(func() -> void:
@@ -477,6 +480,7 @@ func _voltar_a_lutar() -> void:
 			_animar("Jump", 0.5)
 			var de := global_position
 			var tw := create_tween()
+			_tw = tw
 			tw.tween_method(func(k: float) -> void:
 				var alvo: Vector3 = arena.trono_topo() if arena else de
 				global_position = de.lerp(alvo, k) + Vector3.UP * sin(k * PI) * 4.0, 0.0, 1.0, 1.2)
@@ -508,6 +512,33 @@ func _sentar() -> void:
 	_enrolar(false)
 	_animar("No", 0.35)
 	vencido.emit()
+
+
+## A luta recomeça do zero (o Faísca perdeu todos os corações, item 14): de volta ao trono, dormindo, inteiro.
+func reiniciar() -> void:
+	if _tw and _tw.is_valid():
+		_tw.kill()
+	fase = 0
+	golpes = 0
+	lampadas = 0
+	derrotado = false
+	puxando = false
+	_ciclo = 0.0
+	_jogar = 2.0
+	_dir = Vector3.ZERO
+	_manual = true
+	velocity = Vector3.ZERO
+	collision_layer = 1 | Alvo.CAMADA
+	if not is_in_group(Alvo.GRUPO):
+		add_to_group(Alvo.GRUPO)
+	_estrelas.visible = false
+	visual.rotation = Vector3.ZERO
+	visual.scale = Vector3.ONE
+	_capa.scale = Vector3.ONE
+	_mudar("dormindo")
+	_animar("Idle", 0.35)
+	if arena and arena.has_method("trono_topo"):
+		global_position = arena.trono_topo()
 
 
 ## Ganhou a estrelinha de bolso: para de chorar e dança, contente.

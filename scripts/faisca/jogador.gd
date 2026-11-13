@@ -15,6 +15,8 @@ extends CharacterBody3D
 signal vida_mudou(vida: int)
 ## Pegou um coração (a luz do controle pisca rosa).
 signal curou
+## Voltou do curto (perdeu todos os corações e já está no posto com os 3): o FaiscaJogo recomeça a luta do chefe.
+signal voltou_do_curto
 
 @export var velocidade := 6.5
 ## No gelo continua o jeito antigo (aproximação suave, que escorrega).
@@ -1003,6 +1005,7 @@ func _dar_curto() -> void:
 	_invencivel = TEMPO_INVENCIVEL
 	_no_curto = false
 	controle_ligado = true
+	voltou_do_curto.emit()
 
 
 func _fumacinha() -> void:

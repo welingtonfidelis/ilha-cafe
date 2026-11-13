@@ -108,6 +108,8 @@ var filtros: Array[Ferrolho] = []
 var lampadas_do_trono: Array[Lampada] = []
 var pilares: Array[StaticBody3D] = []
 var potes_que_acertaram := 0
+## Quantas vezes a luta recomeçou do zero (os testes olham).
+var vezes_que_recomecou := 0
 ## Onde o elevador chega na Sala do Trono.
 var entrada_do_trono := Vector3.ZERO
 var vencida := false
@@ -1688,11 +1690,45 @@ func comecar_luta() -> void:
 		j.ioio = true
 		j.pipa = true
 		Fx.confetti(self, j.global_position + Vector3.UP * 1.5, 20, 2.0)
+	# O posto da sala acende sozinho: quem perder todos os corações volta aqui, e a luta recomeça (item 14).
+	if not postos.is_empty() and not postos[postos.size() - 1].acendido:
+		postos[postos.size() - 1].acender()
 	faixa_pedida.emit("Rei Bolotão!", "Suba pelas argolas do ioiô e soque o botão vermelho do trono")
 	dica.emit("ioio")
 	luta_comecou.emit()
 	_fazer_argolas()
 	chefe.comecar()
+
+
+## O Faísca perdeu todos os corações no meio da luta (item 14): a Sala do Trono volta ao começo, com o Rei dormindo
+## no trono e inteiro, as argolas, as colunas e os filtros desfeitos, as lâmpadas apagadas e a luz de volta. A luta
+## começa de novo quando ele pisa na sala (o posto dela é onde ele volta).
+func recomecar_luta() -> void:
+	if not _comecou or vencida:
+		return
+	vezes_que_recomecou += 1
+	for a in argolas_do_trono:
+		if is_instance_valid(a):
+			a.queue_free()
+	argolas_do_trono.clear()
+	for fl in filtros:
+		if is_instance_valid(fl):
+			fl.get_parent().queue_free()
+	filtros.clear()
+	for c in colunas_do_trono:
+		c.desligar()
+	for l in lampadas_do_trono:
+		l.apagar()
+		l.chamando = false
+	_riscos.visible = false
+	_ambiente.ambient_light_energy = 0.9
+	_sol.light_energy = 0.95
+	refazer_trono()
+	chefe.reiniciar()
+	_brilho_coluna.show()
+	faixa_pedida.emit("De novo!", "A luta com o Rei recomeça do começo")
+	_comecou = false
+	_espera = 1.5
 
 
 func _fazer_argolas() -> void:

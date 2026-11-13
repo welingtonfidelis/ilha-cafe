@@ -88,7 +88,8 @@ const CONSTELACOES := {
 }
 
 ## Uma por porta: {id, nome, tipo ("ceu", "chao", "nave" ou "saida"), andar (0 é o térreo), lado (graus),
-## pede, pede_grandes, falta, aberta, feita, imagem, grande, achados, total_faisquinhas}.
+## pede, pede_grandes (as do andar, na porta do chefe), pede_chefes (na da nave), falta, aberta, feita, imagem, grande,
+## achados, total_faisquinhas}.
 var portas: Array = []
 ## Os Faisquinhas salvos, um por item: {fase, id, andar, chegando}; os que chegam agora caem do alto.
 var moradores_dados: Array = []
@@ -167,7 +168,7 @@ func yaw_inicial() -> float:
 ## A porta da nave depende das Estrelas Grandes, que só mudam fora do farol.
 func atualizar_portas(total: int) -> void:
 	for p in portas:
-		if p.tipo == "saida" or p.aberta or int(p.get("pede_grandes", 0)) > 0:
+		if p.tipo == "saida" or p.aberta or int(p.get("pede_grandes", 0)) > 0 or int(p.get("pede_chefes", 0)) > 0:
 			continue
 		p.falta = maxi(int(p.pede) - total, 0)
 		if p.falta == 0:
@@ -1049,17 +1050,26 @@ class PortaFase:
 			_cadeado = _fazer_cadeado()
 			_cadeado.position = Vector3(0, 2.2, 0.35)
 			add_child(_cadeado)
-			# A da nave pede Estrelas Grandes (a estrela do lado do número é maior).
+			# A do chefe pede as Estrelas Grandes do andar (a estrela do lado do número é maior); a da nave pede os chefes
+			# vencidos (uma coroa do lado do número).
 			var grandes := int(dados.get("pede_grandes", 0))
-			var pede := _rotulo(str(grandes if grandes > 0 else dados.pede), 72, Color("ffd23f"))
+			var chefes_ := int(dados.get("pede_chefes", 0))
+			var pede := _rotulo(str(chefes_ if chefes_ > 0 else (grandes if grandes > 0 else dados.pede)), 72, Color("ffd23f"))
 			pede.position = Vector3(0.25, 0.75, 0.3)
 			add_child(pede)
-			var estrela := MeshInstance3D.new()
-			estrela.mesh = Forma.estrela(0.42, 0.19, 0.2) if grandes > 0 else Forma.estrela(0.28, 0.12, 0.12)
-			estrela.material_override = _brilho(Color("ffd23f"))
-			estrela.position = Vector3(-0.55, 0.78, 0.3)
-			add_child(estrela)
-			_pede = [pede, estrela]
+			var marca: Node3D
+			if chefes_ > 0:
+				marca = _coroa(Color("ffc93c"))
+				marca.scale = Vector3.ONE * 1.5
+				marca.position = Vector3(-0.55, 0.62, 0.3)
+			else:
+				var estrela := MeshInstance3D.new()
+				estrela.mesh = Forma.estrela(0.42, 0.19, 0.2) if grandes > 0 else Forma.estrela(0.28, 0.12, 0.12)
+				estrela.material_override = _brilho(Color("ffd23f"))
+				estrela.position = Vector3(-0.55, 0.78, 0.3)
+				marca = estrela
+			add_child(marca)
+			_pede = [pede, marca]
 		elif not dados.feita:
 			_em_breve()
 		else:
@@ -1125,7 +1135,9 @@ class PortaFase:
 		if dados.tipo != "saida" and not dados.aberta:
 			if _cadeado:
 				_cadeado.rotation.z = 0.4
-			if int(dados.get("pede_grandes", 0)) > 0:
+			if int(dados.get("pede_chefes", 0)) > 0:
+				_mostrar_aviso("Falta 1 chefe" if int(dados.falta) == 1 else "Faltam %d chefes" % int(dados.falta))
+			elif int(dados.get("pede_grandes", 0)) > 0:
 				_mostrar_aviso("Falta 1 Estrela Grande" if int(dados.falta) == 1 else "Faltam %d Estrelas Grandes" % int(dados.falta))
 			else:
 				_mostrar_aviso("Faltam %d" % int(dados.falta))
@@ -1174,25 +1186,7 @@ class PortaFase:
 		add_child(raiz)
 		if dados.tipo == "chefe":
 			# A coroa do capitão.
-			var aro := MeshInstance3D.new()
-			var cil := CylinderMesh.new()
-			cil.top_radius = 0.3
-			cil.bottom_radius = 0.26
-			cil.height = 0.16
-			aro.mesh = cil
-			aro.material_override = _brilho(Color("ffc93c"))
-			raiz.add_child(aro)
-			for k in 5:
-				var a := TAU * k / 5.0
-				var ponta := MeshInstance3D.new()
-				var cone := CylinderMesh.new()
-				cone.top_radius = 0.0
-				cone.bottom_radius = 0.07
-				cone.height = 0.2
-				ponta.mesh = cone
-				ponta.material_override = _brilho(Color("ffc93c"))
-				ponta.position = Vector3(cos(a) * 0.27, 0.17, sin(a) * 0.27)
-				raiz.add_child(ponta)
+			raiz.add_child(_coroa(Color("ffc93c")))
 		elif dados.tipo == "nave":
 			var disco := MeshInstance3D.new()
 			var bola := SphereMesh.new()
@@ -1234,6 +1228,30 @@ class PortaFase:
 			telhado.material_override = _mat(cor.darkened(0.2))
 			telhado.position.y = 0.31
 			raiz.add_child(telhado)
+
+	## A coroa de cinco pontas (o ícone do chefe e, do lado do número, o que a porta da nave pede).
+	func _coroa(cor: Color) -> Node3D:
+		var raiz := Node3D.new()
+		var aro := MeshInstance3D.new()
+		var cil := CylinderMesh.new()
+		cil.top_radius = 0.3
+		cil.bottom_radius = 0.26
+		cil.height = 0.16
+		aro.mesh = cil
+		aro.material_override = _brilho(cor)
+		raiz.add_child(aro)
+		for k in 5:
+			var a := TAU * k / 5.0
+			var ponta := MeshInstance3D.new()
+			var cone := CylinderMesh.new()
+			cone.top_radius = 0.0
+			cone.bottom_radius = 0.07
+			cone.height = 0.2
+			ponta.mesh = cone
+			ponta.material_override = _brilho(cor)
+			ponta.position = Vector3(cos(a) * 0.27, 0.17, sin(a) * 0.27)
+			raiz.add_child(ponta)
+		return raiz
 
 	func _fazer_cadeado() -> Node3D:
 		var raiz := Node3D.new()

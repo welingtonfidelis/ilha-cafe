@@ -21,8 +21,9 @@ const CENA := "res://scenes/faisca.tscn"
 const MODOS := ["--faisca-jogo", "--faisca-jogo-captura", "--faisca-farol-captura", "--faisca-brindes-captura"]
 ## As fases, na ordem das portas, com o andar do farol (0 é o térreo; cada andar é um mundo) e o lado da
 ## parede em graus. "cena" vazia é porta que abre mas ainda mostra "Em breve". Nomes e números das que
-## faltam fazer vêm do mapa da seção 11 do doc e mudam quando cada uma for planejada. A nave, no topo,
-## pede todas as Estrelas Grandes (`pede_grandes`) em vez de estrelinhas.
+## faltam fazer vêm do mapa da seção 11 do doc e mudam quando cada uma for planejada. A porta do chefe de cada andar
+## pede as Estrelas Grandes das fases daquele andar, e a da nave, no topo, pede os três chefes vencidos (item 15 da lista
+## do Faísca, 2026-11-13; ver `falta_para`).
 const FASES := [
 	{"id": "1-1", "nome": "Pulinhos nas Nuvens", "tipo": "ceu", "pede": 0, "andar": 0, "lado": 270,
 		"cena": "res://scripts/faisca/fases/fase_1_1.gd", "imagem": "res://assets/faisca/portas/fase_1_1.jpg"},
@@ -40,16 +41,16 @@ const FASES := [
 		"cena": "res://scripts/faisca/fases/fase_3_2.gd", "imagem": "res://assets/faisca/portas/fase_3_2.jpg"},
 	{"id": "3-3", "nome": "Moinhos do Vento", "tipo": "ceu", "pede": 210, "andar": 2, "lado": 180,
 		"cena": "res://scripts/faisca/fases/fase_3_3.gd", "imagem": "res://assets/faisca/portas/fase_3_3.jpg"},
-	# Os chefes de cada andar (item 5 da lista do Faísca): a porta abre com as Estrelas Grandes do mundo; vencido, ele
-	# conta em `chefes`, não nas Estrelas Grandes (a nave continua pedindo 8).
-	{"id": "chefe-1", "nome": "Bolotão Fofão", "tipo": "chefe", "pede": 0, "pede_grandes": 2, "andar": 0, "lado": 30,
+	# Os chefes de cada andar (item 5 da lista do Faísca): a porta abre com as Estrelas Grandes das fases do andar dele;
+	# vencido, ele conta em `chefes`, não nas Estrelas Grandes (e a nave pede os três).
+	{"id": "chefe-1", "nome": "Bolotão Fofão", "tipo": "chefe", "pede": 0, "andar": 0, "lado": 30,
 		"cena": "res://scripts/faisca/fases/chefe_1.gd", "imagem": "res://assets/faisca/portas/chefe_1.jpg"},
-	{"id": "chefe-2", "nome": "Chef Bolotão", "tipo": "chefe", "pede": 0, "pede_grandes": 5, "andar": 1, "lado": 315,
+	{"id": "chefe-2", "nome": "Chef Bolotão", "tipo": "chefe", "pede": 0, "andar": 1, "lado": 315,
 		"cena": "res://scripts/faisca/fases/chefe_2.gd", "imagem": "res://assets/faisca/portas/chefe_2.jpg"},
-	{"id": "chefe-3", "nome": "Pinguinzão do Gelo", "tipo": "chefe", "pede": 0, "pede_grandes": 7, "andar": 2, "lado": 315,
+	{"id": "chefe-3", "nome": "Pinguinzão do Gelo", "tipo": "chefe", "pede": 0, "andar": 2, "lado": 315,
 		"cena": "res://scripts/faisca/fases/chefe_3.gd", "imagem": "res://assets/faisca/portas/chefe_3.jpg"},
 	# A fase final (2026-11-12): por dentro da nave, com o Rei Bolotão no topo; vencida, o final lá fora (`_final_da_nave`).
-	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "pede_grandes": 8, "andar": 3, "lado": 270,
+	{"id": "nave", "nome": "Nave Aspiratrão", "tipo": "nave", "pede": 0, "andar": 3, "lado": 270,
 		"cena": "res://scripts/faisca/fases/fase_nave.gd", "imagem": "res://assets/faisca/portas/nave.jpg"},
 ]
 ## As estrelinhas da escada do farol também contam.
@@ -85,6 +86,8 @@ var _sorteio := RandomNumberGenerator.new()
 var abertura_vista := false
 ## Já viu o final (a nave vencida e as estrelas de volta no céu).
 var final_visto := false
+## Quantas vezes a luta de um chefe recomeçou do zero (os testes olham).
+var luta_recomecou := 0
 var faisca: Jogador
 var hud: Hud
 var hub: HubFarol
@@ -553,6 +556,7 @@ func _criar_faisca() -> void:
 	faisca.vida_mudou.connect(hud.mostrar_vida)
 	# Ganhou um coração: piscada rosa (a tremidinha é do Jogador).
 	faisca.curou.connect(func() -> void: controle.piscar(Color8(255, 80, 120), 0.8))
+	faisca.voltou_do_curto.connect(_depois_do_curto)
 	hud.jogar_de_novo.connect(_fim_aceito)
 	hud.mostrar_vida(faisca.vida)
 	_esconder_faisca()
@@ -678,12 +682,10 @@ func _montar_hub(volta_de: String) -> void:
 	hub.grandes = grandes + chefes
 	hub.chefes = chefes.duplicate()
 	hub.ja_pegas = _como_dicionario(estrelas.get(ID_FAROL, []))
-	var total := total_estrelas()
 	for f in FASES:
-		var pede_grandes := int(f.get("pede_grandes", 0))
-		var falta := maxi(pede_grandes - grandes.size(), 0) if pede_grandes > 0 else maxi(int(f.pede) - total, 0)
+		var falta := falta_para(f)
 		hub.portas.append({"id": f.id, "nome": f.nome, "tipo": f.tipo, "andar": f.andar, "lado": f.lado, "pede": f.pede,
-			"pede_grandes": pede_grandes, "falta": falta, "aberta": falta == 0, "feita": f.cena != "", "imagem": f.imagem,
+			"pede_grandes": grandes_pedidas(f).size(), "pede_chefes": chefes_pedidos(f).size(), "falta": falta, "aberta": falta == 0, "feita": f.cena != "", "imagem": f.imagem,
 			"grande": f.id in grandes or f.id in chefes or (f.id == "nave" and final_visto), "achados": (faisquinhas.get(f.id, []) as Array).size(),
 			"total_faisquinhas": 0 if f.tipo == "chefe" else FAISQUINHAS_POR_FASE})
 		for n in faisquinhas.get(f.id, []):
@@ -718,16 +720,52 @@ func _montar_hub(volta_de: String) -> void:
 	hud.mostrar_moedas(moedas)
 
 
+## As fases cujas Estrelas Grandes a porta `f` pede: a do chefe pede as das fases do andar dele.
+func grandes_pedidas(f: Dictionary) -> Array:
+	if String(f.get("tipo", "")) != "chefe":
+		return []
+	return FASES.filter(func(o: Dictionary) -> bool: return o.tipo in ["ceu", "chao"] and int(o.andar) == int(f.andar)).map(
+			func(o: Dictionary) -> String: return o.id)
+
+
+## Os chefes que a porta `f` pede vencidos: a da nave pede os três.
+func chefes_pedidos(f: Dictionary) -> Array:
+	if String(f.get("tipo", "")) != "nave":
+		return []
+	return FASES.filter(func(o: Dictionary) -> bool: return o.tipo == "chefe").map(func(o: Dictionary) -> String: return o.id)
+
+
+## Quanto falta para a porta `f` abrir: Estrelas Grandes do andar (chefe), chefes vencidos (nave) ou estrelinhas (fase).
+func falta_para(f: Dictionary) -> int:
+	var g := grandes_pedidas(f)
+	if not g.is_empty():
+		return g.filter(func(id: String) -> bool: return not id in grandes).size()
+	var c := chefes_pedidos(f)
+	if not c.is_empty():
+		return c.filter(func(id: String) -> bool: return not id in chefes).size()
+	return maxi(int(f.get("pede", 0)) - total_estrelas(), 0)
+
+
 func entrar_fase(id: String) -> void:
 	var dados := _fase(id)
-	if _trocando or lugar != "hub" or dados.is_empty() or dados.cena == "" or total_estrelas() < int(dados.pede) \
-			or grandes.size() < int(dados.get("pede_grandes", 0)):
+	if _trocando or lugar != "hub" or dados.is_empty() or dados.cena == "" or falta_para(dados) > 0:
 		return
 	_trocando = true
 	faisca.controle_ligado = false
 	await _escurecer(1.0, 0.35)
 	hub.queue_free()
 	hub = null
+	_abrir_fase(id)
+	await _esperar_a_fase_assentar()
+	_escurecer(0.0, 0.5)
+	await _comecar_fase()
+	_trocando = false
+
+
+## Monta a fase `id` (vinda do farol, ou de novo, quando a luta de um chefe recomeça): a cena, a música, os sinais e o
+## Faísca com os 3 corações e sem poderes.
+func _abrir_fase(id: String) -> void:
+	var dados := _fase(id)
 	nivel = load(dados.cena).new()
 	nivel.name = "Fase"
 	tocar_musica(musica_da_fase(id))
@@ -782,10 +820,33 @@ func entrar_fase(id: String) -> void:
 	faisca.yaw = 0.0
 	faisca.pitch = -0.32
 	faisca.visual.rotation.y = PI
+
+
+## Perdeu todos os corações (item 14 da lista do Faísca, 2026-11-13): nas fases, o curto já leva de volta ao último
+## posto. Na luta de um chefe, ela recomeça do zero: a arena do chefe do andar monta de novo, com o chefe inteiro (o
+## Faísca desce do céu como na chegada); na nave, só a Sala do Trono volta ao começo (`FaseNave.recomecar_luta`).
+func _depois_do_curto() -> void:
+	if _trocando or lugar != "fase" or not is_instance_valid(nivel):
+		return
+	if nivel.has_method("recomecar_luta"):
+		nivel.recomecar_luta()
+		return
+	var chefe: Node = nivel.get("chefe")
+	if String(_fase(fase_atual).get("tipo", "")) != "chefe" or chefe == null or int(chefe.get("fase")) < 1 or bool(chefe.get("derrotado")):
+		return
+	_trocando = true
+	faisca.controle_ligado = false
+	faixa("De novo!", "A luta recomeça do começo", Color("#ff8fd0"), 2.4)
+	await _escurecer(1.0, 0.45)
+	hud.esconder_chefe()
+	nivel.queue_free()
+	nivel = null
+	_abrir_fase(fase_atual)
 	await _esperar_a_fase_assentar()
 	_escurecer(0.0, 0.5)
 	await _comecar_fase()
 	_trocando = false
+	luta_recomecou += 1
 
 
 ## Os primeiros quadros de uma fase são os mais pesados: a vegetação e o mundo que reage montam depois do primeiro

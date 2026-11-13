@@ -124,6 +124,13 @@ func ligar() -> void:
 	ligou.emit()
 
 
+## Desliga de novo (a luta do Rei recomeçando): o tubo e as fitas somem e ela para de soprar.
+func desligar() -> void:
+	ligada = false
+	_fitas.visible = false
+	_tubo.scale = Vector3(1, 0.01, 1)
+
+
 func _physics_process(_delta: float) -> void:
 	if not ligada:
 		return
