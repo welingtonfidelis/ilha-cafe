@@ -730,7 +730,7 @@ func pegar_luva(j: Jogador) -> void:
 	luva_pega = true
 	j.luva_de_neve = true
 	j.robo.expressao("feliz", 1.2)
-	Fx.confetti(self, _luva.global_position, 40, 4.0)
+	Particulas.magia(self, _luva.global_position, Color("4a90e2"))
 	Sfx.play(self, "bandeira", 0.0, 0.0)
 	_luva.set_deferred("monitoring", false)
 	_luva.hide()

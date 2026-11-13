@@ -847,7 +847,7 @@ func pegar_martelinho(j: Jogador) -> void:
 	martelinho_pego = true
 	j.martelinho = true
 	j.robo.expressao("feliz", 1.2)
-	Fx.confetti(self, _area_martelo.global_position, 40, 4.0)
+	Particulas.magia(self, _area_martelo.global_position, Color("ffb800"))
 	Sfx.play(self, "bandeira", 0.0, 0.0)
 	_area_martelo.set_deferred("monitoring", false)
 	_area_martelo.hide()

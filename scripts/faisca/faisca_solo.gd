@@ -35,6 +35,8 @@ extends Node3D
 ##   --faisca-fase-nave      a fase final: confere a nave de ponta a ponta e a luta com o Rei (ver scripts/faisca/teste_fase_nave.gd)
 ##   --faisca-fase-nave-captura  a nave: fotos de cada trecho e da luta em tools/capturas/faisca/nave/
 ##   --faisca-jogar-nave     a nave para jogar direto, sem o farol
+##   --faisca-particulas-captura  1-1: fotos das partículas do Kenney (soco, Bolota, estrelinha, poeira, giro, coração e
+##                           curto) em tools/capturas/faisca/particulas/ (ver scripts/faisca/teste_particulas.gd)
 ##   --faisca-monstro        1-1: confere os monstros do Cute Monsters Pack, as animações e a regra de cada tipo
 ##                           (ver scripts/faisca/teste_monstro.gd)
 ##   --faisca-monstro-captura   fotos de cada tipo em ação em tools/capturas/faisca/monstro/ (precisa de janela)
@@ -59,7 +61,7 @@ const MODOS := ["--faisca-teste", "--faisca-smoke", "--faisca-controle", "--fais
 		"--faisca-jogar-2-1", "--faisca-fase-2-2", "--faisca-fase-2-2-captura", "--faisca-jogar-2-2", "--faisca-fase-2-3",
 		"--faisca-fase-2-3-captura", "--faisca-jogar-2-3", "--faisca-fase-3-1", "--faisca-fase-3-1-captura", "--faisca-jogar-3-1",
 		"--faisca-fase-3-2", "--faisca-fase-3-2-captura", "--faisca-jogar-3-2", "--faisca-fase-3-3", "--faisca-fase-3-3-captura",
-		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-monstro", "--faisca-monstro-captura",
+		"--faisca-jogar-3-3", "--faisca-fase-nave", "--faisca-fase-nave-captura", "--faisca-jogar-nave", "--faisca-particulas-captura", "--faisca-monstro", "--faisca-monstro-captura",
 		"--faisca-movimento", "--faisca-movimento-captura", "--faisca-faisquinhas", "--faisca-faisquinhas-captura",
 		"--faisca-dualsense", "--faisca-moedas", "--faisca-chefe-1", "--faisca-chefe-1-captura", "--faisca-jogar-chefe-1",
 		"--faisca-chefe-2", "--faisca-chefe-2-captura", "--faisca-jogar-chefe-2",
@@ -83,6 +85,7 @@ var _teste31: TesteFase31
 var _teste32: TesteFase32
 var _teste33: TesteFase33
 var _teste_nave: TesteFaseNave
+var _teste_particulas: TesteParticulas
 var _teste_monstro: TesteMonstro
 var _teste_movimento: TesteMovimento
 var _teste_faisquinhas: TesteFaisquinhas
@@ -267,6 +270,9 @@ func _ready() -> void:
 	elif "--faisca-fase-nave-captura" in args:
 		_teste_nave = TesteFaseNave.new(self)
 		_teste_nave.capturar()
+	elif "--faisca-particulas-captura" in args:
+		_teste_particulas = TesteParticulas.new(self)
+		_teste_particulas.capturar()
 	elif "--faisca-chefe-1" in args:
 		testando = true
 		_teste_chefe1 = TesteChefe1.new(self)

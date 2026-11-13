@@ -273,6 +273,7 @@ func _estourar_bolha() -> void:
 	if not is_instance_valid(bolha):
 		return
 	Fx.bubble_pop(get_parent(), bolha.global_position)
+	Particulas.magia(get_parent(), bolha.global_position, Color("9be15d"))
 	Sfx.play_at(get_parent(), "estouro", global_position, -4.0, 0.1)
 	bolha.queue_free()
 	bolha = null

@@ -236,7 +236,7 @@ func _dar_poder(qual: String) -> void:
 	j.luva_de_neve = qual == "luva"
 	j.martelinho = qual == "martelinho"
 	j.robo.expressao("feliz", 1.0)
-	Fx.confetti(self, j.global_position + Vector3.UP * 1.5, 20, 2.0)
+	Particulas.magia(self, j.global_position + Vector3.UP * 1.2, Color("8fd8ff"))
 	Sfx.play(self, "bandeira", 0.0, 0.0)
 
 

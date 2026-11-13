@@ -101,7 +101,7 @@ func _ready() -> void:
 func pegar(j: Jogador) -> void:
 	j.pipa = true
 	j.robo.expressao("feliz", 1.2)
-	Fx.confetti(get_parent(), global_position, 40, 4.0)
+	Particulas.magia(get_parent(), global_position, Color("ff7a22"))
 	Sfx.play(get_parent(), "bandeira", 0.0, 0.0)
 	set_deferred("monitoring", false)
 	hide()

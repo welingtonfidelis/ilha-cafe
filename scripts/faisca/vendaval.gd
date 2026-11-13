@@ -176,6 +176,9 @@ func _physics_process(delta: float) -> void:
 	j.acompanhar_camera(delta)
 	if fmod(_t * DURACAO, 1.2) < delta:
 		j.tremidinha(0.35)
+	# Redemoinhos em volta dele enquanto voa (Particulas, 2026-11-13).
+	if fmod(_t * DURACAO, 0.45) < delta:
+		Particulas.redemoinho(get_parent(), j.global_position + Vector3.UP * 1.0)
 	if _t >= 1.0:
 		_pousar(j)
 

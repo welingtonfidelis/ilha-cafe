@@ -427,7 +427,7 @@ func _bola_de_chiclete() -> void:
 func pegar_balao(j: Jogador) -> void:
 	j.balao_de_chiclete = true
 	j.robo.expressao("feliz", 1.2)
-	Fx.confetti(self, bola_de_chiclete.global_position, 40, 4.0)
+	Particulas.magia(self, bola_de_chiclete.global_position, Color("ff5fae"))
 	Sfx.play(self, "bandeira", 0.0, 0.0)
 	bola_de_chiclete.set_deferred("monitoring", false)
 	bola_de_chiclete.hide()

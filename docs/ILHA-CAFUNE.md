@@ -2328,6 +2328,28 @@ Pedido do usuário depois de construir a 3-3: "vamos planeja a ultima fase, talv
   - no `--faisca-jogo`: a porta da nave abre com os 3 chefes vencidos e leva à nave (com o tema dela); a luta troca para o tema dos chefes, com os corações do Rei; durante a cena a pausa fica fechada (`pode_pausar`); e o final lá fora volta ao farol, com a porta dourada e o "final" no save;
   - a nave entrou também no `--faisca-faisquinhas`, no `--faisca-mundo` e nos dois revisores (0 sem física, 0 piscando; o trono fica "em parte", porque o disco desenhado é maior que a colisão).
 
+### Partículas do Kenney no Faísca (2026-11-13)
+
+O próximo passo depois do merge na main, combinado em 2026-11-11, era testar o Kenney Particle Pack. O usuário perguntou onde usar e liberou o download ("Pode baixar"): `kenney_particle-pack.zip`, versão 1.1, CC0, com uns 15 MB. Ele está em `Projects/others/kenney-particle-pack`, com as 80 imagens de 512 x 512. As 32 escolhidas ficam em `assets/fx/kenney/`, junto com a licença.
+- **O pacote:** 18 tipos, entre eles fumaça, faísca (raios elétricos), estrela, coração e estrela de "símbolo", círculo mágico, espiral, rastro, poeira, clarão de tiro e estouros pontudos ("queimado", que aqui vira o "pow!"). Fogo e chama ficam de fora, pelo tema infantil.
+- **A classe `Particulas`** (`scripts/particulas.gd`): cada efeito são jatos de `CPUParticles3D` com quadradinhos virados para a câmera, coloridos por código.
+  - As formas (estrela, faísca, coração, pow, fumaça) cobrem o fundo em vez de somar luz: somando, o branco sumia contra o céu claro das fases de dia.
+  - Só os clarões somam.
+- **A vitrine** (`tools/vitrine_particulas.gd`, precisa de janela): em cada parada, o efeito de antes à esquerda e o novo à direita, de dia e no escuro. As fotos ficam em `tools/capturas/particulas/`.
+- **No Faísca** (pedido do usuário: "Troca no Faísca"), os efeitos novos entram onde não é festa; o confete ficou para as conquistas (tarefa feita, Estrela Grande, prêmio, Faisquinha chegando no farol):
+  - a estrelinha pega: o clarão dourado e as estrelinhas (antes, a estrelinha só encolhia);
+  - a Bolota estourando: o puf de fumaça lilás com estrelinhas pulando;
+  - o golpe acertando (soco, giro, pisão e a pancada do martelinho): o "pow!" amarelo entre o Faísca e o alvo;
+  - o coração pego: coraçõezinhos rosa subindo;
+  - a poeira do pulo, do pouso e dos passos: fumaça clara e, no pulo e no pouso, uns torrões de terra (antes, bolinhas brancas);
+  - o curto: raios azuis estalando e a fumacinha cinza (antes, bolas cinza);
+  - o giro: uma espiral clarinha que vai junto com ele;
+  - o balão de chiclete estourando: um puf rosa;
+  - os poderes (o balão, o ioiô, a luva, o martelinho, a pipa e as cápsulas da nave) e o Faisquinha saindo da bolha: o círculo mágico na cor de cada um;
+  - o vendaval da 3-3 e o aspirador do Rei: redemoinhos.
+- **Fotos no jogo:** `--faisca-particulas-captura` (`teste_particulas.gd`) tira fotos dentro da 1-1, com uma câmera de lado: o soco, a Bolota estourando, a estrelinha, a poeira do pouso, o giro, o coração e o curto. As fotos ficam em `tools/capturas/faisca/particulas/`. A bateria do Faísca passou inteira depois da troca.
+- **Na Ilha Cafuné:** ainda não. A ideia é o clarão dos blasters, as faíscas no acerto, o esqueleto remontando com redemoinho, os fogos e os balões.
+
 ### Lista de melhorias e novidades do Faísca (2026-11-11)
 
 Pedido do usuário depois do movimento novo: "faz uma análise e proposta do jogo Faísca sobre melhorias e novidades, reforçando que a grande inspiração do jogo é o Astro Bot". Ficam de fora o que o usuário já recusou: dois jogadores e o escorregador.

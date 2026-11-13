@@ -726,48 +726,12 @@ func _pousou(tempo_no_ar: float) -> void:
 	_tremer_passo(clampf(1.5 + tempo_no_ar * 2.0, 1.5, 3.5))
 
 
-## Nuvenzinha de poeira no chão: bolinhas claras que se espalham para os lados, sobem um pouco e somem
-## encolhendo. `forca` aumenta o tamanho e o espalhado.
-var _poeira_malha: SphereMesh
-
-
+## Nuvenzinha de poeira no chão (a fumaça clara e, no pulo e no pouso, os torrões do Kenney Particle Pack; antes eram
+## bolinhas brancas). `forca` aumenta o tamanho e o espalhado.
 func _poeira(pos: Vector3, forca: float, quantas := 8) -> void:
-	if _poeira_malha == null:
-		_poeira_malha = SphereMesh.new()
-		_poeira_malha.radius = 0.11
-		_poeira_malha.height = 0.2
-		_poeira_malha.radial_segments = 8
-		_poeira_malha.rings = 4
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.97, 0.95, 0.9, 0.85)
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_poeira_malha.material = mat
-	var p := CPUParticles3D.new()
-	p.one_shot = true
-	p.emitting = false
-	p.amount = quantas
-	p.lifetime = 0.55
-	p.explosiveness = 1.0
-	p.direction = Vector3.UP
-	p.spread = 80.0
-	p.flatness = 0.6
-	p.initial_velocity_min = 1.0 * forca
-	p.initial_velocity_max = 2.2 * forca
-	p.damping_min = 4.0
-	p.damping_max = 6.0
-	p.gravity = Vector3(0, 0.8, 0)
-	p.scale_amount_min = 0.7 * forca
-	p.scale_amount_max = 1.2 * forca
-	var curva := Curve.new()
-	curva.add_point(Vector2(0, 1))
-	curva.add_point(Vector2(1, 0))
-	p.scale_amount_curve = curva
-	p.mesh = _poeira_malha
-	get_parent().add_child(p)
-	p.global_position = pos + Vector3.UP * 0.08
-	p.emitting = true
-	p.finished.connect(p.queue_free)
+	if not is_inside_tree():
+		return
+	Particulas.poeira(get_parent(), pos + Vector3.UP * 0.1, Color("b08a62"), forca, quantas)
 
 
 ## Passinhos correndo: poeirinha alternando os pés e um tique baixinho de robô.
@@ -1008,33 +972,9 @@ func _dar_curto() -> void:
 	voltou_do_curto.emit()
 
 
+## O curto: os raios azuis estalando em volta e a fumacinha cinza subindo (Particulas.curto).
 func _fumacinha() -> void:
-	var fumaca := StandardMaterial3D.new()
-	fumaca.albedo_color = Color(0.85, 0.85, 0.9, 0.85)
-	fumaca.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	var faisca := StandardMaterial3D.new()
-	faisca.albedo_color = Color("ffe066")
-	faisca.emission_enabled = true
-	faisca.emission = Color("ffd23f")
-	faisca.emission_energy_multiplier = 3.0
-	var centro := global_position + Vector3.UP * 1.8
-	for i in 10:
-		var e := MeshInstance3D.new()
-		var bola := SphereMesh.new()
-		var e_faisca := i % 2 == 0
-		bola.radius = 0.06 if e_faisca else 0.28
-		bola.height = bola.radius * 2.0
-		e.mesh = bola
-		e.material_override = faisca if e_faisca else fumaca
-		e.top_level = true
-		add_child(e)
-		e.global_position = centro
-		var a := TAU * i / 10.0
-		var destino := centro + (Vector3(cos(a) * 1.2, 0.6 + randf() * 0.8, sin(a) * 1.2) if e_faisca else Vector3(cos(a) * 0.4, 1.4 + randf() * 0.6, sin(a) * 0.4))
-		var tw := e.create_tween().set_parallel()
-		tw.tween_property(e, "global_position", destino, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw.tween_property(e, "scale", Vector3.ONE * (0.01 if e_faisca else 2.2), 0.9)
-		tw.chain().tween_callback(e.queue_free)
+	Particulas.curto(get_parent(), global_position + Vector3.UP * 1.2)
 
 
 func voltar_ao_inicio() -> void:
@@ -1117,7 +1057,7 @@ func _estourar_balao(barulho := true) -> void:
 	no_balao = false
 	_balao.visible = false
 	if barulho and is_inside_tree():
-		Fx.confetti(get_parent(), _balao.global_position, 14, 2.5)
+		Particulas.puf(get_parent(), _balao.global_position, Color("ff8fc8"))
 		Sfx.play(self, "estouro", -2.0, 0.1)
 		_tremer(0.2, 0.3, 0.08)
 
@@ -1227,11 +1167,12 @@ func _bater_pancada() -> void:
 		var d: Vector3 = alvo.global_position - pe
 		if absf(d.y) > 1.6 or Vector2(d.x, d.z).length() > RAIO_PANCADA + float(alvo.raio_golpe):
 			continue
-		alvo.receber_golpe(3, pe, 7.0, "pancada")
+		if alvo.receber_golpe(3, pe, 7.0, "pancada"):
+			Particulas.soco(get_parent(), alvo.global_position + Vector3.UP * 0.9)
 	if na_poca and is_instance_valid(na_poca):
 		na_poca.espirrar(pe, 2.2)
 	else:
-		Fx.dust(get_parent(), pe)
+		Particulas.poeira(get_parent(), pe + Vector3.UP * 0.1, Color("b08a62"), 1.3, 10)
 	Sfx.play(self, "martelo", 0.0, 0.05)
 	_tremer(0.5, 0.8, 0.2)
 	velocity.y = 5.0
@@ -1338,6 +1279,7 @@ func _golpear(no_chao: bool, dir: Vector3) -> void:
 			velocity.y = maxf(velocity.y, 3.0)
 			robo.expressao("bravo", 0.6)
 			Sfx.play(self, "faisca_giro", 0.0, 0.08)
+			Particulas.giro(self)
 			if luva_de_neve:
 				jogar_bola_de_neve()
 		return
@@ -1434,6 +1376,7 @@ func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao:
 	var f := _frente()
 	var meio := global_position + Vector3.UP * 1.1
 	var acertou := false
+	var onde := Vector3.ZERO
 	for alvo in get_tree().get_nodes_in_group(Alvo.GRUPO):
 		if alvo.derrotado:
 			continue
@@ -1446,8 +1389,12 @@ func _acertar(alcance: float, angulo: float, altura: float, dano: int, empurrao:
 		if angulo < PI and d.length() > 0.3 and f.angle_to(d.normalized()) > angulo:
 			continue
 		if alvo.receber_golpe(dano, global_position, empurrao, tipo):
+			if not acertou:
+				# O "pow!" entre o Faísca e o alvo, na altura do soco.
+				onde = meio.lerp(alvo.global_position + Vector3.UP * 0.9, 0.6)
 			acertou = true
 	if acertou:
+		Particulas.soco(get_parent(), onde)
 		_tremer(0.3, 0.6, 0.12)
 		Sfx.play(self, "faisca_acerto", 0.0, 0.1)
 	return acertou
@@ -1479,6 +1426,7 @@ func _pisao() -> void:
 		if _inimigo(alvo) and col.get_normal().y > 0.6:
 			if alvo.receber_golpe(2, global_position + Vector3.UP * 2.0, 3.0, "pisao"):
 				Sfx.play(self, "faisca_pisao", 0.0, 0.08)
+				Particulas.soco(get_parent(), global_position + Vector3.UP * 0.3)
 				velocity.y = forca_pulo * 0.8
 				_pulou = true
 				_cortou_pulo = true

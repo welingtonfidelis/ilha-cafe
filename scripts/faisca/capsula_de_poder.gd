@@ -111,7 +111,7 @@ func pegar(j: Jogador) -> void:
 		"pipa":
 			j.pipa = true
 	j.robo.expressao("feliz", 1.2)
-	Fx.confetti(get_parent(), global_position + Vector3.UP * 2.0, 40, 4.0)
+	Particulas.magia(get_parent(), global_position + Vector3.UP * 2.0, ROSA)
 	Sfx.play(get_parent(), "bandeira", 0.0, 0.0)
 	var tw := create_tween()
 	tw.tween_property(_figura, "scale", Vector3.ONE * 0.01, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)

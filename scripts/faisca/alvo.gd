@@ -265,6 +265,7 @@ func receber_golpe(dano: int, de: Vector3, forca := 6.0, _tipo := "") -> bool:
 func _derrotar() -> void:
 	_sarar()
 	Sfx.play_at(get_parent(), "bolota_estoura", global_position, 0.0, 0.08)
+	Particulas.puf(get_parent(), global_position + Vector3.UP * 0.8)
 	derrotado = true
 	collision_layer = 0
 	_estrelinhas()

@@ -343,6 +343,7 @@ func _pegar(corpo: Node3D, area: Area3D) -> void:
 	estrela_pega.emit(pegas, total_estrelas())
 	(corpo as Jogador).robo.expressao("feliz", 0.8)
 	Sfx.play(self, "estrelinha", 0.0, 0.1)
+	Particulas.estrelinha(self, area.global_position)
 	var tw := create_tween()
 	tw.tween_property(area, "scale", Vector3.ONE * 1.6, 0.1)
 	tw.tween_property(area, "scale", Vector3.ONE * 0.01, 0.12)
@@ -758,6 +759,7 @@ func coracao(pos: Vector3) -> Area3D:
 	add_child(area)
 	area.body_entered.connect(func(corpo: Node3D):
 		if corpo is Jogador and area.visible and corpo.curar():
+			Particulas.coracoes(self, area.global_position)
 			area.set_deferred("monitoring", false)
 			area.hide())
 	coracoes.append(area)

@@ -135,6 +135,7 @@ var _trono_y := 0.0
 var _barreiras: Array[AnimatableBody3D] = []
 var _barreiras_centro: Array[Vector3] = []
 var _guardas_vivos := 0
+var _vento_do_cetro := 0.0
 
 
 ## O botão vermelho do trono voador (fase 1 da luta): um soco aperta. Fica no grupo dos alvos dos golpes.
@@ -1689,7 +1690,7 @@ func comecar_luta() -> void:
 		j.tirar_poderes()
 		j.ioio = true
 		j.pipa = true
-		Fx.confetti(self, j.global_position + Vector3.UP * 1.5, 20, 2.0)
+		Particulas.magia(self, j.global_position + Vector3.UP * 1.2, Color("b89bff"))
 	# O posto da sala acende sozinho: quem perder todos os corações volta aqui, e a luta recomeça (item 14).
 	if not postos.is_empty() and not postos[postos.size() - 1].acendido:
 		postos[postos.size() - 1].acender()
@@ -1844,6 +1845,11 @@ func aspirar(rei: ChefeRei, ligado: bool, delta: float) -> void:
 	_riscos.visible = ligado
 	if not ligado:
 		return
+	# Os redemoinhos entrando na boca do cetro (Particulas).
+	_vento_do_cetro -= delta
+	if _vento_do_cetro <= 0.0:
+		_vento_do_cetro = 0.5
+		Particulas.redemoinho(self, rei.global_position + Vector3.UP * 3.2 + rei.visual.global_basis.z.normalized() * 2.4)
 	var boca := rei.global_position + Vector3.UP * 3.0
 	var mm := _riscos.multimesh
 	for i in mm.instance_count:

@@ -549,7 +549,7 @@ func pegar_ioio(j: Jogador) -> void:
 	ioio_pego = true
 	j.ioio = true
 	j.robo.expressao("feliz", 1.2)
-	Fx.confetti(self, _bola_de_ioio.global_position, 40, 4.0)
+	Particulas.magia(self, _bola_de_ioio.global_position, Color("ff4d5a"))
 	Sfx.play(self, "bandeira", 0.0, 0.0)
 	_bola_de_ioio.set_deferred("monitoring", false)
 	_bola_de_ioio.hide()
